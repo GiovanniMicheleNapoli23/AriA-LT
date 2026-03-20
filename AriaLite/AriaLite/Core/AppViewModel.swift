@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Observation
 
 @Observable
 class AppViewModel {
@@ -20,7 +19,6 @@ class AppViewModel {
 
     // MARK: - Auth
     func login(username: String, password: String) -> Bool {
-        // In produzione: chiamata API con hash, mai confronto in chiaro
         guard let user = mockUsers.first(where: {
             $0.username == username && password == mockPasswords[$0.id]
         }) else { return false }
@@ -40,15 +38,34 @@ class AppViewModel {
     var filteredWorkOrders: [WorkOrder] {
         guard let user = loggedInUser else { return [] }
         let assigned = mockWorkOrders.filter { $0.assignedUserID == user.id }
-
         let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         guard !query.isEmpty else { return assigned }
+        return assigned.filter { $0.title.lowercased().contains(query) }
+    }
 
-        return assigned.filter {
-            $0.title.lowercased().contains(query)
+    var todayWorkOrders: [WorkOrder] {
+        filteredWorkOrders.filter {
+            Calendar.current.isDateInToday($0.scheduledDate)
         }
     }
 
+    var pastWorkOrdersByDay: [(key: String, value: [WorkOrder])] {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let past = filteredWorkOrders.filter { $0.scheduledDate < startOfToday }
+
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.locale = Locale(identifier: "it_IT")
+
+        let grouped = Dictionary(grouping: past) { formatter.string(from: $0.scheduledDate) }
+
+        return grouped.sorted { lhs, rhs in
+            let d1 = formatter.date(from: lhs.key) ?? .distantPast
+            let d2 = formatter.date(from: rhs.key) ?? .distantPast
+            return d1 > d2
+        }
+    }
 
     // MARK: - Checklist
     func toggleItem(workOrderID: UUID, itemID: UUID, current: Bool) {
@@ -65,8 +82,12 @@ class AppViewModel {
     // MARK: - Field Notes
     func upsertNote(workOrderID: UUID, itemID: UUID, text: String) {
         if fieldNotes[workOrderID] == nil { fieldNotes[workOrderID] = [:] }
-        let note = FieldNote(id: fieldNotes[workOrderID]?[itemID]?.id ?? UUID(),
-                             checklistItemID: itemID, text: text, createdAt: Date())
+        let note = FieldNote(
+            id: fieldNotes[workOrderID]?[itemID]?.id ?? UUID(),
+            checklistItemID: itemID,
+            text: text,
+            createdAt: Date()
+        )
         fieldNotes[workOrderID]?[itemID] = note
     }
 
@@ -86,8 +107,11 @@ class AppViewModel {
         submissionStatus = .sending
 
         let items = workOrder.checklist.map {
-            ReportChecklistItem(id: $0.id, text: $0.text,
-                                isCompleted: isItemCompleted($0, in: workOrder.id))
+            ReportChecklistItem(
+                id: $0.id,
+                text: $0.text,
+                isCompleted: isItemCompleted($0, in: workOrder.id)
+            )
         }
         let notes = Array((fieldNotes[workOrder.id] ?? [:]).values)
         let photos = photoAttachments[workOrder.id] ?? []
@@ -106,17 +130,13 @@ class AppViewModel {
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
             encoder.dateEncodingStrategy = .iso8601
-            _ = try encoder.encode(report)  // verifica che il JSON sia valido
-
-            // Simula latenza di rete
+            _ = try encoder.encode(report)
             try await Task.sleep(for: .seconds(0.5))
             submittedWorkOrders.insert(workOrder.id)
             submissionStatus = .success
-
         } catch {
             submissionStatus = .failure(error.localizedDescription)
         }
     }
-
 }
 

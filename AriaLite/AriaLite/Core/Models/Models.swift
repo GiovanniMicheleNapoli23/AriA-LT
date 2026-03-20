@@ -46,7 +46,9 @@ struct WorkOrder: Identifiable, Codable {
     let title: String
     var checklist: [ChecklistItem]
     let documents: [ProcedureDocument]
+    let scheduledDate: Date
 }
+
 
 // Payload finale inviato al server
 struct WorkOrderReport: Codable {
