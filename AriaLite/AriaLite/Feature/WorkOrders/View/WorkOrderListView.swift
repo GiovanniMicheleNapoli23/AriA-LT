@@ -6,7 +6,7 @@
 //
 import SwiftUI
 
-// MARK: - Shared WorkOrder Start Modifier
+// MARK: - WorkOrderStartModifier
 
 private struct WorkOrderStartModifier: ViewModifier {
     @Binding var workOrderToStart: WorkOrder?
@@ -14,36 +14,65 @@ private struct WorkOrderStartModifier: ViewModifier {
     @Binding var showMaintenanceMode: Bool
     let viewModel: AppViewModel
 
+    private var isAlertPresented: Binding<Bool> {
+        Binding(
+            get: { workOrderToStart != nil },
+            set: { if !$0 { workOrderToStart = nil } }
+        )
+    }
+
     func body(content: Content) -> some View {
         content
             .alert(
-                workOrderToStart?.title ?? "",
-                isPresented: .init(
-                    get: { workOrderToStart != nil },
-                    set: { if !$0 { workOrderToStart = nil } }
-                )
-            ) {
-                Button("Avvia") {
-                    if let wo = workOrderToStart {
-                        selectedWorkOrder = wo
-                        showMaintenanceMode = true
-                    }
-                    workOrderToStart = nil
-                }
-                .keyboardShortcut(.defaultAction)
-                Button("Annulla", role: .cancel) {
-                    workOrderToStart = nil
-                }
-            } message: {
-                Text("Assicurati di essere sul posto prima di procedere.")
-            }
-            .fullScreenCover(isPresented: $showMaintenanceMode) {
-                if let wo = selectedWorkOrder {
-                    MaintenanceModeView(workOrder: wo, viewModel: viewModel)
-                }
-            }
+                workOrderTitle,
+                isPresented: isAlertPresented,
+                actions: alertActions,
+                message: alertMessage
+            )
+            .fullScreenCover(
+                isPresented: $showMaintenanceMode,
+                content: maintenanceContent
+            )
+    }
+
+    // MARK: - Alert
+
+    private var workOrderTitle: String {
+        workOrderToStart?.title ?? ""
+    }
+
+    @ViewBuilder
+    private func alertActions() -> some View {
+        Button("Avvia", action: startWorkOrder)
+            .keyboardShortcut(.defaultAction)
+
+        Button("Annulla", role: .cancel) {
+            workOrderToStart = nil
+        }
+    }
+
+    private func alertMessage() -> some View {
+        Text("Assicurati di essere sul posto prima di procedere.")
+    }
+
+    private func startWorkOrder() {
+        guard let wo = workOrderToStart else { return }
+        selectedWorkOrder = wo
+        showMaintenanceMode = true
+        workOrderToStart = nil
+    }
+
+    // MARK: - FullScreen
+
+    @ViewBuilder
+    private func maintenanceContent() -> some View {
+        if let wo = selectedWorkOrder {
+            MaintenanceModeView(workOrder: wo, viewModel: viewModel)
+        }
     }
 }
+
+// MARK: - View Extension
 
 private extension View {
     func workOrderStartFlow(
@@ -52,15 +81,39 @@ private extension View {
         showMaintenanceMode: Binding<Bool>,
         viewModel: AppViewModel
     ) -> some View {
-        modifier(WorkOrderStartModifier(
-            workOrderToStart: workOrderToStart,
-            selectedWorkOrder: selectedWorkOrder,
-            showMaintenanceMode: showMaintenanceMode,
-            viewModel: viewModel
-        ))
+        modifier(
+            WorkOrderStartModifier(
+                workOrderToStart: workOrderToStart,
+                selectedWorkOrder: selectedWorkOrder,
+                showMaintenanceMode: showMaintenanceMode,
+                viewModel: viewModel
+            )
+        )
     }
 }
 
+// MARK: - Reusable WorkOrder List
+
+struct WorkOrderListContent: View {
+    let workOrders: [WorkOrder]
+    let viewModel: AppViewModel
+    let onTap: (WorkOrder) -> Void
+    var isPast: Bool = false
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ForEach(workOrders) { workOrder in
+                Button {
+                    onTap(workOrder)
+                } label: {
+                    WorkOrderRowView(workOrder: workOrder, viewModel: viewModel)
+                        .opacity(isPast ? 0.6 : 1)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+}
 
 // MARK: - WorkOrderListView
 
@@ -75,98 +128,85 @@ struct WorkOrderListView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.liteBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color.liteAccent.opacity(0.07), .clear],
-                    center: .topTrailing,
-                    startRadius: 0,
-                    endRadius: 420
-                )
-                .ignoresSafeArea()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
+                    // MARK: - Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(greetingText)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                        // MARK: - Header
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(greetingText)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Text(user.name)
-                                .font(.title2.bold())
-                                .foregroundStyle(.primary)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 12)
-                        .padding(.bottom, 20)
+                        Text(user.name)
+                            .font(.title2.bold())
+                            .foregroundStyle(.primary)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
 
-                        // MARK: - Oggi
-                        sectionHeader(
-                            title: "Oggi",
-                            subtitle: todaySubtitle,
-                            icon: "calendar",
-                            color: Color.liteAccent
+                    // MARK: - Oggi
+                    sectionHeader(
+                        title: "Oggi",
+                        subtitle: todaySubtitle,
+                        icon: "calendar",
+                        color: Color.liteAccent
+                    )
+
+                    if viewModel.todayWorkOrders.isEmpty {
+                        emptyState(
+                            icon: "tray",
+                            message: "Nessun work order per oggi"
                         )
+                    } else {
+                        WorkOrderListContent(
+                            workOrders: viewModel.todayWorkOrders,
+                            viewModel: viewModel,
+                            onTap: { workOrderToStart = $0 }
+                        )
+                        .padding(.bottom, 8)
+                    }
 
-                        if viewModel.todayWorkOrders.isEmpty {
-                            emptyState(
-                                icon: "tray",
-                                message: "Nessun work order per oggi"
-                            )
-                        } else {
-                            VStack(spacing: 8) {
-                                ForEach(viewModel.todayWorkOrders) { workOrder in
-                                    Button { workOrderToStart = workOrder } label: {
-                                        WorkOrderRowView(workOrder: workOrder, viewModel: viewModel)
-                                    }
+                    // MARK: - Passati
+                    if !viewModel.pastWorkOrdersByDay.isEmpty {
+                        sectionHeader(
+                            title: "Passati",
+                            subtitle: "\(viewModel.pastWorkOrdersByDay.flatMap(\.value).count) work order archiviati",
+                            icon: "clock.arrow.circlepath",
+                            color: .secondary
+                        )
+                        .padding(.top, 12)
+
+                        VStack(spacing: 0) {
+                            ForEach(viewModel.pastWorkOrdersByDay, id: \.key) { item in
+                                Text(item.key)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
+                                    .textCase(.uppercase)
                                     .padding(.horizontal, 20)
-                                }
+                                    .padding(.top, 16)
+                                    .padding(.bottom, 6)
+
+                                WorkOrderListContent(
+                                    workOrders: item.value,
+                                    viewModel: viewModel,
+                                    onTap: { workOrderToStart = $0 },
+                                    isPast: true
+                                )
                             }
-                            .padding(.bottom, 8)
                         }
-
-                        // MARK: - Passati
-                        if !viewModel.pastWorkOrdersByDay.isEmpty {
-                            sectionHeader(
-                                title: "Passati",
-                                subtitle: "\(viewModel.pastWorkOrdersByDay.flatMap(\.value).count) work order archiviati",
-                                icon: "clock.arrow.circlepath",
-                                color: .secondary
-                            )
-                            .padding(.top, 12)
-
-                            VStack(spacing: 0) {
-                                ForEach(viewModel.pastWorkOrdersByDay, id: \.key) { item in
-                                    Text(item.key)
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .foregroundStyle(.secondary)
-                                        .textCase(.uppercase)
-                                        .padding(.horizontal, 20)
-                                        .padding(.top, 16)
-                                        .padding(.bottom, 6)
-
-                                    VStack(spacing: 8) {
-                                        ForEach(item.value) { workOrder in
-                                            Button { workOrderToStart = workOrder } label: {
-                                                WorkOrderRowView(workOrder: workOrder, viewModel: viewModel)
-                                                    .opacity(0.6)
-                                            }
-                                            .padding(.horizontal, 20)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.bottom, 24)
-                        }
+                        .padding(.bottom, 24)
                     }
                 }
             }
+            .liteBackground() 
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showSettingsSheet = true } label: {
+                    Button {
+                        showSettingsSheet = true
+                    } label: {
                         Image(systemName: "ellipsis.circle")
                     }
                     .tint(Color.liteAccent)
@@ -211,14 +251,16 @@ struct WorkOrderListView: View {
             Image(systemName: icon)
                 .font(.subheadline.bold())
                 .foregroundStyle(color)
+
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(.primary)
+
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -230,6 +272,7 @@ struct WorkOrderListView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(.tertiary)
+
             Text(message)
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
@@ -240,7 +283,6 @@ struct WorkOrderListView: View {
         .padding(.bottom, 8)
     }
 }
-
 
 // MARK: - WorkOrderSearchView
 
@@ -256,34 +298,21 @@ struct WorkOrderSearchView: View {
         @Bindable var viewModel = viewModel
 
         NavigationStack {
-            ZStack {
-                Color.liteBackground.ignoresSafeArea()
-                RadialGradient(
-                    colors: [Color.liteAccent.opacity(0.07), .clear],
-                    center: .topTrailing,
-                    startRadius: 0,
-                    endRadius: 420
-                )
-                .ignoresSafeArea()
-
-                Group {
-                    if viewModel.filteredWorkOrders.isEmpty {
-                        ContentUnavailableView.search(text: viewModel.searchText)
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 8) {
-                                ForEach(viewModel.filteredWorkOrders) { workOrder in
-                                    Button { workOrderToStart = workOrder } label: {
-                                        WorkOrderRowView(workOrder: workOrder, viewModel: viewModel)
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                            }
-                            .padding(.vertical, 12)
-                        }
+            Group {
+                if viewModel.filteredWorkOrders.isEmpty {
+                    ContentUnavailableView.search(text: viewModel.searchText)
+                } else {
+                    ScrollView {
+                        WorkOrderListContent(
+                            workOrders: viewModel.filteredWorkOrders,
+                            viewModel: viewModel,
+                            onTap: { workOrderToStart = $0 }
+                        )
+                        .padding(.vertical, 12)
                     }
                 }
             }
+            .liteBackground() 
             .navigationTitle("Cerca")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -300,4 +329,3 @@ struct WorkOrderSearchView: View {
         )
     }
 }
-

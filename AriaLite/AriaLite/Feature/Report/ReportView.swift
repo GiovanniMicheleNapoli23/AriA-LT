@@ -15,10 +15,13 @@ struct ReportView: View {
                 systemImage: "chart.bar.doc.horizontal",
                 description: Text("I report saranno disponibili a breve.")
             )
+            .liteBackground()
             .navigationTitle("Report")
+    
         }
     }
 }
+
 
 #Preview {
     ReportView()
