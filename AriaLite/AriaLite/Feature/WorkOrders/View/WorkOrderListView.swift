@@ -8,11 +8,13 @@ import SwiftUI
 
 // MARK: - WorkOrderStartModifier
 
-private struct WorkOrderStartModifier: ViewModifier {
+ struct WorkOrderActionModifier: ViewModifier {
     @Binding var workOrderToStart: WorkOrder?
     @Binding var selectedWorkOrder: WorkOrder?
     @Binding var showMaintenanceMode: Bool
     let viewModel: AppViewModel
+
+    @State private var voice = AriaVoiceViewModel()          // ← NUOVO
 
     private var isAlertPresented: Binding<Bool> {
         Binding(
@@ -67,7 +69,7 @@ private struct WorkOrderStartModifier: ViewModifier {
     @ViewBuilder
     private func maintenanceContent() -> some View {
         if let wo = selectedWorkOrder {
-            MaintenanceModeView(workOrder: wo, viewModel: viewModel)
+            MaintenanceModeView(workOrder: wo, viewModel: viewModel, voice: voice)
         }
     }
 }
@@ -82,7 +84,7 @@ private extension View {
         viewModel: AppViewModel
     ) -> some View {
         modifier(
-            WorkOrderStartModifier(
+            WorkOrderActionModifier(        
                 workOrderToStart: workOrderToStart,
                 selectedWorkOrder: selectedWorkOrder,
                 showMaintenanceMode: showMaintenanceMode,

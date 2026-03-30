@@ -9,18 +9,18 @@ import SwiftUI
 import PhotosUI
 
 // MARK: - MaintenanceModeView
-
 struct MaintenanceModeView: View {
     let workOrder: WorkOrder
     let viewModel: AppViewModel
+    let voice: AriaVoiceViewModel          // ← passa dall'esterno
 
     @State private var showPhotoSource: Bool = false
     @State private var showCamera: Bool = false
-
     @State private var currentStepIndex: Int = 0
     @State private var noteText: String = ""
     @State private var showNoteEditor: Bool = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
+    @State private var showAIHelp: Bool = false           // ← NUOVO
     @Namespace private var glassNamespace
     @Environment(\.dismiss) private var dismiss
 
@@ -88,9 +88,7 @@ struct MaintenanceModeView: View {
             .navigationTitle(workOrder.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                
-                    Button(role: .close) { dismiss() }
-                
+                Button(role: .close) { dismiss() }
             }
             .onChange(of: viewModel.submissionStatus) { _, status in
                 if case .success = status {
@@ -112,6 +110,9 @@ struct MaintenanceModeView: View {
                     onCancel: { showNoteEditor = false }
                 )
                 .presentationDetents([.medium])
+            }
+            .sheet(isPresented: $showAIHelp) {                    // ← NUOVO
+                AIHelpSheet(currentItem: currentItem, voice: voice)
             }
             .onChange(of: selectedPhotoItems) { _, items in
                 Task {
@@ -135,10 +136,8 @@ struct MaintenanceModeView: View {
     }
 
     // MARK: - Step Header Card
-
     private var stepHeaderCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-
             HStack {
                 Text("Passo \(currentStepIndex + 1) di \(workOrder.checklist.count)")
                     .font(.system(size: 12, weight: .semibold))
@@ -229,7 +228,6 @@ struct MaintenanceModeView: View {
     }
 
     // MARK: - Note + Photo Row
-
     private var noteAndPhotoRow: some View {
         HStack(spacing: 12) {
             noteCard
@@ -238,7 +236,6 @@ struct MaintenanceModeView: View {
     }
 
     // MARK: - Note Card
-
     private var noteCard: some View {
         Button {
             noteText = currentNote?.text ?? ""
@@ -276,8 +273,6 @@ struct MaintenanceModeView: View {
     }
 
     // MARK: - Photo Card
-
-
     private var photoCard: some View {
         Button {
             showPhotoSource = true
@@ -311,10 +306,10 @@ struct MaintenanceModeView: View {
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
         .sheet(isPresented: $showPhotoSource) {
-                PhotoSourceSheet(selectedPhotoItems: $selectedPhotoItems) {
-                    showCamera = true
-                }
+            PhotoSourceSheet(selectedPhotoItems: $selectedPhotoItems) {
+                showCamera = true
             }
+        }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker { image in
                 if let data = image.jpegData(compressionQuality: 0.8) {
@@ -332,9 +327,7 @@ struct MaintenanceModeView: View {
         }
     }
 
-
     // MARK: - Documents Card
-
     private var documentsCard: some View {
         DisclosureGroup {
             ForEach(workOrder.documents) { doc in
@@ -365,60 +358,84 @@ struct MaintenanceModeView: View {
     }
 
     // MARK: - Navigation Bar
-
     private var navigationBar: some View {
         GlassEffectContainer(spacing: 12) {
-            HStack(spacing: 12) {
-                Button {
-                    withAnimation(.spring(duration: 0.3)) { currentStepIndex -= 1 }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                        Text("Indietro")
-                            .font(.system(size: 15, weight: .semibold))
+            VStack(spacing: 0) {
+
+                // ── Ask help to AI ──────────────────────────────── ← NUOVO
+                Button { showAIHelp = true } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "sparkles")
+                            .font(.headline)
+                        Text("Ask help to AI")
+                            .font(.headline)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity/2)
+                    .padding(.vertical, 15)
+                    .foregroundStyle(Color.liteAccent)
+                    .background(Color.liteAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.liteAccent.opacity(0.15), lineWidth: 1)
+                    )
                 }
-                .buttonStyle(.glass)
-                .disabled(currentStepIndex == 0)
-                .glassEffectID("prev", in: glassNamespace)
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
 
-                Spacer()
-
-                Group {
-                    if currentStepIndex < workOrder.checklist.count - 1 {
-                        Button {
-                            goNext()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text("Avanti")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .padding(.horizontal, 28)
-                            .padding(.vertical, 14)
+                // ── Navigazione esistente ───────────────────────────
+                HStack(spacing: 12) {
+                    Button {
+                        withAnimation(.spring(duration: 0.3)) { currentStepIndex -= 1 }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Indietro")
+                                .font(.system(size: 15, weight: .semibold))
                         }
-                        .buttonStyle(.glassProminent)
-                        .tint(Color.liteAccent)
-                        .glassEffectID("main-action", in: glassNamespace)
-                    } else {
-                        submitButton
-                            .glassEffectID("main-action", in: glassNamespace)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
                     }
+                    .buttonStyle(.glass)
+                    .disabled(currentStepIndex == 0)
+                    .glassEffectID("prev", in: glassNamespace)
+
+                    Spacer()
+
+                    Group {
+                        if currentStepIndex < workOrder.checklist.count - 1 {
+                            Button {
+                                goNext()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("Avanti")
+                                        .font(.system(size: 15, weight: .semibold))
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14, weight: .semibold))
+                                }
+                                .padding(.horizontal, 28)
+                                .padding(.vertical, 14)
+                            }
+                            .buttonStyle(.glassProminent)
+                            .tint(Color.liteAccent)
+                            .glassEffectID("main-action", in: glassNamespace)
+                        } else {
+                            submitButton
+                                .glassEffectID("main-action", in: glassNamespace)
+                        }
+                    }
+                    .animation(.spring(duration: 0.4), value: currentStepIndex)
                 }
-                .animation(.spring(duration: 0.4), value: currentStepIndex)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .padding(.bottom, 8)
         }
     }
 
     // MARK: - Submit Button
-
     @ViewBuilder
     private var submitButton: some View {
         switch viewModel.submissionStatus {
@@ -469,7 +486,6 @@ struct MaintenanceModeView: View {
         }
     }
 }
-
 
 // MARK: - PhotoSourceSheet
 
