@@ -18,20 +18,26 @@ struct ContentView: View {
 
             TabView {
                 Tab {
+                    OverviewView()
+                } label: {
+                    Label("Overview", systemImage: "house.fill")
+                }
+                Tab {
                     WorkOrderListView(viewModel: viewModel, user: user)
                 } label: {
                     Label("Lavori", systemImage: "wrench.and.screwdriver")
                 }
 
-                Tab {
-                    ReportView()
-                } label: {
-                    Label("Report", systemImage: "chart.bar.doc.horizontal")
-                }
+//                Tab {
+//                    ReportView()
+//                } label: {
+//                    Label("Report", systemImage: "chart.bar.doc.horizontal")
+//                }
 
                 Tab(role: .search) {
                     WorkOrderSearchView(viewModel: viewModel, user: user)
                 }
+                
             }
             .preferredColorScheme(.light)
         } else {
