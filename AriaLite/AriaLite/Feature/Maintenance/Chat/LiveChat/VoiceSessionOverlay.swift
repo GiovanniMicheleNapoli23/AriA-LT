@@ -68,12 +68,7 @@ struct VoiceSessionOverlay: View {
                         .font(.subheadline.bold())
                         .foregroundStyle(voice.isMuted ? .red : Color.liteAccent)
                         .frame(width: 34, height: 34)
-                        .glassEffect(
-                            voice.isMuted
-                                ? .regular.tint(.red.opacity(0.15))
-                                : .regular.tint(Color.liteAccent.opacity(0.1)),
-                            in: Circle()
-                        )
+                        .ariaGlass(in: Circle(), tint: voice.isMuted ? .red.opacity(0.15) : Color.liteAccent.opacity(0.1))
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
@@ -82,7 +77,7 @@ struct VoiceSessionOverlay: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 12))
         .animation(.easeInOut(duration: 0.25), value: voice.isConnected)
         .animation(.easeInOut(duration: 0.25), value: voice.isSearchingDocs)
         .animation(.easeInOut(duration: 0.2), value: voice.isMuted)

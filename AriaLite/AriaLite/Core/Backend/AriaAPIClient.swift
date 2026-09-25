@@ -131,8 +131,12 @@ nonisolated final class AriaAPIClient: Sendable {
                             try AriaHTTP.check(response, errorBody)
                         }
                         var parser = AriaSSEParser()
+                        AriaStreamTrace.event("open", "status", bytes: status)
                         for try await byte in bytes {
-                            if let event = parser.consume(byte) { continuation.yield(AriaStreamEvent(event)) }
+                            if let event = parser.consume(byte) {
+                                AriaStreamTrace.event("recv", event.event, bytes: event.data.utf8.count)
+                                continuation.yield(AriaStreamEvent(event))
+                            }
                         }
                         if let event = parser.finish() { continuation.yield(AriaStreamEvent(event)) }
                         break

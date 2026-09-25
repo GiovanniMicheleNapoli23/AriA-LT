@@ -109,6 +109,24 @@ nonisolated struct AriaChatAPI: Sendable {
 
     // MARK: Memoria
 
+    private nonisolated struct Validation: Encodable, Sendable {
+        let question: String
+        let answer: String
+        let feedback: String
+        let plantId: String
+        let sessionId: String?
+    }
+
+    /// Risposta al Real-time Learning: diventa conoscenza dello stabilimento, mai un turno di chat.
+    /// I campi si tagliano ai limiti del server (buildValidationBody della web): meglio corto che un 422.
+    func submitValidation(companyId: String, plantId: String, sessionId: String, question: String,
+                          answer: String, feedback: String) async throws -> AriaMemoryValidationResponse {
+        let body = Validation(question: String(question.prefix(4000)), answer: String(answer.prefix(8000)),
+                              feedback: String(feedback.trimmingCharacters(in: .whitespacesAndNewlines).prefix(2000)),
+                              plantId: plantId, sessionId: sessionId)
+        return try await api.send("POST", "v1/companies/\(companyId)/memory-facts/validation", body: body)
+    }
+
     /// Tieni / scarta un fatto che Aria propone di imparare.
     func confirmMemory(companyId: String, factId: String, accept: Bool) async throws {
         try await api.perform("POST", "v1/companies/\(companyId)/memory-facts/\(factId)/confirm",

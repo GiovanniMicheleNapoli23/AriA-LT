@@ -41,90 +41,67 @@ struct AriaSourceDot: View {
     }
 }
 
-// MARK: - AIChatView (tab Assistant)
+// MARK: - AIChatView (schermata principale)
 struct AIChatView: View {
     @Environment(AppViewModel.self) private var viewModel
-    @State private var source: AriaResponseSource = .none
-    @State private var conversationID = UUID()
-    @State private var showConnection = false
-    @State private var showHistory = false
     @State private var closeout: AriaCloseoutChoice?
+    @State private var showingOptions = false
+    /// La chiusura intervento scelta dal menu "···": parte quando il menu si è chiuso (un foglio alla volta).
+    @State private var closeOutAfterOptions = false
 
     private var backend: AriaBackend { viewModel.backend }
     private var chat: AriaAgentChat { viewModel.mainChat }
 
+    /// Il titolo che il backend dà alla sessione; finché non arriva, la prima domanda dell'operatore.
+    private var title: String {
+        guard backend.isReady, let first = chat.messages.first(where: { $0.role == .user })?.text else {
+            return String(localized: "New chat")
+        }
+        if let saved = viewModel.sessions.sessions.first(where: { $0.sessionId == chat.sessionId })?.title,
+           !saved.isEmpty {
+            return saved
+        }
+        return first
+    }
+
     var body: some View {
         NavigationStack {
-            AriaConversation(agentChat: chat, showsEmptyState: true, source: $source)
-                .id(conversationID)
-                .navigationTitle("Aria Engine")
+            AriaConversation(agentChat: chat, showsEmptyState: true)
+                .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    if backend.isReady {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Conversations", systemImage: "clock.arrow.circlepath") { showHistory = true }
-                        }
-                    }
+                    ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+                    // Solo il titolo: server e stabilimento si gestiscono nel profilo (Impostazioni).
                     ToolbarItem(placement: .principal) {
-                        VStack(spacing: 1) {
-                            HStack(spacing: 6) {
-                                Image("AriaBlob")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 20, height: 20)
-                                Text("Aria Engine")
-                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                                // Fonte ultima risposta: blu = locale · viola = Apple Intelligence · verde = server
-                                AriaSourceDot(source: source)
-                                    .animation(.easeInOut(duration: 0.25), value: source)
-                            }
-                            // Stato della connessione al backend: tocca per gestirla.
-                            Button { showConnection = true } label: {
-                                HStack(spacing: 5) {
-                                    Circle()
-                                        .fill(backend.isReady ? Color.green : Color.secondary)
-                                        .frame(width: 6, height: 6)
-                                    Text(backend.isReady ? (backend.activePlantName ?? String(localized: "Online")) : String(localized: "Local mode"))
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        Text(title)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .frame(maxWidth: 240)
+                            .contentTransition(.opacity)
+                            .animation(.easeInOut(duration: 0.25), value: title)
                     }
+                    // La nuova chat sta nella barra laterale; qui lo storico della procedura,
+                    // il microfono e la chiusura intervento.
                     ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Button("New chat", systemImage: "square.and.pencil") { newChat() }
-                            if backend.isReady {
-                                Button("Close out intervention", systemImage: "checkmark.seal") {
-                                    closeout = AriaCloseoutChoice(workOrder: true, report: false)
-                                }
-                                .disabled(chat.messages.isEmpty || chat.isStreaming)
-                            }
-                            Button("Aria server", systemImage: "bolt.horizontal.circle") { showConnection = true }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                        } primaryAction: {
-                            newChat()
-                        }
+                        Button("More", systemImage: "ellipsis") { showingOptions = true }
                     }
                 }
-                .sheet(isPresented: $showConnection) {
-                    AriaConnectionSheet(backend: backend)
-                }
-                .sheet(isPresented: $showHistory) {
-                    AriaChatHistoryView(chat: chat, backend: backend)
+                .sheet(isPresented: $showingOptions, onDismiss: {
+                    guard closeOutAfterOptions else { return }
+                    closeOutAfterOptions = false
+                    closeout = AriaCloseoutChoice(workOrder: true, report: false)
+                }) {
+                    AriaChatOptionsSheet(chat: chat, onCloseOut: backend.isReady ? { closeOutAfterOptions = true } : nil)
                 }
                 .sheet(item: $closeout) { choice in
                     AriaCloseoutSheet(chat: chat, choice: choice)
                 }
+                // A turno finito il backend ha (ri)generato il titolo: si ricaricano le sessioni.
+                .onChange(of: chat.isStreaming) { _, streaming in
+                    if !streaming, backend.isReady { Task { await viewModel.sessions.load() } }
+                }
         }
-    }
-
-    private func newChat() {
-        chat.newConversation()
-        conversationID = UUID()
-        source = .none
     }
 }
 
@@ -210,7 +187,7 @@ struct AriaLocalConversation: View {
             messagesArea
 
             // Voce: pannello stato sessione (visibile solo quando attiva)
-            if voice.isConnected || voice.isConnecting {
+            if voice.isConnected || voice.isConnecting || voice.error != nil {
                 VoiceSessionOverlay(voice: voice)
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -364,9 +341,7 @@ struct AriaLocalConversation: View {
                     .blur(radius: 10)
                     .scaleEffect(animateBlob ? 1.08 : 0.92)
 
-                Image("AriaBlob")
-                    .resizable()
-                    .scaledToFit()
+                AriaOrb(radius: 0.8)
                     .frame(width: 108, height: 108)
                     .shadow(color: Color.accentColor.opacity(0.28), radius: 18, x: 0, y: 8)
                     .scaleEffect(animateBlob ? 1.03 : 0.97)
@@ -541,34 +516,30 @@ struct AriaMessageBubble: View {
             if message.isUser {
                 Spacer(minLength: 55)
             } else {
-                Image("AriaBlobIcon")
-                    .resizable()
-                    .scaledToFit()
+                AriaOrb(isAnimating: false)
                     .frame(width: 28, height: 28)
                     .shadow(color: Color.accentColor.opacity(0.2), radius: 3)
             }
 
             VStack(alignment: message.isUser ? .trailing : .leading, spacing: 8) {
                 if !message.text.isEmpty {
-                    Text(message.text)
-                        .font(.system(size: 16))
-                        .foregroundStyle(message.isUser ? .white : .primary)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 11)
-                        .background(
-                            message.isUser
-                                ? AnyShapeStyle(Color.accentColor)
-                                : AnyShapeStyle(Color(.secondarySystemGroupedBackground))
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(
-                            color: message.isUser
-                                ? Color.accentColor.opacity(0.25)
-                                : Color.black.opacity(0.05),
-                            radius: message.isUser ? 8 : 3,
-                            x: 0, y: 2
-                        )
-                        .textSelection(.enabled)
+                    if message.isUser {
+                        Text(message.text)
+                            .font(.system(size: 16))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 15)
+                            .padding(.vertical, 11)
+                            .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: Color.accentColor.opacity(0.25), radius: 8, x: 0, y: 2)
+                            .textSelection(.enabled)
+                    } else {
+                        // Le risposte di Aria senza bolla, come nella chat col backend.
+                        Text(message.text)
+                            .font(.system(size: 16))
+                            .foregroundStyle(.primary)
+                            .padding(.top, 4)
+                            .textSelection(.enabled)
+                    }
                 }
 
                 ForEach(message.workOrders) { workOrder in
@@ -850,9 +821,7 @@ struct AriaTypingIndicator: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            Image("AriaBlobIcon")
-                .resizable()
-                .scaledToFit()
+            AriaOrb(mood: .thinking)
                 .frame(width: 28, height: 28)
                 .shadow(color: Color.accentColor.opacity(0.2), radius: 3)
 
@@ -871,11 +840,7 @@ struct AriaTypingIndicator: View {
                         )
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+            .padding(.vertical, 10)
 
             Spacer(minLength: 55)
         }

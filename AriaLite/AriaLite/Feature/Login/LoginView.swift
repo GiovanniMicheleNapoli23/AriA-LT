@@ -4,190 +4,250 @@
 //
 //  Created by Giovanni Michele on 19/03/26.
 //
-
+//  Accesso in stile iOS: la sfera di Aria su un alone morbido (pensa mentre verifica
+//  le credenziali), il logo con "Mobile" sotto, una card a gruppo unico come nelle
+//  Impostazioni di sistema, un pulsante. Entra con una breve animazione.
+//  Tocca fuori per chiudere la tastiera.
+//
 
 import SwiftUI
 
 struct LoginView: View {
     let viewModel: AppViewModel
+
+    private enum Field { case username, password }
+
     @State private var username = ""
     @State private var password = ""
+    @State private var showPassword = false
     @State private var showError = false
     @State private var isLoading = false
+    @State private var shakes = 0
+    /// Entrata in tre tempi: la sfera sale dal basso, poi il logo, poi il modulo.
+    @State private var orbIn = false
+    @State private var titleIn = false
+    @State private var formIn = false
+    @FocusState private var focus: Field?
+
+    private var canSubmit: Bool {
+        !username.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty && !isLoading
+    }
+
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+    }
 
     var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 40)
+            hero
+            Spacer(minLength: 40)
+            form
+                .opacity(formIn ? 1 : 0)
+                .offset(y: formIn ? 0 : 40)
+            Spacer(minLength: 24)
+            footer
+                .opacity(formIn ? 1 : 0)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
+        .background { backdrop }
+        .contentShape(Rectangle())
+        .onTapGesture { focus = nil }
+        .sensoryFeedback(.error, trigger: shakes)
+        .preferredColorScheme(.light)
+        .onAppear(perform: enter)
+    }
+
+    private func enter() {
+        withAnimation(.spring(duration: 1.0, bounce: 0.28)) { orbIn = true }
+        withAnimation(.spring(duration: 0.7, bounce: 0.15).delay(0.55)) { titleIn = true }
+        withAnimation(.spring(duration: 0.7, bounce: 0.15).delay(0.85)) { formIn = true }
+    }
+
+    // MARK: - Sfondo
+
+    /// Bianco quasi puro con due aloni appena percettibili: lilla dietro la sfera, navy in basso.
+    private var backdrop: some View {
         ZStack {
-            // Sfondo bianco pulito — coerente con il logo navy su bianco
-            Color.liteBackground.ignoresSafeArea()
+            Color.liteBackground
+            RadialGradient(colors: [Color(red: 0.62, green: 0.52, blue: 0.78).opacity(0.16), .clear],
+                           center: UnitPoint(x: 0.5, y: 0.28), startRadius: 0, endRadius: 320)
+            RadialGradient(colors: [Color.liteAccent.opacity(0.06), .clear],
+                           center: .bottom, startRadius: 0, endRadius: 460)
+        }
+        .ignoresSafeArea()
+    }
 
+    // MARK: - Sfera + logo
+
+    private var hero: some View {
+        VStack(spacing: 22) {
+            AriaOrb(mood: isLoading ? .thinking : .idle, radius: 0.8)
+                .frame(width: 104, height: 104)
+                .shadow(color: Color.liteAccent.opacity(0.18), radius: 18, x: 0, y: 10)
+                // Sale dal fondo dello schermo e si assesta al suo posto.
+                .scaleEffect(orbIn ? 1 : 0.55)
+                .offset(y: orbIn ? 0 : 520)
+                .opacity(orbIn ? 1 : 0)
+
+            AriaWordmark(size: 40, stacked: true)
+                .opacity(titleIn ? 1 : 0)
+                .offset(y: titleIn ? 0 : 16)
+                .blur(radius: titleIn ? 0 : 6)
+        }
+    }
+
+    // MARK: - Campi
+
+    /// Una sola card come nelle Impostazioni di sistema: righe unite da un filo, non pannelli separati.
+    private var form: some View {
+        VStack(spacing: 16) {
             VStack(spacing: 0) {
-                Spacer()
-
-                // MARK: Logo Area
-                VStack(spacing: 14) {
-                    Image("AriaLite")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 90, height: 90)
-                        .padding(4)
-                        .background(Color.liteSurface)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .strokeBorder(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.liteAccent.opacity(0.35),
-                                            Color.liteAccent.opacity(0.08),
-                                            Color.liteAccent.opacity(0.20)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1.5
-                                )
-                        )
-                        .shadow(color: Color.liteAccent.opacity(0.12), radius: 24, x: 0, y: 8)
-
-
-
-                    VStack(spacing: 4) {
-                        Text("AriA LT")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(Color.liteText)
-                            .tracking(6)
-
-                        Text("SINAURA")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.liteAccent.opacity(0.45))
-                            .tracking(6)
-                    }
-                }
-                .padding(.bottom, 52)
-
-                // MARK: Form Card
-                VStack(spacing: 0) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person")
-                            .foregroundStyle(Color.liteAccent.opacity(0.4))
-                            .frame(width: 20)
-                        TextField("", text: $username, prompt:
-                            Text("Username")
-                                .foregroundStyle(Color.liteText.opacity(0.30))
-                        )
+                row(icon: "person") {
+                    TextField("Username", text: $username)
+                        .textContentType(.username)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .foregroundStyle(Color.liteText)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-
-                    Rectangle()
-                        .fill(Color.liteBorder)
-                        .frame(height: 1)
-                        .padding(.horizontal, 20)
-
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock")
-                            .foregroundStyle(Color.liteAccent.opacity(0.4))
-                            .frame(width: 20)
-                        SecureField("", text: $password, prompt:
-                            Text("Password")
-                                .foregroundStyle(Color.liteText.opacity(0.30))
-                        )
-                        .foregroundStyle(Color.liteText)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                }
-                .background(Color.liteSurface)
-                .clipShape(.rect(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.liteBorder, lineWidth: 1.5)
-                )
-                .shadow(color: Color.liteAccent.opacity(0.06), radius: 16, x: 0, y: 6)
-                .padding(.horizontal, 28)
-
-                // MARK: Error
-                if showError {
-                    HStack(spacing: 6) {
-                        Image(systemName: "exclamationmark.circle.fill")
-                        Text("Invalid credentials")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(Color(red: 0.85, green: 0.25, blue: 0.25))
-                    .padding(.top, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                        .submitLabel(.next)
+                        .focused($focus, equals: .username)
+                        .onSubmit { focus = .password }
                 }
 
-                // MARK: CTA Button
-                Button {
-                    isLoading = true
-                    showError = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        let ok = viewModel.login(username: username, password: password)
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showError = !ok
-                            isLoading = false
-                        }
-                    }
-                } label: {
-                    ZStack {
-                        if isLoading {
-                            ProgressView().tint(.white)
+                Divider()
+                    .padding(.leading, 50)
+
+                row(icon: "lock") {
+                    Group {
+                        if showPassword {
+                            TextField("Password", text: $password)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
                         } else {
-                            Text("Sign in")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .tracking(2)
+                            SecureField("Password", text: $password)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(
-                        // Navy solido quando attivo — rispecchia il logo
-                        username.isEmpty || password.isEmpty
-                            ? Color.liteAccent.opacity(0.15)
-                            : Color.liteAccent
-                    )
-                    .clipShape(.rect(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(
-                                username.isEmpty || password.isEmpty
-                                    ? Color.liteBorder
-                                    : Color.liteAccent,
-                                lineWidth: 1.5
-                            )
-                    )
-                    .shadow(
-                        color: username.isEmpty || password.isEmpty
-                            ? .clear
-                            : Color.liteAccent.opacity(0.25),
-                        radius: 10, x: 0, y: 5
-                    )
+                    .textContentType(.password)
+                    .submitLabel(.go)
+                    .focused($focus, equals: .password)
+                    .onSubmit(signIn)
+
+                    Button {
+                        showPassword.toggle()
+                    } label: {
+                        Image(systemName: showPassword ? "eye.slash" : "eye")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 30, height: 30)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(showPassword ? Text("Hide password") : Text("Show password"))
                 }
-                .disabled(username.isEmpty || password.isEmpty || isLoading)
-                .animation(.easeInOut(duration: 0.2), value: username.isEmpty || password.isEmpty)
-                .padding(.horizontal, 28)
-                .padding(.top, 20)
+            }
+            .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .strokeBorder(Color.liteBorder, lineWidth: 1)
+            }
+            .shadow(color: Color.liteAccent.opacity(0.06), radius: 20, x: 0, y: 8)
+            .modifier(Shake(amount: CGFloat(shakes)))
 
-                Spacer()
-                Spacer()
+            if showError {
+                Label("Invalid credentials", systemImage: "exclamationmark.circle.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
 
-                // MARK: Footer
-                Text("V 1.0")
-                    .font(.system(size: 10, weight: .medium))
-                    .tracking(2)
-                    .foregroundStyle(Color.liteAccent.opacity(0.25))
-                    .padding(.bottom, 32)
+            Button(action: signIn) {
+                ZStack {
+                    if isLoading {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text("Sign in")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(Color.liteAccent.opacity(canSubmit || isLoading ? 1 : 0.3),
+                            in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: Color.liteAccent.opacity(canSubmit ? 0.25 : 0), radius: 12, x: 0, y: 6)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmit)
+            .animation(.easeInOut(duration: 0.2), value: canSubmit)
+        }
+        .animation(.snappy(duration: 0.25), value: showError)
+    }
+
+    private func row<Content: View>(icon: String, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            content()
+                .font(.system(size: 17))
+                .foregroundStyle(Color.liteText)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 54)
+    }
+
+    // MARK: - Piè di pagina
+
+    private var footer: some View {
+        HStack(spacing: 8) {
+            Image("AriaLite")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            Text(verbatim: "Sinaura · v\(version)")
+                .font(.system(size: 12))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.bottom, 12)
+    }
+
+    // MARK: - Accesso
+
+    private func signIn() {
+        guard canSubmit else { return }
+        focus = nil
+        isLoading = true
+        showError = false
+        // FAKE: login locale sui dati mock; il breve attesa lascia vedere la sfera che "pensa".
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            let ok = viewModel.login(username: username.trimmingCharacters(in: .whitespaces), password: password)
+            isLoading = false
+            if !ok {
+                showError = true
+                withAnimation(.linear(duration: 0.4)) { shakes += 1 }
+                focus = .password
             }
         }
-        .preferredColorScheme(.light)
     }
 }
 
+/// Scuote orizzontalmente la card quando le credenziali sono sbagliate.
+private struct Shake: GeometryEffect {
+    var amount: CGFloat
+    var animatableData: CGFloat {
+        get { amount }
+        set { amount = newValue }
+    }
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: 8 * sin(amount * .pi * 4), y: 0))
+    }
+}
 
 #Preview {
     LoginView(viewModel: AppViewModel())

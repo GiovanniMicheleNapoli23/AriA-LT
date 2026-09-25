@@ -19,13 +19,16 @@ class AppViewModel {
 
     /// Connessione al backend Aria (chat reale). Indipendente dal login locale qui sotto.
     let backend: AriaBackend
-    /// Chat principale (tab Assistant): resta viva tra un cambio di tab e l'altro.
+    /// Chat principale: resta viva tra un cambio di sezione e l'altro.
     let mainChat: AriaAgentChat
+    /// Conversazioni salvate: sidebar (Fissate / Recenti) e schermata Chat.
+    let sessions: AriaSessionStore
 
     init() {
         let backend = AriaBackend()
         self.backend = backend
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
+        sessions = AriaSessionStore(backend: backend)
     }
 
     // MARK: - Auth
@@ -46,6 +49,7 @@ class AppViewModel {
         submissionStatus = .idle
         // Un altro operatore sullo stesso device non eredita la sessione Aria.
         mainChat.newConversation()
+        sessions.reset()
         Task { await backend.signOut() }
     }
 

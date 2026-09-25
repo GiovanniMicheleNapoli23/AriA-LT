@@ -52,6 +52,6 @@ struct WorkOrderRowView: View {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 }

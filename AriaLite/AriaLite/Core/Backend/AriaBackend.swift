@@ -6,7 +6,6 @@
 //  È separato dal login locale (mock) dell'app: la chat usa il backend solo
 //  quando `isReady`, altrimenti ricade sul motore locale.
 //
-
 import Foundation
 import Observation
 
@@ -20,6 +19,9 @@ final class AriaBackend {
     private(set) var activePlantId: String?
     private(set) var isLoading = false
     var lastError: String?
+    /// Email a cui è stato mandato il link di accesso, finché il link è valido (10').
+    /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
+    private(set) var pendingLinkEmail: String?
 
     @ObservationIgnored private var didBootstrap = false
 
@@ -29,7 +31,15 @@ final class AriaBackend {
         isSignedIn = api.auth.hasStoredSession
         activeCompanyId = UserDefaults.standard.string(forKey: "aria.company_id")
         activePlantId = UserDefaults.standard.string(forKey: "aria.plant_id")
+        if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,
+           sentAt.timeIntervalSinceNow > -Self.linkLifetime {
+            pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
+        }
     }
+
+    private static let linkEmailKey = "aria.magic_link_email"
+    private static let linkSentAtKey = "aria.magic_link_sent_at"
+    private static let linkLifetime: TimeInterval = 10 * 60
 
     /// La chat può parlare col backend: serve una sessione e uno stabilimento (`plant_id` è obbligatorio).
     var isReady: Bool { isSignedIn && activePlantId != nil }
@@ -45,15 +55,49 @@ final class AriaBackend {
 
     // MARK: Login
 
-    func startLogin(email: String) async throws {
-        try await api.auth.startLogin(email: Self.normalized(email))
+    func sendMagicLink(email: String, captcha: String) async throws {
+        let email = Self.normalized(email)
+        try await api.auth.sendMagicLink(email: email, captcha: captcha, locale: api.context.locale)
+        setPendingLink(email)
     }
 
-    func verify(email: String, code: String) async throws {
-        try await api.auth.verify(email: Self.normalized(email), code: code.trimmingCharacters(in: .whitespaces))
+    /// Torna al passo dell'email (per chiedere un nuovo link).
+    func cancelPendingLink() {
+        setPendingLink(nil)
+    }
+
+    private func setPendingLink(_ email: String?) {
+        pendingLinkEmail = email
+        UserDefaults.standard.set(email, forKey: Self.linkEmailKey)
+        UserDefaults.standard.set(email == nil ? nil : Date.now, forKey: Self.linkSentAtKey)
+    }
+
+    /// Il link di accesso contenuto in un testo incollato, se c'è.
+    func magicLink(in text: String) -> URL? {
+        api.auth.magicLink(in: text)
+    }
+
+    func completeSignIn(with link: URL) async throws {
+        try await api.auth.completeSignIn(with: link)
+        setPendingLink(nil)
         isSignedIn = true
         await bootstrap()
     }
+
+    #if DEBUG
+    /// Solo sviluppo: il link arriva come argomento di avvio, perché gli appunti Mac ↔ simulatore
+    /// a volte non funzionano:
+    /// xcrun simctl launch --terminate-running-process booted com.giovanniMichele.AriaLite -AriaMagicLink "<link>"
+    func signInWithLaunchLink() async {
+        guard let raw = UserDefaults.standard.string(forKey: "AriaMagicLink"),
+              let link = magicLink(in: raw) else { return }
+        do {
+            try await completeSignIn(with: link)
+        } catch {
+            handle(error)
+        }
+    }
+    #endif
 
     /// Solo sviluppo: token copiato dalla web (GET /api/aria/token).
     func useDeveloperToken(_ token: String) async throws {

@@ -16,12 +16,16 @@ struct AriaAgentMessageView: View {
     let chat: AriaAgentChat
     let webBase: URL
     var isLast: Bool
+    /// Per l'animazione "hero" dalla sfera della chat vuota a quella sotto l'ultima risposta.
+    var orbNamespace: Namespace.ID? = nil
 
     @Environment(\.openURL) private var openURL
     @State private var showReasoning = false
     @State private var showSources = false
     @State private var showFacts = false
     @State private var copied = false
+    /// Tocchi che non mandano un turno (leggi ad alta voce, tieni/scarta un ricordo): l'invio lo segnala la chat.
+    @State private var taps = 0
     @State private var downNote = ""
     @State private var askingDownNote = false
 
@@ -31,6 +35,11 @@ struct AriaAgentMessageView: View {
             quick: { chat.sendQuick(label: $0, tool: $1, args: $2) },
             open: { path in open(path) }
         )
+    }
+
+    /// Aria sta lavorando ma non ha ancora scritto niente.
+    private var isThinking: Bool {
+        !message.finished && message.displayText.isEmpty
     }
 
     var body: some View {
@@ -58,72 +67,89 @@ struct AriaAgentMessageView: View {
 
     // MARK: Assistente
 
+    /// Come Claude: il testo occupa tutta la larghezza e il blob di Aria sta sotto l'ultima risposta.
     private var assistant: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image("AriaBlobIcon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 28, height: 28)
-                .shadow(color: Color.accentColor.opacity(0.2), radius: 3)
+        VStack(alignment: .leading, spacing: 10) {
+            if !message.toolCalls.isEmpty { activityStrip }
+            if !message.sources.isEmpty { sources }
+            if !message.reasoning.isEmpty { reasoning }
 
-            VStack(alignment: .leading, spacing: 10) {
-                if !message.toolCalls.isEmpty { activityStrip }
-                if !message.sources.isEmpty { sources }
-                if !message.reasoning.isEmpty { reasoning }
-
-                if !message.displayText.isEmpty {
-                    AriaMarkdownView(text: message.displayText)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 11)
-                        .background(Color(.secondarySystemGroupedBackground),
-                                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                } else if !message.finished {
-                    AriaTypingDots()
-                }
-
-                if !message.memoryFactsUsed.isEmpty { factsUsed }
-
-                ForEach(message.artifacts.filter(\.isDeliverable)) { AriaArtifactView(artifact: $0, actions: actions) }
-                ForEach(message.artifacts.filter { !$0.isDeliverable }) { AriaArtifactView(artifact: $0, actions: actions) }
-
-                if !message.images.isEmpty { images }
-                cmmsNotices
-
-                if let list = message.taskList {
-                    AriaTaskChecklistCard(list: list, messageId: message.id, chat: chat,
-                                          isLatest: chat.latestTaskList?.messageId == message.id)
-                }
-
-                if !message.uiActions.isEmpty { actionBar }
-
-                if message.finished, !message.memoryLearned.isEmpty {
-                    Label(String(localized: "Aria learned \(message.memoryLearned.count) new facts"), systemImage: "brain")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                }
-                ForEach(message.memoryProposals) { memoryProposal($0) }
-
-                if let interrupt = message.interrupt, interrupt.kind != .loto, !chat.isStreaming {
-                    AriaApprovalCard(interrupt: interrupt) { chat.resume($0) }
-                } else if let outcome = message.interruptOutcome {
-                    AriaInterruptOutcomeLine(outcome: outcome)
-                }
-
-                if let error = message.error {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.red)
-                }
-
-                if message.finished, !message.displayText.isEmpty || !message.artifacts.isEmpty {
-                    toolbar
-                }
-                if isLast, message.finished, message.interrupt == nil, chat.activeElicitation == nil {
-                    followUps
-                }
+            if !message.displayText.isEmpty {
+                // Senza bolla: la bolla è solo per i messaggi dell'operatore.
+                AriaMarkdownView(text: message.displayText)
+                    .padding(.top, 4)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !message.memoryFactsUsed.isEmpty { factsUsed }
+
+            ForEach(message.artifacts.filter(\.isDeliverable)) { AriaArtifactView(artifact: $0, actions: actions) }
+            ForEach(message.artifacts.filter { !$0.isDeliverable }) { AriaArtifactView(artifact: $0, actions: actions) }
+
+            if !message.images.isEmpty { images }
+            cmmsNotices
+
+            // Con la domanda nella stessa risposta la checklist vive solo nel pannello in basso
+            // (AriaProcedureDock): in chat sarebbe un doppione.
+            if let list = message.taskList, message.elicitation == nil {
+                AriaTaskChecklistCard(list: list, messageId: message.id, chat: chat,
+                                      isLatest: chat.latestTaskList?.messageId == message.id)
+            }
+
+            if !message.uiActions.isEmpty { actionBar }
+
+            if message.finished, !message.memoryLearned.isEmpty {
+                Label(String(localized: "Aria learned \(message.memoryLearned.count) new facts"), systemImage: "brain")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+            ForEach(message.memoryProposals) { memoryProposal($0) }
+
+            // Il pannello in fondo la pone già per l'ultima risposta: il chip serve per riaprirla da qui.
+            if !chat.isStreaming, chat.canAnswerLearning(message), chat.activeLearning?.messageId != message.id {
+                AriaLearningChip { chat.openLearning(message.id) }
+            }
+
+            if let interrupt = message.interrupt, interrupt.kind != .loto, !chat.isStreaming {
+                AriaApprovalCard(interrupt: interrupt) { chat.resume($0) }
+            } else if let outcome = message.interruptOutcome {
+                AriaInterruptOutcomeLine(outcome: outcome)
+            }
+
+            if let error = message.error {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.red)
+            }
+
+            if message.finished, !message.displayText.isEmpty || !message.artifacts.isEmpty {
+                toolbar
+            }
+            if isLast, message.finished, message.interrupt == nil, chat.activeElicitation == nil {
+                followUps
+            }
+
+            // La sfera chiude sempre l'ultima risposta e scende insieme al testo che cresce;
+            // "Thinking" le sta accanto solo finché non arriva il testo.
+            if isLast {
+                HStack(spacing: 10) {
+                    AriaOrb(mood: message.finished ? .idle : .thinking)
+                        .ariaOrbHero(orbNamespace)
+                        .frame(width: 28, height: 28)
+                        .shadow(color: Color.accentColor.opacity(0.2), radius: 3)
+                        .accessibilityHidden(true)
+                    if isThinking {
+                        AriaThinkingText()
+                            .transition(.opacity)
+                    }
+                }
+                .padding(.top, 2)
+                .animation(.easeInOut(duration: 0.25), value: isThinking)
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .ariaLinks(webBase)
+        .sensoryFeedback(.success, trigger: copied) { _, new in new }
+        .sensoryFeedback(.selection, trigger: message.vote)
+        .sensoryFeedback(.impact(weight: .light), trigger: taps)
         .alert("What was wrong?", isPresented: $askingDownNote) {
             TextField("Optional note", text: $downNote)
             Button("Cancel", role: .cancel) { downNote = "" }
@@ -298,10 +324,10 @@ struct AriaAgentMessageView: View {
                 Text(reason).font(.system(size: 12)).foregroundStyle(.secondary)
             }
             HStack {
-                Button("Discard") { chat.confirmMemory(proposal, in: message.id, accept: false) }
+                Button("Discard") { taps += 1; chat.confirmMemory(proposal, in: message.id, accept: false) }
                     .buttonStyle(.bordered)
                 Spacer()
-                Button("Keep") { chat.confirmMemory(proposal, in: message.id, accept: true) }
+                Button("Keep") { taps += 1; chat.confirmMemory(proposal, in: message.id, accept: true) }
                     .buttonStyle(.borderedProminent)
             }
             .controlSize(.small)
@@ -309,7 +335,7 @@ struct AriaAgentMessageView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 2) {
             Button {
                 UIPasteboard.general.string = message.displayText
                 copied = true
@@ -320,6 +346,7 @@ struct AriaAgentMessageView: View {
             .accessibilityLabel("Copy")
             Button {
                 AriaSpeech.shared.toggle(message.displayText)
+                taps += 1
             } label: {
                 Image(systemName: "speaker.wave.2")
             }
@@ -350,10 +377,10 @@ struct AriaAgentMessageView: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .font(.system(size: 13))
+        .font(.system(size: 14))
         .foregroundStyle(.secondary)
-        .buttonStyle(.plain)
-        .padding(.horizontal, 4)
+        .buttonStyle(AriaIconButtonStyle())
+        .padding(.leading, -8)
     }
 
     private var followUps: some View {
@@ -390,27 +417,53 @@ struct AriaAgentMessageView: View {
     }
 }
 
-// MARK: - Indicatore di digitazione
+/// Icona piccola ma con un'area di tocco da 36 pt (si usa anche con i guanti).
+struct AriaIconButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.5 : 1)
+    }
+}
 
-struct AriaTypingDots: View {
-    @State private var animating = false
+// MARK: - Indicatore di ragionamento
+
+/// "Thinking" con una luce che scorre sul testo, al posto dei tre pallini.
+struct AriaThinkingText: View {
+    var label: LocalizedStringKey = "Thinking"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Color.accentColor.opacity(0.5))
-                    .frame(width: 7, height: 7)
-                    .scaleEffect(animating ? 1.2 : 0.8)
-                    .opacity(animating ? 1.0 : 0.4)
-                    .animation(.easeInOut(duration: 0.48).repeatForever(autoreverses: true).delay(Double(i) * 0.16),
-                               value: animating)
-            }
+        TimelineView(.animation(paused: reduceMotion)) { context in
+            let period = 1.8
+            let phase = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) / period
+            // La luce entra da sinistra ed esce a destra (oltre i bordi del testo).
+            let x = reduceMotion ? 0.5 : -0.4 + phase * 1.8
+
+            Text(label)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(shine(at: x, base: Color(.tertiaryLabel), light: Color(.label)))
+                .background {
+                    Text(label)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(shine(at: x, base: .clear, light: Color.accentColor.opacity(0.7)))
+                        .blur(radius: 6)
+                }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .onAppear { animating = true }
+        .padding(.vertical, 6)
+        .accessibilityLabel(Text(label))
+    }
+
+    /// Gradiente largo il doppio del testo, con la luce al centro: spostandolo, la luce scorre.
+    private func shine(at x: Double, base: Color, light: Color) -> LinearGradient {
+        LinearGradient(stops: [
+            .init(color: base, location: 0),
+            .init(color: base, location: 0.38),
+            .init(color: light, location: 0.5),
+            .init(color: base, location: 0.62),
+            .init(color: base, location: 1),
+        ], startPoint: UnitPoint(x: x - 1, y: 0.5), endPoint: UnitPoint(x: x + 1, y: 0.5))
     }
 }
 

@@ -32,6 +32,10 @@ struct AriaAgentMessage: Identifiable {
     var memoryFactsUsed: [String] = []
     var memoryLearned: [AriaMemoryLearned] = []
     var memoryProposals: [AriaMemoryProposal] = []
+    /// Verdetto del gate di confidenza, con l'eventuale domanda del Real-time Learning.
+    var answerConfidence: AriaAnswerConfidence? = nil
+    /// `aria.validation_request` arrivato prima del verdetto: si aggancia appena arriva.
+    var pendingValidationRequest: AriaValidationRequest? = nil
     var pipeline: [AriaPipelineEntry] = []
     var interrupt: AriaInterrupt? = nil
     var interruptOutcome: AriaInterruptOutcome? = nil
@@ -51,8 +55,25 @@ struct AriaAgentMessage: Identifiable {
         AriaAgentMessage(id: UUID().uuidString, role: .assistant, finished: false)
     }
 
-    /// Testo da mostrare: il blocco ```elicit``` diventa il pannello di domande, non testo.
-    var displayText: String { Self.stripElicitBlock(text) }
+    /// Testo da mostrare: il blocco ```elicit``` diventa il pannello di domande, non testo,
+    /// e gli elenchi che ripetono le opzioni della domanda o i task della checklist si tolgono
+    /// (stanno già nel pannello in basso).
+    var displayText: String {
+        let stripped = Self.stripElicitBlock(text)
+        let options = elicitation.map { question in
+            (question.options + (question.steps ?? []).flatMap(\.options)).flatMap { [$0.label] + [$0.description].compactMap { $0 } }
+        } ?? []
+        let tasks = taskList?.tasks.map(\.text) ?? []
+        guard !options.isEmpty || !tasks.isEmpty else { return stripped }
+        return AriaPanelDedup.strip(stripped, options: options, tasks: tasks,
+                                    headings: [taskList?.stepTitle].compactMap { $0 })
+    }
+
+    /// La domanda del Real-time Learning di questa risposta (answerConfidence.validation_request della web).
+    var validationRequest: AriaValidationRequest? { answerConfidence?.validationRequest }
+
+    /// Ricostruito dallo storico: gli id `db-` non coincidono con quelli del turno dal vivo.
+    var isHydrated: Bool { id.hasPrefix("db-") }
 
     /// Non c'è ancora niente da mostrare: al suo posto l'indicatore di digitazione.
     var isAwaitingContent: Bool {
@@ -100,6 +121,16 @@ struct AriaAgentMessage: Identifiable {
             memoryLearned += items
         case .memoryProposal(let proposal):
             if !memoryProposals.contains(where: { $0.factId == proposal.factId }) { memoryProposals.append(proposal) }
+        case .answerConfidence(var verdict):
+            // Si unisce, non si sostituisce: dev manda il verdetto due volte (con la domanda, poi senza)
+            // e val-dev-2 manda la domanda in un frame a parte. La si tiene solo se serve ancora validare.
+            if verdict.validationRequest == nil, verdict.needsValidation {
+                verdict.validationRequest = answerConfidence?.validationRequest ?? pendingValidationRequest
+            }
+            answerConfidence = verdict
+            pendingValidationRequest = nil
+        case .validationRequest(let request):
+            if answerConfidence == nil { pendingValidationRequest = request } else { answerConfidence?.validationRequest = request }
         case .diagnosticState(let number):
             if let number { episode = number }
         case .interrupt(let pause):

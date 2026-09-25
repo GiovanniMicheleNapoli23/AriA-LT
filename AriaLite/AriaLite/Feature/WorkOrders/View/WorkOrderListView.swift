@@ -119,12 +119,10 @@ struct WorkOrderListContent: View {
 
 struct WorkOrderListView: View {
     let viewModel: AppViewModel
-    let user: User
 
     @State private var workOrderToStart: WorkOrder?
     @State private var selectedWorkOrder: WorkOrder?
     @State private var showMaintenanceMode = false
-    @State private var showSettingsSheet = false
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -146,20 +144,13 @@ struct WorkOrderListView: View {
                 }
             }
             .liteBackground()
-            .navigationTitle("Work Orders")
+            .navigationTitle("Tasks")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showSettingsSheet = true
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
-                    .tint(Color.liteAccent)
-                }
+                ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
             }
             .searchable(
                 text: $viewModel.searchText,
-                prompt: Text("Search work orders...")
+                prompt: Text("Search tasks...")
             )
         }
         .workOrderStartFlow(
@@ -168,9 +159,6 @@ struct WorkOrderListView: View {
             showMaintenanceMode: $showMaintenanceMode,
             viewModel: viewModel
         )
-        .sheet(isPresented: $showSettingsSheet) {
-            SettingsSheet(user: user, viewModel: viewModel)
-        }
     }
 
     // MARK: - Scheduled list (Today + Past)
@@ -191,7 +179,7 @@ struct WorkOrderListView: View {
                 if viewModel.todayWorkOrders.isEmpty {
                     emptyState(
                         icon: "tray",
-                        message: String(localized: "No work orders for today")
+                        message: String(localized: "No tasks for today")
                     )
                 } else {
                     WorkOrderListContent(
@@ -206,7 +194,7 @@ struct WorkOrderListView: View {
                 if !viewModel.pastWorkOrdersByDay.isEmpty {
                     sectionHeader(
                         title: String(localized: "Past"),
-                        subtitle: String(localized: "\(viewModel.pastWorkOrdersByDay.flatMap(\.value).count) archived work orders"),
+                        subtitle: String(localized: "\(viewModel.pastWorkOrdersByDay.flatMap(\.value).count) archived tasks"),
                         icon: "clock.arrow.circlepath",
                         color: .secondary
                     )
@@ -241,7 +229,7 @@ struct WorkOrderListView: View {
 
     private var todaySubtitle: String {
         let count = viewModel.todayWorkOrders.count
-        return count == 0 ? String(localized: "No scheduled activities") : String(localized: "\(count) scheduled activities")
+        return count == 0 ? String(localized: "No scheduled tasks") : String(localized: "\(count) scheduled tasks")
     }
 
     @ViewBuilder

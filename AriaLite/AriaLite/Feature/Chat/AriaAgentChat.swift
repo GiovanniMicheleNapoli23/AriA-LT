@@ -25,6 +25,8 @@ final class AriaAgentChat {
         didSet { UserDefaults.standard.set(style.rawValue, forKey: Self.styleKey) }
     }
     var webSearch = false
+    /// Foto e file aggiunti dal "+" del composer (solo interfaccia, come sulla web: vedi AriaContextItem).
+    var contextItems: [AriaContextItem] = []
 
     /// Task spuntati, per messaggio: "<messageId>:<taskId>".
     private(set) var checkedTasks: Set<String> = []
@@ -33,6 +35,12 @@ final class AriaAgentChat {
     private(set) var answeredElicitations: Set<String> = []
     /// Closeout proposto dalla review di fine sessione, da mostrare in un foglio.
     var pendingCloseout: AriaCloseoutChoice?
+    /// Cosa ha imparato Aria dall'ultima risposta al Real-time Learning (o il salvataggio in corso).
+    private(set) var learningOutcome: AriaLearningOutcome?
+    /// Domanda di Real-time Learning riaperta a mano dal chip di un messaggio.
+    private(set) var openedLearningId: String?
+    /// Cresce a ogni tocco sul chip: la vista riapre il pannello anche se era ridotto a pillola.
+    private(set) var learningReveal = 0
 
     @ObservationIgnored private var streamTask: Task<Void, Never>?
     @ObservationIgnored private let backend: AriaBackend
@@ -73,6 +81,47 @@ final class AriaAgentChat {
         return (last.id, question)
     }
 
+    /// Domanda del Real-time Learning da porre (resolveActiveValidationRequest della web): quella riaperta
+    /// dal chip, altrimenti quella dell'ultima risposta, finita e non ancora risposta. Una risposta ricaricata
+    /// dallo storico non la ripropone da sola: resta a un tocco dal suo chip.
+    var activeLearning: (messageId: String, request: AriaValidationRequest, manual: Bool)? {
+        guard !isStreaming, learningOutcome == nil else { return nil }
+        if let id = openedLearningId, let message = messages.first(where: { $0.id == id }),
+           let request = message.validationRequest, canAnswerLearning(message) {
+            return (id, request, true)
+        }
+        guard let last = messages.last(where: { $0.role == .assistant }), last.finished, last.interrupt == nil,
+              !last.isHydrated, let request = last.validationRequest, canAnswerLearning(last) else { return nil }
+        return (last.id, request, false)
+    }
+
+    /// Il chip "Aria non è sicura" sotto una risposta: finché la domanda non ha avuto risposta.
+    func canAnswerLearning(_ message: AriaAgentMessage) -> Bool {
+        message.finished && message.validationRequest != nil
+            && !answeredElicitations.contains("validation-\(message.id)")
+            && learningOutcome?.id != "validation-\(message.id)"
+    }
+
+    /// La checklist che arriva nella stessa risposta della domanda: finché non è tutta spuntata
+    /// la domanda (di solito "hai fatto tutto?") non si può ancora rispondere.
+    var blockingTaskList: (messageId: String, list: AriaTaskList)? {
+        guard let (messageId, _) = activeElicitation, let latest = latestTaskList, latest.messageId == messageId,
+              latest.list.tasks.contains(where: { !isTaskChecked($0, in: messageId) }) else { return nil }
+        return latest
+    }
+
+    /// Gli step di procedura della sessione, dal più recente (il "Task & Event Rail" della web):
+    /// per ogni step solo l'ultima revisione, che è quella su cui si spunta.
+    var sessionTaskLists: [(messageId: String, list: AriaTaskList)] {
+        var seen = Set<String>()
+        var result: [(messageId: String, list: AriaTaskList)] = []
+        for message in messages.reversed() {
+            guard let list = message.taskList, seen.insert("\(list.agent ?? ""):\(list.stepNumber)").inserted else { continue }
+            result.append((message.id, list))
+        }
+        return result
+    }
+
     /// Checklist più recente (per il contesto nelle istruzioni e il pulsante "Fine procedura").
     var latestTaskList: (messageId: String, list: AriaTaskList)? {
         for message in messages.reversed() {
@@ -87,6 +136,9 @@ final class AriaAgentChat {
     func send(_ text: String, toolCall: AriaToolCallRequest? = nil) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !isStreaming, pendingInterrupt == nil, !trimmed.isEmpty || toolCall != nil else { return }
+        // Un turno nuovo chiude la card "Aria ha imparato": la prossima risposta può avere la sua domanda.
+        dismissLearningOutcome()
+        openedLearningId = nil
 
         var input = trimmed
         if let context, !didSendContext, toolCall == nil {
@@ -152,22 +204,29 @@ final class AriaAgentChat {
         stop()
         sessionId = AriaNanoID.make()
         messages = []
+        contextItems = []
         checkedTasks = []
         taskMarks = [:]
         answeredElicitations = []
+        learningOutcome = nil
+        openedLearningId = nil
         didSendContext = false
         lastError = nil
         if remembersSession { UserDefaults.standard.removeObject(forKey: Self.currentSessionKey) }
     }
 
     /// Apre una conversazione salvata: messaggi e, se c'è, la pausa in attesa.
-    func open(sessionId: String) async {
+    /// `forgetIfMissing`: una sessione che il server non conosce più (404) si dimentica senza errore.
+    func open(sessionId: String, forgetIfMissing: Bool = false) async {
         stop()
         self.sessionId = sessionId
         messages = []
+        contextItems = []
         checkedTasks = []
         taskMarks = [:]
         answeredElicitations = []
+        learningOutcome = nil
+        openedLearningId = nil
         didSendContext = true
         lastError = nil
         isLoadingHistory = true
@@ -190,6 +249,8 @@ final class AriaAgentChat {
             }
             messages = restored
             rememberSession()
+        } catch AriaError.http(status: 404, _) where forgetIfMissing {
+            newConversation()
         } catch {
             handle(error)
         }
@@ -198,7 +259,7 @@ final class AriaAgentChat {
     /// Riprende l'ultima conversazione all'avvio, se l'app ne ricorda una.
     func restoreIfNeeded() async {
         guard hasRememberedSession, messages.isEmpty, !isLoadingHistory else { return }
-        await open(sessionId: sessionId)
+        await open(sessionId: sessionId, forgetIfMissing: true)
     }
 
     private func rememberSession() {
@@ -337,6 +398,76 @@ final class AriaAgentChat {
         }
     }
 
+    // MARK: - Real-time Learning
+
+    /// Riapre dal chip la domanda di una risposta precedente.
+    func openLearning(_ messageId: String) {
+        guard let message = messages.first(where: { $0.id == messageId }), canAnswerLearning(message) else { return }
+        dismissLearningOutcome()
+        openedLearningId = messageId
+        learningReveal += 1
+    }
+
+    /// Risposta al Real-time Learning: chiarisce un dubbio e diventa conoscenza dello stabilimento.
+    /// Non entra nella conversazione (niente turno, niente risposta), così la procedura non si interrompe.
+    /// Segnata come risposta solo a salvataggio riuscito: se fallisce, la domanda torna per riprovare.
+    func answerLearning(messageId: String, request: AriaValidationRequest, feedback: String) {
+        let id = "validation-\(messageId)"
+        guard let message = messages.first(where: { $0.id == messageId }) else { return }
+        guard let companyId = backend.activeCompanyId, let plantId = backend.activePlantId else {
+            lastError = String(localized: "Select a plant before answering — this is saved to the plant's knowledge.")
+            return
+        }
+        let feedback = feedback.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !feedback.isEmpty else { return }
+        let outcome = AriaLearningOutcome(id: id, question: request.question, answer: message.text)
+        learningOutcome = outcome
+        let sessionId = self.sessionId
+        let api = self.api
+        Task {
+            do {
+                let response = try await api.submitValidation(companyId: companyId, plantId: plantId, sessionId: sessionId,
+                                                              question: request.question, answer: message.text,
+                                                              feedback: feedback)
+                answeredElicitations.insert(id)
+                if openedLearningId == messageId { openedLearningId = nil }
+                // Nel frattempo è partito un turno nuovo: la card non serve più.
+                guard learningOutcome?.id == id else { return }
+                learningOutcome?.response = response
+            } catch {
+                if learningOutcome?.id == id { learningOutcome = nil }
+                lastError = String(localized: "Could not save to Aria's learned knowledge.")
+                backend.handle(error)
+            }
+        }
+    }
+
+    /// "Non ora" sulla domanda riaperta dal chip: torna quella automatica (se c'è).
+    func closeOpenedLearning() {
+        openedLearningId = nil
+    }
+
+    func dismissLearningOutcome() {
+        guard learningOutcome?.isSaving != true else { return }
+        learningOutcome = nil
+    }
+
+    /// "Notifica": manda i fatti ancora in proposta agli amministratori perché li validino.
+    /// Restano in attesa: li approva solo un amministratore.
+    func notifyLearning(_ factIds: [String]) async -> Bool {
+        guard let companyId = backend.activeCompanyId, !factIds.isEmpty else { return false }
+        do {
+            for factId in factIds {
+                try await api.confirmMemory(companyId: companyId, factId: factId, accept: true)
+            }
+            notice = String(localized: "Sent for validation — an admin will review it.")
+            return true
+        } catch {
+            lastError = String(localized: "Could not send it for validation.")
+            return false
+        }
+    }
+
     // MARK: - Closeout
 
     func closeout(_ request: AriaCloseoutRequest) async throws -> AriaCloseoutResult {
@@ -372,15 +503,34 @@ final class AriaAgentChat {
         lastError = nil
         let api = backend.api
         streamTask = Task(name: "aria.chat.turn") {
+            // I pezzi di testo si applicano a blocchi ogni 50 ms: in una chat lunga ridisegnare
+            // a ogni token faceva restare indietro il testo anche di mezzo secondo.
+            let batch = TextBatch()
+            let flusher = Task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(50))
+                    flush(batch, into: messageId)
+                }
+            }
+            defer { flusher.cancel() }
             do {
                 let ctx = await api.context.snapshot()
                 guard let plantId = ctx.plantId, !plantId.isEmpty else { throw AriaError.missingPlant }
                 onSent()
                 for try await event in api.stream(makeRequest(plantId, ctx)) {
+                    if case .textDelta(let delta) = event {
+                        batch.pending += delta
+                        continue
+                    }
+                    // Qualunque altro evento (tool, card, testo finale) arriva dopo il testo già ricevuto.
+                    flush(batch, into: messageId)
                     update(messageId) { $0.apply(event) }
+                    AriaStreamTrace.event("apply", String(describing: event).prefix(while: { $0 != "(" }).description)
                 }
+                flush(batch, into: messageId)
                 update(messageId) { $0.finished = true }
             } catch {
+                flush(batch, into: messageId)
                 let cancelled = Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled
                 update(messageId) { m in
                     m.finished = true
@@ -399,6 +549,14 @@ final class AriaAgentChat {
         }
     }
 
+    private func flush(_ batch: TextBatch, into messageId: String) {
+        guard !batch.pending.isEmpty else { return }
+        let text = batch.pending
+        batch.pending = ""
+        update(messageId) { $0.apply(.textDelta(text)) }
+        AriaStreamTrace.event("apply", "textDelta", bytes: text.utf8.count)
+    }
+
     private func update(_ id: String, _ mutate: (inout AriaAgentMessage) -> Void) {
         guard let i = messages.firstIndex(where: { $0.id == id }) else { return }
         mutate(&messages[i])
@@ -408,6 +566,11 @@ final class AriaAgentChat {
         lastError = error.localizedDescription
         backend.handle(error)
     }
+}
+
+/// Testo arrivato dallo stream e non ancora mostrato.
+private final class TextBatch {
+    var pending = ""
 }
 
 enum AriaStepAssist: String, CaseIterable {
@@ -464,4 +627,19 @@ struct AriaCloseoutChoice: Identifiable {
             }
         }
     }
+}
+
+/// La card che prende il posto della domanda di Real-time Learning appena risposta (LearningResult della web).
+struct AriaLearningOutcome: Identifiable, Equatable {
+    /// `validation-<messageId>`.
+    let id: String
+    let question: String
+    /// La risposta di Aria che l'operatore ha validato.
+    let answer: String
+    /// nil finché il salvataggio è in corso.
+    var response: AriaMemoryValidationResponse? = nil
+
+    var isSaving: Bool { response == nil }
+    var items: [AriaMemoryValidationResponse.Item] { response?.items ?? [] }
+    var learnedSomething: Bool { items.contains { !$0.isProposed } }
 }

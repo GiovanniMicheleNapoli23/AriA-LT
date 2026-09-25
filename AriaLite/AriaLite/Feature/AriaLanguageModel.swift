@@ -17,8 +17,10 @@ import FoundationModels
 @MainActor
 final class AriaLanguageModel {
 
+    // `Any?` invece del tipo diretto: una proprietà archiviata non può essere marcata @available,
+    // ma il tipo reale esiste solo da iOS 26 in poi.
     #if canImport(FoundationModels)
-    private var session: LanguageModelSession?
+    private var session: Any?
     #endif
 
     // Persona / system instructions del modello.
@@ -31,7 +33,7 @@ final class AriaLanguageModel {
     /// True se il modello on-device (Apple Intelligence) è pronto all'uso.
     static var isAvailable: Bool {
         #if canImport(FoundationModels)
-        if case .available = SystemLanguageModel.default.availability { return true }
+        if #available(iOS 26.0, *), case .available = SystemLanguageModel.default.availability { return true }
         #endif
         return false
     }
@@ -41,7 +43,7 @@ final class AriaLanguageModel {
     /// Genera una risposta. Restituisce nil se il modello non è disponibile o in caso di errore.
     func reply(to userMessage: String, context: String?) async -> String? {
         #if canImport(FoundationModels)
-        guard case .available = SystemLanguageModel.default.availability else { return nil }
+        guard #available(iOS 26.0, *), case .available = SystemLanguageModel.default.availability else { return nil }
         do {
             let session = ensureSession()
             let prompt: String
@@ -76,8 +78,9 @@ final class AriaLanguageModel {
     }
 
     #if canImport(FoundationModels)
+    @available(iOS 26.0, *)
     private func ensureSession() -> LanguageModelSession {
-        if let session { return session }
+        if let existing = session as? LanguageModelSession { return existing }
         let created = LanguageModelSession(instructions: instructions)
         session = created
         return created
