@@ -103,7 +103,7 @@ struct VoiceSessionOverlay: View {
     }
 
     private var statusText: String {
-        if voice.isConnecting { return "CONNECTING…" }
-        return voice.isConnected ? "LIVE" : "OFFLINE"
+        if voice.isConnecting { return String(localized: "CONNECTING…") }
+        return voice.isConnected ? String(localized: "LIVE") : String(localized: "OFFLINE")
     }
 }

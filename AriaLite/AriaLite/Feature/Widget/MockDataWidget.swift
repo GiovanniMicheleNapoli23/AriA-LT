@@ -7,12 +7,19 @@
 
 import Foundation
 import SwiftUI
-
 // MARK: - Period
 enum TimePeriod: String, CaseIterable {
-    case today    = "Oggi"
-    case week     = "Settimana"
-    case month    = "Mese"
+    case today    = "Today"
+    case week     = "Week"
+    case month    = "Month"
+
+    var localized: String {
+        switch self {
+        case .today: return String(localized: "Today")
+        case .week:  return String(localized: "Week")
+        case .month: return String(localized: "Month")
+        }
+    }
 }
 
 // MARK: - Data Model
@@ -53,10 +60,19 @@ struct FactoryOrder: Identifiable {
 }
 
 enum OrderStatus: String {
-    case pending    = "In attesa"
-    case processing = "In lavorazione"
-    case completed  = "Completato"
-    case delayed    = "In ritardo"
+    case pending    = "Pending"
+    case processing = "Processing"
+    case completed  = "Completed"
+    case delayed    = "Delayed"
+
+    var localized: String {
+        switch self {
+        case .pending:    return String(localized: "Pending")
+        case .processing: return String(localized: "Processing")
+        case .completed:  return String(localized: "Completed")
+        case .delayed:    return String(localized: "Delayed")
+        }
+    }
 
     var color: Color {
         switch self {
@@ -78,9 +94,17 @@ struct MachineItem: Identifiable {
 }
 
 enum MachineStatus: String {
-    case running  = "Operativa"
-    case idle     = "Ferma"
-    case fault    = "Guasto"
+    case running  = "Running"
+    case idle     = "Idle"
+    case fault    = "Fault"
+
+    var localized: String {
+        switch self {
+        case .running: return String(localized: "Running")
+        case .idle:    return String(localized: "Idle")
+        case .fault:   return String(localized: "Fault")
+        }
+    }
 
     var color: Color {
         switch self {
@@ -92,6 +116,7 @@ enum MachineStatus: String {
 }
 
 // MARK: - Mock Data Provider
+// ⚠️ FAKE — dati dashboard cablati a scopo demo. Rimuovere/sostituire col backend in produzione.
 struct FactoryDataProvider {
     static func snapshot(for period: TimePeriod) -> FactorySnapshot {
         switch period {
@@ -104,24 +129,24 @@ struct FactoryDataProvider {
                 defectRate: 0.032, energyUsage: 84.5, energyLimit: 100.0,
                 alerts: 3,
                 workerShifts: [
-                    WorkerShift(name: "Mario Rossi",   role: "Operatore CNC",  hours: 8.0, present: true),
-                    WorkerShift(name: "Laura Bianchi", role: "Controllo Qual.", hours: 8.0, present: true),
-                    WorkerShift(name: "Luca Verdi",    role: "Magazziniere",   hours: 6.5, present: true),
-                    WorkerShift(name: "Sara Neri",     role: "Supervisore",    hours: 8.0, present: true),
-                    WorkerShift(name: "Giulio Ferri",  role: "Manutentore",    hours: 0.0, present: false),
+                    WorkerShift(name: "Mario Rossi",   role: String(localized: "CNC Operator"),       hours: 8.0, present: true),
+                    WorkerShift(name: "Laura Bianchi", role: String(localized: "Quality Control"),     hours: 8.0, present: true),
+                    WorkerShift(name: "Luca Verdi",    role: String(localized: "Warehouse Operator"),  hours: 6.5, present: true),
+                    WorkerShift(name: "Sara Neri",     role: String(localized: "Supervisor"),          hours: 8.0, present: true),
+                    WorkerShift(name: "Giulio Ferri",  role: String(localized: "Maintenance Tech."),   hours: 0.0, present: false),
                 ],
                 orderList: [
-                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",      quantity: 500,  status: .processing, dueDate: "02 Apr"),
-                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",      quantity: 1200, status: .pending,    dueDate: "05 Apr"),
-                    FactoryOrder(code: "ORD-0419", client: "Gamma Ltd",     quantity: 300,  status: .completed,  dueDate: "30 Mar"),
-                    FactoryOrder(code: "ORD-0418", client: "Delta Corp",    quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
+                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",   quantity: 500,  status: .processing, dueDate: "02 Apr"),
+                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",   quantity: 1200, status: .pending,    dueDate: "05 Apr"),
+                    FactoryOrder(code: "ORD-0419", client: "Gamma Ltd",  quantity: 300,  status: .completed,  dueDate: "30 Mar"),
+                    FactoryOrder(code: "ORD-0418", client: "Delta Corp", quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
                 ],
                 machineList: [
-                    MachineItem(name: "CNC-01",   type: "Centro di lavoro",  efficiency: 0.94, status: .running, lastMaintenance: "15 Mar"),
-                    MachineItem(name: "CNC-02",   type: "Centro di lavoro",  efficiency: 0.88, status: .running, lastMaintenance: "10 Mar"),
-                    MachineItem(name: "PRESS-01", type: "Pressa idraulica",  efficiency: 0.0,  status: .fault,   lastMaintenance: "02 Feb"),
-                    MachineItem(name: "WELD-01",  type: "Saldatrice robot.",  efficiency: 0.91, status: .running, lastMaintenance: "20 Mar"),
-                    MachineItem(name: "LATHE-01", type: "Tornio CNC",        efficiency: 0.0,  status: .idle,    lastMaintenance: "01 Mar"),
+                    MachineItem(name: "CNC-01",   type: String(localized: "Machining Center"),   efficiency: 0.94, status: .running, lastMaintenance: "15 Mar"),
+                    MachineItem(name: "CNC-02",   type: String(localized: "Machining Center"),   efficiency: 0.88, status: .running, lastMaintenance: "10 Mar"),
+                    MachineItem(name: "PRESS-01", type: String(localized: "Hydraulic Press"),    efficiency: 0.0,  status: .fault,   lastMaintenance: "02 Feb"),
+                    MachineItem(name: "WELD-01",  type: String(localized: "Robotic Welder"),     efficiency: 0.91, status: .running, lastMaintenance: "20 Mar"),
+                    MachineItem(name: "LATHE-01", type: String(localized: "CNC Lathe"),          efficiency: 0.0,  status: .idle,    lastMaintenance: "01 Mar"),
                 ]
             )
         case .week:
@@ -133,25 +158,25 @@ struct FactoryDataProvider {
                 defectRate: 0.041, energyUsage: 512.0, energyLimit: 700.0,
                 alerts: 5,
                 workerShifts: [
-                    WorkerShift(name: "Mario Rossi",    role: "Operatore CNC",  hours: 40.0, present: true),
-                    WorkerShift(name: "Laura Bianchi",  role: "Controllo Qual.", hours: 38.5, present: true),
-                    WorkerShift(name: "Luca Verdi",     role: "Magazziniere",   hours: 35.0, present: true),
-                    WorkerShift(name: "Sara Neri",      role: "Supervisore",    hours: 40.0, present: true),
-                    WorkerShift(name: "Giulio Ferri",   role: "Manutentore",    hours: 16.0, present: false),
+                    WorkerShift(name: "Mario Rossi",   role: String(localized: "CNC Operator"),       hours: 40.0, present: true),
+                    WorkerShift(name: "Laura Bianchi", role: String(localized: "Quality Control"),     hours: 38.5, present: true),
+                    WorkerShift(name: "Luca Verdi",    role: String(localized: "Warehouse Operator"),  hours: 35.0, present: true),
+                    WorkerShift(name: "Sara Neri",     role: String(localized: "Supervisor"),          hours: 40.0, present: true),
+                    WorkerShift(name: "Giulio Ferri",  role: String(localized: "Maintenance Tech."),   hours: 16.0, present: false),
                 ],
                 orderList: [
-                    FactoryOrder(code: "ORD-0420", client: "Omega Inc",     quantity: 2000, status: .completed,  dueDate: "29 Mar"),
-                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",      quantity: 500,  status: .processing, dueDate: "02 Apr"),
-                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",      quantity: 1200, status: .pending,    dueDate: "05 Apr"),
-                    FactoryOrder(code: "ORD-0418", client: "Delta Corp",    quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
-                    FactoryOrder(code: "ORD-0423", client: "Epsilon Srl",   quantity: 450,  status: .pending,    dueDate: "08 Apr"),
+                    FactoryOrder(code: "ORD-0420", client: "Omega Inc",      quantity: 2000, status: .completed,  dueDate: "29 Mar"),
+                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",       quantity: 500,  status: .processing, dueDate: "02 Apr"),
+                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",       quantity: 1200, status: .pending,    dueDate: "05 Apr"),
+                    FactoryOrder(code: "ORD-0418", client: "Delta Corp",     quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
+                    FactoryOrder(code: "ORD-0423", client: "Epsilon Srl",    quantity: 450,  status: .pending,    dueDate: "08 Apr"),
                 ],
                 machineList: [
-                    MachineItem(name: "CNC-01",   type: "Centro di lavoro", efficiency: 0.91, status: .running, lastMaintenance: "15 Mar"),
-                    MachineItem(name: "CNC-02",   type: "Centro di lavoro", efficiency: 0.85, status: .running, lastMaintenance: "10 Mar"),
-                    MachineItem(name: "PRESS-01", type: "Pressa idraulica", efficiency: 0.0,  status: .fault,   lastMaintenance: "02 Feb"),
-                    MachineItem(name: "WELD-01",  type: "Saldatrice robot.", efficiency: 0.88, status: .running, lastMaintenance: "20 Mar"),
-                    MachineItem(name: "LATHE-01", type: "Tornio CNC",       efficiency: 0.72, status: .running, lastMaintenance: "01 Mar"),
+                    MachineItem(name: "CNC-01",   type: String(localized: "Machining Center"),  efficiency: 0.91, status: .running, lastMaintenance: "15 Mar"),
+                    MachineItem(name: "CNC-02",   type: String(localized: "Machining Center"),  efficiency: 0.85, status: .running, lastMaintenance: "10 Mar"),
+                    MachineItem(name: "PRESS-01", type: String(localized: "Hydraulic Press"),   efficiency: 0.0,  status: .fault,   lastMaintenance: "02 Feb"),
+                    MachineItem(name: "WELD-01",  type: String(localized: "Robotic Welder"),    efficiency: 0.88, status: .running, lastMaintenance: "20 Mar"),
+                    MachineItem(name: "LATHE-01", type: String(localized: "CNC Lathe"),         efficiency: 0.72, status: .running, lastMaintenance: "01 Mar"),
                 ]
             )
         case .month:
@@ -163,26 +188,26 @@ struct FactoryDataProvider {
                 defectRate: 0.027, energyUsage: 2_140.0, energyLimit: 3_000.0,
                 alerts: 8,
                 workerShifts: [
-                    WorkerShift(name: "Mario Rossi",    role: "Operatore CNC",  hours: 168.0, present: true),
-                    WorkerShift(name: "Laura Bianchi",  role: "Controllo Qual.", hours: 160.0, present: true),
-                    WorkerShift(name: "Luca Verdi",     role: "Magazziniere",   hours: 152.0, present: true),
-                    WorkerShift(name: "Sara Neri",      role: "Supervisore",    hours: 168.0, present: true),
-                    WorkerShift(name: "Giulio Ferri",   role: "Manutentore",    hours: 80.0,  present: true),
+                    WorkerShift(name: "Mario Rossi",   role: String(localized: "CNC Operator"),       hours: 168.0, present: true),
+                    WorkerShift(name: "Laura Bianchi", role: String(localized: "Quality Control"),     hours: 160.0, present: true),
+                    WorkerShift(name: "Luca Verdi",    role: String(localized: "Warehouse Operator"),  hours: 152.0, present: true),
+                    WorkerShift(name: "Sara Neri",     role: String(localized: "Supervisor"),          hours: 168.0, present: true),
+                    WorkerShift(name: "Giulio Ferri",  role: String(localized: "Maintenance Tech."),   hours: 80.0,  present: true),
                 ],
                 orderList: [
-                    FactoryOrder(code: "ORD-0410", client: "Zeta Group",    quantity: 5000, status: .completed,  dueDate: "15 Mar"),
-                    FactoryOrder(code: "ORD-0415", client: "Omega Inc",     quantity: 2000, status: .completed,  dueDate: "22 Mar"),
-                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",      quantity: 500,  status: .processing, dueDate: "02 Apr"),
-                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",      quantity: 1200, status: .pending,    dueDate: "05 Apr"),
-                    FactoryOrder(code: "ORD-0423", client: "Epsilon Srl",   quantity: 450,  status: .pending,    dueDate: "08 Apr"),
-                    FactoryOrder(code: "ORD-0418", client: "Delta Corp",    quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
+                    FactoryOrder(code: "ORD-0410", client: "Zeta Group",     quantity: 5000, status: .completed,  dueDate: "15 Mar"),
+                    FactoryOrder(code: "ORD-0415", client: "Omega Inc",      quantity: 2000, status: .completed,  dueDate: "22 Mar"),
+                    FactoryOrder(code: "ORD-0421", client: "Alfa Srl",       quantity: 500,  status: .processing, dueDate: "02 Apr"),
+                    FactoryOrder(code: "ORD-0422", client: "Beta SpA",       quantity: 1200, status: .pending,    dueDate: "05 Apr"),
+                    FactoryOrder(code: "ORD-0423", client: "Epsilon Srl",    quantity: 450,  status: .pending,    dueDate: "08 Apr"),
+                    FactoryOrder(code: "ORD-0418", client: "Delta Corp",     quantity: 800,  status: .delayed,    dueDate: "28 Mar"),
                 ],
                 machineList: [
-                    MachineItem(name: "CNC-01",   type: "Centro di lavoro", efficiency: 0.89, status: .running, lastMaintenance: "15 Mar"),
-                    MachineItem(name: "CNC-02",   type: "Centro di lavoro", efficiency: 0.84, status: .running, lastMaintenance: "10 Mar"),
-                    MachineItem(name: "PRESS-01", type: "Pressa idraulica", efficiency: 0.75, status: .running, lastMaintenance: "25 Mar"),
-                    MachineItem(name: "WELD-01",  type: "Saldatrice robot.", efficiency: 0.90, status: .running, lastMaintenance: "20 Mar"),
-                    MachineItem(name: "LATHE-01", type: "Tornio CNC",       efficiency: 0.71, status: .running, lastMaintenance: "01 Mar"),
+                    MachineItem(name: "CNC-01",   type: String(localized: "Machining Center"),  efficiency: 0.89, status: .running, lastMaintenance: "15 Mar"),
+                    MachineItem(name: "CNC-02",   type: String(localized: "Machining Center"),  efficiency: 0.84, status: .running, lastMaintenance: "10 Mar"),
+                    MachineItem(name: "PRESS-01", type: String(localized: "Hydraulic Press"),   efficiency: 0.75, status: .running, lastMaintenance: "25 Mar"),
+                    MachineItem(name: "WELD-01",  type: String(localized: "Robotic Welder"),    efficiency: 0.90, status: .running, lastMaintenance: "20 Mar"),
+                    MachineItem(name: "LATHE-01", type: String(localized: "CNC Lathe"),         efficiency: 0.71, status: .running, lastMaintenance: "01 Mar"),
                 ]
             )
         }

@@ -9,6 +9,7 @@ import SwiftUI
 struct SettingsSheet: View {
     let user: User
     let viewModel: AppViewModel
+    @State private var showConnection = false
 
     var body: some View {
         ZStack {
@@ -38,11 +39,37 @@ struct SettingsSheet: View {
                             .font(.system(.title3, design: .rounded, weight: .semibold))
                             .foregroundStyle(.primary)
 
-                        Text("Operatore")
+                        Text("Operator")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
+
+                // MARK: – Server Aria (chat)
+                Button {
+                    showConnection = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "bolt.horizontal.circle")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(Color.liteAccent)
+                        Text("Aria server")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(viewModel.backend.isReady ? "Online" : "Not connected")
+                            .font(.subheadline)
+                            .foregroundStyle(viewModel.backend.isReady ? .green : .secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
 
                 // MARK: – Logout
                 let logoutRed = Color(red: 0.82, green: 0.18, blue: 0.18)
@@ -68,7 +95,10 @@ struct SettingsSheet: View {
             }
             .padding(.top, 32)
         }
-        .presentationDetents([.fraction(0.35)])
+        .sheet(isPresented: $showConnection) {
+            AriaConnectionSheet(backend: viewModel.backend)
+        }
+        .presentationDetents([.fraction(0.45)])
         .presentationDragIndicator(.visible)
     }
 }

@@ -13,7 +13,7 @@ struct ReportView: View {
             ContentUnavailableView(
                 "Report",
                 systemImage: "chart.bar.doc.horizontal",
-                description: Text("I report saranno disponibili a breve.")
+                description: Text("Reports will be available soon.")
             )
             .liteBackground()
             .navigationTitle("Report")

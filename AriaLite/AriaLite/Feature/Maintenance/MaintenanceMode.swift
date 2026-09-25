@@ -12,7 +12,7 @@ import PhotosUI
 struct MaintenanceModeView: View {
     let workOrder: WorkOrder
     let viewModel: AppViewModel
-    let voice: AriaVoiceViewModel          // ← passa dall'esterno
+    let voice: AriaVoiceViewModel
 
     @State private var showPhotoSource: Bool = false
     @State private var showCamera: Bool = false
@@ -20,25 +20,30 @@ struct MaintenanceModeView: View {
     @State private var noteText: String = ""
     @State private var showNoteEditor: Bool = false
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
-    @State private var showAIHelp: Bool = false           // ← NUOVO
+    @State private var showAIHelp: Bool = false
     @Namespace private var glassNamespace
     @Environment(\.dismiss) private var dismiss
 
-    private var currentItem: ChecklistItem {
-        workOrder.checklist[currentStepIndex]
+    // MARK: - Safe current item
+    private var currentItem: ChecklistItem? {
+        guard workOrder.checklist.indices.contains(currentStepIndex) else { return nil }
+        return workOrder.checklist[currentStepIndex]
     }
 
     private var isCurrentCompleted: Bool {
-        viewModel.isItemCompleted(currentItem, in: workOrder.id)
+        guard let item = currentItem else { return false }
+        return viewModel.isItemCompleted(item, in: workOrder.id)
     }
 
     private var currentNote: FieldNote? {
-        viewModel.fieldNotes[workOrder.id]?[currentItem.id]
+        guard let item = currentItem else { return nil }
+        return viewModel.fieldNotes[workOrder.id]?[item.id]
     }
 
     private var currentPhotos: [PhotoAttachment] {
+        guard let item = currentItem else { return [] }
         let all = viewModel.photoAttachments[workOrder.id] ?? []
-        return all.filter { $0.checklistItemID == currentItem.id }
+        return all.filter { $0.checklistItemID == item.id }
     }
 
     private var completedCount: Int {
@@ -50,46 +55,54 @@ struct MaintenanceModeView: View {
     }
 
     private func goNext() {
+        guard let item = currentItem else { return }
         viewModel.toggleItem(
             workOrderID: workOrder.id,
-            itemID: currentItem.id,
+            itemID: item.id,
             current: false
         )
+        let nextIndex = currentStepIndex + 1
+        guard nextIndex < workOrder.checklist.count else { return }
         withAnimation(.spring(duration: 0.3)) {
-            currentStepIndex += 1
+            currentStepIndex = nextIndex
         }
     }
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                LinearGradient(
-                    colors: [Color.liteBackground, Color.liteAccent.opacity(0.12)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+            Group {
+                if workOrder.checklist.isEmpty {
+                    ContentUnavailableView(
+                        "No steps available",
+                        systemImage: "list.bullet.clipboard",
+                        description: Text("This work order has no checklist items.")
+                    )
+                } else {
+                    ZStack(alignment: .bottom) {
+                        LinearGradient(
+                            colors: [Color.liteBackground, Color.liteAccent.opacity(0.12)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: 14) {
-                        stepHeaderCard
-                        noteAndPhotoRow
-                        if !workOrder.documents.isEmpty {
-                            documentsCard
+                        ScrollView {
+                            VStack(spacing: 14) {
+                                stepHeaderCard
+                                noteAndPhotoRow
+                                Color.clear.frame(height: 110)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
                         }
-                        Color.clear.frame(height: 110)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                }
 
-                navigationBar
+                        navigationBar
+                    }
+                }
             }
             .navigationTitle(workOrder.title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                Button(role: .close) { dismiss() }
-            }
+            .toolbar { toolbarContent }
             .onChange(of: viewModel.submissionStatus) { _, status in
                 if case .success = status {
                     dismiss()
@@ -97,33 +110,38 @@ struct MaintenanceModeView: View {
                 }
             }
             .sheet(isPresented: $showNoteEditor) {
-                NoteEditorSheet(
-                    text: $noteText,
-                    onSave: {
-                        viewModel.upsertNote(
-                            workOrderID: workOrder.id,
-                            itemID: currentItem.id,
-                            text: noteText
-                        )
-                        showNoteEditor = false
-                    },
-                    onCancel: { showNoteEditor = false }
-                )
-                .presentationDetents([.medium])
+                if let item = currentItem {
+                    NoteEditorSheet(
+                        text: $noteText,
+                        onSave: {
+                            viewModel.upsertNote(
+                                workOrderID: workOrder.id,
+                                itemID: item.id,
+                                text: noteText
+                            )
+                            showNoteEditor = false
+                        },
+                        onCancel: { showNoteEditor = false }
+                    )
+                    .presentationDetents([.medium])
+                }
             }
-            .sheet(isPresented: $showAIHelp) {                    // ← NUOVO
-                AIHelpSheet(currentItem: currentItem, voice: voice)
+            .sheet(isPresented: $showAIHelp) {
+                if let item = currentItem {
+                    AIHelpSheet(currentItem: item, workOrder: workOrder)
+                }
             }
             .onChange(of: selectedPhotoItems) { _, items in
+                guard let item = currentItem else { return }
                 Task {
-                    for item in items {
-                        if let data = try? await item.loadTransferable(type: Data.self) {
+                    for photoItem in items {
+                        if let data = try? await photoItem.loadTransferable(type: Data.self) {
                             let photo = PhotoAttachment(
                                 id: UUID(),
                                 filename: "\(UUID().uuidString).jpg",
                                 base64Data: data.base64EncodedString(),
                                 capturedAt: Date(),
-                                checklistItemID: currentItem.id
+                                checklistItemID: item.id
                             )
                             viewModel.addPhoto(photo, to: workOrder.id)
                         }
@@ -135,95 +153,112 @@ struct MaintenanceModeView: View {
         .preferredColorScheme(.light)
     }
 
+    // MARK: - Toolbar
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Text(workOrder.title)
+                .font(.system(size: 17, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(role: .close) { dismiss() }
+        }
+    }
+
     // MARK: - Step Header Card
     private var stepHeaderCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Passo \(currentStepIndex + 1) di \(workOrder.checklist.count)")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.liteAccent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.liteAccent.opacity(0.1))
-                    .clipShape(Capsule())
+        guard let item = currentItem else { return AnyView(EmptyView()) }
+        return AnyView(
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Step \(currentStepIndex + 1) of \(workOrder.checklist.count)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.liteAccent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.liteAccent.opacity(0.1))
+                        .clipShape(Capsule())
 
-                Spacer()
-
-                HStack(spacing: 5) {
-                    Image(systemName: isCurrentCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 14))
-                        .foregroundStyle(isCurrentCompleted ? Color.green : Color.liteAccent.opacity(0.3))
-                        .contentTransition(.symbolEffect(.replace))
-                    Text(isCurrentCompleted ? "Completato" : "Da fare")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(isCurrentCompleted ? Color.green : Color.liteText.opacity(0.4))
-                }
-            }
-
-            Text(currentItem.text)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Color.liteText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if let description = currentItem.description, !description.isEmpty {
-                Text(description)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.liteText.opacity(0.6))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .lineSpacing(3)
-            }
-
-            VStack(spacing: 6) {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.liteAccent.opacity(0.12))
-                            .frame(height: 4)
-                        Capsule()
-                            .fill(Color.liteAccent)
-                            .frame(
-                                width: geo.size.width * CGFloat(completedCount) / CGFloat(workOrder.checklist.count),
-                                height: 4
-                            )
-                            .animation(.spring(duration: 0.4), value: completedCount)
-                    }
-                }
-                .frame(height: 4)
-
-                HStack(spacing: 5) {
-                    ForEach(Array(workOrder.checklist.enumerated()), id: \.offset) { index, item in
-                        let done = viewModel.isItemCompleted(item, in: workOrder.id)
-                        let isCurrent = index == currentStepIndex
-                        Circle()
-                            .fill(
-                                done
-                                    ? Color.liteAccent
-                                    : isCurrent
-                                        ? Color.liteAccent.opacity(0.55)
-                                        : Color.liteAccent.opacity(0.15)
-                            )
-                            .frame(width: isCurrent ? 9 : 6, height: isCurrent ? 9 : 6)
-                            .animation(.spring(duration: 0.3), value: isCurrent)
-                            .animation(.spring(duration: 0.3), value: done)
-                            .onTapGesture {
-                                withAnimation(.spring(duration: 0.3)) { currentStepIndex = index }
-                            }
-                    }
                     Spacer()
-                    Text("\(completedCount)/\(workOrder.checklist.count) completati")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.liteText.opacity(0.4))
+
+                    HStack(spacing: 5) {
+                        Image(systemName: isCurrentCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 14))
+                            .foregroundStyle(isCurrentCompleted ? Color.green : Color.liteAccent.opacity(0.3))
+                            .contentTransition(.symbolEffect(.replace))
+                        Text(isCurrentCompleted ? String(localized: "Completed") : String(localized: "To do"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(isCurrentCompleted ? Color.green : Color.liteText.opacity(0.4))
+                    }
                 }
+
+                Text(item.text)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(Color.liteText)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let description = item.description, !description.isEmpty {
+                    Text(description)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.liteText.opacity(0.6))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineSpacing(3)
+                }
+
+                VStack(spacing: 6) {
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.liteAccent.opacity(0.12))
+                                .frame(height: 4)
+                            Capsule()
+                                .fill(Color.liteAccent)
+                                .frame(
+                                    width: geo.size.width * CGFloat(completedCount) / CGFloat(workOrder.checklist.count),
+                                    height: 4
+                                )
+                                .animation(.spring(duration: 0.4), value: completedCount)
+                        }
+                    }
+                    .frame(height: 4)
+
+                    HStack(spacing: 5) {
+                        ForEach(Array(workOrder.checklist.enumerated()), id: \.offset) { index, checkItem in
+                            let done = viewModel.isItemCompleted(checkItem, in: workOrder.id)
+                            let isCurrent = index == currentStepIndex
+                            Circle()
+                                .fill(
+                                    done
+                                        ? Color.liteAccent
+                                        : isCurrent
+                                            ? Color.liteAccent.opacity(0.55)
+                                            : Color.liteAccent.opacity(0.15)
+                                )
+                                .frame(width: isCurrent ? 9 : 6, height: isCurrent ? 9 : 6)
+                                .animation(.spring(duration: 0.3), value: isCurrent)
+                                .animation(.spring(duration: 0.3), value: done)
+                                .onTapGesture {
+                                    withAnimation(.spring(duration: 0.3)) { currentStepIndex = index }
+                                }
+                        }
+                        Spacer()
+                        Text("\(completedCount)/\(workOrder.checklist.count) completed")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.liteText.opacity(0.4))
+                    }
+                }
+                .padding(.top, 4)
             }
-            .padding(.top, 4)
-        }
-        .padding(20)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.liteAccent.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(Color.liteAccent.opacity(0.12), lineWidth: 1)
+            .padding(20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.liteAccent.opacity(0.04))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(Color.liteAccent.opacity(0.12), lineWidth: 1)
+            )
         )
     }
 
@@ -255,10 +290,10 @@ struct MaintenanceModeView: View {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(currentNote == nil ? "Aggiungi nota" : "Nota tecnica")
+                    Text(currentNote == nil ? String(localized: "Add Notes") : String(localized: "Technical Notes"))
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.liteText)
-                    Text(currentNote?.text ?? "Nessuna nota")
+                    Text(currentNote?.text ?? String(localized: "No notes"))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.liteText.opacity(currentNote == nil ? 0.35 : 0.6))
                         .lineLimit(2)
@@ -291,10 +326,10 @@ struct MaintenanceModeView: View {
                 Spacer()
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Foto")
+                    Text("Photos")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.liteText)
-                    Text(currentPhotos.isEmpty ? "Nessuna foto" : "\(currentPhotos.count) allegate")
+                    Text(currentPhotos.isEmpty ? String(localized: "No photos") : String(localized: "\(currentPhotos.count) attached"))
                         .font(.system(size: 12))
                         .foregroundStyle(Color.liteText.opacity(currentPhotos.isEmpty ? 0.35 : 0.6))
                 }
@@ -312,13 +347,14 @@ struct MaintenanceModeView: View {
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker { image in
+                guard let item = currentItem else { return }
                 if let data = image.jpegData(compressionQuality: 0.8) {
                     let photo = PhotoAttachment(
                         id: UUID(),
                         filename: "\(UUID().uuidString).jpg",
                         base64Data: data.base64EncodedString(),
                         capturedAt: Date(),
-                        checklistItemID: currentItem.id
+                        checklistItemID: item.id
                     )
                     viewModel.addPhoto(photo, to: workOrder.id)
                 }
@@ -327,56 +363,49 @@ struct MaintenanceModeView: View {
         }
     }
 
-    // MARK: - Documents Card
-    private var documentsCard: some View {
-        DisclosureGroup {
-            ForEach(workOrder.documents) { doc in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(doc.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.liteText)
-                    if let notes = doc.notes {
-                        Text(notes)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                    }
-                    if !doc.photos.isEmpty {
-                        Text(doc.photos.joined(separator: " · "))
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.vertical, 6)
-            }
-        } label: {
-            Label("Documenti di riferimento (\(workOrder.documents.count))", systemImage: "doc.text")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.liteText)
-        }
-        .padding(16)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16))
-    }
-
     // MARK: - Navigation Bar
     private var navigationBar: some View {
         GlassEffectContainer(spacing: 12) {
             VStack(spacing: 0) {
 
-                // ── Ask help to AI ──────────────────────────────── ← NUOVO
+                // ── Ask AI ──────────────────────────────────────────
                 Button { showAIHelp = true } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "sparkles")
-                            .font(.headline)
-                        Text("Ask help to AI")
-                            .font(.headline)
+                    HStack(spacing: 12) {
+                        Image("AriaBlob")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                            .shadow(color: Color.liteAccent.opacity(0.4), radius: 5)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Ask AriA")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            Text("Get help with this step")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.liteAccent.opacity(0.7))
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.liteAccent.opacity(0.7))
                     }
-                    .frame(maxWidth: .infinity/2)
-                    .padding(.vertical, 15)
                     .foregroundStyle(Color.liteAccent)
-                    .background(Color.liteAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.liteAccent.opacity(0.14), Color.liteAccent.opacity(0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        in: RoundedRectangle(cornerRadius: 14)
+                    )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(Color.liteAccent.opacity(0.15), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(Color.liteAccent.opacity(0.20), lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -384,7 +413,7 @@ struct MaintenanceModeView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 10)
 
-                // ── Navigazione esistente ───────────────────────────
+                // ── Navigation ──────────────────────────────────────
                 HStack(spacing: 12) {
                     Button {
                         withAnimation(.spring(duration: 0.3)) { currentStepIndex -= 1 }
@@ -392,7 +421,7 @@ struct MaintenanceModeView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 14, weight: .semibold))
-                            Text("Indietro")
+                            Text("Previous")
                                 .font(.system(size: 15, weight: .semibold))
                         }
                         .padding(.horizontal, 20)
@@ -410,7 +439,7 @@ struct MaintenanceModeView: View {
                                 goNext()
                             } label: {
                                 HStack(spacing: 6) {
-                                    Text("Avanti")
+                                    Text("Next")
                                         .font(.system(size: 15, weight: .semibold))
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 14, weight: .semibold))
@@ -441,14 +470,15 @@ struct MaintenanceModeView: View {
         switch viewModel.submissionStatus {
         case .idle:
             Button {
+                guard let item = currentItem else { return }
                 viewModel.toggleItem(
                     workOrderID: workOrder.id,
-                    itemID: currentItem.id,
+                    itemID: item.id,
                     current: false
                 )
                 Task { await viewModel.submitReport(for: workOrder) }
             } label: {
-                Label("Invia Resoconto", systemImage: "paperplane.fill")
+                Label("Send", systemImage: "paperplane.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
@@ -459,14 +489,14 @@ struct MaintenanceModeView: View {
         case .sending:
             HStack(spacing: 8) {
                 ProgressView()
-                Text("Invio…").font(.system(size: 15, weight: .medium))
+                Text("Sending...").font(.system(size: 15, weight: .medium))
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 14)
             .glassEffect(.regular.tint(Color.liteAccent.opacity(0.2)), in: Capsule())
 
         case .success:
-            Label("Inviato!", systemImage: "checkmark.circle.fill")
+            Label("Success!", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .padding(.horizontal, 28)
                 .padding(.vertical, 14)
@@ -476,7 +506,7 @@ struct MaintenanceModeView: View {
             Button {
                 Task { await viewModel.submitReport(for: workOrder) }
             } label: {
-                Label("Riprova", systemImage: "arrow.clockwise")
+                Label("Try again", systemImage: "arrow.clockwise")
                     .font(.system(size: 15, weight: .semibold))
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
@@ -502,7 +532,7 @@ struct PhotoSourceSheet: View {
                 .frame(width: 36, height: 4)
                 .padding(.top, 10)
 
-            Text("Aggiungi foto")
+            Text("Add Photo")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.primary)
                 .padding(.top, 4)
@@ -512,7 +542,7 @@ struct PhotoSourceSheet: View {
                 PhotosPicker(selection: $selectedPhotoItems, matching: .images) {
                     PhotoSourceTile(
                         icon: "photo.on.rectangle.angled",
-                        label: "Galleria"
+                        label: String(localized: "Gallery")
                     )
                 }
                 .buttonStyle(.plain)
@@ -527,7 +557,7 @@ struct PhotoSourceSheet: View {
                 } label: {
                     PhotoSourceTile(
                         icon: "camera",
-                        label: "Fotocamera"
+                        label: String(localized: "Camera")
                     )
                 }
                 .buttonStyle(.plain)

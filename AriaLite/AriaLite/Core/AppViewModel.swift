@@ -17,7 +17,19 @@ class AppViewModel {
     var submittedWorkOrders: Set<UUID> = []
     var searchText: String = ""
 
+    /// Connessione al backend Aria (chat reale). Indipendente dal login locale qui sotto.
+    let backend: AriaBackend
+    /// Chat principale (tab Assistant): resta viva tra un cambio di tab e l'altro.
+    let mainChat: AriaAgentChat
+
+    init() {
+        let backend = AriaBackend()
+        self.backend = backend
+        mainChat = AriaAgentChat(backend: backend, remembersSession: true)
+    }
+
     // MARK: - Auth
+    // ⚠️ FAKE — autenticazione locale sui dati mock. Sostituire con auth reale in produzione.
     func login(username: String, password: String) -> Bool {
         guard let user = mockUsers.first(where: {
             $0.username == username && password == mockPasswords[$0.id]
@@ -32,6 +44,9 @@ class AppViewModel {
         fieldNotes = [:]
         photoAttachments = [:]
         submissionStatus = .idle
+        // Un altro operatore sullo stesso device non eredita la sessione Aria.
+        mainChat.newConversation()
+        Task { await backend.signOut() }
     }
 
     // MARK: - WorkOrders
@@ -56,7 +71,7 @@ class AppViewModel {
 
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        formatter.locale = Locale(identifier: "it_IT")
+        formatter.locale = .autoupdatingCurrent
 
         let grouped = Dictionary(grouping: past) { formatter.string(from: $0.scheduledDate) }
 

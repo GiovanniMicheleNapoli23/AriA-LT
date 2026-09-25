@@ -27,7 +27,7 @@ struct WorkOrderRowView: View {
                     Text(workOrder.title)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
-                    Text("\(completedCount)/\(workOrder.checklist.count) completati · \(workOrder.documents.count) doc")
+                    Text("\(completedCount)/\(workOrder.checklist.count) completed · \(workOrder.documents.count) doc")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

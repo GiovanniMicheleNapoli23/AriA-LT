@@ -18,16 +18,15 @@ struct NoteEditorSheet: View {
                 .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(16)
-                .navigationTitle("Nota")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Note")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Annulla", action: onCancel)
+                        Button("Cancel", action: onCancel)
                             .tint(Color.liteAccent)
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(action: onSave) {
-                            Text("Salva")
+                            Text("Save")
                                 .fontWeight(.semibold)
                         }
                         .tint(Color.liteAccent)

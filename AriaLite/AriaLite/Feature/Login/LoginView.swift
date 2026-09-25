@@ -113,7 +113,7 @@ struct LoginView: View {
                 if showError {
                     HStack(spacing: 6) {
                         Image(systemName: "exclamationmark.circle.fill")
-                        Text("Credenziali non valide")
+                        Text("Invalid credentials")
                     }
                     .font(.footnote)
                     .foregroundStyle(Color(red: 0.85, green: 0.25, blue: 0.25))
@@ -137,7 +137,7 @@ struct LoginView: View {
                         if isLoading {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Accedi")
+                            Text("Sign in")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(.white)
                                 .tracking(2)

@@ -7,6 +7,9 @@
 
 import Foundation
 
+// ⚠️⚠️⚠️ FAKE DEMO DATA — REMOVE IN PRODUCTION ⚠️⚠️⚠️
+// Tutto questo file (password, utenti, work order) è dato mock cablato a scopo demo.
+// In produzione va sostituito con i dati provenienti dal backend / store reale.
 
 // MARK: - Passwords
 
@@ -47,52 +50,53 @@ private func daysAgo(_ n: Int) -> Date {
 }
 
 // MARK: - Work Orders
-
-let mockWorkOrders: [WorkOrder] = [
+// Proprietà calcolata: le date (today()/daysAgo) sono sempre relative ad adesso,
+// così i work order "di oggi" non slittano a ieri se l'app resta aperta oltre la mezzanotte.
+var mockWorkOrders: [WorkOrder] { [
 
     // ── Mario ─────────────────────────────────────────────────────
 
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000001")!,
         assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
-        title: "Manutenzione Generatore",
+        title: String(localized: "Generator Maintenance"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C1000000-0000-0000-0000-000000000001")!,
-                text: "Controlla livello olio",
-                description: "Apri il tappo del filtro e ispeziona visivamente per eventuali perdite. Sostituisci l'olio se il livello è sotto il minimo o se risulta scuro.",
+                text: String(localized: "Check oil level"),
+                description: String(localized: "Open the filter cap and visually inspect for any leaks. Replace the oil if the level is below minimum or if it appears dark."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C1000000-0000-0000-0000-000000000002")!,
-                text: "Pulizia filtri aria",
-                description: "Rimuovi il filtro aria e soffia via polvere e detriti con aria compressa. Sostituisci il filtro se presenta strappi o ostruzione eccessiva.",
+                text: String(localized: "Air filter cleaning"),
+                description: String(localized: "Remove the air filter and blow out dust and debris with compressed air. Replace the filter if it shows tears or excessive clogging."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C1000000-0000-0000-0000-000000000003")!,
-                text: "Verifica cinghia di trasmissione",
-                description: "Controlla la tensione della cinghia: la freccia ammessa è di 10–15 mm con pressione manuale. Verifica l'assenza di cricche o usura sui fianchi.",
+                text: String(localized: "Drive belt inspection"),
+                description: String(localized: "Check belt tension: allowable deflection is 10–15 mm under manual pressure. Check for absence of cracks or wear on the sides."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C1000000-0000-0000-0000-000000000004")!,
-                text: "Test avvio a freddo",
-                description: "Esegui l'avvio a freddo senza preriscaldamento e verifica che il motore raggiunga il regime nominale entro 30 secondi. Annota eventuali anomalie sonore.",
+                text: String(localized: "Cold start test"),
+                description: String(localized: "Perform a cold start without pre-heating and verify the engine reaches nominal speed within 30 seconds. Note any abnormal sounds."),
                 isCompleted: false
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D1000000-0000-0000-0000-000000000001")!,
-                title: "Manuale Generatore XG-500",
-                notes: "Fare riferimento a pag. 12 per le specifiche olio. Usare esclusivamente olio SAE 10W-40 certificato API SL.",
-                photos: ["manuale_xg500_copertina.png"]
+                title: String(localized: "Generator XG-500 Manual"),
+                notes: "Refer to p. 12 for oil specifications. Use only SAE 10W-40 oil with API SL certification.",
+                photos: ["manual_xg500_cover.png"]
             ),
             ProcedureDocument(
                 id: UUID(uuidString: "D1000000-0000-0000-0000-000000000002")!,
-                title: "Schema Manutenzione Periodica",
-                notes: "Cadenza interventi: ogni 250 ore di funzionamento o 6 mesi, a seconda di quale condizione si verifica prima.",
+                title: String(localized: "Periodic Maintenance Schedule"),
+                notes: "Service interval: every 250 operating hours or 6 months, whichever comes first.",
                 photos: []
             )
         ],
@@ -102,81 +106,81 @@ let mockWorkOrders: [WorkOrder] = [
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000002")!,
         assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
-        title: "Sostituzione Pompa Idraulica",
+        title: String(localized: "Hydraulic Pump Replacement"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C2000000-0000-0000-0000-000000000001")!,
-                text: "Scarico pressione impianto",
-                description: "Prima di qualsiasi intervento, portare la pressione dell'impianto a zero tramite la valvola di sfogo dedicata. Attendere 5 minuti prima di procedere.",
+                text: String(localized: "Depressurize the system"),
+                description: String(localized: "Before any work, bring the system pressure to zero using the dedicated relief valve. Wait 5 minutes before proceeding."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C2000000-0000-0000-0000-000000000002")!,
-                text: "Rimozione pompa vecchia",
-                description: "Disconnetti i raccordi idraulici e i cavi elettrici della pompa. Utilizza bacinella di raccolta per il fluido residuo e smaltiscilo correttamente.",
+                text: String(localized: "Remove old pump"),
+                description: String(localized: "Disconnect the hydraulic fittings and electrical cables from the pump. Use a collection tray for residual fluid and dispose of it properly."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C2000000-0000-0000-0000-000000000003")!,
-                text: "Installazione pompa nuova",
-                description: "Posiziona la nuova pompa rispettando l'orientamento indicato nello schema. Applica sigillante Loctite 577 sui filetti prima del serraggio.",
+                text: String(localized: "Install new pump"),
+                description: String(localized: "Position the new pump according to the orientation shown in the diagram. Apply Loctite 577 sealant to the threads before tightening."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C2000000-0000-0000-0000-000000000004")!,
-                text: "Test tenuta sotto pressione",
-                description: "Porta l'impianto gradualmente a pressione nominale (80 bar) e mantienila per 10 minuti. Verifica visivamente l'assenza di perdite su tutti i raccordi.",
+                text: String(localized: "Pressure leak test"),
+                description: String(localized: "Gradually bring the system to nominal pressure (80 bar) and hold for 10 minutes. Visually inspect all fittings for leaks."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C2000000-0000-0000-0000-000000000005")!,
-                text: "Firma modulo collaudo",
-                description: "Compila e firma il modulo di collaudo con data, pressione rilevata e nominativo del tecnico. Allegare copia al fascicolo macchina.",
+                text: String(localized: "Sign commissioning form"),
+                description: String(localized: "Fill in and sign the commissioning form with date, measured pressure, and technician name. Attach a copy to the machine file."),
                 isCompleted: false
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D2000000-0000-0000-0000-000000000001")!,
-                title: "Scheda Tecnica Pompa P-200",
-                notes: "Coppia di serraggio raccordi: 45 Nm. Portata nominale: 12 L/min a 1450 rpm. Fluido consigliato: ISO VG 46.",
-                photos: ["pompa_p200_schema.png", "pompa_p200_dettaglio.png"]
+                title: String(localized: "Pump P-200 Technical Datasheet"),
+                notes: "Fitting torque: 45 Nm. Nominal flow rate: 12 L/min at 1450 rpm. Recommended fluid: ISO VG 46.",
+                photos: ["pump_p200_diagram.png", "pump_p200_detail.png"]
             )
         ],
-        scheduledDate: daysAgo(1)
+        scheduledDate: today()
     ),
 
     // ── Luisa ─────────────────────────────────────────────────────
 
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000003")!,
-        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
-        title: "Ispezione Quadro Elettrico",
+        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        title: String(localized: "Electrical Panel Inspection"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C3000000-0000-0000-0000-000000000001")!,
-                text: "Verifica interruttori differenziali",
-                description: "Premi il pulsante di test su ogni differenziale e verifica che scatti correttamente. Annota gli ID di quelli che non rispondono per sostituzione immediata.",
+                text: String(localized: "Check residual current devices"),
+                description: String(localized: "Press the test button on each RCD and verify it trips correctly. Record the IDs of any non-responding units for immediate replacement."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C3000000-0000-0000-0000-000000000002")!,
-                text: "Controllo serraggi morsetti",
-                description: "Con cacciavite a croce misura la resistenza al serraggio di tutti i morsetti. I morsetti allentati sono causa primaria di archi elettrici e surriscaldamenti.",
+                text: String(localized: "Check terminal tightness"),
+                description: String(localized: "Use a cross-head screwdriver to check tightening resistance on all terminals. Loose terminals are a primary cause of electrical arcing and overheating."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C3000000-0000-0000-0000-000000000003")!,
-                text: "Misurazione isolamento cavi",
-                description: "Usa il megaohmmetro a 500V DC su ogni linea in uscita dal quadro. Il valore minimo accettabile è 1 MΩ; sotto soglia il cavo va sostituito.",
+                text: String(localized: "Cable insulation measurement"),
+                description: String(localized: "Use a 500V DC megohmmeter on each outgoing line from the panel. Minimum acceptable value is 1 MΩ; cables below threshold must be replaced."),
                 isCompleted: false
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D3000000-0000-0000-0000-000000000001")!,
-                title: "Schema Quadro Generale",
-                notes: "Schema aggiornato al 2023. Verificare che corrisponda allo stato fisico del quadro; segnalare eventuali discrepanze al responsabile tecnico.",
+                title: String(localized: "Main Panel Wiring Diagram"),
+                notes: "Diagram updated in 2023. Verify it matches the physical state of the panel; report any discrepancies to the technical manager.",
                 photos: []
             )
         ],
@@ -185,40 +189,40 @@ let mockWorkOrders: [WorkOrder] = [
 
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000004")!,
-        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
-        title: "Calibrazione Sensori Temperatura",
+        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        title: String(localized: "Temperature Sensor Calibration"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C4000000-0000-0000-0000-000000000001")!,
-                text: "Connessione al calibratore certificato",
-                description: "Collega il sensore al calibratore di riferimento tramite adattatore appropriato. Verifica che il calibratore abbia il certificato di taratura in corso di validità.",
+                text: String(localized: "Connect to certified calibrator"),
+                description: String(localized: "Connect the sensor to the reference calibrator using the appropriate adapter. Verify the calibrator has a valid calibration certificate."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C4000000-0000-0000-0000-000000000002")!,
-                text: "Verifica punto zero (0°C)",
-                description: "Immergi il sensore nel bagno di ghiaccio fondente (0°C ± 0.1°C). Attendi 3 minuti per la stabilizzazione e registra il valore letto dal sensore.",
+                text: String(localized: "Zero point check (0°C)"),
+                description: String(localized: "Immerse the sensor in a melting ice bath (0°C ± 0.1°C). Wait 3 minutes for stabilization and record the value read by the sensor."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C4000000-0000-0000-0000-000000000003")!,
-                text: "Verifica punto pieno (100°C)",
-                description: "Porta il bagno termico a 100°C e attendi la stabilizzazione per almeno 5 minuti. Lo scostamento max ammesso rispetto al calibratore è ±0.5°C.",
+                text: String(localized: "Full scale check (100°C)"),
+                description: String(localized: "Bring the thermal bath to 100°C and wait at least 5 minutes for stabilization. Maximum allowable deviation from the calibrator is ±0.5°C."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C4000000-0000-0000-0000-000000000004")!,
-                text: "Registrazione valori su modulo",
-                description: "Trascrivi i valori rilevati nei campi del modulo ISO-9001 allegato. Il modulo va firmato, datato e archiviato nel sistema documentale entro 24 ore.",
+                text: String(localized: "Record values on form"),
+                description: String(localized: "Transcribe the measured values into the attached ISO-9001 form fields. The form must be signed, dated, and archived in the document system within 24 hours."),
                 isCompleted: false
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D4000000-0000-0000-0000-000000000001")!,
-                title: "Procedura Calibrazione ISO-9001",
-                notes: "Scostamento massimo ammesso: ±0.5°C. In caso di superamento della soglia il sensore va dichiarato non conforme e sostituito prima della rimessa in servizio.",
-                photos: ["calibrazione_procedura.pdf"]
+                title: String(localized: "ISO-9001 Calibration Procedure"),
+                notes: "Maximum allowable deviation: ±0.5°C. If the threshold is exceeded, the sensor must be declared non-conforming and replaced before being returned to service.",
+                photos: ["calibration_procedure.pdf"]
             )
         ],
         scheduledDate: daysAgo(3)
@@ -228,90 +232,90 @@ let mockWorkOrders: [WorkOrder] = [
 
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000005")!,
-        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
-        title: "Revisione Impianto Antincendio",
+        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        title: String(localized: "Fire Safety System Inspection"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C5000000-0000-0000-0000-000000000001")!,
-                text: "Verifica estintori (scadenza e carica)",
-                description: "Controlla l'etichetta di scadenza su ogni estintore e verifica che l'indicatore di pressione sia nel range verde. Gli estintori scaduti vanno isolati e segnalati per revisione.",
+                text: String(localized: "Check fire extinguishers (expiry and charge)"),
+                description: String(localized: "Check the expiry label on each extinguisher and verify the pressure indicator is in the green range. Expired extinguishers must be isolated and flagged for servicing."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C5000000-0000-0000-0000-000000000002")!,
-                text: "Test rilevatori di fumo",
-                description: "Usa lo spray apposito (non accendino o fiamma) per testare ogni rilevatore. Verifica che la centrale di allarme riceva correttamente il segnale entro 10 secondi.",
+                text: String(localized: "Smoke detector test"),
+                description: String(localized: "Use the dedicated spray (not a lighter or flame) to test each detector. Verify the alarm panel receives the signal correctly within 10 seconds."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C5000000-0000-0000-0000-000000000003")!,
-                text: "Controllo porte tagliafuoco",
-                description: "Verifica che le porte tagliafuoco si chiudano automaticamente al rilascio. Controlla l'integrità delle guarnizioni intumescenti e l'assenza di ostruzioni.",
+                text: String(localized: "Fire door inspection"),
+                description: String(localized: "Verify that fire doors close automatically upon release. Check the integrity of intumescent seals and the absence of obstructions."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C5000000-0000-0000-0000-000000000004")!,
-                text: "Ispezione naspi e idranti",
-                description: "Svolgi parzialmente la manichetta di ogni naspo e verifica l'assenza di cricche o perdite. Controlla che la lancia sia presente e che il raccordo idrante non sia ossidato.",
+                text: String(localized: "Hose reels and hydrant inspection"),
+                description: String(localized: "Partially unroll each hose reel and check for cracks or leaks. Verify the nozzle is present and the hydrant coupling is not corroded."),
                 isCompleted: false
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C5000000-0000-0000-0000-000000000005")!,
-                text: "Compilazione registro antincendio",
-                description: "Compila il registro antincendio con data, esito di ogni verifica e nominativo del tecnico. Il registro deve essere conservato in loco e disponibile per ispezioni dei VVF.",
+                text: String(localized: "Fill in fire safety register"),
+                description: String(localized: "Complete the fire safety register with the date, outcome of each check, and technician name. The register must be kept on-site and available for fire brigade inspections."),
                 isCompleted: false
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D5000000-0000-0000-0000-000000000001")!,
-                title: "Normativa UNI EN 3 – Estintori",
-                notes: "Verificare conformità etichetta CE e presenza del numero di matricola. Gli estintori privi di marcatura CE non possono essere rimessi in servizio.",
-                photos: ["uni_en3_estratto.png"]
+                title: String(localized: "Standard UNI EN 3 – Fire Extinguishers"),
+                notes: "Verify CE label compliance and presence of serial number. Extinguishers without CE marking cannot be returned to service.",
+                photos: ["uni_en3_extract.png"]
             ),
             ProcedureDocument(
                 id: UUID(uuidString: "D5000000-0000-0000-0000-000000000002")!,
-                title: "Planimetria Zone Antincendio",
-                notes: "Planimetria aggiornata a Gennaio 2024. Verificare che i percorsi di esodo indicati siano liberi da ostacoli prima di chiudere il verbale.",
-                photos: ["planimetria_piano1.png", "planimetria_piano2.png"]
+                title: String(localized: "Fire Zone Floor Plan"),
+                notes: "Floor plan updated January 2024. Verify that the indicated escape routes are clear of obstacles before closing the report.",
+                photos: ["floorplan_floor1.png", "floorplan_floor2.png"]
             )
         ],
         scheduledDate: today()
     ),
 
-    // Work order passato aggiuntivo per Giovanni (per testare la sezione Passati)
+    // Additional past work order for Giovanni (to test the Past section)
     WorkOrder(
         id: UUID(uuidString: "A0000000-0000-0000-0000-000000000006")!,
-        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000003")!,
-        title: "Controllo UPS Sala Server",
+        assignedUserID: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        title: String(localized: "Server Room UPS Check"),
         checklist: [
             ChecklistItem(
                 id: UUID(uuidString: "C6000000-0000-0000-0000-000000000001")!,
-                text: "Verifica stato batterie UPS",
-                description: "Accedi al pannello di controllo dell'UPS e controlla lo stato di salute delle batterie (SOH%). Sostituire le batterie se SOH scende sotto l'80%.",
+                text: String(localized: "Check UPS battery status"),
+                description: String(localized: "Access the UPS control panel and check battery state of health (SOH%). Replace batteries if SOH drops below 80%."),
                 isCompleted: true
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C6000000-0000-0000-0000-000000000002")!,
-                text: "Test bypass manuale",
-                description: "Esegui il trasferimento in bypass manuale seguendo la procedura del manuale. Verifica che i carichi rimangano alimentati durante tutta la manovra senza interruzioni.",
+                text: String(localized: "Manual bypass test"),
+                description: String(localized: "Perform the manual bypass transfer following the procedure in the manual. Verify that loads remain powered throughout the entire operation without interruption."),
                 isCompleted: true
             ),
             ChecklistItem(
                 id: UUID(uuidString: "C6000000-0000-0000-0000-000000000003")!,
-                text: "Pulizia filtri ventilazione",
-                description: "Rimuovi i filtri frontali e soffia via la polvere con aria compressa a bassa pressione. Filtri molto intasati vanno sostituiti per evitare surriscaldamenti.",
+                text: String(localized: "Ventilation filter cleaning"),
+                description: String(localized: "Remove the front filters and blow out dust with low-pressure compressed air. Heavily clogged filters must be replaced to prevent overheating."),
                 isCompleted: true
             )
         ],
         documents: [
             ProcedureDocument(
                 id: UUID(uuidString: "D6000000-0000-0000-0000-000000000001")!,
-                title: "Manuale UPS APC Smart-UPS 3000",
-                notes: "Per il test di autonomia seguire la procedura a pag. 34. Durata minima attesa con carico al 50%: 18 minuti.",
-                photos: ["ups_apc_manuale.png"]
+                title: String(localized: "APC Smart-UPS 3000 Manual"),
+                notes: "For the runtime test follow the procedure on p. 34. Minimum expected runtime at 50% load: 18 minutes.",
+                photos: ["ups_apc_manual.png"]
             )
         ],
         scheduledDate: daysAgo(5)
     )
-]
+] }
