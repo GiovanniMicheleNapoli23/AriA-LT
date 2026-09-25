@@ -15,8 +15,10 @@ nonisolated struct AriaConfig: Sendable {
 
     /// FastAPI aria-backend: chat, sessioni, aziende, stabilimenti.
     var apiBaseURL: URL
-    /// Web app Next.js: login mobile (/api/mobile/auth/*). Firma lo stesso JWT di /api/aria/token.
+    /// Web app Next.js: login magic link (better-auth) e JWT per il backend (/api/aria/token).
     var authBaseURL: URL
+    /// Chiave pubblica Cloudflare Turnstile della web: better-auth vuole il captcha per mandare il link.
+    var turnstileSiteKey = "0x4AAAAAADF3cO-EJy4kf-nF"
     /// Mandato come X-Aria-Client: solo diagnostica, non è un segreto.
     var clientId = "aria-ios/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0")"
     /// Limite WAF CloudFront. Alzalo quando il backend esenta /v1/responses.
@@ -86,8 +88,9 @@ nonisolated enum AriaHTTP {
     }
 
     /// FastAPI: {"detail": "…"} | {"detail": [{"msg": …}]} | {"detail": {"code": …, "message": …}}
+    /// better-auth (web app): {"message": "…", "code": "…"}
     static func detail(from data: Data) -> String {
-        guard let json = try? JSONDecoder().decode(AriaJSON.self, from: data), let detail = json["detail"] else {
+        guard let json = try? JSONDecoder().decode(AriaJSON.self, from: data), let detail = json["detail"] ?? json["message"] else {
             return String(decoding: data.prefix(500), as: UTF8.self)
         }
         return switch detail {

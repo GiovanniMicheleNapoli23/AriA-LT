@@ -50,9 +50,7 @@ struct AIFloatingButton: View {
                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
 
                 // Logo AriA — sfera liquid glass
-                Image("AriaBlob")
-                    .resizable()
-                    .scaledToFit()
+                AriaOrb()
                     .frame(width: 46, height: 46)
                     .rotationEffect(.degrees(rotation))
                     .scaleEffect(isPressed ? 0.85 : 1.0)

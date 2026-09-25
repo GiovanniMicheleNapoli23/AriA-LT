@@ -32,7 +32,7 @@ struct SettingsSheet: View {
                             .foregroundStyle(Color.liteAccent)
                     }
                     .frame(width: 72, height: 72)
-                    .glassEffect(.regular, in: Circle())
+                    .ariaGlass(in: Circle())
 
                     VStack(spacing: 3) {
                         Text(user.name)

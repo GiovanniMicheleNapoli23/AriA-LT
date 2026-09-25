@@ -75,7 +75,7 @@ struct MaintenanceModeView: View {
                     ContentUnavailableView(
                         "No steps available",
                         systemImage: "list.bullet.clipboard",
-                        description: Text("This work order has no checklist items.")
+                        description: Text("This task has no checklist items.")
                     )
                 } else {
                     ZStack(alignment: .bottom) {
@@ -163,7 +163,16 @@ struct MaintenanceModeView: View {
                 .minimumScaleFactor(0.6)
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Button(role: .close) { dismiss() }
+            if #available(iOS 26.0, *) {
+                Button(role: .close) { dismiss() }
+            } else {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 
@@ -304,7 +313,7 @@ struct MaintenanceModeView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16), interactive: true)
     }
 
     // MARK: - Photo Card
@@ -339,7 +348,7 @@ struct MaintenanceModeView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 16))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16), interactive: true)
         .sheet(isPresented: $showPhotoSource) {
             PhotoSourceSheet(selectedPhotoItems: $selectedPhotoItems) {
                 showCamera = true
@@ -365,15 +374,13 @@ struct MaintenanceModeView: View {
 
     // MARK: - Navigation Bar
     private var navigationBar: some View {
-        GlassEffectContainer(spacing: 12) {
+        AriaGlassEffectContainer(spacing: 12) {
             VStack(spacing: 0) {
 
                 // ── Ask AI ──────────────────────────────────────────
                 Button { showAIHelp = true } label: {
                     HStack(spacing: 12) {
-                        Image("AriaBlob")
-                            .resizable()
-                            .scaledToFit()
+                        AriaOrb()
                             .frame(width: 32, height: 32)
                             .shadow(color: Color.liteAccent.opacity(0.4), radius: 5)
 
@@ -427,9 +434,9 @@ struct MaintenanceModeView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 14)
                     }
-                    .buttonStyle(.glass)
+                    .ariaGlassButtonStyle()
                     .disabled(currentStepIndex == 0)
-                    .glassEffectID("prev", in: glassNamespace)
+                    .ariaGlassEffectID("prev", in: glassNamespace)
 
                     Spacer()
 
@@ -447,12 +454,11 @@ struct MaintenanceModeView: View {
                                 .padding(.horizontal, 28)
                                 .padding(.vertical, 14)
                             }
-                            .buttonStyle(.glassProminent)
-                            .tint(Color.liteAccent)
-                            .glassEffectID("main-action", in: glassNamespace)
+                            .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
+                            .ariaGlassEffectID("main-action", in: glassNamespace)
                         } else {
                             submitButton
-                                .glassEffectID("main-action", in: glassNamespace)
+                                .ariaGlassEffectID("main-action", in: glassNamespace)
                         }
                     }
                     .animation(.spring(duration: 0.4), value: currentStepIndex)
@@ -483,8 +489,7 @@ struct MaintenanceModeView: View {
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
             }
-            .buttonStyle(.glassProminent)
-            .tint(Color.liteAccent)
+            .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
 
         case .sending:
             HStack(spacing: 8) {
@@ -493,14 +498,14 @@ struct MaintenanceModeView: View {
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 14)
-            .glassEffect(.regular.tint(Color.liteAccent.opacity(0.2)), in: Capsule())
+            .ariaGlass(in: Capsule(), tint: Color.liteAccent.opacity(0.2))
 
         case .success:
             Label("Success!", systemImage: "checkmark.circle.fill")
                 .font(.system(size: 15, weight: .semibold))
                 .padding(.horizontal, 28)
                 .padding(.vertical, 14)
-                .glassEffect(.regular.tint(.green.opacity(0.3)), in: Capsule())
+                .ariaGlass(in: Capsule(), tint: .green.opacity(0.3))
 
         case .failure:
             Button {
@@ -511,8 +516,7 @@ struct MaintenanceModeView: View {
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
             }
-            .buttonStyle(.glassProminent)
-            .tint(.red)
+            .ariaProminentGlassButtonStyle(tint: .red)
         }
     }
 }

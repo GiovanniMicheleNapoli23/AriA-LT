@@ -15,6 +15,9 @@ struct WorkOrderApp: App {
         WindowGroup {
             ContentView()
                 .environment(viewModel)
+                #if DEBUG
+                .task { await viewModel.backend.signInWithLaunchLink() }
+                #endif
         }
     }
 }

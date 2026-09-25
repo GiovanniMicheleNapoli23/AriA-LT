@@ -13,13 +13,28 @@ struct AriaMarkdownView: View {
     let text: String
     var font: Font = .system(size: 16)
 
+    /// Interlinea del testo: sul telefono le righe fitte si leggono male.
+    private static let lineSpacing: CGFloat = 4
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(Array(AriaMarkdown.blocks(text).enumerated()), id: \.offset) { _, block in
+        let blocks = AriaMarkdown.blocks(text)
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { index, block in
                 view(for: block)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, index == 0 ? 0 : spacing(before: block, after: blocks[index - 1]))
             }
         }
         .textSelection(.enabled)
+    }
+
+    /// Più aria prima di un titolo (apre una sezione), meno tra paragrafi e elenchi della stessa sezione.
+    private func spacing(before block: AriaMarkdown.Block, after previous: AriaMarkdown.Block) -> CGFloat {
+        switch block {
+        case .heading: 22
+        case .rule: 16
+        default: previous.isHeading ? 8 : 14
+        }
     }
 
     @ViewBuilder
@@ -27,26 +42,27 @@ struct AriaMarkdownView: View {
         switch block {
         case .heading(let level, let content):
             Text(AriaMarkdown.inline(content))
-                .font(.system(size: level == 1 ? 20 : level == 2 ? 18 : 16, weight: .semibold))
+                .font(.system(size: level == 1 ? 21 : level == 2 ? 19 : 17, weight: .semibold))
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
         case .paragraph(let content):
-            Text(AriaMarkdown.inline(content)).font(font)
+            Text(AriaMarkdown.inline(content))
+                .font(font)
+                .lineSpacing(Self.lineSpacing)
+                .fixedSize(horizontal: false, vertical: true)
         case .list(let items):
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 10) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                    HStack(alignment: .firstTextBaseline, spacing: 7) {
-                        Text(item.marker)
-                            .font(font.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                        Text(AriaMarkdown.inline(item.text)).font(font)
-                    }
-                    .padding(.leading, CGFloat(item.depth) * 16)
+                    listItem(item)
                 }
             }
         case .quote(let content):
             Text(AriaMarkdown.inline(content))
                 .font(font)
+                .lineSpacing(Self.lineSpacing)
                 .foregroundStyle(.secondary)
-                .padding(.leading, 10)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.leading, 12)
                 .overlay(alignment: .leading) {
                     Capsule().fill(Color.liteAccent.opacity(0.35)).frame(width: 3)
                 }
@@ -54,41 +70,111 @@ struct AriaMarkdownView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(content)
                     .font(.system(size: 13, design: .monospaced))
-                    .padding(10)
+                    .lineSpacing(3)
+                    .padding(12)
             }
-            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         case .table(let header, let rows):
-            AriaMarkdownTable(header: header, rows: rows)
+            // Due colonne stanno nello schermo; di più, ogni riga diventa una scheda da leggere dall'alto in basso.
+            if header.count <= 2 {
+                AriaMarkdownTable(header: header, rows: rows)
+            } else {
+                AriaMarkdownRowCards(header: header, rows: rows)
+            }
         case .rule:
             Divider()
         }
     }
+
+    /// Pallino o numero allineato alla prima riga; il testo che va a capo resta sotto il testo, non sotto il segno.
+    private func listItem(_ item: AriaMarkdown.ListItem) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            if item.isNumbered {
+                Text(item.marker)
+                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(Color.liteAccent.opacity(0.75))
+                    .frame(minWidth: 16, alignment: .trailing)
+            } else {
+                Circle()
+                    .fill(Color.primary.opacity(item.depth == 0 ? 0.55 : 0.3))
+                    .frame(width: 5, height: 5)
+                    .frame(width: 14, alignment: .center)
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
+            }
+            Text(AriaMarkdown.inline(item.text))
+                .font(font)
+                .lineSpacing(Self.lineSpacing)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.leading, CGFloat(item.depth) * 20)
+    }
 }
 
+/// Tabella piccola (fino a due colonne): sta tutta nello schermo, righe separate da un filo.
 private struct AriaMarkdownTable: View {
     let header: [String]
     let rows: [[String]]
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 8) {
-                GridRow {
-                    ForEach(Array(header.enumerated()), id: \.offset) { _, cell in
-                        Text(AriaMarkdown.inline(cell)).font(.system(size: 13, weight: .semibold))
-                    }
+        Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 16, verticalSpacing: 0) {
+            GridRow {
+                ForEach(Array(header.enumerated()), id: \.offset) { _, cell in
+                    Text(AriaMarkdown.inline(cell))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
                 }
+            }
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 Divider()
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                    GridRow {
-                        ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
-                            Text(AriaMarkdown.inline(cell)).font(.system(size: 13))
-                        }
+                GridRow {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                        Text(AriaMarkdown.inline(cell))
+                            .font(.system(size: 15))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.vertical, 9)
                     }
                 }
             }
-            .padding(10)
         }
-        .background(Color(.tertiarySystemFill).opacity(0.6), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 4)
+        .background(Color(.tertiarySystemFill).opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+/// Tabella larga: una scheda per riga, la prima colonna come titolo e le altre come "intestazione: valore".
+private struct AriaMarkdownRowCards: View {
+    let header: [String]
+    let rows: [[String]]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(AriaMarkdown.inline(row.first ?? ""))
+                        .font(.system(size: 15, weight: .semibold))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 6) {
+                        ForEach(Array(zip(header.dropFirst(), row.dropFirst()).enumerated()), id: \.offset) { _, pair in
+                            if !pair.1.isEmpty {
+                                GridRow {
+                                    Text(AriaMarkdown.inline(pair.0))
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(.secondary)
+                                    Text(AriaMarkdown.inline(pair.1))
+                                        .font(.system(size: 15))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
+                .background(Color(.tertiarySystemFill).opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
     }
 }
 
@@ -97,6 +183,8 @@ enum AriaMarkdown {
         let marker: String
         let text: String
         let depth: Int
+
+        var isNumbered: Bool { marker.first?.isNumber == true }
     }
 
     enum Block {
@@ -107,6 +195,8 @@ enum AriaMarkdown {
         case code(String)
         case table([String], [[String]])
         case rule
+
+        var isHeading: Bool { if case .heading = self { true } else { false } }
     }
 
     static func inline(_ text: String) -> AttributedString {
@@ -174,6 +264,11 @@ enum AriaMarkdown {
             if let heading = trimmed.firstMatch(of: /^(#{1,6})\s+(.*)$/) {
                 flush()
                 blocks.append(.heading(heading.1.count, String(heading.2)))
+            } else if paragraph.isEmpty, listItems.isEmpty || lines[i - 1].trimmingCharacters(in: .whitespaces).isEmpty,
+                      let bold = trimmed.firstMatch(of: /^(?:\*\*|__)([^*_]+?)(?:\*\*|__)(:?)$/) {
+                // Una riga tutta in grassetto ("**Cause probabili:**") è un titolo di sezione scritto male.
+                flush()
+                blocks.append(.heading(3, String(bold.1) + String(bold.2)))
             } else if trimmed.firstMatch(of: /^(-{3,}|\*{3,}|_{3,})$/) != nil {
                 flush()
                 blocks.append(.rule)

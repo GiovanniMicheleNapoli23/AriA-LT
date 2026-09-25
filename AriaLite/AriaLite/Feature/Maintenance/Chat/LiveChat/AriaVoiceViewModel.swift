@@ -5,13 +5,19 @@
 //  ViewModel @Observable per la sessione vocale nativa Aria Engine.
 //  Fa da bridge tra AriaRealtimeSession (delegate) e SwiftUI.
 //
+//  AriaRealtimeSession usa API AVFoundation disponibili solo da iOS 27 (audio engine
+//  strutturato, AVAudioSession async). Questo ViewModel resta invece utilizzabile fino a
+//  iOS 18: la sessione vera si crea solo dentro connect(), tenuta come `Any?` (come
+//  AriaLanguageModel per Apple Intelligence); prima di iOS 27, connect() fallisce con un
+//  messaggio chiaro invece di offrire un microfono che non funzionerebbe.
+//
 
 import Foundation
 import Observation
 
 @MainActor
 @Observable
-final class AriaVoiceViewModel: AriaRealtimeSessionDelegate {
+final class AriaVoiceViewModel {
 
     // MARK: - State
 
@@ -28,19 +34,29 @@ final class AriaVoiceViewModel: AriaRealtimeSessionDelegate {
 
     // MARK: - Private
 
+    /// `AriaRealtimeSession`, tenuta come `Any?` perché il suo tipo esiste solo da iOS 27.
     @ObservationIgnored
-    private let session = AriaRealtimeSession()
-
-    init() {
-        session.delegate = self
-    }
+    private var sessionBox: Any?
+    /// Il delegate è `weak` nella sessione: va tenuto vivo da qui.
+    @ObservationIgnored
+    private var bridgeBox: Any?
 
     // MARK: - Actions
 
     func connect() {
         guard !isConnected, !isConnecting else { return }
+        guard #available(iOS 27.0, *) else {
+            error = String(localized: "Voice requires iOS 27 or later. Use text chat instead.")
+            return
+        }
         isConnecting = true
         error = nil
+
+        let bridge = AriaRealtimeBridge(owner: self)
+        let session = AriaRealtimeSession()
+        session.delegate = bridge
+        bridgeBox = bridge
+        sessionBox = session
 
         Task {
             do {
@@ -53,7 +69,9 @@ final class AriaVoiceViewModel: AriaRealtimeSessionDelegate {
     }
 
     func disconnect() {
-        session.stop()
+        if #available(iOS 27.0, *), let session = sessionBox as? AriaRealtimeSession {
+            session.stop()
+        }
         isConnected = false
         isConnecting = false
     }
@@ -63,38 +81,57 @@ final class AriaVoiceViewModel: AriaRealtimeSessionDelegate {
     }
 
     var isMuted: Bool {
-        get { session.isMuted }
-        set { session.isMuted = newValue }
+        get {
+            guard #available(iOS 27.0, *), let session = sessionBox as? AriaRealtimeSession else { return false }
+            return session.isMuted
+        }
+        set {
+            guard #available(iOS 27.0, *), let session = sessionBox as? AriaRealtimeSession else { return }
+            session.isMuted = newValue
+        }
     }
+}
 
-    // MARK: - AriaRealtimeSessionDelegate
+// MARK: - Bridge verso AriaRealtimeSessionDelegate (solo iOS 27+)
+
+/// Riceve i callback della sessione e li applica al ViewModel: separato da `AriaVoiceViewModel`
+/// perché il protocollo (come la sessione) esiste solo da iOS 27, mentre il ViewModel deve
+/// restare utilizzabile su tutte le versioni.
+@available(iOS 27.0, *)
+private final class AriaRealtimeBridge: AriaRealtimeSessionDelegate {
+    private weak var owner: AriaVoiceViewModel?
+
+    init(owner: AriaVoiceViewModel) {
+        self.owner = owner
+    }
 
     nonisolated func session(_ session: AriaRealtimeSession, didReceiveTranscript text: String, from speaker: AriaRealtimeSession.Speaker) {
         Task { @MainActor in
             switch speaker {
-            case .assistant: self.assistantTranscript = text
-            case .user:      self.userTranscript = text
+            case .assistant: owner?.assistantTranscript = text
+            case .user:      owner?.userTranscript = text
             }
         }
     }
 
     nonisolated func session(_ session: AriaRealtimeSession, didChangeState state: AriaRealtimeSession.SessionState) {
         Task { @MainActor in
-            self.isConnected  = (state == .connected)
-            self.isOutputOnly = session.isOutputOnly
-            if state == .connected    { self.isConnecting = false }
+            guard let owner else { return }
+            owner.isConnected  = (state == .connected)
+            owner.isOutputOnly = session.isOutputOnly
+            if state == .connected    { owner.isConnecting = false }
             if state == .disconnected {
-                self.isConnecting = false
-                self.isOutputOnly = false
-                self.assistantTranscript = ""
-                self.userTranscript = ""
+                owner.isConnecting = false
+                owner.isOutputOnly = false
+                owner.assistantTranscript = ""
+                owner.userTranscript = ""
             }
         }
     }
 
     nonisolated func session(_ session: AriaRealtimeSession, isSearchingDocuments: Bool) {
         Task { @MainActor in
-            self.isSearchingDocs = isSearchingDocuments
+            owner?.isSearchingDocs = isSearchingDocuments
         }
     }
 }

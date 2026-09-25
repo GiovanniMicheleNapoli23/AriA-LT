@@ -14,4 +14,5 @@ extension Color {
     static let liteSurface = Color(red: 1.00, green: 1.00, blue: 1.00)  // bianco puro
     static let liteBorder = Color(red: 0.08, green: 0.14, blue: 0.25).opacity(0.12)
     static let liteText = Color(red: 0.08, green: 0.14, blue: 0.25)  // stesso navy per coerenza
+    static let liteSidebar = Color(red: 0.95, green: 0.955, blue: 0.965)  // un filo più scuro del pannello
 }

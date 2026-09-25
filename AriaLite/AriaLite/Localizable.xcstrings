@@ -209,18 +209,18 @@
         }
       }
     },
-    "%lld archived work orders" : {
+    "%lld archived tasks" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld archived work orders"
+            "value" : "%lld archived tasks"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld ordini di lavoro archiviati"
+            "value" : "%lld attività archiviate"
           }
         }
       }
@@ -237,6 +237,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld allegate"
+          }
+        }
+      }
+    },
+    "%lld of %lld tasks done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld tasks done"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld di %2$lld task fatti"
           }
         }
       }
@@ -273,12 +289,12 @@
         }
       }
     },
-    "%lld scheduled activities" : {
+    "%lld scheduled tasks" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld scheduled activities"
+            "value" : "%lld scheduled tasks"
           }
         },
         "it" : {
@@ -449,22 +465,6 @@
         }
       }
     },
-    "6-digit code" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6-digit code"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Codice a 6 cifre"
-          }
-        }
-      }
-    },
     "Absent" : {
       "localizations" : {
         "en" : {
@@ -514,6 +514,22 @@
         }
       }
     },
+    "Add" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi"
+          }
+        }
+      }
+    },
     "Add Notes" : {
       "localizations" : {
         "en" : {
@@ -545,6 +561,19 @@
           }
         }
       }
+    },
+    "Add something (optional)…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi qualcosa (facoltativo)…"
+          }
+        }
+      }
+    },
+    "Added to the company's learned knowledge." : {
+
     },
     "Air filter cleaning" : {
       "localizations" : {
@@ -594,6 +623,22 @@
         }
       }
     },
+    "All chats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All chats"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutte le chat"
+          }
+        }
+      }
+    },
     "All work orders" : {
       "localizations" : {
         "en" : {
@@ -626,6 +671,38 @@
         }
       }
     },
+    "Allow Speech Recognition for AriaLite in Settings to dictate." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Speech Recognition for AriaLite in Settings to dictate."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per dettare, consenti il riconoscimento vocale ad AriaLite nelle Impostazioni."
+          }
+        }
+      }
+    },
+    "Allow the microphone for AriaLite in Settings to dictate." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow the microphone for AriaLite in Settings to dictate."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per dettare, consenti il microfono ad AriaLite nelle Impostazioni."
+          }
+        }
+      }
+    },
     "Already scheduled that day" : {
       "localizations" : {
         "en" : {
@@ -654,6 +731,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Analizzo carico team"
+          }
+        }
+      }
+    },
+    "Answer" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rispondi"
           }
         }
       }
@@ -718,6 +805,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approva"
+          }
+        }
+      }
+    },
+    "Approve or reject the action to continue." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva o rifiuta l'azione per continuare."
           }
         }
       }
@@ -787,6 +884,7 @@
       }
     },
     "AriA can make mistakes. Verify safety procedures before any intervention." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -803,6 +901,7 @@
       }
     },
     "Aria Engine" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -819,6 +918,7 @@
       }
     },
     "AriA Engine" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -833,6 +933,32 @@
           }
         }
       }
+    },
+    "Aria is asking" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria chiede"
+          }
+        }
+      }
+    },
+    "Aria is learning…" : {
+
+    },
+    "Aria is waiting for your decision" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria aspetta la tua decisione"
+          }
+        }
+      }
+    },
+    "Aria isn't sure — help it learn" : {
+
     },
     "Aria learned %lld new facts" : {
       "localizations" : {
@@ -850,21 +976,8 @@
         }
       }
     },
-    "AriA LT" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AriA LT"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AriA LT"
-          }
-        }
-      }
+    "Aria learned something new" : {
+
     },
     "Aria needs your approval" : {
       "extractionState" : "stale",
@@ -915,6 +1028,22 @@
         }
       }
     },
+    "As on the web app, we will email you a sign-in link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As on the web app, we will email you a sign-in link."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Come sulla web app, ti invieremo via email un link di accesso."
+          }
+        }
+      }
+    },
     "Ask about it" : {
       "localizations" : {
         "en" : {
@@ -943,6 +1072,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiedi su questo passaggio"
+          }
+        }
+      }
+    },
+    "Ask Aria" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask Aria"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi ad Aria"
           }
         }
       }
@@ -1012,6 +1157,7 @@
       }
     },
     "Assistant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1059,6 +1205,22 @@
         }
       }
     },
+    "Automatic" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatica"
+          }
+        }
+      }
+    },
     "awaiting approval" : {
       "localizations" : {
         "en" : {
@@ -1071,6 +1233,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "in attesa di approvazione"
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indietro"
           }
         }
       }
@@ -1235,6 +1407,22 @@
         }
       }
     },
+    "Chats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chats"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat"
+          }
+        }
+      }
+    },
     "Check belt tension: allowable deflection is 10–15 mm under manual pressure. Check for absence of cracks or wear on the sides." : {
       "localizations" : {
         "en" : {
@@ -1347,6 +1535,22 @@
         }
       }
     },
+    "Check your email" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check your email"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla la tua email"
+          }
+        }
+      }
+    },
     "Checklist" : {
       "localizations" : {
         "en" : {
@@ -1375,6 +1579,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scegli"
+          }
+        }
+      }
+    },
+    "Choose all that apply" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli tutte quelle valide"
+          }
+        }
+      }
+    },
+    "Clear" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzera"
           }
         }
       }
@@ -1491,6 +1715,16 @@
         }
       }
     },
+    "Compact" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compatto"
+          }
+        }
+      }
+    },
     "Compact (operator)" : {
       "localizations" : {
         "en" : {
@@ -1523,6 +1757,22 @@
         }
       }
     },
+    "Complete step" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete step"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa lo step"
+          }
+        }
+      }
+    },
     "Complete the fire safety register with the date, outcome of each check, and technician name. The register must be kept on-site and available for fire brigade inspections." : {
       "localizations" : {
         "en" : {
@@ -1535,6 +1785,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compila il registro antincendio con la data, l’esito di ogni controllo e il nome del tecnico. Il registro deve essere conservato in loco e disponibile per le ispezioni dei vigili del fuoco."
+          }
+        }
+      }
+    },
+    "Complete the steps to answer Aria's question" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa i task per rispondere alla domanda di Aria"
           }
         }
       }
@@ -1620,6 +1880,22 @@
         }
       }
     },
+    "Connect" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connetti"
+          }
+        }
+      }
+    },
     "Connect the sensor to the reference calibrator using the appropriate adapter. Verify the calibrator has a valid calibration certificate." : {
       "localizations" : {
         "en" : {
@@ -1632,6 +1908,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collega il sensore al calibratore di riferimento usando l’adattatore appropriato. Verifica che il calibratore abbia un certificato di taratura valido."
+          }
+        }
+      }
+    },
+    "Connect to Aria server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to Aria server"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connetti al server Aria"
           }
         }
       }
@@ -1668,6 +1960,22 @@
         }
       }
     },
+    "Connect to the Aria server to see your conversations." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect to the Aria server to see your conversations."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connettiti al server Aria per vedere le tue conversazioni."
+          }
+        }
+      }
+    },
     "CONNECTING…" : {
       "localizations" : {
         "en" : {
@@ -1684,7 +1992,11 @@
         }
       }
     },
+    "Context" : {
+
+    },
     "Conversations" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1731,6 +2043,12 @@
           }
         }
       }
+    },
+    "Could not save to Aria's learned knowledge." : {
+
+    },
+    "Could not send it for validation." : {
+
     },
     "Couldn't load conversations" : {
       "localizations" : {
@@ -1840,6 +2158,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Creo work order"
+          }
+        }
+      }
+    },
+    "Current step" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current step"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step corrente"
           }
         }
       }
@@ -2004,6 +2338,54 @@
         }
       }
     },
+    "Dictate" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictate"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detta"
+          }
+        }
+      }
+    },
+    "Dictation isn't available for this language right now." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictation isn't available for this language right now."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La dettatura non è disponibile per questa lingua in questo momento."
+          }
+        }
+      }
+    },
+    "Dictation language" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dictation language"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lingua di dettatura"
+          }
+        }
+      }
+    },
     "Discard" : {
       "localizations" : {
         "en" : {
@@ -2048,6 +2430,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scollega i raccordi idraulici e i cavi elettrici dalla pompa. Usa una vaschetta di raccolta per il fluido residuo e smaltiscilo correttamente."
+          }
+        }
+      }
+    },
+    "Dismiss" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi"
           }
         }
       }
@@ -2289,6 +2681,25 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guasto"
+          }
+        }
+      }
+    },
+    "Filed as a proposal — it needs approval before use." : {
+
+    },
+    "Files" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Files"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File"
           }
         }
       }
@@ -2677,6 +3088,35 @@
         }
       }
     },
+    "Hide context" : {
+
+    },
+    "Hide password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hide password"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nascondi password"
+          }
+        }
+      }
+    },
+    "Hide the question" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nascondi la domanda"
+          }
+        }
+      }
+    },
     "High" : {
       "localizations" : {
         "en" : {
@@ -2981,6 +3421,22 @@
         }
       }
     },
+    "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 10 minutes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 10 minutes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nell'email tieni premuto il pulsante di accesso, scegli Copia link e incollalo qui. Non aprirlo nel browser: il link funziona una sola volta e scade tra 10 minuti."
+          }
+        }
+      }
+    },
     "Install new pump" : {
       "localizations" : {
         "en" : {
@@ -3141,6 +3597,9 @@
         }
       }
     },
+    "Learned" : {
+
+    },
     "Learned knowledge used · %lld" : {
       "localizations" : {
         "en" : {
@@ -3201,6 +3660,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elenca i work order con codice allarme %@"
+          }
+        }
+      }
+    },
+    "Listening…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ascolto…"
           }
         }
       }
@@ -3350,6 +3825,7 @@
       }
     },
     "Local mode" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3653,6 +4129,22 @@
         }
       }
     },
+    "Menu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu"
+          }
+        }
+      }
+    },
     "Message too long (%lld bytes, limit %lld)." : {
       "localizations" : {
         "en" : {
@@ -3665,6 +4157,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Messaggio troppo lungo (%lld byte, limite %lld)."
+          }
+        }
+      }
+    },
+    "Microphone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microphone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Microfono"
           }
         }
       }
@@ -3697,6 +4205,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mese"
+          }
+        }
+      }
+    },
+    "More" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altro"
           }
         }
       }
@@ -3877,6 +4401,22 @@
         }
       }
     },
+    "No procedure yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No procedure yet"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna procedura"
+          }
+        }
+      }
+    },
     "No results." : {
       "localizations" : {
         "en" : {
@@ -3893,12 +4433,12 @@
         }
       }
     },
-    "No scheduled activities" : {
+    "No scheduled tasks" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No scheduled activities"
+            "value" : "No scheduled tasks"
           }
         },
         "it" : {
@@ -3925,18 +4465,18 @@
         }
       }
     },
-    "No work orders for today" : {
+    "No tasks for today" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No work orders for today"
+            "value" : "No tasks for today"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun ordine di lavoro per oggi"
+            "value" : "Nessuna attività per oggi"
           }
         }
       }
@@ -3988,6 +4528,9 @@
           }
         }
       }
+    },
+    "Not now" : {
+
     },
     "Not requested" : {
       "localizations" : {
@@ -4100,6 +4643,9 @@
           }
         }
       }
+    },
+    "Notify" : {
+
     },
     "OFFLINE" : {
       "localizations" : {
@@ -4437,7 +4983,24 @@
         }
       }
     },
+    "Or paste the link here" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or paste the link here"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppure incolla qui il link"
+          }
+        }
+      }
+    },
     "Or type your answer…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4481,6 +5044,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordini"
+          }
+        }
+      }
+    },
+    "Other answer…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altra risposta…"
           }
         }
       }
@@ -4693,6 +5266,22 @@
         }
       }
     },
+    "Photo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto"
+          }
+        }
+      }
+    },
     "Photos" : {
       "localizations" : {
         "en" : {
@@ -4705,6 +5294,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Pin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissa"
+          }
+        }
+      }
+    },
+    "Pinned" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pinned"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fissate"
           }
         }
       }
@@ -4853,6 +5474,22 @@
         }
       }
     },
+    "Previous steps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous steps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step precedenti"
+          }
+        }
+      }
+    },
     "Priority" : {
       "localizations" : {
         "en" : {
@@ -4881,6 +5518,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Causa probabile"
+          }
+        }
+      }
+    },
+    "Problem" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problema"
           }
         }
       }
@@ -4965,6 +5612,25 @@
         }
       }
     },
+    "Question" : {
+
+    },
+    "Question %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Question %lld of %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domanda %1$lld di %2$lld"
+          }
+        }
+      }
+    },
     "Quiet hours, anything to check?" : {
       "localizations" : {
         "en" : {
@@ -5029,6 +5695,9 @@
         }
       }
     },
+    "Real-time Learning" : {
+
+    },
     "Reasoning" : {
       "localizations" : {
         "en" : {
@@ -5041,6 +5710,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ragionamento"
+          }
+        }
+      }
+    },
+    "Recents" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recenti"
           }
         }
       }
@@ -5169,6 +5854,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rifiutato"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi"
+          }
+        }
+      }
+    },
+    "Remove %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi %@"
           }
         }
       }
@@ -5317,6 +6034,23 @@
         }
       }
     },
+    "Response style: %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Response style: %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stile di risposta: %@"
+          }
+        }
+      }
+    },
     "Result" : {
       "localizations" : {
         "en" : {
@@ -5332,6 +6066,29 @@
           }
         }
       }
+    },
+    "Retry" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riprova"
+          }
+        }
+      }
+    },
+    "Review" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedi"
+          }
+        }
+      }
+    },
+    "Review context" : {
+
     },
     "Review saved." : {
       "localizations" : {
@@ -5445,6 +6202,9 @@
         }
       }
     },
+    "Saved for review" : {
+
+    },
     "Saved to Aria's knowledge." : {
       "localizations" : {
         "en" : {
@@ -5457,6 +6217,19 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salvato nella conoscenza di Aria."
+          }
+        }
+      }
+    },
+    "Saving your answer to the plant's knowledge." : {
+
+    },
+    "Scroll to the latest message" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vai all'ultimo messaggio"
           }
         }
       }
@@ -5477,18 +6250,18 @@
         }
       }
     },
-    "Search work orders..." : {
+    "Search tasks..." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Search work orders..."
+            "value" : "Search tasks..."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cerca ordini di lavoro..."
+            "value" : "Cerca attività..."
           }
         }
       }
@@ -5589,6 +6362,9 @@
         }
       }
     },
+    "Select a plant before answering — this is saved to the plant's knowledge." : {
+
+    },
     "Select a plant before chatting." : {
       "localizations" : {
         "en" : {
@@ -5637,18 +6413,34 @@
         }
       }
     },
-    "Send code" : {
+    "Send a new link" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Send code"
+            "value" : "Send a new link"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invia codice"
+            "value" : "Invia un nuovo link"
+          }
+        }
+      }
+    },
+    "Send sign-in link" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send sign-in link"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia link di accesso"
           }
         }
       }
@@ -5665,6 +6457,25 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invio in corso..."
+          }
+        }
+      }
+    },
+    "Sent for validation — an admin will review it." : {
+
+    },
+    "Sent to" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sent to"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inviato a"
           }
         }
       }
@@ -5713,6 +6524,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controllo UPS sala server"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostazioni"
           }
         }
       }
@@ -5845,6 +6672,33 @@
         }
       }
     },
+    "Show password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show password"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra password"
+          }
+        }
+      }
+    },
+    "Show the checklist" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra la checklist"
+          }
+        }
+      }
+    },
     "Sign commissioning form" : {
       "localizations" : {
         "en" : {
@@ -5893,6 +6747,22 @@
         }
       }
     },
+    "Sign-in failed (%@). Request a new link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign-in failed (%@). Request a new link."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso non riuscito (%@). Richiedi un nuovo link."
+          }
+        }
+      }
+    },
     "Similar cases" : {
       "localizations" : {
         "en" : {
@@ -5905,22 +6775,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Casi simili"
-          }
-        }
-      }
-    },
-    "SINAURA" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SINAURA"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SINAURA"
           }
         }
       }
@@ -6101,6 +6955,22 @@
         }
       }
     },
+    "Stop dictation" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop dictation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferma dettatura"
+          }
+        }
+      }
+    },
     "Stream error" : {
       "localizations" : {
         "en" : {
@@ -6229,6 +7099,16 @@
         }
       }
     },
+    "Tap in order of priority" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca in ordine di priorità"
+          }
+        }
+      }
+    },
     "Tap to see details" : {
       "localizations" : {
         "en" : {
@@ -6257,6 +7137,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Obiettivo raggiunto"
+          }
+        }
+      }
+    },
+    "Task %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Task %lld of %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task %1$lld di %2$lld"
+          }
+        }
+      }
+    },
+    "Tasks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasks"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attività"
           }
         }
       }
@@ -6358,6 +7270,38 @@
         }
       }
     },
+    "The sign-in link did not start a session. Request a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sign-in link did not start a session. Request a new one."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il link di accesso non ha avviato una sessione. Richiedine uno nuovo."
+          }
+        }
+      }
+    },
+    "The steps Aria gives you in this chat will appear here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The steps Aria gives you in this chat will appear here."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui compariranno gli step che Aria ti dà in questa chat."
+          }
+        }
+      }
+    },
     "The token is not a valid JWT or has expired." : {
       "localizations" : {
         "en" : {
@@ -6374,18 +7318,98 @@
         }
       }
     },
-    "This work order has no checklist items." : {
+    "Thinking" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This work order has no checklist items."
+            "value" : "Thinking"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questo ordine di lavoro non ha voci di checklist."
+            "value" : "Sto pensando"
+          }
+        }
+      }
+    },
+    "This chat" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This chat"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa chat"
+          }
+        }
+      }
+    },
+    "This is not an Aria sign-in link. Copy the link from the email and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is not an Aria sign-in link. Copy the link from the email and try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo non è un link di accesso ad Aria. Copia il link dall'email e riprova."
+          }
+        }
+      }
+    },
+    "This sign-in link has already been used or is not valid. Request a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This sign-in link has already been used or is not valid. Request a new one."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo link di accesso è già stato usato o non è valido. Richiedine uno nuovo."
+          }
+        }
+      }
+    },
+    "This sign-in link has expired. Request a new one." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This sign-in link has expired. Request a new one."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo link di accesso è scaduto. Richiedine uno nuovo."
+          }
+        }
+      }
+    },
+    "This task has no checklist items." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This task has no checklist items."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa attività non ha voci di checklist."
           }
         }
       }
@@ -6454,6 +7478,9 @@
         }
       }
     },
+    "To review" : {
+
+    },
     "Today" : {
       "localizations" : {
         "en" : {
@@ -6470,6 +7497,22 @@
         }
       }
     },
+    "Too many attempts. Wait a minute and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many attempts. Wait a minute and try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Troppi tentativi. Aspetta un minuto e riprova."
+          }
+        }
+      }
+    },
     "Tools" : {
       "localizations" : {
         "en" : {
@@ -6482,6 +7525,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Attrezzi"
+          }
+        }
+      }
+    },
+    "Touch and hold for the dictation language" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touch and hold for the dictation language"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tieni premuto per la lingua di dettatura"
           }
         }
       }
@@ -6550,6 +7610,16 @@
         }
       }
     },
+    "Type your answer…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi la tua risposta…"
+          }
+        }
+      }
+    },
     "Unassigned" : {
       "localizations" : {
         "en" : {
@@ -6579,6 +7649,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Errore sconosciuto"
+          }
+        }
+      }
+    },
+    "Unpin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi da fissate"
           }
         }
       }
@@ -6643,22 +7729,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usa un cacciavite a croce per verificare la resistenza di serraggio su tutti i morsetti. I morsetti allentati sono una causa primaria di archi elettrici e surriscaldamento."
-          }
-        }
-      }
-    },
-    "Use a different email" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use a different email"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa un’altra email"
           }
         }
       }
@@ -6746,21 +7816,8 @@
         }
       }
     },
-    "V 1.0" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "V 1.0"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "V 1.0"
-          }
-        }
-      }
+    "Validated answer" : {
+
     },
     "Ventilation filter cleaning" : {
       "localizations" : {
@@ -6794,6 +7851,19 @@
         }
       }
     },
+    "Voice" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voce"
+          }
+        }
+      }
+    },
+    "Voice requires iOS 27 or later. Use text chat instead." : {
+
+    },
     "Waiting" : {
       "localizations" : {
         "en" : {
@@ -6811,6 +7881,7 @@
       }
     },
     "Waiting for your decision above" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6858,34 +7929,13 @@
         }
       }
     },
-    "We sent a code to your email. It is valid for 10 minutes." : {
+    "Web" : {
+      "extractionState" : "stale",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We sent a code to your email. It is valid for 10 minutes."
-          }
-        },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ti abbiamo mandato un codice via email. Vale 10 minuti."
-          }
-        }
-      }
-    },
-    "We will send you a sign-in code by email." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We will send you a sign-in code by email."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ti mandiamo un codice di accesso via email."
+            "value" : "Web"
           }
         }
       }
@@ -7222,22 +8272,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Work order suggerito"
-          }
-        }
-      }
-    },
-    "Work Orders" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Work Orders"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ordini di lavoro"
           }
         }
       }

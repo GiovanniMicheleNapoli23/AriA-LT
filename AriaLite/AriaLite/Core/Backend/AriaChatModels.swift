@@ -298,6 +298,19 @@ nonisolated struct AriaElicitation: Codable, Sendable, Identifiable, Hashable {
         case allowCustom = "allow_custom"
     }
 
+    init(id: String, question: String, mode: String = "single", allowCustom: Bool, options: [AriaElicitationOption],
+         submit: String? = nil) {
+        self.id = id
+        self.question = question
+        self.mode = mode
+        self.allowCustom = allowCustom
+        self.options = options
+        self.submit = submit
+        steps = nil
+        assembly = nil
+        topic = nil
+    }
+
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
@@ -372,6 +385,80 @@ nonisolated struct AriaMemoryLearned: Codable, Sendable, Hashable {
     let action: String?
 }
 
+// MARK: - Real-time Learning
+
+/// La domanda del "Real-time Learning" (ValidationRequestPayload della web): il gate di confidenza
+/// non è sicuro della risposta e chiede all'operatore di confermarla o correggerla.
+nonisolated struct AriaValidationRequest: Codable, Sendable, Hashable {
+    let question: String
+    let options: [AriaElicitationOption]
+    let targeted: Bool?
+    let reason: String?
+    /// La frase "perché Aria non è sicura" di val-dev-2; dev la mette in `reason`.
+    let explanation: String?
+
+    /// Almeno la domanda e due opzioni (isUsableValidationRequest della web).
+    var isUsable: Bool {
+        !question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && options.count >= 2
+    }
+
+    /// validationReasonText della web: `low_confidence` è un'etichetta, non una frase.
+    var reasonText: String? {
+        if let explanation, !explanation.trimmingCharacters(in: .whitespaces).isEmpty { return explanation }
+        guard let reason, !reason.isEmpty, reason != "low_confidence" else { return nil }
+        return reason
+    }
+
+    /// Il pannello di domande che la pone (toValidationElicitation della web): l'id viene dal messaggio,
+    /// e la risposta scritta è sempre ammessa — è la cosa più preziosa che il gate raccoglie.
+    func elicitation(messageId: String) -> AriaElicitation {
+        AriaElicitation(id: "validation-\(messageId)", question: question, allowCustom: true, options: options,
+                        submit: "learning")
+    }
+}
+
+/// Verdetto del gate di confidenza su una risposta finita (`aria.answer_confidence`).
+nonisolated struct AriaAnswerConfidence: Codable, Sendable, Hashable {
+    let score: Double?
+    let threshold: Double?
+    let needsValidation: Bool
+    var validationRequest: AriaValidationRequest?
+
+    enum CodingKeys: String, CodingKey {
+        case score, threshold
+        case needsValidation = "needs_validation"
+        case validationRequest = "validation_request"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        score = try? c.decodeIfPresent(Double.self, forKey: .score)
+        threshold = try? c.decodeIfPresent(Double.self, forKey: .threshold)
+        needsValidation = try c.decode(Bool.self, forKey: .needsValidation)
+        // Una domanda annidata inutilizzabile si scarta, come quella arrivata da sola.
+        validationRequest = (try? c.decodeIfPresent(AriaValidationRequest.self, forKey: .validationRequest))
+            .flatMap { $0.isUsable ? $0 : nil }
+    }
+}
+
+/// Esito di POST memory-facts/validation (camelCase lato API).
+nonisolated struct AriaMemoryValidationResponse: Decodable, Sendable, Hashable {
+    nonisolated struct Item: Decodable, Sendable, Hashable {
+        let factId: String?
+        let content: String
+        let action: String
+
+        /// "added" / "updated" se imparato subito, "proposed" se va approvato.
+        var isProposed: Bool { action == "proposed" }
+    }
+
+    let learned: Int?
+    let proposals: Int?
+    let items: [Item]?
+    /// Quando/dove vale ciò che Aria ha imparato, scritto da Aria.
+    let context: String?
+}
+
 nonisolated struct AriaSourceRef: Codable, Sendable, Hashable {
     let title: String
     let url: String?
@@ -403,6 +490,8 @@ nonisolated enum AriaStreamEvent: Sendable {
     case memoryContext(facts: [String], raw: AriaJSON)
     case memoryLearned([AriaMemoryLearned])
     case memoryProposal(AriaMemoryProposal)
+    case answerConfidence(AriaAnswerConfidence)
+    case validationRequest(AriaValidationRequest)
     case diagnosticState(episode: Int?)
     case interrupt(AriaInterrupt)
     case taskList(AriaTaskList)
@@ -458,6 +547,9 @@ nonisolated enum AriaStreamEvent: Sendable {
             .memoryContext(facts: decode(MemoryContext.self)?.facts ?? [], raw: decode(AriaJSON.self) ?? .null)
         case "aria.memory_learned": .memoryLearned(decode(Learned.self)?.items ?? [])
         case "aria.memory_proposal": decode(AriaMemoryProposal.self).map { .memoryProposal($0) } ?? .ignored
+        case "aria.answer_confidence": decode(AriaAnswerConfidence.self).map { .answerConfidence($0) } ?? .ignored
+        case "aria.validation_request":
+            decode(AriaValidationRequest.self).flatMap { $0.isUsable ? AriaStreamEvent.validationRequest($0) : nil } ?? .ignored
         case "aria.diagnostic_state": .diagnosticState(episode: decode(Diagnostic.self)?.episodeNumber)
         case "aria.interrupt": decode(AriaInterrupt.self).map { .interrupt($0) } ?? .ignored
         case "aria.task_list": decode(AriaTaskList.self).map { .taskList($0) } ?? pipelineOrIgnored()

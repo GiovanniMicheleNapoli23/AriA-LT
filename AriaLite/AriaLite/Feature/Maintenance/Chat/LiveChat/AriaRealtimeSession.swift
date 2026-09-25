@@ -15,9 +15,15 @@
 
 import Foundation
 import AVFoundation
+import Synchronization
 
 // MARK: - Delegate Protocol
 
+// Le API AVFoundation qui sotto (audio engine strutturato, AVAudioSession async) esistono
+// solo da iOS 27: sessione, delegate e conformance sono quindi marcati @available(iOS 27.0, *).
+// Il ViewModel che le usa (AriaVoiceViewModel) resta invece disponibile su tutte le versioni:
+// tiene questa sessione come `Any?` e la crea solo dopo aver verificato la disponibilità.
+@available(iOS 27.0, *)
 protocol AriaRealtimeSessionDelegate: AnyObject {
     func session(_ session: AriaRealtimeSession, didReceiveTranscript text: String, from speaker: AriaRealtimeSession.Speaker)
     func session(_ session: AriaRealtimeSession, didChangeState state: AriaRealtimeSession.SessionState)
@@ -26,6 +32,7 @@ protocol AriaRealtimeSessionDelegate: AnyObject {
 
 // MARK: - AriaRealtimeSession
 
+@available(iOS 27.0, *)
 final class AriaRealtimeSession: NSObject {
 
     // MARK: Types
@@ -46,7 +53,11 @@ final class AriaRealtimeSession: NSObject {
         }
     }
 
-    var isMuted = false
+    /// Letto anche dal thread audio (tap mic) → vive nel Mutex
+    nonisolated var isMuted: Bool {
+        get { echo.withLock { $0.isMuted } }
+        set { echo.withLock { $0.isMuted = newValue } }
+    }
 
     /// True quando la sessione è in mix mode (es. Teams/Meet attivo) —
     /// il mic potrebbe avere AEC ridotto
@@ -55,22 +66,27 @@ final class AriaRealtimeSession: NSObject {
     // ── Anti-echo: approccio ChatGPT-style ──
     // Mic NON invia audio al server durante playback AI.
     // Barge-in rilevato localmente tramite energia RMS del microfono.
-    /// True finché l'AI sta parlando O il suo audio è ancora in riproduzione
-    private var isAISpeaking = false
-    /// Conta i buffer audio schedulati ma non ancora riprodotti
-    private var pendingBufferCount = 0
-    /// True quando il server ha finito di inviare tutti i delta audio
-    private var responseAudioComplete = false
+    /// Stato condiviso tra MainActor, thread audio e callback del player
+    nonisolated private struct EchoState {
+        /// Mic in mute (gestito dalla UI)
+        var isMuted = false
+        /// True finché l'AI sta parlando O il suo audio è ancora in riproduzione
+        var isAISpeaking = false
+        /// Conta i buffer audio schedulati ma non ancora riprodotti
+        var pendingBufferCount = 0
+        /// True quando il server ha finito di inviare tutti i delta audio
+        var responseAudioComplete = false
+        /// Contatore chunk sopra soglia
+        var bargeInFrameCount = 0
+    }
+    /// Mutex per thread-safety (sostituisce NSLock + var MainActor)
+    private let echo = Mutex(EchoState())
     /// Timer di cooldown dopo l'ultima riproduzione
     private var unmuteCooldownWork: DispatchWorkItem?
-    /// Lock per thread-safety
-    private let bufferLock = NSLock()
     /// Soglia RMS per rilevare barge-in locale (voce vera vs eco speaker)
     private let bargeInRMSThreshold: Float = 0.025
     /// Chunk consecutivi sopra soglia necessari per confermare barge-in
     private let bargeInFramesNeeded = 2
-    /// Contatore chunk sopra soglia (accesso solo sotto bufferLock)
-    private var bargeInFrameCount = 0
     /// Response ID corrente per poterlo cancellare
     private var currentResponseId: String?
     /// Coda seriale per operazioni di stato (barge-in, unmute, ecc.)
@@ -134,7 +150,7 @@ final class AriaRealtimeSession: NSObject {
 
         // 2 — Audio session
         do {
-            try configureAudioSession()
+            try await configureAudioSession()
             print("[AriaRealtime] ✅ AVAudioSession configured")
         } catch {
             print("[AriaRealtime] ❌ AVAudioSession error: \(error)")
@@ -198,7 +214,35 @@ final class AriaRealtimeSession: NSObject {
     /// True se la sessione è stata attivata in modalità mix (coesistenza con Teams/Meet)
     private var isUsingMixMode = false
 
-    private func configureAudioSession() throws {
+    /// Wrapper async di `activate(options:completionHandler:)`.
+    /// La variante sincrona `setActive(_:)` blocca il chiamante e, se invocata dal
+    /// main thread, AVAudioSession segnala "This method can lead to UI unresponsiveness".
+    nonisolated private static func activateSession(_ session: AVAudioSession,
+                                                    options: AVAudioSessionActivationOptions = []) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            session.activate(options: options) { activated, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if !activated {
+                    continuation.resume(throwing: NSError(
+                        domain: "AriaRealtime", code: -2,
+                        userInfo: [NSLocalizedDescriptionKey: "AVAudioSession activation refused"]))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Wrapper async di `deactivate(options:completionHandler:)` — vedi `activateSession`.
+    nonisolated private static func deactivateSession(_ session: AVAudioSession,
+                                                      options: AVAudioSessionDeactivationOptions = []) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            session.deactivate(options: options) { _, _ in continuation.resume() }
+        }
+    }
+
+    private func configureAudioSession() async throws {
         let session = AVAudioSession.sharedInstance()
 
         // ── Strategia a 2 livelli ──
@@ -210,7 +254,7 @@ final class AriaRealtimeSession: NSObject {
         do {
             try session.setCategory(.playAndRecord,
                                     mode: .voiceChat,
-                                    options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP])
+                                    options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP])
             try session.setPreferredSampleRate(sampleRate)
             try session.setPreferredIOBufferDuration(0.02)
 
@@ -219,10 +263,10 @@ final class AriaRealtimeSession: NSObject {
             for attempt in 1...3 {
                 do {
                     if attempt > 1 {
-                        try? session.setActive(false, options: .notifyOthersOnDeactivation)
-                        Thread.sleep(forTimeInterval: 0.15 * Double(attempt))
+                        await Self.deactivateSession(session, options: .notifyOthersOnDeactivation)
+                        try? await Task.sleep(for: .seconds(0.15 * Double(attempt)))
                     }
-                    try session.setActive(true)
+                    try await Self.activateSession(session)
                     activated = true
                     break
                 } catch {
@@ -242,11 +286,11 @@ final class AriaRealtimeSession: NSObject {
             print("[AriaRealtime] ⚡ Altra app audio attiva — passo a modalità mix")
             try session.setCategory(.playAndRecord,
                                     mode: .voiceChat,
-                                    options: [.defaultToSpeaker, .allowBluetooth,
+                                    options: [.defaultToSpeaker, .allowBluetoothHFP,
                                               .allowBluetoothA2DP, .mixWithOthers])
             try session.setPreferredSampleRate(sampleRate)
             try session.setPreferredIOBufferDuration(0.02)
-            try session.setActive(true)
+            try await Self.activateSession(session)
             isUsingMixMode = true
             print("[AriaRealtime] ✅ Audio session: modalità mix (.mixWithOthers)")
         }
@@ -271,7 +315,7 @@ final class AriaRealtimeSession: NSObject {
 
         // Player per riprodurre l'audio dell'AI
         audioEngine.attach(playerNode)
-        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: playbackFormat)
+        try audioEngine.connectNode(playerNode, to: audioEngine.mainMixerNode, format: playbackFormat)
 
         // Formato hardware del microfono (es. 48 kHz Float32)
         let inputNode = audioEngine.inputNode
@@ -289,25 +333,28 @@ final class AriaRealtimeSession: NSObject {
         // Tap: ~60 ms di audio per chunk (reattività migliore per VAD e barge-in)
         let framesPerChunk = AVAudioFrameCount(hwFormat.sampleRate * 0.06)
 
-        inputNode.installTap(onBus: 0,
-                             bufferSize: framesPerChunk,
-                             format: hwFormat) { [weak self] buffer, _ in
-            guard let self, !self.isMuted else { return }
+        // Il WS è già aperto qui; il tap gira sul thread audio (fuori dal MainActor)
+        let ws = webSocket
 
-            // Leggi isAISpeaking in modo thread-safe
-            self.bufferLock.lock()
-            let aiSpeaking = self.isAISpeaking
-            self.bufferLock.unlock()
+        // Il tap fornisce un buffer read-only (Sendable) sul thread audio
+        try inputNode.installAudioTap(onBus: 0,
+                                      bufferSize: framesPerChunk,
+                                      format: hwFormat) { [weak self] buffer, _ in
+            guard let self else { return }
+
+            // Leggi mute + isAISpeaking in modo thread-safe
+            let (muted, aiSpeaking) = self.echo.withLock { ($0.isMuted, $0.isAISpeaking) }
+            guard !muted else { return }
 
             if aiSpeaking {
                 // Mentre l'AI parla: NON inviare audio al server
                 // Ma controlla se l'utente sta parlando (barge-in locale)
-                let rms = self.computeRMS(buffer: buffer)
-                self.bufferLock.lock()
+                let rms = Self.computeRMS(buffer: buffer)
                 if rms > self.bargeInRMSThreshold {
-                    self.bargeInFrameCount += 1
-                    let count = self.bargeInFrameCount
-                    self.bufferLock.unlock()
+                    let count = self.echo.withLock { state -> Int in
+                        state.bargeInFrameCount += 1
+                        return state.bargeInFrameCount
+                    }
                     if count >= self.bargeInFramesNeeded {
                         // Dispatch OFF audio thread—NEVER call playerNode/sendJSON from here
                         self.stateQueue.async { [weak self] in
@@ -315,18 +362,17 @@ final class AriaRealtimeSession: NSObject {
                         }
                     }
                 } else {
-                    self.bargeInFrameCount = 0
-                    self.bufferLock.unlock()
+                    self.echo.withLock { $0.bargeInFrameCount = 0 }
                 }
             } else {
                 // AI non parla: invia audio normalmente
-                self.convertAndSend(buffer: buffer, converter: converter)
+                Self.convertAndSend(buffer: buffer, converter: converter, over: ws)
             }
         }
 
         audioEngine.prepare()
         try audioEngine.start()
-        playerNode.play()
+        try playerNode.playAudio()
     }
 
     /// skipDeactivation = true quando si sta per riconnettersi subito
@@ -339,17 +385,22 @@ final class AriaRealtimeSession: NSObject {
         inputConverter = nil
 
         // Reset anti-echo state
-        bufferLock.lock()
-        isAISpeaking = false
-        pendingBufferCount = 0
-        responseAudioComplete = false
-        bargeInFrameCount = 0
-        bufferLock.unlock()
+        echo.withLock {
+            $0.isAISpeaking = false
+            $0.pendingBufferCount = 0
+            $0.responseAudioComplete = false
+            $0.bargeInFrameCount = 0
+        }
         unmuteCooldownWork?.cancel()
 
         if !skipDeactivation {
-            try? AVAudioSession.sharedInstance().setActive(false,
-                                                           options: .notifyOthersOnDeactivation)
+            // Disattivazione asincrona: non blocca il thread chiamante (spesso il main).
+            // Chiamabile anche da deinit perché non cattura self.
+            AVAudioSession.sharedInstance().deactivate(options: .notifyOthersOnDeactivation) { _, error in
+                if let error {
+                    print("[AriaRealtime] ⚠️ deactivate failed: \(error)")
+                }
+            }
         }
     }
 
@@ -357,12 +408,20 @@ final class AriaRealtimeSession: NSObject {
     // MARK: - Mic Capture → base64 PCM16 → WebSocket
     // ═══════════════════════════════════════════════
 
-    private func convertAndSend(buffer: AVAudioPCMBuffer, converter: AVAudioConverter) {
+    /// Gira sul thread audio: nonisolated, nessuno stato MainActor
+    nonisolated private static func convertAndSend(buffer tapBuffer: AVReadOnlyAudioPCMBuffer,
+                                                   converter: AVAudioConverter,
+                                                   over ws: URLSessionWebSocketTask?) {
+        // Copia necessaria: AVAudioConverter richiede un AVAudioPCMBuffer
+        let buffer = AVAudioPCMBuffer(copying: tapBuffer)
+        // Formato di destinazione = pcm16Format (usato per creare il converter)
+        let outFormat = converter.outputFormat
+
         // Numero di frame in output basato sul rapporto tra sample rate
-        let ratio = sampleRate / buffer.format.sampleRate
+        let ratio = outFormat.sampleRate / buffer.format.sampleRate
         let outFrames = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
         guard outFrames > 0,
-              let out = AVAudioPCMBuffer(pcmFormat: pcm16Format, frameCapacity: outFrames)
+              let out = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: outFrames)
         else { return }
 
         var error: NSError?
@@ -385,7 +444,7 @@ final class AriaRealtimeSession: NSObject {
         let data = Data(bytes: out.int16ChannelData![0], count: byteCount)
         let base64 = data.base64EncodedString()
 
-        sendJSON(["type": "input_audio_buffer.append", "audio": base64])
+        send(["type": "input_audio_buffer.append", "audio": base64], over: ws)
     }
 
     // ═══════════════════════════════════════════════
@@ -411,9 +470,7 @@ final class AriaRealtimeSession: NSObject {
         }
 
         // Traccia riproduzione effettiva del buffer
-        bufferLock.lock()
-        pendingBufferCount += 1
-        bufferLock.unlock()
+        echo.withLock { $0.pendingBufferCount += 1 }
 
         playerNode.scheduleBuffer(buf, completionCallbackType: .dataPlayedBack) { [weak self] _ in
             self?.onBufferPlayedBack()
@@ -422,11 +479,10 @@ final class AriaRealtimeSession: NSObject {
 
     /// Chiamato quando un buffer audio è stato effettivamente riprodotto dallo speaker
     private func onBufferPlayedBack() {
-        bufferLock.lock()
-        pendingBufferCount = max(0, pendingBufferCount - 1)
-        let remaining = pendingBufferCount
-        let done = responseAudioComplete
-        bufferLock.unlock()
+        let (remaining, done) = echo.withLock { state in
+            state.pendingBufferCount = max(0, state.pendingBufferCount - 1)
+            return (state.pendingBufferCount, state.responseAudioComplete)
+        }
 
         if done && remaining <= 0 {
             stateQueue.async { [weak self] in
@@ -441,10 +497,10 @@ final class AriaRealtimeSession: NSObject {
         unmuteCooldownWork?.cancel()
         let work = DispatchWorkItem { [weak self] in
             guard let self else { return }
-            self.bufferLock.lock()
-            self.isAISpeaking = false
-            self.bargeInFrameCount = 0
-            self.bufferLock.unlock()
+            self.echo.withLock {
+                $0.isAISpeaking = false
+                $0.bargeInFrameCount = 0
+            }
             // Svuota il buffer input: scarta qualsiasi eco residuo
             self.sendJSON(["type": "input_audio_buffer.clear"])
             print("[AriaRealtime] 🎤 Pronto per nuovo input (buffer svuotato post-playback)")
@@ -459,11 +515,11 @@ final class AriaRealtimeSession: NSObject {
     // ═══════════════════════════════════════════════
 
     /// Calcola il livello RMS (volume) di un buffer audio
-    private func computeRMS(buffer: AVAudioPCMBuffer) -> Float {
-        guard let channelData = buffer.floatChannelData else { return 0 }
-        let frames = Int(buffer.frameLength)
+    nonisolated private static func computeRMS(buffer: AVReadOnlyAudioPCMBuffer) -> Float {
+        // Solo Float32 (formato hardware del mic); altri formati → 0 come prima
+        guard case .float(let samples) = buffer.channelData(0) else { return 0 }
+        let frames = min(buffer.frameLength, samples.count)
         guard frames > 0 else { return 0 }
-        let samples = channelData[0]
         var sumSquares: Float = 0
         for i in 0..<frames {
             let s = samples[i]
@@ -478,12 +534,12 @@ final class AriaRealtimeSession: NSObject {
 
         unmuteCooldownWork?.cancel()
 
-        bufferLock.lock()
-        pendingBufferCount = 0
-        responseAudioComplete = false
-        isAISpeaking = false
-        bargeInFrameCount = 0
-        bufferLock.unlock()
+        echo.withLock {
+            $0.pendingBufferCount = 0
+            $0.responseAudioComplete = false
+            $0.isAISpeaking = false
+            $0.bargeInFrameCount = 0
+        }
 
         // Stop playback (safe perché siamo su stateQueue, non audio thread)
         interruptPlayback()
@@ -502,7 +558,11 @@ final class AriaRealtimeSession: NSObject {
     /// Interrompe la riproduzione quando l'utente inizia a parlare (barge-in)
     private func interruptPlayback() {
         playerNode.stop()
-        playerNode.play()          
+        do {
+            try playerNode.playAudio()
+        } catch {
+            print("[AriaRealtime] ⚠️ playerNode restart failed: \(error)")
+        }
     }
 
     // ═══════════════════════════════════════════════
@@ -531,7 +591,8 @@ final class AriaRealtimeSession: NSObject {
 
         // Attendi che il WebSocket sia effettivamente aperto (con timeout)
         try await withThrowingTaskGroup(of: Void.self) { group in
-            group.addTask {
+            // Child task sul MainActor: connectionContinuation è isolata lì
+            group.addTask { @MainActor in
                 try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
                     self.connectionContinuation = cont
                 }
@@ -598,6 +659,11 @@ final class AriaRealtimeSession: NSObject {
     // MARK: Send helper
 
     private func sendJSON(_ dict: [String: Any]) {
+        Self.send(dict, over: webSocket)
+    }
+
+    /// Invio nonisolated: usabile anche dal thread audio
+    nonisolated private static func send(_ dict: [String: Any], over webSocket: URLSessionWebSocketTask?) {
         guard let ws = webSocket else {
             print("[AriaRealtime] ⚠️ sendJSON called but webSocket is nil")
             return
@@ -700,15 +766,16 @@ final class AriaRealtimeSession: NSObject {
         // ── Audio in arrivo dall'AI (GA API: response.output_audio.delta) ──
         case "response.output_audio.delta":
             if let delta = json["delta"] as? String {
-                bufferLock.lock()
-                let wasAlreadySpeaking = isAISpeaking
-                if !wasAlreadySpeaking {
-                    isAISpeaking = true
-                    pendingBufferCount = 0
-                    responseAudioComplete = false
-                    bargeInFrameCount = 0
+                let wasAlreadySpeaking = echo.withLock { state -> Bool in
+                    let was = state.isAISpeaking
+                    if !was {
+                        state.isAISpeaking = true
+                        state.pendingBufferCount = 0
+                        state.responseAudioComplete = false
+                        state.bargeInFrameCount = 0
+                    }
+                    return was
                 }
-                bufferLock.unlock()
                 if !wasAlreadySpeaking {
                     unmuteCooldownWork?.cancel()
                     print("[AriaRealtime] 🔊 AI sta parlando (mic sospeso al server, barge-in locale attivo)")
@@ -726,21 +793,21 @@ final class AriaRealtimeSession: NSObject {
         // ── L'utente ha iniziato a parlare (barge-in server-side) ──
         case "input_audio_buffer.speech_started":
             unmuteCooldownWork?.cancel()
-            bufferLock.lock()
-            isAISpeaking = false
-            pendingBufferCount = 0
-            responseAudioComplete = false
-            bargeInFrameCount = 0
-            bufferLock.unlock()
+            echo.withLock {
+                $0.isAISpeaking = false
+                $0.pendingBufferCount = 0
+                $0.responseAudioComplete = false
+                $0.bargeInFrameCount = 0
+            }
             interruptPlayback()
             print("[AriaRealtime] 🎤 Barge-in server-side")
 
         // ── Server ha finito di inviare audio delta ──
         case "response.done":
-            bufferLock.lock()
-            responseAudioComplete = true
-            let remaining = pendingBufferCount
-            bufferLock.unlock()
+            let remaining = echo.withLock { state -> Int in
+                state.responseAudioComplete = true
+                return state.pendingBufferCount
+            }
             // Se tutti i buffer sono già stati riprodotti, avvia cooldown
             if remaining <= 0 {
                 scheduleUnmuteCooldown()
@@ -832,6 +899,7 @@ final class AriaRealtimeSession: NSObject {
 
 // MARK: - URLSessionWebSocketDelegate
 
+@available(iOS 27.0, *)
 extension AriaRealtimeSession: URLSessionWebSocketDelegate {
 
     func urlSession(_ session: URLSession,

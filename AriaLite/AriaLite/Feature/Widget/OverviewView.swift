@@ -90,6 +90,9 @@ struct OverviewView: View {
             }
             .liteBackground()
             .navigationTitle("Overview")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+            }
             .animation(.easeInOut(duration: 0.25), value: selectedPeriod)
         }
         .sheet(isPresented: $showWorkerDetail) {

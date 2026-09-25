@@ -2,33 +2,27 @@
 //  AriaChatHistoryView.swift
 //  AriaLite
 //
-//  Storico delle conversazioni (chat-history-sheet della web): raggruppate per
-//  data, cerca per titolo, rinomina, elimina, apri. Pagine da 60.
+//  La sezione "Chat" della sidebar (chat-history-sheet della web): conversazioni
+//  raggruppate per data, cerca per titolo, fissa, rinomina, elimina, apri.
 //
 
 import SwiftUI
 
 struct AriaChatHistoryView: View {
     let chat: AriaAgentChat
+    let store: AriaSessionStore
     let backend: AriaBackend
-    @Environment(\.dismiss) private var dismiss
+    let onOpen: (AriaSessionSummary) -> Void
+    let onNewChat: () -> Void
+    let onConnect: () -> Void
 
-    @State private var sessions: [AriaSessionSummary] = []
     @State private var query = ""
-    @State private var isLoading = false
-    @State private var reachedEnd = false
-    @State private var error: String?
     @State private var renaming: AriaSessionSummary?
-    @State private var newTitle = ""
-
-    private static let pageSize = 60
-    private var api: AriaChatAPI { AriaChatAPI(api: backend.api) }
 
     private var visible: [AriaSessionSummary] {
-        let list = sessions.filter { !$0.sessionId.hasPrefix("__briefing-") }
         let q = query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { return list }
-        return list.filter { ($0.title ?? "").localizedCaseInsensitiveContains(q) }
+        guard !q.isEmpty else { return store.visible }
+        return store.visible.filter { ($0.title ?? "").localizedCaseInsensitiveContains(q) }
     }
 
     private var groups: [(title: LocalizedStringKey, items: [AriaSessionSummary])] {
@@ -53,103 +47,83 @@ struct AriaChatHistoryView: View {
                         ForEach(group.items) { session in row(session) }
                     }
                 }
-                if !reachedEnd && !sessions.isEmpty && query.isEmpty {
-                    Button("Load more") { Task { await load(more: true) } }
-                        .disabled(isLoading)
+                if !store.reachedEnd && !store.sessions.isEmpty && query.isEmpty {
+                    Button("Load more") { Task { await store.load(more: true) } }
+                        .disabled(store.isLoading)
                 }
             }
-            .overlay {
-                if isLoading && sessions.isEmpty {
-                    ProgressView()
-                } else if let error, sessions.isEmpty {
-                    ContentUnavailableView("Couldn't load conversations", systemImage: "exclamationmark.triangle", description: Text(error))
-                } else if visible.isEmpty && !isLoading {
-                    ContentUnavailableView("No conversations", systemImage: "bubble.left.and.bubble.right")
-                }
-            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .liteBackground()
+            .overlay { placeholder }
             .searchable(text: $query, prompt: "Search conversations")
-            .refreshable { await load(more: false) }
-            .navigationTitle("Conversations")
-            .navigationBarTitleDisplayMode(.inline)
+            .refreshable { await store.load() }
+            .navigationTitle("Chats")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("New chat", systemImage: "square.and.pencil") {
-                        chat.newConversation()
-                        dismiss()
-                    }
+                ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("New chat", systemImage: "square.and.pencil", action: onNewChat)
                 }
             }
-            .task { await load(more: false) }
-            .alert("Rename conversation", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
-                TextField("Title", text: $newTitle)
-                Button("Cancel", role: .cancel) {}
-                Button("Save") { if let session = renaming { Task { await rename(session) } } }
+            .task { await store.load() }
+            .modifier(AriaRenameSessionAlert(session: $renaming, store: store))
+        }
+    }
+
+    @ViewBuilder
+    private var placeholder: some View {
+        if !backend.isReady {
+            ContentUnavailableView {
+                Label("Not connected", systemImage: "bolt.horizontal.circle")
+            } description: {
+                Text("Connect to the Aria server to see your conversations.")
+            } actions: {
+                Button("Connect", action: onConnect)
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color.liteAccent)
+            }
+        } else if store.isLoading && store.sessions.isEmpty {
+            ProgressView()
+        } else if let error = store.error, store.sessions.isEmpty {
+            ContentUnavailableView("Couldn't load conversations", systemImage: "exclamationmark.triangle", description: Text(error))
+        } else if visible.isEmpty && !store.isLoading {
+            if query.isEmpty {
+                ContentUnavailableView("No conversations", systemImage: "bubble.left.and.bubble.right")
+            } else {
+                ContentUnavailableView.search(text: query)
             }
         }
     }
 
     private func row(_ session: AriaSessionSummary) -> some View {
-        Button {
-            Task { await chat.open(sessionId: session.sessionId) }
-            dismiss()
-        } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(session.title?.isEmpty == false ? session.title! : String(localized: "Untitled conversation"))
-                    .font(.system(size: 15, weight: session.sessionId == chat.sessionId ? .semibold : .regular))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                if let date = session.lastActivity {
-                    Text(date, format: .relative(presentation: .named))
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+        Button { onOpen(session) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 14) {
+                Image(systemName: store.isPinned(session) ? "pin" : "bubble.left")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(session.displayTitle)
+                        .font(.system(size: 16, weight: session.sessionId == chat.sessionId ? .semibold : .regular))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    if let date = session.lastActivity {
+                        Text(date, format: .relative(presentation: .named))
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
+            .padding(.vertical, 4)
         }
+        .listRowBackground(Color.clear)
+        .ariaSessionMenu(session, store: store, chat: chat) { renaming = session }
         .swipeActions {
-            Button("Delete", systemImage: "trash", role: .destructive) { Task { await delete(session) } }
-            Button("Rename", systemImage: "pencil") {
-                newTitle = session.title ?? ""
-                renaming = session
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                Task { await store.delete(session, closing: chat) }
             }
-            .tint(.orange)
-        }
-    }
-
-    private func load(more: Bool) async {
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            let offset = more ? sessions.count : 0
-            let page = try await api.sessions(limit: Self.pageSize, offset: offset)
-            var seen = Set((more ? sessions : []).map(\.sessionId))
-            let fresh = page.filter { seen.insert($0.sessionId).inserted }
-            sessions = (more ? sessions : []) + fresh
-            reachedEnd = page.count < Self.pageSize
-            error = nil
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-
-    private func rename(_ session: AriaSessionSummary) async {
-        let title = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        do {
-            try await api.rename(sessionId: session.sessionId, title: title)
-            await load(more: false)
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-
-    private func delete(_ session: AriaSessionSummary) async {
-        do {
-            try await api.delete(sessionId: session.sessionId)
-            sessions.removeAll { $0.sessionId == session.sessionId }
-            if session.sessionId == chat.sessionId { chat.newConversation() }
-        } catch {
-            self.error = error.localizedDescription
+            Button("Rename", systemImage: "pencil") { renaming = session }
+                .tint(.orange)
         }
     }
 }
