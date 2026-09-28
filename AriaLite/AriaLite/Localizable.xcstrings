@@ -2050,6 +2050,22 @@
     "Could not send it for validation." : {
 
     },
+    "Could not transcribe that" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not transcribe that"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non sono riuscito a trascriverlo"
+          }
+        }
+      }
+    },
     "Couldn't load conversations" : {
       "localizations" : {
         "en" : {
@@ -4624,6 +4640,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Note"
+          }
+        }
+      }
+    },
+    "Nothing was heard" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing was heard"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ho sentito niente"
           }
         }
       }
@@ -7513,6 +7545,22 @@
         }
       }
     },
+    "Too short — keep it on while you speak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too short — keep it on while you speak"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Troppo breve: tienilo acceso mentre parli"
+          }
+        }
+      }
+    },
     "Tools" : {
       "localizations" : {
         "en" : {
@@ -8336,6 +8384,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudiamo il turno?"
+          }
+        }
+      }
+    },
+    "Writing it down…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Writing it down…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sto trascrivendo…"
           }
         }
       }

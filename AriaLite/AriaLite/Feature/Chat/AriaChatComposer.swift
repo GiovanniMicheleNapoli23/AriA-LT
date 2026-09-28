@@ -28,6 +28,8 @@ struct AriaChatComposer: View {
     @State private var showFiles = false
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var dictation = AriaDictation()
+    /// L'ultimo testo scritto dalla dettatura: se nel frattempo l'operatore l'ha cambiato, Whisper non lo sovrascrive.
+    @State private var dictatedDraft: String?
 
     private var trimmed: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var hasText: Bool { !trimmed.isEmpty }
@@ -97,7 +99,8 @@ struct AriaChatComposer: View {
             HStack(alignment: .bottom, spacing: 2) {
                 plusMenu
 
-                TextField(dictation.isListening ? "Listening…" : "Ask Aria", text: $draft, axis: .vertical)
+                TextField(dictation.isListening ? "Listening…" : dictation.isTranscribing ? "Writing it down…" : "Ask Aria",
+                          text: $draft, axis: .vertical)
                     .font(.system(size: 17))
                     .lineLimit(1...6)
                     .focused(inputFocused)
@@ -161,25 +164,43 @@ struct AriaChatComposer: View {
                         .scaleEffect(1 + CGFloat(dictation.level) * 0.35)
                         .animation(.linear(duration: 0.09), value: dictation.level)
                 }
-                Image(systemName: dictation.isListening ? "mic.fill" : "mic")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundStyle(dictation.isListening ? Color.accentColor : .primary)
-                    .contentTransition(.symbolEffect(.replace))
+                if dictation.isTranscribing {
+                    ProgressView()
+                } else {
+                    Image(systemName: dictation.isListening ? "mic.fill" : "mic")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(dictation.isListening ? Color.accentColor : .primary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
             }
             .frame(width: 38, height: 38)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .disabled(voice?.isConnected == true || voice?.isConnecting == true)
-        .accessibilityLabel(dictation.isListening ? "Stop dictation" : "Dictate")
+        .disabled(dictation.isTranscribing || voice?.isConnected == true || voice?.isConnecting == true)
+        .accessibilityLabel(dictation.isListening ? "Stop dictation" : dictation.isTranscribing ? "Writing it down…" : "Dictate")
     }
 
     private func toggleDictation() {
         // Il testo dettato si aggiunge a quello già scritto, non lo sostituisce.
         let prefix = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Whisper sul backend (come la web); senza backend resta solo il riconoscimento sul telefono.
+        let api = backend.isReady ? backend.api : nil
+        let transcriber: AriaDictation.Transcriber? = api.map { api in
+            { @Sendable audio, language, prompt in
+                let data = try Data(contentsOf: audio)
+                return try await api.transcribe(audio: data, filename: "dictation.m4a", mimeType: "audio/mp4",
+                                                language: language, prompt: prompt)
+            }
+        }
+        // Punto di partenza per capire se l'operatore tocca il campo mentre si trascrive.
+        if !dictation.isListening { dictatedDraft = draft }
         Task {
-            await dictation.toggle { transcript in
+            await dictation.toggle(context: prefix, transcriber: transcriber) { transcript, final in
+                // Il testo di Whisper arriva dopo lo stop: se intanto il campo è stato modificato, vince l'operatore.
+                if final, draft != dictatedDraft { return }
                 draft = prefix.isEmpty ? transcript : prefix + " " + transcript
+                dictatedDraft = draft
             }
         }
     }

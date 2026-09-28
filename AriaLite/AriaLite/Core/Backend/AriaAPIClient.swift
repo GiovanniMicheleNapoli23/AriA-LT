@@ -102,6 +102,48 @@ nonisolated final class AriaAPIClient: Sendable {
         }
     }
 
+    // MARK: Audio
+
+    /// Trascrizione della dettatura con Whisper sul backend (lib/api/transcription.ts della web):
+    /// multipart con `file`, `language` (assente = automatico) e `prompt` (il testo già scritto, per il contesto).
+    /// `nil` se il servizio non è attivo (503): resta il testo del riconoscimento sul telefono.
+    /// Il limite dei body JSON (WAF) non vale qui: la web carica l'audio sullo stesso percorso.
+    @concurrent
+    func transcribe(audio: Data, filename: String, mimeType: String,
+                    language: String?, prompt: String?) async throws -> String? {
+        let boundary = "aria-\(UUID().uuidString)"
+        var body = Data()
+        func append(_ string: String) { body.append(Data(string.utf8)) }
+        func field(_ name: String, _ value: String) {
+            append("--\(boundary)\r\nContent-Disposition: form-data; name=\"\(name)\"\r\n\r\n\(value)\r\n")
+        }
+        append("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n")
+        append("Content-Type: \(mimeType)\r\n\r\n")
+        body.append(audio)
+        append("\r\n")
+        if let language { field("language", language) }
+        if let prompt, !prompt.isEmpty { field("prompt", prompt) }
+        append("--\(boundary)--\r\n")
+
+        var retried = false
+        while true {
+            var req = try await request("POST", "v1/audio/transcriptions")
+            req.httpBody = body
+            req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            let (data, response) = try await session.data(for: req)
+            let status = (response as? HTTPURLResponse)?.statusCode
+            if status == 401, !retried {
+                retried = true
+                await auth.invalidate()
+                continue
+            }
+            if status == 503 { return nil }
+            try AriaHTTP.check(response, data)
+            do { return try JSONDecoder().decode(AriaTranscription.self, from: data).text }
+            catch { throw AriaError.decoding("AriaTranscription: \(error)") }
+        }
+    }
+
     // MARK: SSE
 
     /// Apre POST /v1/responses e restituisce gli eventi già interpretati man mano che arrivano.
@@ -172,6 +214,11 @@ nonisolated final class AriaAPIClient: Sendable {
         if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         return req
     }
+}
+
+/// Risposta di POST v1/audio/transcriptions (servono solo il testo).
+nonisolated struct AriaTranscription: Decodable, Sendable {
+    let text: String
 }
 
 // MARK: - SSE

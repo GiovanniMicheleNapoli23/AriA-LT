@@ -261,7 +261,7 @@
 				DEVELOPMENT_TEAM = 4TP9VJ2S7B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "AriA LT";
+				INFOPLIST_KEY_CFBundleDisplayName = AriaPLT;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is needed for uploading the photo of the procedure";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "The microphone is used to dictate messages and to talk to Aria.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition turns what you say into text in the chat.";
@@ -298,7 +298,7 @@
 				DEVELOPMENT_TEAM = 4TP9VJ2S7B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "AriA LT";
+				INFOPLIST_KEY_CFBundleDisplayName = AriaPLT;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is needed for uploading the photo of the procedure";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "The microphone is used to dictate messages and to talk to Aria.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition turns what you say into text in the chat.";

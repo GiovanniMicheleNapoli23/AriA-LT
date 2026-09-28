@@ -39,6 +39,9 @@ final class AriaAgentChat {
     private(set) var learningOutcome: AriaLearningOutcome?
     /// Domanda di Real-time Learning riaperta a mano dal chip di un messaggio.
     private(set) var openedLearningId: String?
+    /// Domande di Real-time Learning rimandate dalla Dynamic Island: non si propongono più da sole,
+    /// restano sotto la risposta (chip "Aria non è sicura").
+    private(set) var declinedLearning: Set<String> = []
     /// Cresce a ogni tocco sul chip: la vista riapre il pannello anche se era ridotto a pillola.
     private(set) var learningReveal = 0
 
@@ -91,7 +94,8 @@ final class AriaAgentChat {
             return (id, request, true)
         }
         guard let last = messages.last(where: { $0.role == .assistant }), last.finished, last.interrupt == nil,
-              !last.isHydrated, let request = last.validationRequest, canAnswerLearning(last) else { return nil }
+              !last.isHydrated, !declinedLearning.contains(last.id),
+              let request = last.validationRequest, canAnswerLearning(last) else { return nil }
         return (last.id, request, false)
     }
 
@@ -210,6 +214,7 @@ final class AriaAgentChat {
         answeredElicitations = []
         learningOutcome = nil
         openedLearningId = nil
+        declinedLearning = []
         didSendContext = false
         lastError = nil
         if remembersSession { UserDefaults.standard.removeObject(forKey: Self.currentSessionKey) }
@@ -227,6 +232,7 @@ final class AriaAgentChat {
         answeredElicitations = []
         learningOutcome = nil
         openedLearningId = nil
+        declinedLearning = []
         didSendContext = true
         lastError = nil
         isLoadingHistory = true
@@ -400,6 +406,11 @@ final class AriaAgentChat {
 
     // MARK: - Real-time Learning
 
+    /// "Non ora" dalla Dynamic Island: la domanda non si apre, resta a un tocco dal chip della risposta.
+    func declineLearning(_ messageId: String) {
+        declinedLearning.insert(messageId)
+    }
+
     /// Riapre dal chip la domanda di una risposta precedente.
     func openLearning(_ messageId: String) {
         guard let message = messages.first(where: { $0.id == messageId }), canAnswerLearning(message) else { return }
@@ -503,34 +514,31 @@ final class AriaAgentChat {
         lastError = nil
         let api = backend.api
         streamTask = Task(name: "aria.chat.turn") {
-            // I pezzi di testo si applicano a blocchi ogni 50 ms: in una chat lunga ridisegnare
-            // a ogni token faceva restare indietro il testo anche di mezzo secondo.
-            let batch = TextBatch()
-            let flusher = Task {
+            let playback = StreamPlayback()
+            let player = Task {
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: .milliseconds(50))
-                    flush(batch, into: messageId)
+                    try? await Task.sleep(for: StreamPlayback.tick)
+                    show(playback.tick(), in: messageId)
                 }
             }
-            defer { flusher.cancel() }
+            defer { player.cancel() }
             do {
                 let ctx = await api.context.snapshot()
                 guard let plantId = ctx.plantId, !plantId.isEmpty else { throw AriaError.missingPlant }
                 onSent()
                 for try await event in api.stream(makeRequest(plantId, ctx)) {
-                    if case .textDelta(let delta) = event {
-                        batch.pending += delta
-                        continue
-                    }
-                    // Qualunque altro evento (tool, card, testo finale) arriva dopo il testo già ricevuto.
-                    flush(batch, into: messageId)
-                    update(messageId) { $0.apply(event) }
-                    AriaStreamTrace.event("apply", String(describing: event).prefix(while: { $0 != "(" }).description)
+                    show(playback.push(event), in: messageId)
                 }
-                flush(batch, into: messageId)
+                // La rete ha finito, ma un pezzo lungo può essere ancora a metà: esce fino in fondo.
+                player.cancel()
+                while !playback.isEmpty {
+                    show(playback.tick(), in: messageId)
+                    if !playback.isEmpty { try await Task.sleep(for: StreamPlayback.tick) }
+                }
                 update(messageId) { $0.finished = true }
             } catch {
-                flush(batch, into: messageId)
+                // Fermata o errore: quello che è già arrivato si mostra subito, tutto.
+                show(playback.drain(), in: messageId)
                 let cancelled = Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled
                 update(messageId) { m in
                     m.finished = true
@@ -549,12 +557,19 @@ final class AriaAgentChat {
         }
     }
 
-    private func flush(_ batch: TextBatch, into messageId: String) {
-        guard !batch.pending.isEmpty else { return }
-        let text = batch.pending
-        batch.pending = ""
-        update(messageId) { $0.apply(.textDelta(text)) }
-        AriaStreamTrace.event("apply", "textDelta", bytes: text.utf8.count)
+    /// Quello che esce in un tick si applica insieme: un solo ridisegno.
+    private func show(_ events: [AriaStreamEvent], in messageId: String) {
+        guard !events.isEmpty else { return }
+        update(messageId) { m in
+            for event in events { m.apply(event) }
+        }
+        for event in events {
+            if case .textDelta(let text) = event {
+                AriaStreamTrace.event("apply", "textDelta", bytes: text.utf8.count)
+            } else {
+                AriaStreamTrace.event("apply", String(describing: event).prefix(while: { $0 != "(" }).description)
+            }
+        }
     }
 
     private func update(_ id: String, _ mutate: (inout AriaAgentMessage) -> Void) {
@@ -568,9 +583,108 @@ final class AriaAgentChat {
     }
 }
 
-/// Testo arrivato dallo stream e non ancora mostrato.
-private final class TextBatch {
-    var pending = ""
+/// Lo stream tra la rete e lo schermo. Il testo esce a ogni tick da 50 ms (in una chat lunga ridisegnare
+/// a ogni token faceva restare indietro il testo anche di mezzo secondo) e ogni altro evento esce dopo
+/// il testo arrivato prima di lui.
+///
+/// Un pezzo lungo arrivato in un colpo solo esce a fette, una per tick, e si vede scrivere come il resto.
+/// È il gate di sicurezza: il backend non lo manda token per token (la parola "SAFE" del verdetto non deve
+/// arrivare all'operatore) ma tutto insieme, quando il modello ha finito. Lo stesso per le tabelle di chiusura.
+private final class StreamPlayback {
+    static let tick: Duration = .milliseconds(50)
+    /// Un pezzo più lungo di così non è un token dello stream.
+    private static let longPiece = 120
+    /// Caratteri per fetta: circa 400 al secondo, come uno stream vero...
+    private static let sliceSize = 20
+    /// ...ma un pezzo lungo non ci mette più di 2 secondi.
+    private static let maxSlices = 40
+
+    private enum Item {
+        /// Esce al prossimo tick, con tutto quello che è pronto.
+        case ready(AriaStreamEvent)
+        /// Una fetta di un pezzo lungo: una per tick.
+        case slice(String)
+    }
+
+    private var queue: [Item] = []
+    private var pendingSlices = 0
+
+    var isEmpty: Bool { queue.isEmpty }
+
+    /// Mette in coda un evento e restituisce quelli da mostrare subito.
+    func push(_ event: AriaStreamEvent) -> [AriaStreamEvent] {
+        guard case .textDelta(let text) = event else {
+            // Tool, card, testo finale: senza un pezzo lungo in uscita si mostrano subito, dopo il testo già ricevuto.
+            guard pendingSlices > 0 else { return drain() + [event] }
+            queue.append(.ready(event))
+            return []
+        }
+        if text.count > Self.longPiece {
+            enqueueSlices(of: text)
+        } else if case .ready(.textDelta(let previous))? = queue.last {
+            queue[queue.count - 1] = .ready(.textDelta(previous + text))
+        } else {
+            queue.append(.ready(event))
+        }
+        return []
+    }
+
+    /// Quello che è pronto, fino alla prossima fetta compresa.
+    func tick() -> [AriaStreamEvent] {
+        var out: [AriaStreamEvent] = []
+        while !queue.isEmpty {
+            switch queue.removeFirst() {
+            case .ready(let event):
+                out.append(event)
+            case .slice(let text):
+                pendingSlices -= 1
+                out.append(.textDelta(text))
+                return out
+            }
+        }
+        return out
+    }
+
+    /// Tutto quello che resta, subito.
+    func drain() -> [AriaStreamEvent] {
+        defer {
+            queue = []
+            pendingSlices = 0
+        }
+        return queue.map {
+            switch $0 {
+            case .ready(let event): event
+            case .slice(let text): .textDelta(text)
+            }
+        }
+    }
+
+    /// Fette che finiscono a fine parola (al massimo una fetta più in là, per "intercettazione" e simili),
+    /// così non si spezzano le parole e non superano mai `maxSlices`. Il blocco ```elicit in fondo non si vede
+    /// (diventa il pannello di domande) ed esce in una volta: a fette la risposta sembrerebbe già finita
+    /// e il pannello tarderebbe.
+    private func enqueueSlices(of text: String) {
+        let hidden = text.range(of: #"```[ \t]*elicit"#, options: [.regularExpression, .caseInsensitive])?.lowerBound
+            ?? text.endIndex
+        let visible = text[..<hidden]
+        let size = max(Self.sliceSize, (visible.count + Self.maxSlices - 1) / Self.maxSlices)
+        var start = visible.startIndex
+        while start < visible.endIndex {
+            var end = visible.index(start, offsetBy: size, limitedBy: visible.endIndex) ?? visible.endIndex
+            if end < visible.endIndex, !visible[visible.index(before: end)].isWhitespace {
+                let limit = visible.index(end, offsetBy: size, limitedBy: visible.endIndex) ?? visible.endIndex
+                if let space = visible[end..<limit].firstIndex(where: \.isWhitespace) {
+                    end = visible.index(after: space)
+                }
+            }
+            queue.append(.slice(String(visible[start..<end])))
+            pendingSlices += 1
+            start = end
+        }
+        if hidden < text.endIndex {
+            queue.append(.ready(.textDelta(String(text[hidden...]))))
+        }
+    }
 }
 
 enum AriaStepAssist: String, CaseIterable {

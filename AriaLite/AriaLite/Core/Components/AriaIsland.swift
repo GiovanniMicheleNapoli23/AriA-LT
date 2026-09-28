@@ -5,6 +5,8 @@
 //  Avviso che esce dalla Dynamic Island: una capsula nera che parte esattamente dall'isola, si allarga
 //  con il messaggio, resta un attimo e ci rientra. Vive in una finestra sua sopra l'app (anche sopra i
 //  fogli, come l'assistente in manutenzione). Sui telefoni senza isola parte da una pillola in cima.
+//  Con `actions` chiede una scelta ("Rispondi" / "Non ora"): resta aperta più a lungo e, se nessuno
+//  sceglie, rientra come un "Non ora".
 //
 //  Le Live Activity non servono qui: con l'app in primo piano l'isola di sistema non le mostra.
 //
@@ -22,6 +24,13 @@ final class AriaIsland {
         let message: String
         let systemImage: String
         let tint: Color
+        /// Pulsanti per accettare o rimandare; senza, è solo un avviso.
+        var actions: Actions? = nil
+    }
+
+    struct Actions: Equatable {
+        let accept: String
+        let decline: String
     }
 
     private(set) var current: Alert?
@@ -31,19 +40,22 @@ final class AriaIsland {
 
     @ObservationIgnored private var window: AriaIslandWindow?
     @ObservationIgnored private var host: AriaIslandHost?
-    @ObservationIgnored private var onFinish: (() -> Void)?
+    @ObservationIgnored private var onFinish: ((_ accepted: Bool) -> Void)?
     @ObservationIgnored private var lifecycle: Task<Void, Never>?
 
     private static let holdTime: Duration = .seconds(2.6)
+    /// Con una scelta da fare si lascia il tempo di leggere e decidere.
+    private static let choiceHoldTime: Duration = .seconds(8)
 
     private init() {}
 
-    /// Mostra l'avviso; `onFinish` parte quando la capsula torna nell'isola (da sola o con un tocco).
-    /// Senza una scena attiva non c'è niente da animare: `onFinish` parte subito.
-    func present(_ alert: Alert, onFinish: @escaping () -> Void) {
+    /// Mostra l'avviso; `onFinish` parte quando la capsula torna nell'isola, con `true` solo se si è
+    /// accettato (pulsante o tocco sul testo). Senza una scena attiva non c'è niente da mostrare né
+    /// da accettare: `onFinish(false)` parte subito.
+    func present(_ alert: Alert, onFinish: @escaping (_ accepted: Bool) -> Void) {
         finish(animated: false)
         guard let scene = Self.activeScene, let host = scene.keyWindow else {
-            onFinish()
+            onFinish(false)
             return
         }
         geometry = Geometry(window: host)
@@ -60,18 +72,18 @@ final class AriaIsland {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
             withAnimation(Self.expandAnimation) { self.expanded = true }
             self.host?.hidesStatusBar = true
-            try? await Task.sleep(for: Self.holdTime)
+            try? await Task.sleep(for: alert.actions == nil ? Self.holdTime : Self.choiceHoldTime)
             guard !Task.isCancelled else { return }
             self.finish(animated: true)
         }
     }
 
-    /// Tocco o scorrimento verso l'alto: si chiude subito.
-    func dismiss() {
-        finish(animated: true)
+    /// Pulsanti, tocco o scorrimento verso l'alto: si chiude subito.
+    func dismiss(accepted: Bool = false) {
+        finish(animated: true, accepted: accepted)
     }
 
-    private func finish(animated: Bool) {
+    private func finish(animated: Bool, accepted: Bool = false) {
         lifecycle?.cancel()
         lifecycle = nil
         let callback = onFinish
@@ -81,7 +93,7 @@ final class AriaIsland {
         if animated {
             withAnimation(Self.collapseAnimation) { expanded = false }
             // Il pannello in basso compare mentre la capsula rientra: sembra che il messaggio "scenda".
-            callback?()
+            callback?(accepted)
             let shown = current?.id
             Task { [weak self] in
                 try? await Task.sleep(for: .milliseconds(450))
@@ -93,7 +105,7 @@ final class AriaIsland {
             expanded = false
             current = nil
             window?.isHidden = true
-            callback?()
+            callback?(false)
         }
     }
 
@@ -166,7 +178,12 @@ final class AriaIsland {
                 collapsed = CGRect(x: (width - 96) / 2, y: top, width: 96, height: 30)
             }
             let openWidth = min(width - 20, 420)
-            expanded = CGRect(x: (width - openWidth) / 2, y: collapsed.minY, width: openWidth, height: 82)
+            expanded = CGRect(x: (width - openWidth) / 2, y: collapsed.minY, width: openWidth, height: 96)
+        }
+
+        /// Altezza della capsula aperta: quella del contenuto, misurato prima di aprirla.
+        mutating func fit(height: CGFloat) {
+            expanded.size.height = max(collapsed.height + 40, height)
         }
     }
 }
@@ -198,10 +215,18 @@ private final class AriaIslandHost: UIHostingController<AriaIslandView> {
 private struct AriaIslandView: View {
     let island: AriaIsland
 
+    /// Margine di icona, sfera e testo dal bordo della capsula.
+    private static let inset: CGFloat = 20
+    /// Icona e sfera: stessa misura, così la riga è simmetrica.
+    private static let badge: CGFloat = 28
+    /// Distanza dal bordo in alto: con il margine laterale le tiene dentro la curva degli angoli (raggio 36).
+    private static let badgeTop: CGFloat = 10
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             if let alert = island.current {
-                capsule(alert)
+                // Un avviso nuovo è una capsula nuova: così il contenuto si rimisura.
+                capsule(alert).id(alert.id)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -212,56 +237,93 @@ private struct AriaIslandView: View {
         let rect = island.expanded ? geometry.expanded : geometry.collapsed
         let radius = island.expanded ? 36 : rect.height / 2
         return content(alert)
-            .frame(width: rect.width, height: rect.height)
+            // Ritaglio ancorato in alto: il contenuto scende dall'isola invece di aprirsi dal centro.
+            .frame(width: rect.width, height: rect.height, alignment: .top)
             .background(Color.black, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .shadow(color: .black.opacity(island.expanded ? 0.28 : 0), radius: 16, y: 6)
             // Senza isola la pillola di partenza non si confonde con niente: entra ed esce in dissolvenza.
             .opacity(geometry.hasIsland || island.expanded ? 1 : 0)
             .contentShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .onTapGesture { island.dismiss() }
+            // Come una notifica: toccare il testo apre (se c'è da scegliere), scorrere in su rimanda.
+            .onTapGesture { island.dismiss(accepted: alert.actions != nil) }
             .gesture(DragGesture(minimumDistance: 8).onEnded { value in
                 if value.translation.height < -6 { island.dismiss() }
             })
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { island.dismiss() }
+            .accessibilityElement(children: alert.actions == nil ? .combine : .contain)
+            .accessibilityAddTraits(alert.actions == nil ? .isButton : [])
+            .accessibilityAction(.escape) { island.dismiss() }
             .padding(.leading, rect.minX)
             .padding(.top, rect.minY)
     }
 
+    /// Come l'isola di sistema aperta: in alto icona e sfera ai lati della fotocamera (al centro non c'è niente,
+    /// lì c'è il foro), stessa misura e stesso margine del testo, abbastanza dentro da stare nella curva
+    /// degli angoli; titolo e messaggio stanno sotto, allineati all'icona.
     private func content(_ alert: AriaIsland.Alert) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle().fill(alert.tint.gradient)
-                Image(systemName: alert.systemImage)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+        let geometry = island.geometry
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center) {
+                ZStack {
+                    Circle().fill(alert.tint.gradient)
+                    Image(systemName: alert.systemImage)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+                .frame(width: Self.badge, height: Self.badge)
+                Spacer(minLength: 0)
+                AriaOrb(mood: .thinking)
+                    .frame(width: Self.badge, height: Self.badge)
             }
-            .frame(width: 44, height: 44)
+            .padding(.horizontal, Self.inset)
+            .padding(.top, Self.badgeTop)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(alert.title)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(alert.message)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(2)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Spacer(minLength: 0)
+            .padding(.horizontal, Self.inset)
+            .padding(.top, 10)
+            .padding(.bottom, alert.actions == nil ? 18 : 14)
 
-            AriaOrb(mood: .thinking)
-                .frame(width: 26, height: 26)
+            if let actions = alert.actions {
+                HStack(spacing: 10) {
+                    Button { island.dismiss(accepted: false) } label: {
+                        Text(actions.decline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                            .background(Color.white.opacity(0.16), in: Capsule())
+                    }
+                    Button { island.dismiss(accepted: true) } label: {
+                        Text(actions.accept)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                            .background(alert.tint, in: Capsule())
+                    }
+                }
+                .font(.system(size: 15, weight: .semibold))
+                .buttonStyle(.plain)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+            }
         }
-        .padding(.horizontal, 18)
-        // Il contenuto ha sempre la misura della capsula aperta (centrato e ritagliato dalla capsula), così non
-        // si ridispone mentre si apre: si allarga il ritaglio e il contenuto appare un po' in ritardo.
-        .frame(width: island.geometry.expanded.width, height: island.geometry.expanded.height)
+        // La riga in alto finisce sotto l'isola: il titolo non va mai dietro la fotocamera.
+        .frame(minHeight: geometry.collapsed.height, alignment: .top)
+        // Il contenuto ha sempre la larghezza della capsula aperta, così non si ridispone mentre si apre:
+        // si allarga il ritaglio e il contenuto appare un po' in ritardo.
+        .frame(width: geometry.expanded.width, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { island.geometry.fit(height: $0) }
         .opacity(island.expanded ? 1 : 0)
         .blur(radius: island.expanded ? 0 : 8)
-        .scaleEffect(island.expanded ? 1 : 0.85)
+        .scaleEffect(island.expanded ? 1 : 0.9, anchor: .top)
         .animation(island.expanded ? AriaIsland.expandAnimation.delay(0.08) : .easeOut(duration: 0.15),
                    value: island.expanded)
     }
