@@ -34,6 +34,7 @@ struct AriaSidebarButton: View {
 struct AriaShellView: View {
     let user: User
     @Environment(AppViewModel.self) private var viewModel
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var destination: AriaDestination = .chat
     @State private var isOpen = false
@@ -79,6 +80,14 @@ struct AriaShellView: View {
         .environment(\.openSidebar) { setOpen(true) }
         .sensoryFeedback(.impact(weight: .light), trigger: isOpen)
         .task(id: viewModel.backend.isReady) { await store.load() }
+        // Account Aria: disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
+        .task {
+            if viewModel.isAriaAccount { await viewModel.ariaWorkOrders.sync() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, viewModel.isAriaAccount else { return }
+            Task { await viewModel.ariaWorkOrders.sync() }
+        }
         .onChange(of: isOpen) { _, open in
             // Le recenti si aggiornano a ogni apertura: una chat appena iniziata prende il suo titolo.
             if open { Task { await store.load() } }
@@ -134,7 +143,11 @@ struct AriaShellView: View {
         case .overview:
             OverviewView()
         case .tasks:
-            WorkOrderListView(viewModel: viewModel)
+            if viewModel.isAriaAccount {
+                AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
+            } else {
+                WorkOrderListView(viewModel: viewModel)
+            }
         }
     }
 

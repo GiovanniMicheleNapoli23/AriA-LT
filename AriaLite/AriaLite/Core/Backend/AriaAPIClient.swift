@@ -37,6 +37,13 @@ actor AriaContext {
     func snapshot() -> Snapshot { Snapshot(companyId: companyId, plantId: plantId, locale: locale) }
 }
 
+/// Quale host risponde: `.data` è aria-backend (chat, stabilimenti), `.mobile` il tunnel dei lavori
+/// dell'utente mobile (aziende e `/v1/mobile/*`).
+nonisolated enum AriaHost: Sendable {
+    case data
+    case mobile
+}
+
 /// Rete e decodifica JSON girano fuori dal main thread (`@concurrent`).
 nonisolated final class AriaAPIClient: Sendable {
     let config: AriaConfig
@@ -58,9 +65,12 @@ nonisolated final class AriaAPIClient: Sendable {
 
     // MARK: JSON
 
+    /// `companyScoped: false` per GET /v1/companies: l'azienda è quello che la chiamata
+    /// serve a scoprire, e un Company-Id rimasto da un altro account la farebbe fallire.
     @concurrent
-    func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = []) async throws -> T {
-        let raw = try await data("GET", path, query: query)
+    func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = [],
+                                      companyScoped: Bool = true, host: AriaHost = .data) async throws -> T {
+        let raw = try await data("GET", path, query: query, companyScoped: companyScoped, host: host)
         do { return try JSONDecoder().decode(T.self, from: raw) }
         catch { throw AriaError.decoding("\(T.self): \(error)") }
     }
@@ -68,8 +78,8 @@ nonisolated final class AriaAPIClient: Sendable {
     /// POST / PATCH con body JSON; la risposta si decodifica in `T`.
     @concurrent
     func send<T: Decodable & Sendable>(_ method: String, _ path: String,
-                                       body: some Encodable & Sendable) async throws -> T {
-        let raw = try await data(method, path, body: try JSONEncoder().encode(body))
+                                       body: some Encodable & Sendable, host: AriaHost = .data) async throws -> T {
+        let raw = try await data(method, path, body: try JSONEncoder().encode(body), host: host)
         do { return try JSONDecoder().decode(T.self, from: raw) }
         catch { throw AriaError.decoding("\(T.self): \(error)") }
     }
@@ -85,18 +95,23 @@ nonisolated final class AriaAPIClient: Sendable {
         _ = try await data(method, path)
     }
 
-    /// Richiesta con un solo retry su 401 (token rinnovato nel frattempo).
+    /// Un solo retry su 401: si conia un JWT nuovo (GET /api/aria/token) e si riprova.
     @concurrent
-    func data(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil) async throws -> Data {
+    func data(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
+              companyScoped: Bool = true, host: AriaHost = .data) async throws -> Data {
         var retried = false
         while true {
-            let req = try await request(method, path, query: query, body: body)
+            let req = try await request(method, path, query: query, body: body,
+                                        companyScoped: companyScoped, host: host)
             let (data, response) = try await session.data(for: req)
             if (response as? HTTPURLResponse)?.statusCode == 401, !retried {
                 retried = true
                 await auth.invalidate()
                 continue
             }
+            // Tunnel spento: ha risposto la pagina d'errore di ngrok, non il server.
+            if host == .mobile, auth.isMobileSession, let offline = AriaHTTP.tunnelError(response) { throw offline }
+            try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
             return data
         }
@@ -138,6 +153,7 @@ nonisolated final class AriaAPIClient: Sendable {
                 continue
             }
             if status == 503 { return nil }
+            try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
             do { return try JSONDecoder().decode(AriaTranscription.self, from: data).text }
             catch { throw AriaError.decoding("AriaTranscription: \(error)") }
@@ -170,6 +186,8 @@ nonisolated final class AriaAPIClient: Sendable {
                                 errorBody.append(byte)
                                 if errorBody.count >= 16_384 { break }
                             }
+                            if AriaHTTP.isNgrokError(response) { throw AriaError.serverOffline }
+                            try await self.checkMembership(response, errorBody)
                             try AriaHTTP.check(response, errorBody)
                         }
                         var parser = AriaSSEParser()
@@ -194,12 +212,24 @@ nonisolated final class AriaAPIClient: Sendable {
 
     // MARK: Private
 
+    /// Utente mobile disabilitato a sessione aperta: il backend risponde 403 "Not a member of this company".
+    /// Gli altri 403 rifiutano solo quell'azione e non sloggano (AriA_Mobile_API.md §3.4).
+    private func checkMembership(_ response: URLResponse, _ data: Data) async throws {
+        guard (response as? HTTPURLResponse)?.statusCode == 403, auth.isMobileSession,
+              AriaHTTP.detail(from: data) == "Not a member of this company" else { return }
+        await auth.discardSession()
+        throw AriaError.signedOut
+    }
+
     private func request(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
-                         accept: String = "application/json") async throws -> URLRequest {
+                         accept: String = "application/json",
+                         companyScoped: Bool = true, host: AriaHost = .data) async throws -> URLRequest {
         if let body, body.count > config.maxBodyBytes {
             throw AriaError.bodyTooLarge(bytes: body.count, limit: config.maxBodyBytes)
         }
-        var url = config.apiBaseURL.appending(path: path)
+        // I lavori vivono sul tunnel solo per gli utenti mobili; un accesso dalla web parla sempre con l'API.
+        let usesTunnel = host == .mobile && auth.isMobileSession
+        var url = (usesTunnel ? config.mobileBaseURL : config.apiBaseURL).appending(path: path)
         if !query.isEmpty { url.append(queryItems: query) }
         var req = URLRequest(url: url)
         req.httpMethod = method
@@ -208,9 +238,14 @@ nonisolated final class AriaAPIClient: Sendable {
         let ctx = await context.snapshot()
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue(ctx.locale, forHTTPHeaderField: "Accept-Language")
-        if let companyId = ctx.companyId { req.setValue(companyId, forHTTPHeaderField: "Company-Id") }
+        if companyScoped, let companyId = ctx.companyId {
+            req.setValue(companyId, forHTTPHeaderField: "Company-Id")
+        }
         req.setValue(config.clientId, forHTTPHeaderField: "X-Aria-Client")
+        req.setValue(config.userAgent, forHTTPHeaderField: "User-Agent")
         req.setValue(accept, forHTTPHeaderField: "Accept")
+        // Senza questo ngrok può rispondere la sua pagina di avviso al posto dell'API.
+        if usesTunnel { req.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning") }
         if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         return req
     }

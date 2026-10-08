@@ -245,7 +245,9 @@ struct AriaAgentChatView: View {
             VStack(spacing: 8) {
                 if backend.activePlantId == nil { plantGuard }
                 if let notice = chat.notice { noticeBanner(notice) }
-                if let error = chat.lastError { errorBanner(error) }
+                if let error = chat.lastError {
+                    if chat.lastErrorIsOffline { offlineBanner } else { errorBanner(error) }
+                }
                 if let voice, voice.isConnected || voice.isConnecting || voice.error != nil {
                     VoiceSessionOverlay(voice: voice)
                 }
@@ -377,6 +379,15 @@ struct AriaAgentChatView: View {
                 try? await Task.sleep(for: .seconds(3))
                 chat.notice = nil
             }
+    }
+
+    /// Il sistema non si raggiunge: avviso ambra con "Riprova" (rimanda l'ultima domanda, se è fallita).
+    private var offlineBanner: some View {
+        AriaOfflineNotice(
+            onRetry: failedTurn.map { failed in { chat.lastError = nil; chat.regenerate(failed.id) } },
+            onDismiss: { chat.lastError = nil }
+        )
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func errorBanner(_ error: String) -> some View {

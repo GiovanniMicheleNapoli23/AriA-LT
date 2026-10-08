@@ -115,9 +115,13 @@ struct AriaAgentMessageView: View {
             }
 
             if let error = message.error {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red)
+                if message.errorIsOffline {
+                    AriaOfflineNotice(style: .compact)
+                } else {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                }
             }
 
             if message.finished, !message.displayText.isEmpty || !message.artifacts.isEmpty {
@@ -443,13 +447,7 @@ struct AriaThinkingText: View {
 
             Text(label)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(shine(at: x, base: Color(.tertiaryLabel), light: Color(.label)))
-                .background {
-                    Text(label)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(shine(at: x, base: .clear, light: Color.accentColor.opacity(0.7)))
-                        .blur(radius: 6)
-                }
+                .foregroundStyle(shine(at: x, base: Color(.systemGray3), light: Color(.systemGray)))
         }
         .padding(.vertical, 6)
         .accessibilityLabel(Text(label))
@@ -459,9 +457,9 @@ struct AriaThinkingText: View {
     private func shine(at x: Double, base: Color, light: Color) -> LinearGradient {
         LinearGradient(stops: [
             .init(color: base, location: 0),
-            .init(color: base, location: 0.38),
+            .init(color: base, location: 0.3),
             .init(color: light, location: 0.5),
-            .init(color: base, location: 0.62),
+            .init(color: base, location: 0.7),
             .init(color: base, location: 1),
         ], startPoint: UnitPoint(x: x - 1, y: 0.5), endPoint: UnitPoint(x: x + 1, y: 0.5))
     }

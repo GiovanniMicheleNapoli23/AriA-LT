@@ -16,7 +16,7 @@ struct WorkOrderApp: App {
             ContentView()
                 .environment(viewModel)
                 #if DEBUG
-                .task { await viewModel.backend.signInWithLaunchLink() }
+                .task { await viewModel.signInWithLaunchLink() }
                 #endif
         }
     }

@@ -2,8 +2,9 @@
 //  AriaConnectionSheet.swift
 //  AriaLite
 //
-//  Collegamento al backend Aria: login con link via email (come la web), azienda e stabilimento.
-//  In DEBUG anche server personalizzati e token incollato.
+//  Collegamento al backend Aria: login dell'utente mobile (username + password)
+//  sull'host di accesso, oppure link via email come la web, poi azienda e stabilimento dall'host API.
+//  In DEBUG anche server personalizzati e access token incollato.
 //
 
 import SwiftUI
@@ -13,17 +14,19 @@ struct AriaConnectionSheet: View {
     let backend: AriaBackend
     @Environment(\.dismiss) private var dismiss
 
+    @State private var username = ""
+    @State private var password = ""
     @State private var email = ""
     @State private var captcha: String?
     @State private var captchaAttempt = 0
     @State private var pastedLink = ""
     /// Un link vale una volta sola: se è già fallito non lo si rimanda al server.
-    @State private var failedLink: URL?
+    @State private var failedLink: AriaSignInLink?
     @State private var busy = false
     @State private var error: String?
     #if DEBUG
     @State private var server = ""
-    @State private var web = ""
+    @State private var authServer = ""
     @State private var devToken = ""
     #endif
 
@@ -34,6 +37,7 @@ struct AriaConnectionSheet: View {
                     connectedSections
                 } else {
                     signInSection
+                    magicLinkSection
                     #if DEBUG
                     developerSection
                     #endif
@@ -65,6 +69,10 @@ struct AriaConnectionSheet: View {
     private var connectedSections: some View {
         Section {
             LabeledContent("Server", value: backend.serverURL.host() ?? backend.serverURL.absoluteString)
+            LabeledContent("Sign-in", value: backend.authURL.host() ?? backend.authURL.absoluteString)
+            if let account = backend.mobileAccount {
+                LabeledContent("Account", value: account.displayUsername ?? account.username)
+            }
             LabeledContent("Status") {
                 Label(backend.isReady ? "Online" : "No plant", systemImage: "circle.fill")
                     .labelStyle(.titleAndIcon)
@@ -104,8 +112,51 @@ struct AriaConnectionSheet: View {
 
     // MARK: Login
 
-    @ViewBuilder
     private var signInSection: some View {
+        Section {
+            TextField("Username", text: $username)
+                .textContentType(.username)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .disabled(busy)
+            SecureField("Password", text: $password)
+                .textContentType(.password)
+                .disabled(busy)
+                .onSubmit { Task { await signIn() } }
+            Button {
+                Task { await signIn() }
+            } label: {
+                HStack {
+                    Text("Sign in")
+                    if busy { Spacer(); ProgressView() }
+                }
+            }
+            .disabled(busy || username.isEmpty || password.isEmpty)
+        } header: {
+            Text("Sign in to Aria")
+        } footer: {
+            Text("Use the username your company administrator gave you, for example acme.mario.rossi.")
+        }
+    }
+
+    private func signIn() async {
+        guard !busy, !username.isEmpty, !password.isEmpty else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            try await backend.signIn(username: username, password: password)
+            password = ""
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    // MARK: Magic link
+
+    /// Come la web: si riceve un link via email e lo si incolla qui (aprirlo sul telefono lo consumerebbe).
+    @ViewBuilder
+    private var magicLinkSection: some View {
         if let sentTo = backend.pendingLinkEmail {
             Section {
                 LabeledContent("Sent to", value: sentTo)
@@ -157,7 +208,7 @@ struct AriaConnectionSheet: View {
                 }
                 .disabled(busy || email.isEmpty || captcha == nil)
             } header: {
-                Text("Sign in to Aria")
+                Text("Or sign in with an email link")
             } footer: {
                 Text("As on the web app, we will email you a sign-in link.")
             }
@@ -227,7 +278,7 @@ struct AriaConnectionSheet: View {
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            TextField(AriaConfig.productionWeb.absoluteString, text: $web)
+            TextField(AriaConfig.productionSignIn.absoluteString, text: $authServer)
                 .keyboardType(.URL)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -236,13 +287,13 @@ struct AriaConnectionSheet: View {
                     let url = URL(string: raw.trimmingCharacters(in: .whitespaces))
                     return url?.scheme == nil ? nil : url
                 }
-                backend.setServers(api: parse(server), web: parse(web))
+                backend.setServers(api: parse(server), auth: parse(authServer))
                 server = backend.serverURL.absoluteString
-                web = backend.webURL.absoluteString
+                authServer = backend.authURL.absoluteString
             }
             .onAppear {
                 server = backend.serverURL.absoluteString
-                web = backend.webURL.absoluteString
+                authServer = backend.authURL.absoluteString
             }
             TextField("Access token (JWT)", text: $devToken, axis: .vertical)
                 .lineLimit(1...3)
@@ -264,7 +315,7 @@ struct AriaConnectionSheet: View {
         } header: {
             Text(verbatim: "Developer")
         } footer: {
-            Text(verbatim: "API (FastAPI) and web app (login). Token: GET /api/aria/token on the web app.")
+            Text(verbatim: "API host (data, /v1) and sign-in host (auth only). Token: GET /api/aria/token on the sign-in host; it lasts 15 minutes and is not renewed.")
         }
     }
     #endif

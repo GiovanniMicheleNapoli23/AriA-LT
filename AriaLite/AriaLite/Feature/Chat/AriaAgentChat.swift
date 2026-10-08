@@ -17,7 +17,11 @@ final class AriaAgentChat {
     private(set) var isStreaming = false
     private(set) var isLoadingHistory = false
     private(set) var suggestions: [String] = []
-    var lastError: String?
+    var lastError: String? {
+        didSet { lastErrorIsOffline = false }
+    }
+    /// `lastError` è "il sistema è offline": il banner lo dice a parte e propone di riprovare.
+    private(set) var lastErrorIsOffline = false
     /// Messaggio di esito (es. "Grazie, Aria ha imparato qualcosa").
     var notice: String?
 
@@ -543,7 +547,8 @@ final class AriaAgentChat {
                 update(messageId) { m in
                     m.finished = true
                     if cancelled { return }
-                    m.error = error.localizedDescription
+                    m.errorIsOffline = AriaHTTP.isOffline(error)
+                    m.error = m.errorIsOffline ? AriaError.serverOffline.localizedDescription : error.localizedDescription
                     // Errore di rete durante una ripresa: la pausa torna, così si può riprovare.
                     if let interrupt {
                         m.interrupt = interrupt
@@ -578,7 +583,12 @@ final class AriaAgentChat {
     }
 
     private func handle(_ error: any Error) {
-        lastError = error.localizedDescription
+        if AriaHTTP.isOffline(error) {
+            lastError = AriaError.serverOffline.localizedDescription
+            lastErrorIsOffline = true
+        } else {
+            lastError = error.localizedDescription
+        }
         backend.handle(error)
     }
 }
