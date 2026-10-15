@@ -2,6 +2,8 @@
 //  AriaProcedureDock.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Quando Aria manda una checklist insieme a una domanda, in basso non c'è la domanda
 //  ma la procedura: un task alla volta, "Fatto" per spuntarlo, "Indietro" per tornare al
 //  task prima, e in alto il menu per chiedere aiuto su quel task. Finita la checklist

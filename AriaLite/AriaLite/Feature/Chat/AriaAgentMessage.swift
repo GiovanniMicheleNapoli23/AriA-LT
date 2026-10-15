@@ -2,6 +2,8 @@
 //  AriaAgentMessage.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Un messaggio della chat con il backend Aria e come ogni evento dello
 //  stream lo modifica (porting di applyResponsesEvent della web).
 //
@@ -44,6 +46,8 @@ struct AriaAgentMessage: Identifiable {
     var episode: Int? = nil
     var finished = true
     var error: String? = nil
+    /// L'errore è che il sistema non si raggiunge (si mostra come "offline", non come guasto).
+    var errorIsOffline = false
     /// Solo locale: il voto dato dall'operatore.
     var vote: Vote? = nil
 
@@ -151,6 +155,7 @@ struct AriaAgentMessage: Identifiable {
         interruptOutcome = outcome
         finished = false
         error = nil
+        errorIsOffline = false
         if !text.isEmpty { text += "\n\n" }
     }
 

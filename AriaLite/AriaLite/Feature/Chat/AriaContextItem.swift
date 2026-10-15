@@ -2,6 +2,8 @@
 //  AriaContextItem.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Il contesto di una chat: foto e file aggiunti dal "+" del composer, come il
 //  context dock della web (use-chat-context-items). Come sulla web è solo stato
 //  dell'interfaccia: il backend (/v1/responses) accetta solo testo, quindi niente

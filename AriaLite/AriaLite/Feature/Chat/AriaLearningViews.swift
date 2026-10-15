@@ -2,6 +2,8 @@
 //  AriaLearningViews.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Il Real-time Learning della web, sul telefono: quando Aria non è sicura di una risposta l'avviso esce
 //  dalla Dynamic Island (AriaIsland) e la domanda prende il posto del composer (AriaElicitationPanel,
 //  variante `.learning`). Qui ci sono l'identità visiva, la card che la sostituisce quando si è risposto

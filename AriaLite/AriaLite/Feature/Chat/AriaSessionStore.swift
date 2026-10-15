@@ -2,6 +2,8 @@
 //  AriaSessionStore.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Le conversazioni salvate sul backend, condivise tra la sidebar (Fissate / Recenti)
 //  e la schermata Chat: carica a pagine da 60, rinomina, elimina, fissa.
 //

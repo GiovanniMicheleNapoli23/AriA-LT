@@ -2,6 +2,8 @@
 //  AriaElicitationPanel.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Le domande guidate di Aria (elicitation-panel della web), pensate per il telefono:
 //  il pannello prende il posto del composer, si sceglie e si conferma con la freccia
 //  sulla riga scelta, si torna alla domanda precedente, "Altra risposta" apre il campo solo se serve,

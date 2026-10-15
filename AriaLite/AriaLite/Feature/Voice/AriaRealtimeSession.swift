@@ -1,0 +1,910 @@
+//
+//  AriaRealtimeSession.swift
+//  AriaLite
+//
+//  Created by Giovanni Michele on 30/03/26.
+//
+//  Sessione vocale nativa con OpenAI Realtime API via WebSocket + AVAudioEngine.
+//  Zero dipendenze esterne — usa solo URLSessionWebSocketTask e AVFoundation.
+//
+//  Flusso:
+//    1. Token effimero dal server Aria Engine
+//    2. WebSocket a wss://api.openai.com/v1/realtime
+//    3. Mic → AVAudioEngine → PCM16 24 kHz base64 → input_audio_buffer.append
+//    4. response.audio.delta → base64 PCM16 → AVAudioPlayerNode
+//    5. Function calls (RAG) gestite automaticamente
+//
+
+import Foundation
+import AVFoundation
+import Synchronization
+
+// MARK: - Delegate Protocol
+
+// Le API AVFoundation qui sotto (audio engine strutturato, AVAudioSession async) esistono
+// solo da iOS 27: sessione, delegate e conformance sono quindi marcati @available(iOS 27.0, *).
+// Il ViewModel che le usa (AriaVoiceViewModel) resta invece disponibile su tutte le versioni:
+// tiene questa sessione come `Any?` e la crea solo dopo aver verificato la disponibilità.
+@available(iOS 27.0, *)
+protocol AriaRealtimeSessionDelegate: AnyObject {
+    func session(_ session: AriaRealtimeSession, didReceiveTranscript text: String, from speaker: AriaRealtimeSession.Speaker)
+    func session(_ session: AriaRealtimeSession, didChangeState state: AriaRealtimeSession.SessionState)
+    func session(_ session: AriaRealtimeSession, isSearchingDocuments: Bool)
+}
+
+// MARK: - AriaRealtimeSession
+
+@available(iOS 27.0, *)
+final class AriaRealtimeSession: NSObject {
+
+    // MARK: Types
+
+    enum SessionState: Sendable { case idle, connecting, connected, disconnected }
+    enum Speaker: Sendable { case user, assistant }
+
+    // MARK: Public
+
+    weak var delegate: AriaRealtimeSessionDelegate?
+
+    private(set) var state: SessionState = .idle {
+        didSet {
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.delegate?.session(self, didChangeState: self.state)
+            }
+        }
+    }
+
+    /// Letto anche dal thread audio (tap mic) → vive nel Mutex
+    nonisolated var isMuted: Bool {
+        get { echo.withLock { $0.isMuted } }
+        set { echo.withLock { $0.isMuted = newValue } }
+    }
+
+    /// True quando la sessione è in mix mode (es. Teams/Meet attivo) —
+    /// il mic potrebbe avere AEC ridotto
+    var isOutputOnly: Bool { isUsingMixMode }
+
+    // ── Anti-echo: approccio ChatGPT-style ──
+    // Mic NON invia audio al server durante playback AI.
+    // Barge-in rilevato localmente tramite energia RMS del microfono.
+    /// Stato condiviso tra MainActor, thread audio e callback del player
+    nonisolated private struct EchoState {
+        /// Mic in mute (gestito dalla UI)
+        var isMuted = false
+        /// True finché l'AI sta parlando O il suo audio è ancora in riproduzione
+        var isAISpeaking = false
+        /// Conta i buffer audio schedulati ma non ancora riprodotti
+        var pendingBufferCount = 0
+        /// True quando il server ha finito di inviare tutti i delta audio
+        var responseAudioComplete = false
+        /// Contatore chunk sopra soglia
+        var bargeInFrameCount = 0
+    }
+    /// Mutex per thread-safety (sostituisce NSLock + var MainActor)
+    private let echo = Mutex(EchoState())
+    /// Timer di cooldown dopo l'ultima riproduzione
+    private var unmuteCooldownWork: DispatchWorkItem?
+    /// Soglia RMS per rilevare barge-in locale (voce vera vs eco speaker)
+    private let bargeInRMSThreshold: Float = 0.025
+    /// Chunk consecutivi sopra soglia necessari per confermare barge-in
+    private let bargeInFramesNeeded = 2
+    /// Response ID corrente per poterlo cancellare
+    private var currentResponseId: String?
+    /// Coda seriale per operazioni di stato (barge-in, unmute, ecc.)
+    private let stateQueue = DispatchQueue(label: "com.aria.realtime.state")
+
+    // MARK: WebSocket
+
+    private var webSocket: URLSessionWebSocketTask?
+    private var wsURLSession: URLSession?
+    private var connectionContinuation: CheckedContinuation<Void, Error>?
+    /// Viene impostato a true se il WS si chiude subito dopo didOpen (es. errore server)
+    private var earlyDisconnect = false
+
+    // MARK: Audio Engine
+
+    private let audioEngine = AVAudioEngine()
+    private let playerNode = AVAudioPlayerNode()
+    private var inputConverter: AVAudioConverter?
+
+    /// OpenAI Realtime: PCM16 little-endian, 24 kHz, mono
+    private let sampleRate: Double = 24_000
+
+    private lazy var pcm16Format: AVAudioFormat = {
+        AVAudioFormat(commonFormat: .pcmFormatInt16,
+                      sampleRate: sampleRate,
+                      channels: 1,
+                      interleaved: true)!
+    }()
+
+    /// Float32 per AVAudioPlayerNode (stessa sample rate)
+    private lazy var playbackFormat: AVAudioFormat = {
+        AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                      sampleRate: sampleRate,
+                      channels: 1,
+                      interleaved: false)!
+    }()
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Public API
+    // ═══════════════════════════════════════════════
+
+    func start() async throws {
+        state = .connecting
+        AriaVoiceTrace.step("start", "richiedo il token effimero")
+
+        // Se c'è un engine residuo, smonta senza disattivare la session
+        // così configureAudioSession non trova una session appena rilasciata
+        if audioEngine.isRunning {
+            tearDownAudio(skipDeactivation: true)
+        }
+
+        // 1 — Token effimero
+        let ephemeralKey: String
+        do {
+            ephemeralKey = try await AriaEngineService.shared.getToken()
+            AriaVoiceTrace.step("start", "token ricevuto")
+        } catch {
+            AriaVoiceTrace.failure("start token", error)
+            throw error
+        }
+
+        // 2 — Audio session
+        do {
+            try await configureAudioSession()
+            AriaVoiceTrace.step("start", "AVAudioSession configurata")
+        } catch {
+            AriaVoiceTrace.failure("start AVAudioSession", error)
+            throw error
+        }
+
+        // 3 — WebSocket (attende connessione stabilita)
+        do {
+            try await openWebSocket(ephemeralKey: ephemeralKey)
+            AriaVoiceTrace.step("start", "WebSocket connesso")
+        } catch {
+            AriaVoiceTrace.failure("start WebSocket", error)
+            throw error
+        }
+
+        // 3b — Configura la sessione: audio bidirezionale + VAD + voice
+        sendSessionUpdate()
+
+        // 4 — Audio engine (mic capture + playback)
+        do {
+            try startAudioEngine()
+            AriaVoiceTrace.step("start", "audio engine attivo (mic + playback)")
+        } catch {
+            AriaVoiceTrace.failure("start audio engine", error)
+            closeWebSocket()
+            throw error
+        }
+
+        state = .connected
+        AriaVoiceTrace.step("start", "sessione connessa")
+    }
+
+    func stop() {
+        tearDownAudio()
+        closeWebSocket()
+        state = .disconnected
+    }
+
+    deinit {
+        tearDownAudio()
+        closeWebSocket()
+    }
+
+    /// Invia un messaggio di testo (anziché audio) durante la sessione
+    func sendTextMessage(_ text: String) {
+        sendJSON([
+            "type": "conversation.item.create",
+            "item": [
+                "type": "message",
+                "role": "user",
+                "content": [["type": "input_text", "text": text]]
+            ] as [String: Any]
+        ])
+        sendJSON(["type": "response.create"])
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Audio Session
+    // ═══════════════════════════════════════════════
+
+    /// True se la sessione è stata attivata in modalità mix (coesistenza con Teams/Meet)
+    private var isUsingMixMode = false
+
+    /// Wrapper async di `activate(options:completionHandler:)`.
+    /// La variante sincrona `setActive(_:)` blocca il chiamante e, se invocata dal
+    /// main thread, AVAudioSession segnala "This method can lead to UI unresponsiveness".
+    nonisolated private static func activateSession(_ session: AVAudioSession,
+                                                    options: AVAudioSessionActivationOptions = []) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            session.activate(options: options) { activated, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if !activated {
+                    continuation.resume(throwing: NSError(
+                        domain: "AriaRealtime", code: -2,
+                        userInfo: [NSLocalizedDescriptionKey: "AVAudioSession activation refused"]))
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+
+    /// Wrapper async di `deactivate(options:completionHandler:)` — vedi `activateSession`.
+    nonisolated private static func deactivateSession(_ session: AVAudioSession,
+                                                      options: AVAudioSessionDeactivationOptions = []) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            session.deactivate(options: options) { _, _ in continuation.resume() }
+        }
+    }
+
+    private func configureAudioSession() async throws {
+        let session = AVAudioSession.sharedInstance()
+
+        // ── Strategia a 2 livelli ──
+        // 1° tentativo: .voiceChat esclusivo → AEC hardware pieno
+        // 2° fallback : .mixWithOthers → coesiste con Teams/Meet/FaceTime
+        //               (AEC software via anti-echo locale è comunque attivo)
+
+        // Livello 1 — Modalità esclusiva (qualità ottimale)
+        do {
+            try session.setCategory(.playAndRecord,
+                                    mode: .voiceChat,
+                                    options: [.defaultToSpeaker, .allowBluetoothHFP, .allowBluetoothA2DP])
+            try session.setPreferredSampleRate(sampleRate)
+            try session.setPreferredIOBufferDuration(0.02)
+
+            // Retry con back-off per riacquisto sessione post-teardown
+            var activated = false
+            for attempt in 1...3 {
+                do {
+                    if attempt > 1 {
+                        await Self.deactivateSession(session, options: .notifyOthersOnDeactivation)
+                        try? await Task.sleep(for: .seconds(0.15 * Double(attempt)))
+                    }
+                    try await Self.activateSession(session)
+                    activated = true
+                    break
+                } catch {
+                    AriaVoiceTrace.step("audio session", "esclusiva, tentativo \(attempt)/3 fallito")
+                    AriaVoiceTrace.failure("audio session", error)
+                }
+            }
+
+            if activated {
+                isUsingMixMode = false
+                AriaVoiceTrace.step("audio session", "modalità esclusiva (.voiceChat)")
+            } else {
+                // Tutti i tentativi esclusivi falliti → prova mix
+                throw NSError(domain: "AriaRealtime", code: -1)
+            }
+        } catch {
+            // Livello 2 — Modalità mista (coesistenza con altra app audio)
+            AriaVoiceTrace.step("audio session", "altra app audio attiva, passo a modalità mix")
+            try session.setCategory(.playAndRecord,
+                                    mode: .voiceChat,
+                                    options: [.defaultToSpeaker, .allowBluetoothHFP,
+                                              .allowBluetoothA2DP, .mixWithOthers])
+            try session.setPreferredSampleRate(sampleRate)
+            try session.setPreferredIOBufferDuration(0.02)
+            try await Self.activateSession(session)
+            isUsingMixMode = true
+            AriaVoiceTrace.step("audio session", "modalità mix (.mixWithOthers)")
+        }
+
+        // Solo se NON ci sono cuffie/bluetooth collegati, forza lo speaker
+        let hasHeadphones = session.currentRoute.outputs.contains {
+            [.headphones, .bluetoothA2DP, .bluetoothHFP, .bluetoothLE]
+                .contains($0.portType)
+        }
+        if !hasHeadphones {
+            try session.overrideOutputAudioPort(.speaker)
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Audio Engine (Mic → OpenAI)
+    // ═══════════════════════════════════════════════
+
+    private func startAudioEngine() throws {
+        // Ferma un eventuale engine precedente (deinit parziale / reconnect)
+        audioEngine.stop()
+
+        // Player per riprodurre l'audio dell'AI
+        audioEngine.attach(playerNode)
+        try audioEngine.connectNode(playerNode, to: audioEngine.mainMixerNode, format: playbackFormat)
+
+        // Formato hardware del microfono (es. 48 kHz Float32)
+        let inputNode = audioEngine.inputNode
+        let hwFormat = inputNode.outputFormat(forBus: 0)
+
+        guard let converter = AVAudioConverter(from: hwFormat, to: pcm16Format) else {
+            throw AriaEngineService.AriaEngineError.sessionFailed("Audio converter init failed")
+        }
+        self.inputConverter = converter
+
+        // ⚠️ Rimuovi eventuali tap residui — previene il crash
+        // "required condition is false: nullptr == Tap()"
+        inputNode.removeTap(onBus: 0)
+
+        // Tap: ~60 ms di audio per chunk (reattività migliore per VAD e barge-in)
+        let framesPerChunk = AVAudioFrameCount(hwFormat.sampleRate * 0.06)
+
+        // Il WS è già aperto qui; il tap gira sul thread audio (fuori dal MainActor)
+        let ws = webSocket
+
+        // Il tap fornisce un buffer read-only (Sendable) sul thread audio
+        try inputNode.installAudioTap(onBus: 0,
+                                      bufferSize: framesPerChunk,
+                                      format: hwFormat) { [weak self] buffer, _ in
+            guard let self else { return }
+
+            // Leggi mute + isAISpeaking in modo thread-safe
+            let (muted, aiSpeaking) = self.echo.withLock { ($0.isMuted, $0.isAISpeaking) }
+            guard !muted else { return }
+
+            if aiSpeaking {
+                // Mentre l'AI parla: NON inviare audio al server
+                // Ma controlla se l'utente sta parlando (barge-in locale)
+                let rms = Self.computeRMS(buffer: buffer)
+                if rms > self.bargeInRMSThreshold {
+                    let count = self.echo.withLock { state -> Int in
+                        state.bargeInFrameCount += 1
+                        return state.bargeInFrameCount
+                    }
+                    if count >= self.bargeInFramesNeeded {
+                        // Dispatch OFF audio thread—NEVER call playerNode/sendJSON from here
+                        self.stateQueue.async { [weak self] in
+                            self?.executeLocalBargeIn()
+                        }
+                    }
+                } else {
+                    self.echo.withLock { $0.bargeInFrameCount = 0 }
+                }
+            } else {
+                // AI non parla: invia audio normalmente
+                Self.convertAndSend(buffer: buffer, converter: converter, over: ws)
+            }
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+        try playerNode.playAudio()
+    }
+
+    /// skipDeactivation = true quando si sta per riconnettersi subito
+    private func tearDownAudio(skipDeactivation: Bool = false) {
+        if audioEngine.isRunning {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            playerNode.stop()
+            audioEngine.stop()
+        }
+        inputConverter = nil
+
+        // Reset anti-echo state
+        echo.withLock {
+            $0.isAISpeaking = false
+            $0.pendingBufferCount = 0
+            $0.responseAudioComplete = false
+            $0.bargeInFrameCount = 0
+        }
+        unmuteCooldownWork?.cancel()
+
+        if !skipDeactivation {
+            // Disattivazione asincrona: non blocca il thread chiamante (spesso il main).
+            // Chiamabile anche da deinit perché non cattura self.
+            AVAudioSession.sharedInstance().deactivate(options: .notifyOthersOnDeactivation) { _, error in
+                if let error {
+                    AriaVoiceTrace.failure("audio session deactivate", error)
+                }
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Mic Capture → base64 PCM16 → WebSocket
+    // ═══════════════════════════════════════════════
+
+    /// Gira sul thread audio: nonisolated, nessuno stato MainActor
+    nonisolated private static func convertAndSend(buffer tapBuffer: AVReadOnlyAudioPCMBuffer,
+                                                   converter: AVAudioConverter,
+                                                   over ws: URLSessionWebSocketTask?) {
+        // Copia necessaria: AVAudioConverter richiede un AVAudioPCMBuffer
+        let buffer = AVAudioPCMBuffer(copying: tapBuffer)
+        // Formato di destinazione = pcm16Format (usato per creare il converter)
+        let outFormat = converter.outputFormat
+
+        // Numero di frame in output basato sul rapporto tra sample rate
+        let ratio = outFormat.sampleRate / buffer.format.sampleRate
+        let outFrames = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
+        guard outFrames > 0,
+              let out = AVAudioPCMBuffer(pcmFormat: outFormat, frameCapacity: outFrames)
+        else { return }
+
+        var error: NSError?
+        var consumed = false
+
+        converter.convert(to: out, error: &error) { _, outStatus in
+            if consumed {
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+            consumed = true
+            outStatus.pointee = .haveData
+            return buffer
+        }
+
+        guard error == nil, out.frameLength > 0 else { return }
+
+        // Int16 raw → base64
+        let byteCount = Int(out.frameLength) * MemoryLayout<Int16>.size
+        let data = Data(bytes: out.int16ChannelData![0], count: byteCount)
+        let base64 = data.base64EncodedString()
+
+        send(["type": "input_audio_buffer.append", "audio": base64], over: ws)
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - WebSocket → base64 PCM16 → Speaker
+    // ═══════════════════════════════════════════════
+
+    private func playAudioDelta(_ base64: String) {
+        guard let raw = Data(base64Encoded: base64), !raw.isEmpty else { return }
+
+        let sampleCount = raw.count / MemoryLayout<Int16>.size
+        guard let buf = AVAudioPCMBuffer(pcmFormat: playbackFormat,
+                                         frameCapacity: AVAudioFrameCount(sampleCount))
+        else { return }
+
+        buf.frameLength = AVAudioFrameCount(sampleCount)
+        let dst = buf.floatChannelData![0]
+
+        raw.withUnsafeBytes { ptr in
+            let src = ptr.bindMemory(to: Int16.self)
+            for i in 0..<sampleCount {
+                dst[i] = Float(src[i]) / 32_768.0
+            }
+        }
+
+        // Traccia riproduzione effettiva del buffer
+        echo.withLock { $0.pendingBufferCount += 1 }
+
+        playerNode.scheduleBuffer(buf, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            self?.onBufferPlayedBack()
+        }
+    }
+
+    /// Chiamato quando un buffer audio è stato effettivamente riprodotto dallo speaker
+    private func onBufferPlayedBack() {
+        let (remaining, done) = echo.withLock { state in
+            state.pendingBufferCount = max(0, state.pendingBufferCount - 1)
+            return (state.pendingBufferCount, state.responseAudioComplete)
+        }
+
+        if done && remaining <= 0 {
+            stateQueue.async { [weak self] in
+                self?.scheduleUnmuteCooldown()
+            }
+        }
+    }
+
+    /// Dopo che l'ultimo buffer è riprodotto, aspetta prima di accettare nuovo speech
+    private func scheduleUnmuteCooldown() {
+        // Deve girare su stateQueue (già garantito dai chiamanti)
+        unmuteCooldownWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.echo.withLock {
+                $0.isAISpeaking = false
+                $0.bargeInFrameCount = 0
+            }
+            // Svuota il buffer input: scarta qualsiasi eco residuo
+            self.sendJSON(["type": "input_audio_buffer.clear"])
+            AriaVoiceTrace.step("audio", "pronto per nuovo input (buffer svuotato post-playback)")
+        }
+        unmuteCooldownWork = work
+        // 500ms di cooldown dopo l'ultimo buffer riprodotto
+        self.stateQueue.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Local Barge-In Detection
+    // ═══════════════════════════════════════════════
+
+    /// Calcola il livello RMS (volume) di un buffer audio
+    nonisolated private static func computeRMS(buffer: AVReadOnlyAudioPCMBuffer) -> Float {
+        // Solo Float32 (formato hardware del mic); altri formati → 0 come prima
+        guard case .float(let samples) = buffer.channelData(0) else { return 0 }
+        let frames = min(buffer.frameLength, samples.count)
+        guard frames > 0 else { return 0 }
+        var sumSquares: Float = 0
+        for i in 0..<frames {
+            let s = samples[i]
+            sumSquares += s * s
+        }
+        return sqrtf(sumSquares / Float(frames))
+    }
+
+    /// Barge-in rilevato localmente — eseguito su stateQueue, MAI dal thread audio
+    private func executeLocalBargeIn() {
+        AriaVoiceTrace.step("audio", "barge-in locale, cancello la risposta")
+
+        unmuteCooldownWork?.cancel()
+
+        echo.withLock {
+            $0.pendingBufferCount = 0
+            $0.responseAudioComplete = false
+            $0.isAISpeaking = false
+            $0.bargeInFrameCount = 0
+        }
+
+        // Stop playback (safe perché siamo su stateQueue, non audio thread)
+        interruptPlayback()
+
+        // Cancella la risposta in corso sul server
+        if let respId = currentResponseId {
+            sendJSON(["type": "response.cancel", "response_id": respId])
+        } else {
+            sendJSON(["type": "response.cancel"])
+        }
+
+        // Svuota il buffer mic lato server
+        sendJSON(["type": "input_audio_buffer.clear"])
+    }
+
+    /// Interrompe la riproduzione quando l'utente inizia a parlare (barge-in)
+    private func interruptPlayback() {
+        playerNode.stop()
+        do {
+            try playerNode.playAudio()
+        } catch {
+            AriaVoiceTrace.failure("playerNode restart", error)
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - WebSocket Lifecycle
+    // ═══════════════════════════════════════════════
+
+    private func openWebSocket(ephemeralKey: String) async throws {
+        let model = "gpt-realtime-1.5"
+        guard let url = URL(string: "wss://api.openai.com/v1/realtime?model=\(model)") else {
+            throw AriaEngineService.AriaEngineError.badURL
+        }
+        AriaVoiceTrace.step("ws", "apro \(url.host() ?? "")")
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(ephemeralKey)", forHTTPHeaderField: "Authorization")
+        // GA tokens: NO OpenAI-Beta header (causa api_version_mismatch)
+
+        earlyDisconnect = false
+
+        // Senza cookie, come AriaHTTP.cookielessSession (che qui non si usa: serve il delegate)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpShouldSetCookies = false
+        configuration.httpCookieAcceptPolicy = .never
+        configuration.httpCookieStorage = nil
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        self.wsURLSession = session
+
+        let ws = session.webSocketTask(with: request)
+        self.webSocket = ws
+        ws.resume()
+
+        // Attendi che il WebSocket sia effettivamente aperto (con timeout)
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            // Child task sul MainActor: connectionContinuation è isolata lì
+            group.addTask { @MainActor in
+                try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+                    self.connectionContinuation = cont
+                }
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: 15_000_000_000) // 15s timeout
+                throw AriaEngineService.AriaEngineError.sessionFailed("WebSocket connection timed out after 15s")
+            }
+            // Il primo che completa vince; cancella l'altro
+            try await group.next()
+            group.cancelAll()
+        }
+
+        // Inizia ad ascoltare — e attendi un breve intervallo per
+        // verificare che il server non abbia chiuso subito la connessione
+        receiveLoop()
+        try await Task.sleep(nanoseconds: 500_000_000) // 500ms grace
+        if earlyDisconnect {
+            throw AriaEngineService.AriaEngineError.sessionFailed("WebSocket closed immediately after open (server rejected session)")
+        }
+    }
+
+    private func closeWebSocket() {
+        webSocket?.cancel(with: .normalClosure, reason: nil)
+        webSocket = nil
+        wsURLSession?.invalidateAndCancel()
+        wsURLSession = nil
+    }
+
+    // MARK: Receive loop
+
+    private func receiveLoop() {
+        webSocket?.receive { [weak self] result in
+            guard let self else { return }
+
+            switch result {
+            case .success(let message):
+                switch message {
+                case .string(let text):
+                    if let data = text.data(using: .utf8),
+                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        self.handleEvent(json)
+                    }
+                case .data(let data):
+                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                        self.handleEvent(json)
+                    }
+                @unknown default:
+                    break
+                }
+                self.receiveLoop()   // continua ad ascoltare
+
+            case .failure(let error):
+                AriaVoiceTrace.failure("ws receive", error)
+                DispatchQueue.main.async { self.state = .disconnected }
+            }
+        }
+    }
+
+    // MARK: Send helper
+
+    private func sendJSON(_ dict: [String: Any]) {
+        Self.send(dict, over: webSocket)
+    }
+
+    /// Invio nonisolated: usabile anche dal thread audio
+    nonisolated private static func send(_ dict: [String: Any], over webSocket: URLSessionWebSocketTask?) {
+        guard let ws = webSocket else {
+            AriaVoiceTrace.step("ws", "invio senza WebSocket")
+            return
+        }
+        var event = dict
+        if event["event_id"] == nil { event["event_id"] = UUID().uuidString }
+        guard let data = try? JSONSerialization.data(withJSONObject: event),
+              let text = String(data: data, encoding: .utf8) else { return }
+        ws.send(.string(text)) { error in
+            if let error {
+                AriaVoiceTrace.failure("ws send", error)
+            }
+        }
+    }
+
+    // MARK: Session Configuration
+
+    /// Invia session.update per configurare audio bidirezionale, VAD,
+    /// voice e input transcription.
+    private func sendSessionUpdate() {
+        // GA Realtime API — formato flat (session.type richiesto)
+        let update: [String: Any] = [
+            "type": "session.update",
+            "session": [
+                "type": "realtime",
+                "modalities": ["text", "audio"],
+                "instructions": "Sei Aria, assistente vocale di Sinaura Group. Rispondi in modo conciso e professionale nella lingua in cui ti parla l'utente. Puoi cercare documenti nella knowledge base aziendale usando la funzione search_knowledge_base.",
+                "voice": "alloy",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
+                "input_audio_transcription": [
+                    "model": "gpt-4o-transcribe"
+                ] as [String: Any],
+                "turn_detection": [
+                    "type": "server_vad",
+                    "threshold": 0.45,
+                    "prefix_padding_ms": 400,
+                    "silence_duration_ms": 350,
+                    "create_response": true
+                ] as [String: Any],
+                "tools": [
+                    [
+                        "type": "function",
+                        "name": "search_knowledge_base",
+                        "description": "Search the company knowledge base for relevant documents",
+                        "parameters": [
+                            "type": "object",
+                            "properties": [
+                                "query": [
+                                    "type": "string",
+                                    "description": "The search query"
+                                ]
+                            ],
+                            "required": ["query"]
+                        ] as [String: Any]
+                    ] as [String: Any]
+                ]
+            ] as [String: Any]
+        ]
+        AriaVoiceTrace.step("ws", "invio session.update")
+        sendJSON(update)
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Event Handling
+    // ═══════════════════════════════════════════════
+
+    private func handleEvent(_ json: [String: Any]) {
+        guard let type = json["type"] as? String else { return }
+
+        // Solo il tipo: i payload contengono trascrizioni e testo del RAG
+        if type != "response.output_audio.delta" {   // troppo frequente, non loggare
+            AriaVoiceTrace.step("evento", type)
+        }
+
+        switch type {
+
+        // ── Audio in arrivo dall'AI (GA API: response.output_audio.delta) ──
+        case "response.output_audio.delta":
+            if let delta = json["delta"] as? String {
+                let wasAlreadySpeaking = echo.withLock { state -> Bool in
+                    let was = state.isAISpeaking
+                    if !was {
+                        state.isAISpeaking = true
+                        state.pendingBufferCount = 0
+                        state.responseAudioComplete = false
+                        state.bargeInFrameCount = 0
+                    }
+                    return was
+                }
+                if !wasAlreadySpeaking {
+                    unmuteCooldownWork?.cancel()
+                    AriaVoiceTrace.step("audio", "AI sta parlando (mic sospeso al server, barge-in locale attivo)")
+                }
+                playAudioDelta(delta)
+            }
+
+        // ── Inizio risposta (salva response_id per cancel) ──
+        case "response.created":
+            if let resp = json["response"] as? [String: Any],
+               let rId = resp["id"] as? String {
+                currentResponseId = rId
+            }
+
+        // ── L'utente ha iniziato a parlare (barge-in server-side) ──
+        case "input_audio_buffer.speech_started":
+            unmuteCooldownWork?.cancel()
+            echo.withLock {
+                $0.isAISpeaking = false
+                $0.pendingBufferCount = 0
+                $0.responseAudioComplete = false
+                $0.bargeInFrameCount = 0
+            }
+            interruptPlayback()
+            AriaVoiceTrace.step("audio", "barge-in server-side")
+
+        // ── Server ha finito di inviare audio delta ──
+        case "response.done":
+            let remaining = echo.withLock { state -> Int in
+                state.responseAudioComplete = true
+                return state.pendingBufferCount
+            }
+            // Se tutti i buffer sono già stati riprodotti, avvia cooldown
+            if remaining <= 0 {
+                scheduleUnmuteCooldown()
+            }
+            // altrimenti onBufferPlayedBack() attiverà il cooldown
+
+        // ── Transcript AI (GA API: response.output_audio_transcript.done) ──
+        case "response.output_audio_transcript.done":
+            if let text = json["transcript"] as? String {
+                delegate?.session(self, didReceiveTranscript: text, from: .assistant)
+            }
+
+        // ── Transcript utente ───────────────────────
+        case "conversation.item.input_audio_transcription.completed":
+            if let text = json["transcript"] as? String {
+                delegate?.session(self, didReceiveTranscript: text, from: .user)
+            }
+
+        // ── Function call (RAG) ─────────────────────
+        case "response.function_call_arguments.done":
+            if let callId = json["call_id"] as? String,
+               let name = json["name"] as? String,
+               let args = json["arguments"] as? String {
+                handleFunctionCall(callId: callId, name: name, arguments: args)
+            }
+
+        // ── Error ───────────────────────────────────
+        case "error":
+            // Solo il codice: il messaggio del server può citare la chiave o il contenuto
+            let code = (json["error"] as? [String: Any])?["code"] as? String ?? "unknown"
+            AriaVoiceTrace.step("errore server", code)
+
+        default:
+            break
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // MARK: - Function Calls (RAG)
+    // ═══════════════════════════════════════════════
+
+    private func handleFunctionCall(callId: String, name: String, arguments: String) {
+        guard name == "search_knowledge_base" else {
+            sendFunctionResult(callId: callId, output: "Unsupported function: \(name)")
+            return
+        }
+
+        delegate?.session(self, isSearchingDocuments: true)
+
+        Task {
+            do {
+                guard let argsData = arguments.data(using: .utf8),
+                      let argsDict = try JSONSerialization.jsonObject(with: argsData) as? [String: Any],
+                      let query = argsDict["query"] as? String else {
+                    sendFunctionResult(callId: callId, output: "Invalid query.")
+                    return
+                }
+
+                let svc = AriaEngineService.shared
+                let results = try await svc.searchKnowledgeBase(query: query)
+                let context = svc.formatRAGResults(results)
+                sendFunctionResult(callId: callId, output: context)
+            } catch {
+                sendFunctionResult(callId: callId, output: "Error: \(error.localizedDescription)")
+            }
+
+            await MainActor.run {
+                delegate?.session(self, isSearchingDocuments: false)
+            }
+        }
+    }
+
+    private func sendFunctionResult(callId: String, output: String) {
+        sendJSON([
+            "type": "conversation.item.create",
+            "item": [
+                "type": "function_call_output",
+                "call_id": callId,
+                "output": output
+            ] as [String: Any]
+        ])
+        sendJSON(["type": "response.create"])
+    }
+}
+
+// MARK: - URLSessionWebSocketDelegate
+
+@available(iOS 27.0, *)
+extension AriaRealtimeSession: URLSessionWebSocketDelegate {
+
+    func urlSession(_ session: URLSession,
+                    webSocketTask: URLSessionWebSocketTask,
+                    didOpenWithProtocol proto: String?) {
+        AriaVoiceTrace.step("ws", "didOpen")
+        connectionContinuation?.resume()
+        connectionContinuation = nil
+    }
+
+    func urlSession(_ session: URLSession,
+                    webSocketTask: URLSessionWebSocketTask,
+                    didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+                    reason: Data?) {
+        AriaVoiceTrace.step("ws", "didClose code=\(closeCode.rawValue)")
+        earlyDisconnect = true
+        DispatchQueue.main.async { self.state = .disconnected }
+    }
+
+    func urlSession(_ session: URLSession,
+                    task: URLSessionTask,
+                    didCompleteWithError error: Error?) {
+        if let error {
+            AriaVoiceTrace.failure("ws didCompleteWithError", error)
+            connectionContinuation?.resume(throwing: error)
+            connectionContinuation = nil
+            DispatchQueue.main.async { self.state = .disconnected }
+        }
+    }
+}

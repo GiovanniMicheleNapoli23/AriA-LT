@@ -2,6 +2,8 @@
 //  AriaChatHistoryView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  La sezione "Chat" della sidebar (chat-history-sheet della web): conversazioni
 //  raggruppate per data, cerca per titolo, fissa, rinomina, elimina, apri.
 //
@@ -238,7 +240,7 @@ struct AriaCloseoutSheet: View {
             if let outcome {
                 LabeledContent("Result", value: outcome.status)
                 if let title = outcome.title { Text(title) }
-                if let url = outcome.url.flatMap(URL.init(string:)), url.scheme != nil {
+                if let url = outcome.url.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
                     Link("Open", destination: url)
                 }
                 if let error = outcome.error { Text(error).foregroundStyle(.red) }

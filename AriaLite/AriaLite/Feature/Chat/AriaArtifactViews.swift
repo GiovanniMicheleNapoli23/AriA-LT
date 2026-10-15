@@ -2,6 +2,8 @@
 //  AriaArtifactViews.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Le card che Aria manda in chat (`aria.ui_artifact`): work order, tabelle,
 //  KPI, grafici, asset, piani, diagnostica, allarmi, dashboard e le liste
 //  di pianificazione. Stessi tipi e campi della web (types/agent-stream.ts).
@@ -196,7 +198,7 @@ struct AriaWOCardView: View {
                     Button("Open work order") { actions.open("/work-orders/\(id)") }
                 }
                 Spacer()
-                if let raw = data["external_url"]?.nonEmptyString, let url = URL(string: raw) {
+                if let url = data["external_url"]?.nonEmptyString.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
                     Button("Open in MaintainX") { openURL(url) }
                 }
             }

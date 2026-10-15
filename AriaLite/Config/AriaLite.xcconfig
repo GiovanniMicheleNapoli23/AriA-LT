@@ -1,0 +1,19 @@
+//
+//  AriaLite.xcconfig
+//  AriaLite
+//
+//  Created by Giovanni Michele on 15/10/26.
+//
+//  Impostazioni di build non segrete (host dei server), lette da Info.plist a runtime.
+//  I valori locali o riservati stanno in Secrets.xcconfig (ignorato da git).
+//
+//  In un xcconfig `//` inizia un commento: qui si scrivono solo gli host, mai `https://…`.
+//
+
+ARIA_API_HOST = api.ariaplt.com
+ARIA_WEB_HOST = app.ariaplt.com
+ARIA_VOICE_ENGINE_HOST = api.sinaura-group.com
+ARIA_VOICE_ENGINE_KEY =
+
+// Opzionale: la build funziona anche senza il file (clone pulito, CI).
+#include? "Secrets.xcconfig"

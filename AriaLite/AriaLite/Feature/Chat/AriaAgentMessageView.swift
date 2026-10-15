@@ -2,6 +2,8 @@
 //  AriaAgentMessageView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Un messaggio della chat, nello stesso ordine della web (agent-message-body):
 //  strumenti, fonti, ragionamento, testo, conoscenza usata, card, immagini,
 //  eventi CMMS, checklist, azioni, proposte di memoria, approvazione, errore,
@@ -115,9 +117,13 @@ struct AriaAgentMessageView: View {
             }
 
             if let error = message.error {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.red)
+                if message.errorIsOffline {
+                    AriaOfflineNotice(style: .compact)
+                } else {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                }
             }
 
             if message.finished, !message.displayText.isEmpty || !message.artifacts.isEmpty {
@@ -190,7 +196,7 @@ struct AriaAgentMessageView: View {
         DisclosureGroup(isExpanded: $showSources) {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(message.sources, id: \.self) { source in
-                    if let raw = source.url, let url = URL(string: raw) {
+                    if let url = source.url.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
                         Link(destination: url) { Label(source.title, systemImage: "link") }
                     } else {
                         Label(source.title, systemImage: "doc.text")
@@ -235,10 +241,11 @@ struct AriaAgentMessageView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(message.images) { image in
-                    if let url = URL(string: image.url) {
+                    if let url = URL(string: image.url).flatMap(AriaURLPolicy.external) {
                         Link(destination: url) {
                             VStack(alignment: .leading, spacing: 4) {
-                                AsyncImage(url: url) { phase in
+                                // Si scarica solo da https; il link resta valido anche con http.
+                                AsyncImage(url: AriaURLPolicy.image(url)) { phase in
                                     if let picture = phase.image {
                                         picture.resizable().scaledToFill()
                                     } else {
@@ -409,11 +416,8 @@ struct AriaAgentMessageView: View {
     }
 
     private func open(_ target: String) {
-        if let url = URL(string: target), url.scheme != nil {
-            openURL(url)
-        } else if let url = URL(string: target, relativeTo: webBase)?.absoluteURL {
-            openURL(url)
-        }
+        let url = URL(string: target).flatMap { $0.scheme == nil ? URL(string: target, relativeTo: webBase)?.absoluteURL : $0 }
+        if let safe = url.flatMap(AriaURLPolicy.external) { openURL(safe) }
     }
 }
 
@@ -443,13 +447,7 @@ struct AriaThinkingText: View {
 
             Text(label)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(shine(at: x, base: Color(.tertiaryLabel), light: Color(.label)))
-                .background {
-                    Text(label)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(shine(at: x, base: .clear, light: Color.accentColor.opacity(0.7)))
-                        .blur(radius: 6)
-                }
+                .foregroundStyle(shine(at: x, base: Color(.systemGray3), light: Color(.systemGray)))
         }
         .padding(.vertical, 6)
         .accessibilityLabel(Text(label))
@@ -459,9 +457,9 @@ struct AriaThinkingText: View {
     private func shine(at x: Double, base: Color, light: Color) -> LinearGradient {
         LinearGradient(stops: [
             .init(color: base, location: 0),
-            .init(color: base, location: 0.38),
+            .init(color: base, location: 0.3),
             .init(color: light, location: 0.5),
-            .init(color: base, location: 0.62),
+            .init(color: base, location: 0.7),
             .init(color: base, location: 1),
         ], startPoint: UnitPoint(x: x - 1, y: 0.5), endPoint: UnitPoint(x: x + 1, y: 0.5))
     }

@@ -2,6 +2,8 @@
 //  AriaAgentChatView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  La chat con il backend Aria, come quella della web: messaggi in streaming,
 //  suggerimenti iniziali, scelta dello stabilimento, domande guidate (al posto
 //  del composer), conferma LOTO, comandi rapidi, errori con "Riprova" e un
@@ -245,7 +247,9 @@ struct AriaAgentChatView: View {
             VStack(spacing: 8) {
                 if backend.activePlantId == nil { plantGuard }
                 if let notice = chat.notice { noticeBanner(notice) }
-                if let error = chat.lastError { errorBanner(error) }
+                if let error = chat.lastError {
+                    if chat.lastErrorIsOffline { offlineBanner } else { errorBanner(error) }
+                }
                 if let voice, voice.isConnected || voice.isConnecting || voice.error != nil {
                     VoiceSessionOverlay(voice: voice)
                 }
@@ -333,8 +337,9 @@ struct AriaAgentChatView: View {
         return .composer
     }
 
-    /// Una domanda di Real-time Learning nuova: l'avviso esce dalla Dynamic Island e, quando ci rientra,
-    /// la domanda compare in fondo. Riaperta dal chip di un messaggio invece compare subito.
+    /// Una domanda di Real-time Learning nuova: l'avviso esce dalla Dynamic Island e chiede se rispondere.
+    /// Solo con "Rispondi" (o un tocco sul testo) la domanda compare in fondo; "Non ora", o nessuna scelta,
+    /// la lascia sotto la risposta, a un tocco dal chip. Riaperta dal chip invece compare subito.
     private func announceLearning(_ messageId: String?) {
         guard let messageId, let (_, request, manual) = chat.activeLearning else { return }
         learningCollapsed = false
@@ -345,11 +350,17 @@ struct AriaAgentChatView: View {
         let alert = AriaIsland.Alert(title: String(localized: "Real-time Learning"),
                                      message: request.question,
                                      systemImage: AriaLearningStyle.symbol,
-                                     tint: AriaLearningStyle.tint)
-        AriaIsland.shared.present(alert) { [chat] in
+                                     tint: AriaLearningStyle.tint,
+                                     actions: .init(accept: String(localized: "Answer"),
+                                                    decline: String(localized: "Not now")))
+        AriaIsland.shared.present(alert) { [chat] accepted in
             // Nel frattempo può essere partito un turno nuovo: la domanda allora non c'è più.
             guard chat.activeLearning?.messageId == messageId else { return }
-            learningShownId = messageId
+            if accepted {
+                learningShownId = messageId
+            } else {
+                chat.declineLearning(messageId)
+            }
         }
     }
 
@@ -370,6 +381,15 @@ struct AriaAgentChatView: View {
                 try? await Task.sleep(for: .seconds(3))
                 chat.notice = nil
             }
+    }
+
+    /// Il sistema non si raggiunge: avviso ambra con "Riprova" (rimanda l'ultima domanda, se è fallita).
+    private var offlineBanner: some View {
+        AriaOfflineNotice(
+            onRetry: failedTurn.map { failed in { chat.lastError = nil; chat.regenerate(failed.id) } },
+            onDismiss: { chat.lastError = nil }
+        )
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func errorBanner(_ error: String) -> some View {

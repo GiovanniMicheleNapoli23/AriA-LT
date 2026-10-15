@@ -2,6 +2,8 @@
 //  AriaChatCopy.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Testi della chat presi dalla web app (messages/en.json, it.json):
 //  etichette dei tool, suggerimenti, saluti, chip di follow-up.
 //  I prompt dei chip vengono mandati ad Aria nella lingua dell'app, come fa la web.

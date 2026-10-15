@@ -1,0 +1,668 @@
+//
+//  AriaStepRunnerView.swift
+//  AriaLite
+//
+//  Created by Giovanni Michele on 15/10/26.
+//
+//  L'esecuzione di un lavoro Aria passo per passo, col disegno della manutenzione: un passo alla volta,
+//  pallini di avanzamento, schede Note e Foto, "Ask AriA" sullo step corrente.
+//
+//  • "Done" / "Not done" mettono il risultato sul server (PUT …/steps/{id}); "Not done" vuole il motivo.
+//    "Undo" lo toglie, insieme alle foto.
+//  • La nota di un passo ancora senza risultato è una bozza: parte col risultato.
+//  • Le foto vogliono un risultato già messo: finché non c'è restano sul telefono e partono subito dopo.
+//  • Un ordine chiuso è in sola lettura.
+//
+
+import PhotosUI
+import SwiftUI
+
+struct AriaStepRunnerView: View {
+    @Binding var order: AriaWorkOrder
+    let store: AriaWorkOrderStore
+
+    @State private var currentId: String
+    @State private var isBusy = false
+    @State private var errorMessage: String?
+    @State private var noteMode: NoteMode?
+    @State private var draftNotes: [String: String] = [:]
+    @State private var draftPhotos: [String: [Data]] = [:]
+    @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var showPhotoSource = false
+    @State private var showCamera = false
+    @State private var showAIHelp = false
+    @State private var showComplete = false
+    @State private var showSafety = false
+    @Namespace private var glassNamespace
+    @Environment(\.dismiss) private var dismiss
+
+    private enum NoteMode: Identifiable {
+        /// Aggiungere o cambiare la nota del passo.
+        case note
+        /// Il passo non è stato fatto: serve il motivo.
+        case notDone
+        var id: Self { self }
+    }
+
+    private static let maxPhotos = 3
+
+    init(order: Binding<AriaWorkOrder>, store: AriaWorkOrderStore, startingAt stepId: String) {
+        _order = order
+        self.store = store
+        _currentId = State(initialValue: stepId)
+    }
+
+    // MARK: Stato derivato
+
+    private var steps: [AriaProcedureStep] { order.procedure?.steps ?? [] }
+    private var index: Int { steps.firstIndex { $0.id == currentId } ?? 0 }
+    private var current: AriaProcedureStep? { steps.indices.contains(index) ? steps[index] : nil }
+    private var reportedCount: Int { steps.filter { $0.report != nil }.count }
+    private var isReadOnly: Bool { order.isClosed }
+    private var safetyWarnings: [String] { order.procedure?.safetyWarnings ?? [] }
+
+    /// Dove porta "Next": il passo dopo, altrimenti il primo ancora senza risultato; `nil` = è tutto fatto.
+    private var nextTarget: AriaProcedureStep? {
+        if index + 1 < steps.count { return steps[index + 1] }
+        return steps.first { $0.report == nil && $0.id != current?.id }
+    }
+
+    private func note(of step: AriaProcedureStep) -> String? {
+        let text = step.report?.note ?? draftNotes[step.id]
+        return text.flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    private func photoCount(of step: AriaProcedureStep) -> Int {
+        (step.report?.photos.count ?? 0) + (draftPhotos[step.id]?.count ?? 0)
+    }
+
+    // MARK: Corpo
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let step = current {
+                    ZStack(alignment: .bottom) {
+                        LinearGradient(colors: [Color.liteBackground, Color.liteAccent.opacity(0.12)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing)
+                            .ignoresSafeArea()
+                        ScrollView {
+                            VStack(spacing: 14) {
+                                if !safetyWarnings.isEmpty { safetyCard }
+                                stepCard(step)
+                                if !isReadOnly || note(of: step) != nil || photoCount(of: step) > 0 {
+                                    HStack(spacing: 12) {
+                                        noteCard(step)
+                                        photoCard(step)
+                                    }
+                                }
+                                photoStrip(step)
+                                Color.clear.frame(height: 150)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
+                        bottomBar(step)
+                    }
+                } else {
+                    ContentUnavailableView("No steps available", systemImage: "list.bullet.clipboard",
+                                           description: Text("This task has no checklist items."))
+                }
+            }
+            .navigationTitle(order.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .close) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            .onAppear { showSafety = reportedCount == 0 && !safetyWarnings.isEmpty }
+            .sheet(item: $noteMode) { mode in noteSheet(mode) }
+            .sheet(isPresented: $showAIHelp) {
+                if let step = current {
+                    AIHelpSheet(currentItem: ChecklistItem(id: UUID(), text: step.text, description: nil, isCompleted: false),
+                                contextText: order.chatContext(step: step))
+                }
+            }
+            .sheet(isPresented: $showComplete) {
+                AriaCompleteSheet(unreportedCount: steps.count - reportedCount) { notes in
+                    switch await store.complete(order.id, resolutionNotes: notes) {
+                    case .updated(let closed):
+                        order = closed
+                        dismiss()
+                        return nil
+                    case .gone:
+                        dismiss()
+                        return nil
+                    case .failed(let message):
+                        return message
+                    }
+                }
+            }
+            .sheet(isPresented: $showPhotoSource) {
+                PhotoSourceSheet(selectedPhotoItems: $pickerItems) { showCamera = true }
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraPicker { image in
+                    if let jpeg = AriaPhoto.jpeg(from: image) { Task { await addPhoto(jpeg) } }
+                }
+                .ignoresSafeArea()
+            }
+            .onChange(of: pickerItems) { _, items in
+                guard !items.isEmpty else { return }
+                Task {
+                    for item in items {
+                        if let data = try? await item.loadTransferable(type: Data.self),
+                           let jpeg = AriaPhoto.jpeg(from: data) { await addPhoto(jpeg) }
+                    }
+                    pickerItems = []
+                }
+            }
+            .alert("Something went wrong", isPresented: Binding(get: { errorMessage != nil },
+                                                                 set: { if !$0 { errorMessage = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
+            }
+        }
+        .preferredColorScheme(.light)
+    }
+
+    // MARK: Sicurezza
+
+    private var safetyCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.snappy) { showSafety.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.shield.fill")
+                    Text("Safety warnings")
+                        .font(.system(size: 14, weight: .semibold))
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .rotationEffect(.degrees(showSafety ? 180 : 0))
+                }
+                .foregroundStyle(.orange)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if showSafety {
+                ForEach(Array(safetyWarnings.enumerated()), id: \.offset) { _, warning in
+                    Label {
+                        Text(warning).font(.system(size: 14)).foregroundStyle(Color.liteText.opacity(0.8))
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    }
+                    .labelStyle(.titleAndIcon)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color.orange.opacity(0.3), lineWidth: 1))
+    }
+
+    // MARK: Passo
+
+    private func stepCard(_ step: AriaProcedureStep) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("Step \(index + 1) of \(steps.count)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.liteAccent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.liteAccent.opacity(0.1), in: Capsule())
+                Spacer()
+                statusBadge(step)
+            }
+
+            Text(step.displayText)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(Color.liteText)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+
+            if let report = step.report, report.reportedAt == nil, report.note == nil, report.photos.isEmpty {
+                Label("Marked done from the desktop", systemImage: "desktopcomputer")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 6) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.liteAccent.opacity(0.12)).frame(height: 4)
+                        Capsule().fill(Color.liteAccent)
+                            .frame(width: geo.size.width * CGFloat(reportedCount) / CGFloat(max(steps.count, 1)), height: 4)
+                            .animation(.spring(duration: 0.4), value: reportedCount)
+                    }
+                }
+                .frame(height: 4)
+
+                HStack(spacing: 5) {
+                    // Più di una quindicina di passi non ci stanno come pallini: restano solo la barra e il conteggio.
+                    if steps.count <= 15 {
+                        ForEach(Array(steps.enumerated()), id: \.element.id) { i, item in
+                            Circle()
+                                .fill(dotColor(item, isCurrent: i == index))
+                                .frame(width: i == index ? 9 : 6, height: i == index ? 9 : 6)
+                                .animation(.spring(duration: 0.3), value: i == index)
+                                .contentShape(Circle().inset(by: -6))
+                                .onTapGesture { go(to: item) }
+                        }
+                    }
+                    Spacer()
+                    Text("\(reportedCount)/\(steps.count) reported")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.liteText.opacity(0.4))
+                }
+            }
+            .padding(.top, 4)
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.liteAccent.opacity(0.04), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Color.liteAccent.opacity(0.12), lineWidth: 1))
+        .overlay(alignment: .top) { if isBusy { ProgressView().padding(.top, 10) } }
+    }
+
+    private func statusBadge(_ step: AriaProcedureStep) -> some View {
+        let (icon, label, color): (String, String, Color) = switch step.report?.status {
+        case "done": ("checkmark.circle.fill", String(localized: "Done"), .green)
+        case "not_done": ("xmark.circle.fill", String(localized: "Not done"), .red)
+        default: ("circle", String(localized: "To do"), Color.liteText.opacity(0.4))
+        }
+        return HStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 14)).contentTransition(.symbolEffect(.replace))
+            Text(label).font(.system(size: 12, weight: .medium))
+        }
+        .foregroundStyle(color)
+    }
+
+    private func dotColor(_ step: AriaProcedureStep, isCurrent: Bool) -> Color {
+        switch step.report?.status {
+        case "done": Color.liteAccent
+        case "not_done": .red.opacity(0.7)
+        default: isCurrent ? Color.liteAccent.opacity(0.55) : Color.liteAccent.opacity(0.15)
+        }
+    }
+
+    // MARK: Note e foto
+
+    private func noteCard(_ step: AriaProcedureStep) -> some View {
+        let text = note(of: step)
+        return Button {
+            noteMode = .note
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                iconBadge(text == nil ? "square.and.pencil" : "note.text")
+                Spacer()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(text == nil ? "Add Notes" : "Technical Notes")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.liteText)
+                    if let text {
+                        Text(text)
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.liteText.opacity(0.6))
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
+                    } else {
+                        Text("No notes")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.liteText.opacity(0.35))
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isReadOnly || isBusy)
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16), interactive: !isReadOnly)
+    }
+
+    private func photoCard(_ step: AriaProcedureStep) -> some View {
+        let count = photoCount(of: step)
+        let isFull = count >= Self.maxPhotos
+        return Button {
+            showPhotoSource = true
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                iconBadge(count == 0 ? "camera" : "photo.stack")
+                Spacer()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Photos")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.liteText)
+                    Text(count == 0 ? String(localized: "No photos")
+                         : isFull ? String(localized: "\(count) attached · maximum")
+                         : String(localized: "\(count) attached"))
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color.liteText.opacity(count == 0 ? 0.35 : 0.6))
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, minHeight: 130, alignment: .topLeading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isReadOnly || isBusy || isFull)
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16), interactive: !isReadOnly && !isFull)
+    }
+
+    private func iconBadge(_ symbol: String) -> some View {
+        ZStack {
+            Circle().fill(Color.liteAccent.opacity(0.1)).frame(width: 38, height: 38)
+            Image(systemName: symbol)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.liteAccent)
+                .contentTransition(.symbolEffect(.replace))
+        }
+    }
+
+    /// Le foto del passo: quelle sul server (l'URL scade, per questo si ricarica l'ordine) e quelle ancora sul telefono.
+    @ViewBuilder
+    private func photoStrip(_ step: AriaProcedureStep) -> some View {
+        let uploaded = step.report?.photos ?? []
+        let drafts = draftPhotos[step.id] ?? []
+        if !uploaded.isEmpty || !drafts.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    ForEach(uploaded) { photo in
+                        thumbnail {
+                            // Solo https: un URL diverso non si scarica e resta il segnaposto.
+                            if let url = photo.url.flatMap(AriaURLPolicy.image) {
+                                AsyncImage(url: url) { phase in
+                                    if let image = phase.image { image.resizable().scaledToFill() }
+                                    else if phase.error != nil { Image(systemName: "photo").foregroundStyle(.secondary) }
+                                    else { ProgressView() }
+                                }
+                            } else {
+                                Image(systemName: "photo").foregroundStyle(.secondary)
+                            }
+                        } remove: {
+                            Task { await removeUploaded(photo, from: step) }
+                        }
+                    }
+                    ForEach(Array(drafts.enumerated()), id: \.offset) { i, data in
+                        thumbnail {
+                            if let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFill() }
+                        } remove: {
+                            draftPhotos[step.id]?.remove(at: i)
+                        }
+                        .overlay(alignment: .bottom) {
+                            Image(systemName: "icloud.and.arrow.up")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(4)
+                                .background(.black.opacity(0.45), in: Capsule())
+                                .padding(4)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                if !drafts.isEmpty {
+                    Text("Photos upload when you mark the step.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func thumbnail<Content: View>(@ViewBuilder _ content: () -> Content,
+                                          remove: @escaping () -> Void) -> some View {
+        ZStack {
+            Color(.tertiarySystemFill)
+            content()
+        }
+        .frame(width: 84, height: 84)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(alignment: .topTrailing) {
+            if !isReadOnly {
+                Button(action: remove) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.55))
+                }
+                .buttonStyle(.plain)
+                .disabled(isBusy)
+                .padding(3)
+                .accessibilityLabel(Text("Remove photo"))
+            }
+        }
+    }
+
+    // MARK: Barra in basso
+
+    private func bottomBar(_ step: AriaProcedureStep) -> some View {
+        AriaGlassEffectContainer(spacing: 12) {
+            VStack(spacing: 0) {
+                Button { showAIHelp = true } label: {
+                    HStack(spacing: 12) {
+                        AriaOrb()
+                            .frame(width: 32, height: 32)
+                            .shadow(color: Color.liteAccent.opacity(0.4), radius: 5)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Ask AriA")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            Text("Get help with this step")
+                                .font(.system(size: 12))
+                                .foregroundStyle(Color.liteAccent.opacity(0.7))
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.liteAccent.opacity(0.7))
+                    }
+                    .foregroundStyle(Color.liteAccent)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        LinearGradient(colors: [Color.liteAccent.opacity(0.14), Color.liteAccent.opacity(0.05)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.liteAccent.opacity(0.20), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+
+                controls(step)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .padding(.bottom, 8)
+            }
+        }
+    }
+
+    private func controls(_ step: AriaProcedureStep) -> some View {
+        HStack(spacing: 10) {
+            Button {
+                if index > 0 { go(to: steps[index - 1]) }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(width: 46, height: 46)
+            }
+            .ariaGlassButtonStyle()
+            .disabled(index == 0 || isBusy)
+            .accessibilityLabel(Text("Previous"))
+            .ariaGlassEffectID("prev", in: glassNamespace)
+
+            if isReadOnly {
+                Spacer()
+                if let next = nextTarget { nextButton(next) }
+            } else if step.report == nil {
+                Button { noteMode = .notDone } label: {
+                    Label("Not done", systemImage: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.red)
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .ariaGlassButtonStyle()
+                .disabled(isBusy)
+
+                Button {
+                    Task { await report(.done(note: draftNotes[step.id]), step: step) }
+                } label: {
+                    Label("Done", systemImage: "checkmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
+                .disabled(isBusy)
+                .ariaGlassEffectID("main-action", in: glassNamespace)
+            } else {
+                Button { Task { await undo(step) } } label: {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                        .font(.system(size: 15, weight: .semibold))
+                        .frame(maxWidth: .infinity, minHeight: 46)
+                }
+                .ariaGlassButtonStyle()
+                .disabled(isBusy)
+
+                if let next = nextTarget {
+                    nextButton(next)
+                } else {
+                    Button { showComplete = true } label: {
+                        Label("Complete task", systemImage: "checkmark.seal.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                    }
+                    .ariaProminentGlassButtonStyle(tint: .green)
+                    .disabled(isBusy)
+                    .ariaGlassEffectID("main-action", in: glassNamespace)
+                }
+            }
+        }
+        .animation(.spring(duration: 0.4), value: step.report?.status)
+    }
+
+    private func nextButton(_ target: AriaProcedureStep) -> some View {
+        Button { go(to: target) } label: {
+            HStack(spacing: 6) {
+                Text("Next").font(.system(size: 15, weight: .semibold))
+                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+            }
+            .frame(maxWidth: .infinity, minHeight: 46)
+        }
+        .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
+        .disabled(isBusy)
+        .ariaGlassEffectID("main-action", in: glassNamespace)
+    }
+
+    // MARK: Nota
+
+    @ViewBuilder
+    private func noteSheet(_ mode: NoteMode) -> some View {
+        if let step = current {
+            switch mode {
+            case .notDone:
+                AriaStepNoteSheet(title: "Not done",
+                                  prompt: "Why couldn't this step be done? The planner will see your note.",
+                                  text: draftNotes[step.id] ?? "", isRequired: true, saveLabel: "Send") { text in
+                    Task { await report(.notDone(note: text), step: step) }
+                }
+            case .note:
+                AriaStepNoteSheet(title: "Note", text: note(of: step) ?? "", isRequired: step.report?.status == "not_done") { text in
+                    saveNote(text, for: step)
+                }
+            }
+        }
+    }
+
+    /// Passo già con un risultato: la nota si manda subito, rimettendo lo stesso risultato. Altrimenti è una bozza.
+    private func saveNote(_ text: String, for step: AriaProcedureStep) {
+        guard let report = step.report else {
+            draftNotes[step.id] = text.isEmpty ? nil : text
+            return
+        }
+        Task { await self.report(report.isDone ? .done(note: text) : .notDone(note: text), step: step, advance: false) }
+    }
+
+    // MARK: Azioni
+
+    private func go(to step: AriaProcedureStep) {
+        withAnimation(.spring(duration: 0.3)) { currentId = step.id }
+    }
+
+    /// Esito di una modifica: aggiorna l'ordine, oppure mostra l'errore. `false` = non è andata.
+    private func apply(_ change: AriaWorkOrderStore.Change) -> Bool {
+        switch change {
+        case .updated(let fresh):
+            order = fresh
+            return true
+        case .gone:
+            // L'ordine non è più dell'operatore: si torna alla lista senza messaggi.
+            dismiss()
+            return false
+        case .failed(let message):
+            if !message.isEmpty { errorMessage = message }
+            return false
+        }
+    }
+
+    private func report(_ result: AriaStepResult, step: AriaProcedureStep, advance: Bool = true) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        guard apply(await store.report(result, step: step.id, of: order.id)) else { return }
+        draftNotes[step.id] = nil
+        await uploadDrafts(for: step.id)
+        if advance, let target = steps.indices.contains(index + 1) ? steps[index + 1] : nextTarget { go(to: target) }
+    }
+
+    private func undo(_ step: AriaProcedureStep) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        _ = apply(await store.clearReport(step: step.id, of: order.id))
+    }
+
+    /// Foto scelta o scattata: con un risultato già messo parte subito, altrimenti aspetta sul telefono.
+    private func addPhoto(_ jpeg: Data) async {
+        guard let step = current, photoCount(of: step) < Self.maxPhotos else { return }
+        guard step.report != nil else {
+            draftPhotos[step.id, default: []].append(jpeg)
+            return
+        }
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        _ = apply(await store.addPhoto(jpeg: jpeg, step: step.id, of: order.id))
+    }
+
+    /// Dopo il risultato, le foto messe da parte. Se una fallisce le altre restano in attesa.
+    private func uploadDrafts(for stepId: String) async {
+        while let jpeg = draftPhotos[stepId]?.first {
+            guard apply(await store.addPhoto(jpeg: jpeg, step: stepId, of: order.id)) else { return }
+            draftPhotos[stepId]?.removeFirst()
+        }
+        draftPhotos[stepId] = nil
+    }
+
+    private func removeUploaded(_ photo: AriaStepPhoto, from step: AriaProcedureStep) async {
+        guard !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        _ = apply(await store.removePhoto(photo.id, step: step.id, of: order.id))
+    }
+}
