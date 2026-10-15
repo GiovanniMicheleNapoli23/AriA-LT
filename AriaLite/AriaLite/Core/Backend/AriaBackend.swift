@@ -2,14 +2,33 @@
 //  AriaBackend.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Stato della connessione al backend Aria: login, azienda e stabilimento attivi.
 //  È separato dal login locale (mock) dell'app: la chat usa il backend solo
 //  quando `isReady`, altrimenti ricade sul motore locale.
-//  Si entra con username + password dell'utente mobile sull'host di accesso (AriaAuth),
-//  poi l'azienda arriva da GET /v1/companies sull'host API.
+//  Si entra con un link via email, senza password (AriaAuth), poi l'azienda arriva
+//  da GET /v1/companies.
 //
 import Foundation
 import Observation
+
+/// Il link di accesso non corrisponde alla richiesta fatta da questo dispositivo.
+nonisolated enum AriaSignInError: LocalizedError, Sendable {
+    /// Nessun link chiesto da qui (negli ultimi 15'): un link altrui aprirebbe l'account di chi lo manda.
+    case noPendingRequest
+    /// Il link è di un account diverso da quello a cui è stato chiesto.
+    case accountMismatch
+
+    var errorDescription: String? {
+        switch self {
+        case .noPendingRequest:
+            String(localized: "Request a sign-in link from this device first, then open the link from that email.")
+        case .accountMismatch:
+            String(localized: "This link belongs to a different account than the one you requested. Request a new link.")
+        }
+    }
+}
 
 @Observable
 final class AriaBackend {
@@ -21,47 +40,67 @@ final class AriaBackend {
     private(set) var activePlantId: String?
     private(set) var isLoading = false
     var lastError: String?
-    /// Utente mobile collegato (login con username); `nil` da scollegati o con un accesso dalla web (magic link).
+    /// L'operatore collegato; `nil` da scollegati.
     private(set) var mobileAccount: AriaMobileAccount?
-    /// Utente della web collegato col magic link; `nil` da scollegati o con un utente mobile.
-    private(set) var webAccount: AriaWebAccount?
-    /// Email a cui è stato mandato il link di accesso, finché il link è valido (10').
+    /// Email a cui è stato mandato il link di accesso, finché il link è valido (15').
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
-    /// Che link è partito: quello dell'app si tocca nell'email, quello della web si incolla.
-    private(set) var pendingLinkDelivery: AriaLinkDelivery?
 
     @ObservationIgnored private var didBootstrap = false
 
     init() {
         let api = Self.makeClient(.current)
         self.api = api
-        isSignedIn = api.auth.hasStoredSession
         activeCompanyId = UserDefaults.standard.string(forKey: "aria.company_id")
         activePlantId = UserDefaults.standard.string(forKey: "aria.plant_id")
-        if isSignedIn, api.auth.isMobileSession,
-           let saved = UserDefaults.standard.data(forKey: Self.mobileAccountKey) {
-            mobileAccount = try? JSONDecoder().decode(AriaMobileAccount.self, from: saved)
-        }
-        if isSignedIn, !api.auth.isMobileSession,
-           let saved = UserDefaults.standard.data(forKey: Self.webAccountKey) {
-            webAccount = try? JSONDecoder().decode(AriaWebAccount.self, from: saved)
-        }
+        Self.forgetKeychainIfReinstalled(api.auth)
+        Self.moveMobileAccountToKeychain()
+        let saved = AriaKeychain.get(Self.mobileAccountKey)
+            .flatMap { try? JSONDecoder().decode(AriaMobileAccount.self, from: Data($0.utf8)) }
+        // Una sessione senza il suo profilo è di una versione precedente (username e password,
+        // o accesso dalla web): non vale più, si rifà l'accesso col link.
+        if api.auth.hasStoredLogin, saved == nil { api.auth.forgetStoredSession() }
+        isSignedIn = api.auth.hasStoredSession
+        mobileAccount = isSignedIn ? saved : nil
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {
             pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
-            pendingLinkDelivery = UserDefaults.standard.string(forKey: Self.linkDeliveryKey)
-                .flatMap(AriaLinkDelivery.init(rawValue:)) ?? .web
         }
     }
 
     private static let linkEmailKey = "aria.magic_link_email"
-    private static let linkDeliveryKey = "aria.magic_link_delivery"
     private static let linkSentAtKey = "aria.magic_link_sent_at"
-    private static let linkLifetime: TimeInterval = 10 * 60
+    private static let linkLifetime: TimeInterval = 15 * 60
 
-    private static let mobileAccountKey = "aria.mobile_account"
-    private static let webAccountKey = "aria.web_account"
+    /// Chiave nuova: il profilo salvato dalle versioni con l'username ha un'altra forma.
+    /// Sta nel Keychain (nome ed email non vanno nei backup), senza Face ID: serve all'avvio.
+    private static let mobileAccountKey = "aria.operator_account"
+
+    private static let installMarkerKey = "aria.install_marker"
+
+    /// Il Keychain sopravvive alla disinstallazione, UserDefaults no: senza il marcatore è una prima
+    /// installazione o una reinstallazione, e le credenziali rimaste non sono di chi usa il telefono ora.
+    /// Un profilo ancora in UserDefaults è invece un aggiornamento: la sessione resta.
+    private static func forgetKeychainIfReinstalled(_ auth: AriaAuth) {
+        guard !UserDefaults.standard.bool(forKey: installMarkerKey) else { return }
+        if UserDefaults.standard.data(forKey: mobileAccountKey) == nil {
+            auth.forgetStoredSession()
+            auth.forgetDeveloperToken()
+            AriaKeychain.delete(mobileAccountKey)
+        }
+        UserDefaults.standard.set(true, forKey: installMarkerKey)
+    }
+
+    /// Le versioni precedenti tenevano il profilo in UserDefaults: lo si sposta nel Keychain.
+    private static func moveMobileAccountToKeychain() {
+        guard let data = UserDefaults.standard.data(forKey: mobileAccountKey) else { return }
+        AriaKeychain.set(String(decoding: data, as: UTF8.self), for: mobileAccountKey)
+        UserDefaults.standard.removeObject(forKey: mobileAccountKey)
+    }
+
+    private static func normalized(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
 
     /// La chat può parlare col backend: serve una sessione e uno stabilimento (`plant_id` è obbligatorio).
     var isReady: Bool { isSignedIn && activePlantId != nil }
@@ -79,34 +118,22 @@ final class AriaBackend {
         AriaAPIClient(config: config, auth: AriaAuth(config: config), context: AriaContext())
     }
 
-    // MARK: Login con username (utenti mobili)
-
-    /// Login completo (`acme.mario.rossi`), senza spazi attorno; maiuscole e minuscole non contano.
-    func signIn(username: String, password: String) async throws {
-        let account = try await api.auth.signIn(
-            username: username.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
-        setMobileAccount(account)
-        setWebAccount(nil)
-        isSignedIn = true
-        await bootstrap()
-    }
-
-    private func setWebAccount(_ account: AriaWebAccount?) {
-        webAccount = account
-        UserDefaults.standard.set(account.flatMap { try? JSONEncoder().encode($0) }, forKey: Self.webAccountKey)
-    }
+    // MARK: Login con il link
 
     private func setMobileAccount(_ account: AriaMobileAccount?) {
         mobileAccount = account
-        UserDefaults.standard.set(account.flatMap { try? JSONEncoder().encode($0) }, forKey: Self.mobileAccountKey)
+        if let json = account.flatMap({ try? JSONEncoder().encode($0) }) {
+            AriaKeychain.set(String(decoding: json, as: UTF8.self), for: Self.mobileAccountKey)
+        } else {
+            AriaKeychain.delete(Self.mobileAccountKey)
+        }
     }
 
-    // MARK: Login con magic link (come la web)
-
-    func sendMagicLink(email: String, captcha: String) async throws {
-        let email = email.trimmingCharacters(in: .whitespaces).lowercased()
-        let delivery = try await api.auth.sendMagicLink(email: email, captcha: captcha, locale: api.context.locale)
-        setPendingLink(email, delivery: delivery)
+    /// Passo 1: manda il link all'email. Risponde sempre 202, anche per un indirizzo che non è di un operatore.
+    func sendSignInLink(email: String) async throws {
+        let email = Self.normalized(email)
+        try await api.auth.requestLink(email: email)
+        setPendingLink(email)
     }
 
     /// Torna al passo dell'email (per chiedere un nuovo link).
@@ -114,11 +141,9 @@ final class AriaBackend {
         setPendingLink(nil)
     }
 
-    private func setPendingLink(_ email: String?, delivery: AriaLinkDelivery? = nil) {
+    private func setPendingLink(_ email: String?) {
         pendingLinkEmail = email
-        pendingLinkDelivery = email == nil ? nil : delivery
         UserDefaults.standard.set(email, forKey: Self.linkEmailKey)
-        UserDefaults.standard.set(pendingLinkDelivery?.rawValue, forKey: Self.linkDeliveryKey)
         UserDefaults.standard.set(email == nil ? nil : Date.now, forKey: Self.linkSentAtKey)
     }
 
@@ -127,20 +152,26 @@ final class AriaBackend {
         api.auth.magicLink(in: text)
     }
 
-    /// Il link di accesso in un URL aperto dal sistema (email toccata, pulsante della pagina web).
+    /// Il link di accesso in un URL aperto dal sistema.
     func signInLink(from url: URL) -> AriaSignInLink? {
         api.auth.signInLink(from: url)
     }
 
-    /// Un utente della web non è un utente mobile: niente account mobile, niente lavori.
+    /// Passo 2: il token del link contro una sessione, poi l'azienda.
+    /// Il link vale solo per l'email a cui l'accesso è stato chiesto da questo dispositivo: senza
+    /// questo vincolo un link con il token di un altro account (`aria://` lo apre chiunque) farebbe
+    /// entrare l'operatore nell'account di chi lo manda.
     func completeSignIn(with link: AriaSignInLink) async throws {
-        let email = pendingLinkEmail
-        var account = try await api.auth.completeSignIn(with: link)
+        // Nessuna richiesta da qui: si rifiuta senza chiamare il server, il token non si consuma.
+        guard let requested = pendingLinkEmail else { throw AriaSignInError.noPendingRequest }
+        let account = try await api.auth.completeSignIn(with: link)
+        guard Self.normalized(account.email) == Self.normalized(requested) else {
+            // Account diverso: la sessione appena aperta si chiude sul server e la richiesta resta in attesa.
+            await api.auth.signOut()
+            throw AriaSignInError.accountMismatch
+        }
         setPendingLink(nil)
-        setMobileAccount(nil)
-        // Nome ed email per l'app; se la web non risponde basta l'email a cui è arrivato il link.
-        if account == nil { account = await api.auth.fetchWebAccount() }
-        setWebAccount(account ?? email.map { AriaWebAccount(id: $0, name: "", email: $0) })
+        setMobileAccount(account)
         isSignedIn = true
         await bootstrap()
     }
@@ -161,14 +192,15 @@ final class AriaBackend {
         }
     }
 
+    #if DEBUG
     /// Solo sviluppo: token copiato dall'host di accesso (GET /api/aria/token).
     func useDeveloperToken(_ token: String) async throws {
         try await api.auth.useDeveloperToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
         setMobileAccount(nil)
-        setWebAccount(nil)
         isSignedIn = true
         await bootstrap()
     }
+    #endif
 
     func signOut() async {
         await api.auth.signOut()
@@ -177,7 +209,6 @@ final class AriaBackend {
         isSignedIn = false
         didBootstrap = false
         setMobileAccount(nil)
-        setWebAccount(nil)
         companies = []
         plants = []
         activeCompanyId = nil
@@ -186,12 +217,14 @@ final class AriaBackend {
     }
 
     /// Cambia server (DEBUG). Da scollegati: i token di un server non valgono sull'altro.
-    /// L'host di accesso è un tunnel che cambia indirizzo: qui si aggiorna senza ricompilare.
+    /// Il link dell'email porta l'host di accesso: va riconosciuto con quello in uso.
+    #if DEBUG
     func setServers(api apiURL: URL?, auth authURL: URL?) {
         guard !isSignedIn else { return }
         AriaConfig.saveServers(api: apiURL, auth: authURL)
         api = Self.makeClient(.current)
     }
+    #endif
 
     // MARK: Azienda / stabilimento
 
@@ -200,17 +233,15 @@ final class AriaBackend {
         await bootstrap()
     }
 
-    /// Passo 3: GET /v1/companies dà l'azienda, il cui `id` è il Company-Id di tutte le altre
-    /// chiamate. Un utente mobile ne ha esattamente una (`myRole` "member"); se ce ne fossero
+    /// GET /v1/companies dà l'azienda, il cui `id` è il Company-Id di tutte le altre
+    /// chiamate. Un operatore ne ha esattamente una (`myRole` "member"); se ce ne fossero
     /// più di una si tiene quella salvata, altrimenti la prima di cui è owner, altrimenti la prima.
     func bootstrap() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            // Un utente mobile le chiede al tunnel, che è l'host dei suoi lavori.
-            companies = try await api.get("v1/companies", companyScoped: false,
-                                          host: api.auth.isMobileSession ? .mobile : .data)
-            // Utente mobile senza aziende: la membership non è più attiva, è come essere scollegati.
+            companies = try await api.get("v1/companies", companyScoped: false)
+            // Operatore senza aziende: la membership non è più attiva, è come essere scollegati.
             if companies.isEmpty, api.auth.isMobileSession {
                 await api.auth.discardSession()
                 throw AriaError.signedOut
@@ -246,7 +277,7 @@ final class AriaBackend {
             do {
                 plants = try await api.get("v1/plants")
             } catch AriaError.http where api.auth.isMobileSession {
-                // Il tunnel non serve gli stabilimenti: i lavori non ne hanno bisogno, la chat sì.
+                // Un operatore non può elencare gli stabilimenti: i lavori non ne hanno bisogno, la chat sì.
                 plants = []
             }
         }
@@ -272,7 +303,6 @@ final class AriaBackend {
             isSignedIn = false
             didBootstrap = false
             setMobileAccount(nil)
-            setWebAccount(nil)
         }
         lastError = error.localizedDescription
     }

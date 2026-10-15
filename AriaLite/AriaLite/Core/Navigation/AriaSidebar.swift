@@ -2,6 +2,8 @@
 //  AriaSidebar.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  La sidebar di AriaPLT Mobile: sezioni in alto, conversazioni fissate e recenti,
 //  profilo e "Nuova chat" in fondo.
 //

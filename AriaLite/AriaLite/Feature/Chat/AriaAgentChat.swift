@@ -2,6 +2,8 @@
 //  AriaAgentChat.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Una conversazione con Aria, come la chat della web app: turni in streaming,
 //  chiamate dirette ai tool, pause di approvazione, domande guidate,
 //  checklist di procedura, feedback, storico e closeout.

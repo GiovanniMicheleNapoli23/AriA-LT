@@ -2,6 +2,8 @@
 //  AriaIsland.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Avviso che esce dalla Dynamic Island: una capsula nera che parte esattamente dall'isola, si allarga
 //  con il messaggio, resta un attimo e ci rientra. Vive in una finestra sua sopra l'app (anche sopra i
 //  fogli, come l'assistente in manutenzione). Sui telefoni senza isola parte da una pillola in cima.

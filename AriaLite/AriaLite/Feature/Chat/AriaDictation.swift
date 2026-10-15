@@ -2,6 +2,8 @@
 //  AriaDictation.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Dettatura nel campo della chat (il microfono del composer), ibrida come sulla web (use-dictation):
 //  mentre si parla SFSpeechRecognizer scrive le parole dal vivo e intanto la stessa voce si registra;
 //  allo stop la registrazione va a Whisper sul backend (POST v1/audio/transcriptions) e il suo testo,

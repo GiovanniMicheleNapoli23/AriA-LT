@@ -2,6 +2,8 @@
 //  AriaMarkdownView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Markdown delle risposte di Aria: titoli, elenchi, tabelle, codice, citazioni.
 //  Il testo in linea (grassetto, corsivo, codice, link) usa AttributedString.
 //  I link relativi (/work-orders/12) si aprono sulla web app.
@@ -309,18 +311,21 @@ enum AriaMarkdown {
 
 // MARK: - Link verso la web app
 
-/// Apre i link relativi del backend (es. /work-orders/12) sulla web app; gli altri come sempre.
+/// Apre i link relativi del backend (es. /work-orders/12) sulla web app. Passano solo gli schemi di
+/// `AriaURLPolicy`: la risposta del modello può contenere qualsiasi link.
 struct AriaLinkHandler: ViewModifier {
     let webBase: URL
     @Environment(\.openURL) private var openURL
 
     func body(content: Content) -> some View {
         content.environment(\.openURL, OpenURLAction { url in
-            if url.scheme == nil, let absolute = URL(string: url.relativeString, relativeTo: webBase)?.absoluteURL {
-                openURL(absolute)
+            if url.scheme == nil {
+                guard let absolute = URL(string: url.relativeString, relativeTo: webBase)?.absoluteURL,
+                      let safe = AriaURLPolicy.external(absolute) else { return .discarded }
+                openURL(safe)
                 return .handled
             }
-            return .systemAction
+            return AriaURLPolicy.external(url) == nil ? .discarded : .systemAction
         })
     }
 }

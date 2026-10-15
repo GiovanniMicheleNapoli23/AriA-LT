@@ -2,6 +2,8 @@
 //  AriaShellView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Navigazione come Claude mobile: la chat è la schermata principale e tutte le
 //  sezioni (Chat, Panoramica, Task, conversazioni fissate e recenti)
 //  stanno in una sidebar che si apre dal pulsante ☰ o trascinando dal bordo sinistro.

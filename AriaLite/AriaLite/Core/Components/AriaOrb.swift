@@ -2,6 +2,8 @@
 //  AriaOrb.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  La sfera di Aria, animata dallo shader AriaOrb.metal. Due stati come nell'HTML
 //  di riferimento (new-blob-v0.3-b_w.html): `idle`, lenta, e `thinking`, veloce e con
 //  l'alone, per quando Aria sta rispondendo. Il passaggio tra i due è interpolato

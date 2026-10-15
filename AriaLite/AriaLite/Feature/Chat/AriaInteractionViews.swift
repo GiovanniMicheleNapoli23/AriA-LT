@@ -2,6 +2,8 @@
 //  AriaInteractionViews.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Dove l'operatore risponde ad Aria: approvazione dei tool (con parametri
 //  modificabili), conferma LOTO e checklist di procedura. Le domande guidate
 //  sono in AriaElicitationPanel.swift.

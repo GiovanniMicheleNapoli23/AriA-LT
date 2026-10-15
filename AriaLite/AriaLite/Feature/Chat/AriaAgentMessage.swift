@@ -2,6 +2,8 @@
 //  AriaAgentMessage.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Un messaggio della chat con il backend Aria e come ogni evento dello
 //  stream lo modifica (porting di applyResponsesEvent della web).
 //

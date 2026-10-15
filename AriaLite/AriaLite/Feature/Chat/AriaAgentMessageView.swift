@@ -2,6 +2,8 @@
 //  AriaAgentMessageView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  Un messaggio della chat, nello stesso ordine della web (agent-message-body):
 //  strumenti, fonti, ragionamento, testo, conoscenza usata, card, immagini,
 //  eventi CMMS, checklist, azioni, proposte di memoria, approvazione, errore,
@@ -194,7 +196,7 @@ struct AriaAgentMessageView: View {
         DisclosureGroup(isExpanded: $showSources) {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(message.sources, id: \.self) { source in
-                    if let raw = source.url, let url = URL(string: raw) {
+                    if let url = source.url.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
                         Link(destination: url) { Label(source.title, systemImage: "link") }
                     } else {
                         Label(source.title, systemImage: "doc.text")
@@ -239,10 +241,11 @@ struct AriaAgentMessageView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(message.images) { image in
-                    if let url = URL(string: image.url) {
+                    if let url = URL(string: image.url).flatMap(AriaURLPolicy.external) {
                         Link(destination: url) {
                             VStack(alignment: .leading, spacing: 4) {
-                                AsyncImage(url: url) { phase in
+                                // Si scarica solo da https; il link resta valido anche con http.
+                                AsyncImage(url: AriaURLPolicy.image(url)) { phase in
                                     if let picture = phase.image {
                                         picture.resizable().scaledToFill()
                                     } else {
@@ -413,11 +416,8 @@ struct AriaAgentMessageView: View {
     }
 
     private func open(_ target: String) {
-        if let url = URL(string: target), url.scheme != nil {
-            openURL(url)
-        } else if let url = URL(string: target, relativeTo: webBase)?.absoluteURL {
-            openURL(url)
-        }
+        let url = URL(string: target).flatMap { $0.scheme == nil ? URL(string: target, relativeTo: webBase)?.absoluteURL : $0 }
+        if let safe = url.flatMap(AriaURLPolicy.external) { openURL(safe) }
     }
 }
 

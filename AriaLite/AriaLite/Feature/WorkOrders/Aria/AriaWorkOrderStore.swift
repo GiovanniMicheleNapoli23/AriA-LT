@@ -2,13 +2,18 @@
 //  AriaWorkOrderStore.swift
 //  AriaLite
 //
-//  Lavori assegnati all'utente mobile e la sua disponibilità, sull'host dei lavori
-//  (GET /v1/mobile/me, PUT /v1/mobile/me/availability, GET /v1/mobile/work-orders[/{id}]).
+//  Created by Giovanni Michele on 08/10/26.
+//
+//  Lavori assegnati all'operatore mobile e la sua disponibilità, sull'host dei lavori
+//  (GET /v1/mobile/me, PUT /v1/mobile/me/availability, GET /v1/mobile/work-orders[/{id}]),
+//  più i risultati dei passi, le foto e il completamento (AriaWorkOrderAPI).
 //
 //  • `available` dura 12 ore: si rimanda all'apertura dell'app e a ogni ritorno in primo piano
 //    (rimandare lo stesso valore riparte da 12 ore). `busy` / `off_duty` non scadono, non serve.
 //  • Niente notifiche push: la lista si ricarica all'apertura, al ritorno e col pull-to-refresh.
 //  • 404 sul dettaglio = l'ordine non è più dell'operatore (riassegnato): sparisce dalla lista, senza errori.
+//  • Dopo ogni modifica a un passo si ricarica l'ordine: i passi li può cambiare anche un planner e le
+//    foto hanno un URL che scade dopo 10 minuti.
 //
 
 import Foundation
@@ -73,7 +78,7 @@ final class AriaWorkOrderStore {
             if self.preferredAvailability == .available {
                 try await self.putAvailability(.available)
             } else {
-                self.profile = try await self.backend.api.get("v1/mobile/me", host: .mobile)
+                self.profile = try await self.backend.api.get("v1/mobile/me")
             }
         }
         await loadOrders()
@@ -83,7 +88,7 @@ final class AriaWorkOrderStore {
     /// Pull-to-refresh.
     func refresh() async {
         guard await prepare() else { return }
-        await run { self.profile = try await self.backend.api.get("v1/mobile/me", host: .mobile) }
+        await run { self.profile = try await self.backend.api.get("v1/mobile/me") }
         await loadOrders()
         await loadClosedOrders()
     }
@@ -97,8 +102,7 @@ final class AriaWorkOrderStore {
             let list: AriaWorkOrderList = try await backend.api.get(
                 "v1/mobile/work-orders",
                 query: [URLQueryItem(name: "status", value: "closed"),
-                        URLQueryItem(name: "limit", value: "200")],
-                host: .mobile)
+                        URLQueryItem(name: "limit", value: "200")])
             closedOrders = list.orders
             hasLoadedClosed = true
             closedError = nil
@@ -136,9 +140,8 @@ final class AriaWorkOrderStore {
     func detail(of id: String) async -> Detail? {
         guard await prepare() else { return nil }
         do {
-            let order: AriaWorkOrder = try await backend.api.get("v1/mobile/work-orders/\(id)", host: .mobile)
-            if let index = orders.firstIndex(where: { $0.id == id }) { orders[index] = order }
-            if let index = closedOrders.firstIndex(where: { $0.id == id }) { closedOrders[index] = order }
+            let order = try await backend.api.workOrder(id: id)
+            replace(order)
             return .found(order)
         } catch AriaError.http(let status, _) where status == 404 {
             orders.removeAll { $0.id == id }
@@ -148,6 +151,90 @@ final class AriaWorkOrderStore {
             handle(error)
             return nil
         }
+    }
+
+    // MARK: Passi, foto, completamento
+
+    /// Esito di una modifica: l'ordine ricaricato, oppure l'ordine non è più dell'operatore,
+    /// oppure il messaggio dell'errore (la modifica non è stata fatta).
+    enum Change {
+        case updated(AriaWorkOrder)
+        case gone
+        case failed(String)
+    }
+
+    /// Mette (o cambia) il risultato di un passo. Rimandarlo è innocuo, quindi dopo una caduta di rete si può riprovare.
+    func report(_ result: AriaStepResult, step stepId: String, of orderId: String) async -> Change {
+        await change(orderId, step: stepId) { _ = try await $0.report(result, step: stepId, of: orderId) }
+    }
+
+    /// Annulla il risultato di un passo (e le sue foto).
+    func clearReport(step stepId: String, of orderId: String) async -> Change {
+        await change(orderId, step: stepId) { try await $0.clearReport(step: stepId, of: orderId) }
+    }
+
+    /// Aggiunge una foto (JPEG) a un passo che ha già un risultato.
+    func addPhoto(jpeg: Data, step stepId: String, of orderId: String) async -> Change {
+        await change(orderId, step: stepId) { _ = try await $0.addPhoto(jpeg: jpeg, step: stepId, of: orderId) }
+    }
+
+    func removePhoto(_ photoId: String, step stepId: String, of orderId: String) async -> Change {
+        await change(orderId, step: stepId) { _ = try await $0.removePhoto(photoId, step: stepId, of: orderId) }
+    }
+
+    /// Chiude l'ordine. Con `steps_incomplete` l'errore elenca gli id dei passi senza risultato (`AriaError.workOrder`).
+    func complete(_ orderId: String, resolutionNotes: String) async -> Change {
+        guard await prepare() else { return .failed(errorMessage ?? AriaError.signedOut.localizedDescription) }
+        do {
+            let order = try await backend.api.complete(order: orderId, resolutionNotes: resolutionNotes)
+            // L'ordine passa dalla lista degli aperti a quella dei chiusi.
+            orders.removeAll { $0.id == orderId }
+            closedOrders.insert(order, at: 0)
+            return .updated(order)
+        } catch {
+            return await failure(error, orderId: orderId)
+        }
+    }
+
+    private func change(_ orderId: String, step stepId: String,
+                        _ operation: (AriaAPIClient) async throws -> Void) async -> Change {
+        guard await prepare() else { return .failed(errorMessage ?? AriaError.signedOut.localizedDescription) }
+        do {
+            try await operation(backend.api)
+        } catch {
+            return await failure(error, orderId: orderId)
+        }
+        // Dopo ogni modifica si ricarica l'ordine, anche se la modifica ha avuto effetto da sola.
+        switch await detail(of: orderId) {
+        case .found(let order)?: return .updated(order)
+        case .gone?: return .gone
+        case nil: return .failed(errorMessage ?? "")
+        }
+    }
+
+    private func failure(_ error: any Error, orderId: String) async -> Change {
+        if error is CancellationError || (error as? URLError)?.code == .cancelled { return .failed("") }
+        switch error {
+        case AriaError.http(let status, _) where status == 404:
+            // Né il passo né l'ordine esistono più per questo operatore.
+            orders.removeAll { $0.id == orderId }
+            closedOrders.removeAll { $0.id == orderId }
+            return .gone
+        case AriaError.signedOut:
+            backend.handle(error)
+            return .failed(error.localizedDescription)
+        case AriaError.workOrder(.stepNotFound, _), AriaError.workOrder(.workOrderClosed, _):
+            // Un planner ha cambiato l'ordine: si ricarica, la modifica non è stata fatta.
+            if case .found(let order)? = await detail(of: orderId) { replace(order) }
+            return .failed(error.localizedDescription)
+        default:
+            return .failed(error.localizedDescription)
+        }
+    }
+
+    private func replace(_ order: AriaWorkOrder) {
+        if let index = orders.firstIndex(where: { $0.id == order.id }) { orders[index] = order }
+        if let index = closedOrders.firstIndex(where: { $0.id == order.id }) { closedOrders[index] = order }
     }
 
     /// Da scollegati non resta niente dell'operatore precedente.
@@ -182,7 +269,7 @@ final class AriaWorkOrderStore {
 
     private func putAvailability(_ value: AriaAvailability) async throws {
         profile = try await backend.api.send("PUT", "v1/mobile/me/availability",
-                                             body: AriaAvailabilityBody(availability: value), host: .mobile)
+                                             body: AriaAvailabilityBody(availability: value))
     }
 
     private func loadOrders() async {
@@ -194,8 +281,7 @@ final class AriaWorkOrderStore {
             let list: AriaWorkOrderList = try await backend.api.get(
                 "v1/mobile/work-orders",
                 query: [URLQueryItem(name: "status", value: "open"),
-                        URLQueryItem(name: "limit", value: "50")],
-                host: .mobile)
+                        URLQueryItem(name: "limit", value: "50")])
             guard current == generation else { return }
             orders = list.orders
             hasLoaded = true
@@ -219,7 +305,7 @@ final class AriaWorkOrderStore {
             backend.handle(error)
             return
         }
-        // Qui si è già dentro: "le credenziali sono a posto" non c'entra, il tunnel è solo spento.
+        // Qui si è già dentro: "le credenziali sono a posto" non c'entra, il server è solo giù.
         if case .signInHostOffline? = error as? AriaError {
             errorMessage = String(localized: "The server is offline. Try again later.")
             return

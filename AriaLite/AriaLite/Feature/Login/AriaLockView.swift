@@ -2,6 +2,8 @@
 //  AriaLockView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 08/10/26.
+//
 //  L'app chiusa a chiave: con una sessione Aria salvata, a ogni apertura serve Face ID
 //  (o il codice del telefono) per rientrare, senza un nuovo link via email.
 //  Stesso aspetto del login: la sfera, il logo, chi è collegato e un pulsante.

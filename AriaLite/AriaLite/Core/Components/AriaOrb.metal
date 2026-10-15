@@ -2,6 +2,8 @@
 //  AriaOrb.metal
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  La sfera di Aria: porting in Metal dello shader "Glass Liquid" (new-blob-v0.3-b_w.html),
 //  solo il preset usato dall'app — stile 19, la membrana vocale — con il guscio di vetro.
 //  I parametri arrivano come un array di float nello stesso ordine dell'HTML (vedi AriaOrb.swift):

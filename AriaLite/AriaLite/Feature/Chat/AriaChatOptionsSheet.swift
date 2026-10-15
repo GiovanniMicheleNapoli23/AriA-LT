@@ -2,6 +2,8 @@
 //  AriaChatOptionsSheet.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Il menu "···" della chat: lo storico della procedura della sessione (il "Task & Event Rail"
 //  della web: step corrente e step precedenti con il loro esito, task spuntabili), la lingua
 //  di dettatura del microfono e le azioni sulla sessione (chiusura intervento, fine procedura).

@@ -1,0 +1,46 @@
+#
+#  .gitignore
+#  AriaLite
+#
+#  Created by Giovanni Michele on 15/10/26.
+#
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode: stato personale dell'IDE e prodotti di build
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# Segreti e configurazione locale: mai nel repository.
+# Si parte da AriaLite/Config/Secrets.example.xcconfig (copiato in Secrets.xcconfig).
+Secrets.xcconfig
+*.secrets.xcconfig
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+GoogleService-Info.plist
+
+# Claude Code: impostazioni locali della macchina
+.claude/settings.local.json

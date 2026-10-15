@@ -2,6 +2,8 @@
 //  AriaAvailabilityRow.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 08/10/26.
+//
 //  Disponibilità dell'operatore, nella sezione profilo (impostazioni): decide se l'assegnazione
 //  automatica gli manda ordini nuovi. Mostra lo stato e cosa comporta; un tocco apre le tre scelte.
 //

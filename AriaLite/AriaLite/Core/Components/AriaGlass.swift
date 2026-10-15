@@ -2,6 +2,8 @@
 //  AriaGlass.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Liquid Glass dove c'è (iOS 26+), material sulle versioni precedenti (fino a iOS 18).
 //
 

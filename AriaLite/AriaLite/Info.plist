@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AriaAPIHost</key>
+	<string>$(ARIA_API_HOST)</string>
+	<key>AriaVoiceEngineHost</key>
+	<string>$(ARIA_VOICE_ENGINE_HOST)</string>
+	<key>AriaVoiceEngineKey</key>
+	<string>$(ARIA_VOICE_ENGINE_KEY)</string>
+	<key>AriaWebHost</key>
+	<string>$(ARIA_WEB_HOST)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

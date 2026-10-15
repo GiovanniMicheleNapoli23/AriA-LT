@@ -2,6 +2,8 @@
 //  AriaAgentChatView.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 25/09/26.
+//
 //  La chat con il backend Aria, come quella della web: messaggi in streaming,
 //  suggerimenti iniziali, scelta dello stabilimento, domande guidate (al posto
 //  del composer), conferma LOTO, comandi rapidi, errori con "Riprova" e un

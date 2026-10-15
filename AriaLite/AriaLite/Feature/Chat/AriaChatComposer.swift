@@ -2,6 +2,8 @@
 //  AriaChatComposer.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Dove si scrive ad Aria, in stile ChatGPT: una sola barra con "+" a sinistra (foto,
 //  galleria, file, stile di risposta, ricerca web), il campo al centro, il microfono
 //  per dettare (tocco = detta, pressione lunga = lingua e opzioni) e un pulsante tondo

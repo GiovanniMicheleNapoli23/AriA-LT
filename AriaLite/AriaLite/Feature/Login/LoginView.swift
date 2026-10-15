@@ -8,9 +8,9 @@
 //  il logo con "Mobile" sotto, una card a gruppo unico come nelle Impostazioni di sistema,
 //  un pulsante. Entra con una breve animazione. Tocca fuori per chiudere la tastiera.
 //
-//  Solo email, come la web: 1) si scrive l'email e si manda il link (captcha Turnstile);
-//  2) si tocca il link nell'email su questo telefono e iOS apre l'app (AppViewModel.open), oppure,
-//  finché la web manda il suo link, lo si incolla (con gli appunti condivisi si copia sul Mac).
+//  Solo email, niente password: 1) si scrive l'email e si manda il link;
+//  2) si copia il link dall'email e lo si incolla (con gli appunti condivisi si copia sul Mac),
+//  oppure, se il sistema lo apre nell'app, si entra da soli (AppViewModel.open).
 //  Vedi AppViewModel.sendLoginLink / completeLogin.
 //
 
@@ -23,8 +23,6 @@ struct LoginView: View {
     private enum Field { case email, link }
 
     @State private var email = ""
-    @State private var captcha: String?
-    @State private var captchaAttempt = 0
     @State private var pastedLink = ""
     /// Un link vale una volta sola: se è già fallito non lo si rimanda al server.
     @State private var failedLink: String?
@@ -47,7 +45,7 @@ struct LoginView: View {
     private var isBusy: Bool { isLoading || viewModel.isOpeningLink }
 
     private var canSend: Bool {
-        !email.trimmingCharacters(in: .whitespaces).isEmpty && captcha != nil && !isBusy
+        !email.trimmingCharacters(in: .whitespaces).isEmpty && !isBusy
     }
 
     private var canSignIn: Bool {
@@ -151,16 +149,6 @@ struct LoginView: View {
             .shadow(color: Color.liteAccent.opacity(0.06), radius: 20, x: 0, y: 8)
             .modifier(Shake(amount: CGFloat(shakes)))
 
-            if sentTo == nil {
-                // Captcha della web: better-auth lo vuole per mandare il link. Il token vale una volta.
-                AriaTurnstileView(siteKey: viewModel.backend.api.config.turnstileSiteKey,
-                                  origin: viewModel.backend.webURL) { token in
-                    captcha = token
-                }
-                .id(captchaAttempt)
-                .frame(height: 65)
-            }
-
             if isOffline {
                 AriaOfflineNotice()
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -177,13 +165,7 @@ struct LoginView: View {
 
             if sentTo != nil {
                 VStack(spacing: 10) {
-                    Group {
-                        if viewModel.backend.pendingLinkDelivery == .app {
-                            Text("Open the email on this device and tap the sign-in link: AriaPLT signs you in. You can also paste the link here. It works once and expires in 10 minutes.")
-                        } else {
-                            Text("Copy the link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 10 minutes.")
-                        }
-                    }
+                    Text("Copy the sign-in link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 15 minutes.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
@@ -292,17 +274,14 @@ struct LoginView: View {
     // MARK: - Accesso
 
     private func sendLink() {
-        guard canSend, let captcha else { return }
+        guard canSend else { return }
         focus = nil
         isLoading = true
         errorMessage = nil
         isOffline = false
         Task {
-            let result = await viewModel.sendLoginLink(email: email, captcha: captcha)
+            let result = await viewModel.sendLoginLink(email: email)
             isLoading = false
-            // Il token Turnstile vale una volta sola: se ne genera uno nuovo.
-            self.captcha = nil
-            captchaAttempt += 1
             handle(result, field: .email)
             if result == .success { focus = .link }
         }

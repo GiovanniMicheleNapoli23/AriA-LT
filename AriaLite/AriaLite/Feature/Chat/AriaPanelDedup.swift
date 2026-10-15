@@ -2,6 +2,8 @@
 //  AriaPanelDedup.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Il modello spesso riscrive nel testo quello che arriva anche come pannello:
 //  le opzioni della domanda guidata ("A. … B. …") e i task della checklist.
 //  Qui si tolgono dal testo quegli elenchi (e la riga che li introduce),

@@ -2,8 +2,10 @@
 //  AriaWorkOrdersView.swift
 //  AriaLite
 //
-//  Task dell'account Aria: gli ordini di lavoro veri assegnati all'operatore (sola lettura,
-//  l'app non può ancora avviarli, completarli o annotarli).
+//  Created by Giovanni Michele on 08/10/26.
+//
+//  Task dell'account Aria: gli ordini di lavoro veri assegnati all'operatore
+//  (il dettaglio e l'esecuzione dei passi sono in AriaWorkOrderDetailView).
 //  Stesso disegno della lista dei dati demo: "Today" (aperti da fare oggi o in ritardo),
 //  "Upcoming" (aperti con scadenza futura) e "Past" (chiusi, raggruppati per giorno).
 //
@@ -247,16 +249,14 @@ struct AriaWorkOrdersView: View {
 // MARK: - Riga
 
 /// Stessa scheda delle task demo: titolo, riga di dettaglio, valore a destra e barra in fondo.
-/// Qui il valore è la priorità e la barra è l'avanzamento dello stato (0 · in corso metà · chiuso pieno).
+/// Qui il valore è la priorità e la barra è l'avanzamento dei passi (quelli con un risultato su quelli totali).
 struct AriaWorkOrderRow: View {
     let order: AriaWorkOrder
 
     private var progress: Double {
-        switch order.status {
-        case "in_progress": 0.5
-        case "completed", "verified": 1
-        default: 0
-        }
+        if ["completed", "verified"].contains(order.status) { return 1 }
+        if let steps = order.progress, steps.total > 0 { return steps.fraction }
+        return order.status == "in_progress" ? 0.5 : 0
     }
 
     private var priorityColor: Color {
@@ -336,95 +336,5 @@ struct AriaPriorityBadge: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(color.opacity(0.14), in: Capsule())
-    }
-}
-
-// MARK: - Dettaglio
-
-struct AriaWorkOrderDetailView: View {
-    @State var order: AriaWorkOrder
-    let store: AriaWorkOrderStore
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(order.statusLabel)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.liteAccent)
-                        if let level = order.priorityLevel { AriaPriorityBadge(level: level) }
-                    }
-                    Text(order.title).font(.title3.weight(.bold))
-                    if let description = order.description, !description.isEmpty {
-                        Text(description).font(.body).foregroundStyle(.secondary)
-                    }
-                }
-
-                VStack(spacing: 0) {
-                    row("Type", order.typeLabel)
-                    row("Category", order.category)
-                    row("Asset", order.assetTag)
-                    row("Zone", order.zone)
-                    row("Scheduled", order.scheduledDate.map(format))
-                    row("Due", order.dueDate.map(format))
-                    row("Estimated duration", order.estimatedDurationMin.map { duration($0) })
-                    row("Assigned", order.assignedAt.map(format))
-                    row("Assignment", order.assignmentLabel)
-                }
-                .padding(.horizontal, 16)
-                .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-
-                if let notes = order.notes, !notes.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Notes").font(.headline)
-                        Text(notes).font(.body)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-                }
-            }
-            .padding(20)
-        }
-        .liteBackground()
-        .navigationTitle("Task")
-        .navigationBarTitleDisplayMode(.inline)
-        .refreshable { await reload() }
-        .task { await reload() }
-    }
-
-    /// 404: l'ordine è stato riassegnato, si torna alla lista (che lo ha già tolto) senza messaggi.
-    private func reload() async {
-        switch await store.detail(of: order.id) {
-        case .found(let fresh): order = fresh
-        case .gone: dismiss()
-        case nil: break
-        }
-    }
-
-    @ViewBuilder
-    private func row(_ title: LocalizedStringKey, _ value: String?) -> some View {
-        if let value, !value.isEmpty {
-            VStack(spacing: 0) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(title).foregroundStyle(.secondary)
-                    Spacer(minLength: 12)
-                    Text(value).multilineTextAlignment(.trailing)
-                }
-                .font(.subheadline)
-                .padding(.vertical, 11)
-                Divider()
-            }
-        }
-    }
-
-    private func format(_ date: Date) -> String {
-        date.formatted(date: .abbreviated, time: .shortened)
-    }
-
-    private func duration(_ minutes: Int) -> String {
-        Duration.seconds(minutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
     }
 }

@@ -241,6 +241,38 @@
         }
       }
     },
+    "%lld attached · maximum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld attached · maximum"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld allegate · massimo"
+          }
+        }
+      }
+    },
+    "%lld of %lld steps reported" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld steps reported"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld passi su %lld registrati"
+          }
+        }
+      }
+    },
     "%lld of %lld tasks done" : {
       "localizations" : {
         "en" : {
@@ -321,6 +353,22 @@
         }
       }
     },
+    "%lld steps done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld steps done"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld passi fatti"
+          }
+        }
+      }
+    },
     "%lld/%lld completed" : {
       "localizations" : {
         "en" : {
@@ -349,6 +397,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld/%lld completati · %lld doc"
+          }
+        }
+      }
+    },
+    "%lld/%lld reported" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld reported"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld/%lld registrati"
           }
         }
       }
@@ -465,6 +529,22 @@
         }
       }
     },
+    "A step can have at most 3 photos." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A step can have at most 3 photos."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un passo può avere al massimo 3 foto."
+          }
+        }
+      }
+    },
     "Absent" : {
       "localizations" : {
         "en" : {
@@ -542,6 +622,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi"
+          }
+        }
+      }
+    },
+    "Add a note to explain why the step was not done." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a note to explain why the step was not done."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi una nota per spiegare perché il passo non è stato fatto."
           }
         }
       }
@@ -651,6 +747,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutte le chat"
+          }
+        }
+      }
+    },
+    "All steps reported" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All steps reported"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti i passi registrati"
           }
         }
       }
@@ -1077,6 +1189,7 @@
       }
     },
     "As on the web app, we will email you a sign-in link." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2017,6 +2130,22 @@
         }
       }
     },
+    "Complete task" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete task"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa task"
+          }
+        }
+      }
+    },
     "Complete the fire safety register with the date, outcome of each check, and technician name. The register must be kept on-site and available for fire brigade inspections." : {
       "localizations" : {
         "en" : {
@@ -2039,6 +2168,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Completa i task per rispondere alla domanda di Aria"
+          }
+        }
+      }
+    },
+    "Complete the task to send it for verification." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete the task to send it for verification."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa la task per inviarla alla verifica."
           }
         }
       }
@@ -2256,6 +2401,22 @@
     "Context" : {
 
     },
+    "Continue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continua"
+          }
+        }
+      }
+    },
     "Conversations" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2290,6 +2451,7 @@
       }
     },
     "Copy the link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 10 minutes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2301,6 +2463,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copia il link dall'email e incollalo qui. Con gli Appunti universali puoi copiarlo sul Mac. Non aprirlo nel browser: funziona una sola volta e scade dopo 10 minuti."
+          }
+        }
+      }
+    },
+    "Copy the sign-in link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 15 minutes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy the sign-in link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 15 minutes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia il link di accesso dall'email e incollalo qui. Con gli appunti universali puoi copiarlo sul Mac. Non aprirlo nel browser: funziona una volta sola e scade dopo 15 minuti."
           }
         }
       }
@@ -2567,6 +2745,38 @@
         }
       }
     },
+    "Describe what was done before completing the task." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what was done before completing the task."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descrivi cosa è stato fatto prima di completare la task."
+          }
+        }
+      }
+    },
+    "Describe what was done. The task will be closed and sent for verification." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Describe what was done. The task will be closed and sent for verification."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descrivi cosa è stato fatto. La task verrà chiusa e inviata alla verifica."
+          }
+        }
+      }
+    },
     "Description" : {
       "localizations" : {
         "en" : {
@@ -2595,6 +2805,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dettagliato"
+          }
+        }
+      }
+    },
+    "Details" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dettagli"
           }
         }
       }
@@ -2959,6 +3185,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Durata stimata"
+          }
+        }
+      }
+    },
+    "Every step needs a result before the task can be completed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every step needs a result before the task can be completed."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni passo deve avere un risultato prima di completare la task."
           }
         }
       }
@@ -3782,6 +4024,7 @@
       }
     },
     "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 10 minutes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3793,6 +4036,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nell'email tieni premuto il pulsante di accesso, scegli Copia link e incollalo qui. Non aprirlo nel browser: il link funziona una sola volta e scade tra 10 minuti."
+          }
+        }
+      }
+    },
+    "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 15 minutes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 15 minutes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nell'email, tieni premuto il pulsante di accesso, scegli Copia link e incollalo qui. Non aprirlo nel browser: il link funziona una volta sola e scade dopo 15 minuti."
           }
         }
       }
@@ -4490,6 +4749,38 @@
         }
       }
     },
+    "Mark the step as done or not done before adding photos." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark the step as done or not done before adding photos."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segna il passo come fatto o non fatto prima di aggiungere foto."
+          }
+        }
+      }
+    },
+    "Marked done from the desktop" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked done from the desktop"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segnato come fatto dal desktop"
+          }
+        }
+      }
+    },
     "Medium" : {
       "localizations" : {
         "en" : {
@@ -4695,6 +4986,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avanti"
+          }
+        }
+      }
+    },
+    "Next step · %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next step · %lld of %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prossimo passo · %lld di %lld"
           }
         }
       }
@@ -5057,6 +5364,22 @@
         }
       }
     },
+    "Not done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not done"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non fatto"
+          }
+        }
+      }
+    },
     "Not now" : {
 
     },
@@ -5219,6 +5542,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OFFLINE"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         }
       }
@@ -5480,6 +5819,7 @@
       }
     },
     "Open the email on this device and tap the sign-in link: AriaPLT signs you in. You can also paste the link here. It works once and expires in 10 minutes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5593,6 +5933,7 @@
       }
     },
     "Or sign in with an email link" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5700,6 +6041,22 @@
         }
       }
     },
+    "Overdue · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overdue · %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In ritardo · %@"
+          }
+        }
+      }
+    },
     "Overdue WOs in detail" : {
       "localizations" : {
         "en" : {
@@ -5764,6 +6121,22 @@
         }
       }
     },
+    "Parts needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parts needed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambi necessari"
+          }
+        }
+      }
+    },
     "Parts needed?" : {
       "localizations" : {
         "en" : {
@@ -5781,6 +6154,7 @@
       }
     },
     "Password" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5924,6 +6298,22 @@
         }
       }
     },
+    "Photo storage is not available on the server." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo storage is not available on the server."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'archivio delle foto non è disponibile sul server."
+          }
+        }
+      }
+    },
     "Photos" : {
       "localizations" : {
         "en" : {
@@ -5936,6 +6326,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Photos upload when you mark the step." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos upload when you mark the step."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le foto vengono caricate quando segni il passo."
           }
         }
       }
@@ -6661,6 +7067,22 @@
         }
       }
     },
+    "Remove photo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove photo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi foto"
+          }
+        }
+      }
+    },
     "Remove the air filter and blow out dust and debris with compressed air. Replace the filter if it shows tears or excessive clogging." : {
       "localizations" : {
         "en" : {
@@ -6753,6 +7175,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I report saranno disponibili a breve."
+          }
+        }
+      }
+    },
+    "Request a sign-in link from this device first, then open the link from that email." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Request a sign-in link from this device first, then open the link from that email."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiedi prima un link di accesso da questo dispositivo, poi apri il link di quell'email."
           }
         }
       }
@@ -6861,6 +7299,22 @@
         }
       }
     },
+    "Review steps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review steps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rivedi i passi"
+          }
+        }
+      }
+    },
     "Robotic Welder" : {
       "localizations" : {
         "en" : {
@@ -6937,6 +7391,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conferma di sicurezza richiesta"
+          }
+        }
+      }
+    },
+    "Safety warnings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safety warnings"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvertenze di sicurezza"
           }
         }
       }
@@ -7428,6 +7898,22 @@
         }
       }
     },
+    "Show more" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show more"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra altro"
+          }
+        }
+      }
+    },
     "Show open work orders" : {
       "localizations" : {
         "en" : {
@@ -7556,6 +8042,7 @@
       }
     },
     "Sign-in failed (%@). Request a new link." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7599,6 +8086,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Test rilevatori di fumo"
+          }
+        }
+      }
+    },
+    "Something went wrong" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something went wrong"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa è andato storto"
           }
         }
       }
@@ -7711,6 +8214,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passaggi"
+          }
+        }
+      }
+    },
+    "Steps without a result: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Steps without a result: %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passi senza risultato: %lld"
           }
         }
       }
@@ -7981,6 +8500,22 @@
         }
       }
     },
+    "Task closed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task closed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task chiusa"
+          }
+        }
+      }
+    },
     "Tasks" : {
       "localizations" : {
         "en" : {
@@ -8041,6 +8576,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grazie — Aria ha imparato dal tuo feedback."
+          }
+        }
+      }
+    },
+    "The note is too long (2000 characters at most)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The note is too long (2000 characters at most)."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La nota è troppo lunga (al massimo 2000 caratteri)."
+          }
+        }
+      }
+    },
+    "The photo is too large (10 MB at most)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo is too large (10 MB at most)."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La foto è troppo grande (al massimo 10 MB)."
+          }
+        }
+      }
+    },
+    "The photo was not uploaded. Try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photo was not uploaded. Try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La foto non è stata caricata. Riprova."
           }
         }
       }
@@ -8111,6 +8694,7 @@
       }
     },
     "The sign-in link did not start a session. Request a new one." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8143,8 +8727,21 @@
         }
       }
     },
-    "The sign-in server is offline. Try again later: your credentials are fine." : {
-
+    "The sign-in server is offline. Try again later." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sign-in server is offline. Try again later."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il server di accesso è offline. Riprova più tardi."
+          }
+        }
+      }
     },
     "The steps Aria gives you in this chat will appear here." : {
       "localizations" : {
@@ -8179,6 +8776,7 @@
       }
     },
     "The token is not a valid JWT or has expired." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8258,7 +8856,24 @@
         }
       }
     },
+    "This link belongs to a different account than the one you requested. Request a new link." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This link belongs to a different account than the one you requested. Request a new link."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo link appartiene a un account diverso da quello che hai richiesto. Richiedi un nuovo link."
+          }
+        }
+      }
+    },
     "This link is not the latest one sent to this device. Open the most recent email, or send a new link." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8275,6 +8890,7 @@
       }
     },
     "This link was requested on another device. Send a new one from here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8306,6 +8922,38 @@
         }
       }
     },
+    "This photo format is not supported." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo format is not supported."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo formato di foto non è supportato."
+          }
+        }
+      }
+    },
+    "This photo no longer exists." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This photo no longer exists."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa foto non esiste più."
+          }
+        }
+      }
+    },
     "This server doesn't support signing in with a username yet. Use a sign-in link, or ask your company administrator." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8317,10 +8965,24 @@
         }
       }
     },
-    "This server doesn't support signing in with a username. Ask your company administrator." : {
-
+    "This server doesn't support signing in with an email link. Ask your company administrator." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This server doesn't support signing in with an email link. Ask your company administrator."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo server non supporta l'accesso con un link via email. Chiedi all'amministratore della tua azienda."
+          }
+        }
+      }
     },
     "This sign-in link has already been used or is not valid. Request a new one." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8353,6 +9015,7 @@
       }
     },
     "This sign-in link has expired. Request a new one." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8364,6 +9027,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo link di accesso è scaduto. Richiedine uno nuovo."
+          }
+        }
+      }
+    },
+    "This step was removed. The task has been refreshed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This step was removed. The task has been refreshed."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo passo è stato rimosso. La task è stata aggiornata."
           }
         }
       }
@@ -8380,6 +9059,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questa attività non ha voci di checklist."
+          }
+        }
+      }
+    },
+    "This task has no procedure steps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This task has no procedure steps."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa task non ha passi di procedura."
+          }
+        }
+      }
+    },
+    "This task is closed and can no longer be changed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This task is closed and can no longer be changed."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa task è chiusa e non si può più modificare."
           }
         }
       }
@@ -8581,6 +9292,22 @@
         }
       }
     },
+    "Tools needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tools needed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attrezzi necessari"
+          }
+        }
+      }
+    },
     "Touch and hold for the dictation language" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -8700,6 +9427,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non assegnato"
+          }
+        }
+      }
+    },
+    "Undo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undo"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla"
           }
         }
       }
@@ -9009,9 +9752,6 @@
         }
       }
     },
-    "Use the username your company administrator gave you, for example acme.mario.rossi." : {
-
-    },
     "Use these servers" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9064,6 +9804,7 @@
       }
     },
     "Username" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9204,6 +9945,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Operatore di magazzino"
+          }
+        }
+      }
+    },
+    "We will email you a sign-in link. There is no password." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We will email you a sign-in link. There is no password."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ti manderemo un link di accesso via email. Non c'è nessuna password."
           }
         }
       }
@@ -9475,6 +10232,22 @@
         }
       }
     },
+    "Why couldn't this step be done? The planner will see your note." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why couldn't this step be done? The planner will see your note."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perché non è stato possibile fare questo passo? Il planner vedrà la tua nota."
+          }
+        }
+      }
+    },
     "Widen to 30 days" : {
       "localizations" : {
         "en" : {
@@ -9652,6 +10425,7 @@
       }
     },
     "Wrong username or password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

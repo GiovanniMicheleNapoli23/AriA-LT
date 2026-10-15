@@ -2,6 +2,8 @@
 //  AriaWordmark.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 26/09/26.
+//
 //  Il nome dell'app come logo: "AriaPLT" pieno, "Mobile" più leggero.
 //  In riga nella sidebar; impilato al login ("Mobile" sotto, maiuscolo e spaziato).
 //

@@ -2,6 +2,8 @@
 //  AriaOfflineNotice.swift
 //  AriaLite
 //
+//  Created by Giovanni Michele on 08/10/26.
+//
 //  "Aria è offline": il sistema non si raggiunge. Non è un guasto né una password sbagliata,
 //  quindi non è rosso: un avviso ambra con icona, spiegazione e, se serve, "Riprova".
 //
