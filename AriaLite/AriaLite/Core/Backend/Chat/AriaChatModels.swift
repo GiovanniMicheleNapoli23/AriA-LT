@@ -644,6 +644,8 @@ nonisolated struct AriaPlant: Decodable, Sendable, Identifiable, Hashable {
     let id: String
     let name: String
     let code: String?
+    /// Dove si trova (solo GET /v1/mobile/plants).
+    let location: String?
 }
 
 nonisolated struct AriaSuggestionsResponse: Decodable, Sendable {

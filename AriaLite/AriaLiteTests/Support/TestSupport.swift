@@ -68,7 +68,7 @@ enum TestEnv {
         server.route("POST /api/auth/mobile/verify", verifyReply())
         server.route("GET /api/aria/token", tokenReply())
         server.route("GET /v1/companies", .json(companies))
-        server.route("GET /v1/plants", plants)
+        server.route("GET /v1/mobile/plants", plants)
     }
 
     /// Lo stesso install di prima: il Keychain rimasto è di chi usa l'app, non di una disinstallazione.

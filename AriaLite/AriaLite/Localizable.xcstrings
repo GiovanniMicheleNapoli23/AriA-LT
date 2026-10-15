@@ -8856,6 +8856,22 @@
         }
       }
     },
+    "This isn't available on the phone yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This isn't available on the phone yet."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non è ancora disponibile sul telefono."
+          }
+        }
+      }
+    },
     "This link belongs to a different account than the one you requested. Request a new link." : {
       "localizations" : {
         "en" : {

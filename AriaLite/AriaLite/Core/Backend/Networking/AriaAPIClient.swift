@@ -120,6 +120,8 @@ nonisolated final class AriaAPIClient: Sendable {
     @concurrent
     func transcribe(audio: Data, filename: String, mimeType: String,
                     language: String?, prompt: String?) async throws -> String? {
+        // /v1/audio non è sotto /v1/mobile: per un operatore resta il testo del riconoscimento sul telefono.
+        if auth.isMobileSession { return nil }
         let boundary = "aria-\(UUID().uuidString)"
         var body = Data()
         func append(_ string: String) { body.append(Data(string.utf8)) }
@@ -160,7 +162,8 @@ nonisolated final class AriaAPIClient: Sendable {
 
     // MARK: SSE
 
-    /// Apre POST /v1/responses e restituisce gli eventi già interpretati man mano che arrivano.
+    /// Apre POST /v1/responses (per un operatore mobile POST /v1/mobile/responses: stesso body, stesso stream)
+    /// e restituisce gli eventi già interpretati man mano che arrivano.
     /// Cancellare il Task che consuma lo stream chiude la connessione.
     func stream(_ payload: AriaResponsesRequest) -> AsyncThrowingStream<AriaStreamEvent, any Error> {
         AsyncThrowingStream { continuation in
@@ -169,7 +172,8 @@ nonisolated final class AriaAPIClient: Sendable {
                     let body = try JSONEncoder().encode(payload)
                     var retried = false
                     while true {
-                        let req = try await self.request("POST", "v1/responses", body: body,
+                        let path = self.auth.isMobileSession ? "v1/mobile/responses" : "v1/responses"
+                        let req = try await self.request("POST", path, body: body,
                                                          accept: "text/event-stream")
                         let (bytes, response) = try await self.streamSession.bytes(for: req)
                         let status = (response as? HTTPURLResponse)?.statusCode ?? -1

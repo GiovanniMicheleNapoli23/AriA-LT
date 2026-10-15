@@ -275,9 +275,10 @@ final class AriaBackend {
             plants = []
         } else {
             do {
-                plants = try await api.get("v1/plants")
+                // Un operatore ha il suo elenco su /v1/mobile: /v1/plants lo rifiuta, come ogni rotta fuori da lì.
+                plants = try await api.get(api.auth.isMobileSession ? "v1/mobile/plants" : "v1/plants")
             } catch AriaError.http where api.auth.isMobileSession {
-                // Un operatore non può elencare gli stabilimenti: i lavori non ne hanno bisogno, la chat sì.
+                // Elenco non disponibile: i lavori non hanno bisogno dello stabilimento, la chat sì.
                 plants = []
             }
         }
@@ -288,7 +289,8 @@ final class AriaBackend {
 
     /// Suggerimenti iniziali della chat per lo stabilimento attivo (vuoto se non disponibili).
     func suggestions() async -> [String] {
-        guard let plantId = activePlantId else { return [] }
+        // Fuori da /v1/mobile un operatore riceve 403: la chat usa i suggerimenti generici.
+        guard let plantId = activePlantId, !api.auth.isMobileSession else { return [] }
         let response: AriaSuggestionsResponse? = try? await api.get("v1/chat/suggestions", query: [
             URLQueryItem(name: "plant_id", value: plantId),
             URLQueryItem(name: "locale", value: api.context.locale),

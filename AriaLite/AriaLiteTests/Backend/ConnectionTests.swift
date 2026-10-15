@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 15/10/26.
 //
 //  Aria è collegata al server dopo l'accesso? Dal link verificato fino alla chat:
-//  azienda e stabilimento, storico, suggerimenti e lo stream di POST /v1/responses con il contesto
+//  azienda e stabilimento, storico, suggerimenti e lo stream di POST /v1/mobile/responses con il contesto
 //  dell'operatore (JWT, Company-Id, plant_id). Le prove a rete finta girano sempre; quelle contro
 //  il server vero solo con ARIA_LIVE_SESSION (e ARIA_LIVE_CHAT=1 per scrivere un messaggio nella chat).
 //
@@ -94,8 +94,8 @@ extension BackendTests {
             // L'ordine del collegamento: email → link → sessione → JWT → azienda → stabilimenti.
             let order = server.calls.map { "\($0.method) \($0.path)" }
             #expect(order == ["POST /api/auth/mobile/request-link", "POST /api/auth/mobile/verify",
-                              "GET /api/aria/token", "GET /v1/companies", "GET /v1/plants"])
-            let plants = try #require(server.calls("GET /v1/plants").first)
+                              "GET /api/aria/token", "GET /v1/companies", "GET /v1/mobile/plants"])
+            let plants = try #require(server.calls("GET /v1/mobile/plants").first)
             #expect(plants.header("company-id") == "c1", "dopo l'azienda ogni chiamata porta il Company-Id")
             #expect(plants.header("authorization")?.hasPrefix("Bearer ") == true)
         }
@@ -119,14 +119,14 @@ extension BackendTests {
 
         @Test func theChatStreamGoesToTheAPIHostWithTheOperatorContext() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", greeting)
+            server.route("POST /v1/mobile/responses", greeting)
 
             let events = try await collect(backend.api.stream(request(backend)))
 
             #expect(events.map(\.kind) == ["created", "textDelta", "textDone", "completed"])
             if case .textDelta(let text) = events[1] { #expect(text == "Ciao") } else { Issue.record("atteso textDelta") }
 
-            let call = try #require(server.calls("POST /v1/responses").first)
+            let call = try #require(server.calls("POST /v1/mobile/responses").first)
             #expect(call.host == backend.api.config.apiBaseURL.host())
             #expect(call.header("authorization")?.hasPrefix("Bearer ") == true)
             #expect(call.header("company-id") == "c1")
@@ -146,7 +146,7 @@ extension BackendTests {
 
         @Test func aServerErrorEventEndsTheStreamAsFailed() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", sse([
+            server.route("POST /v1/mobile/responses", sse([
                 ("response.created", #"{"id":"resp_1"}"#),
                 ("error", #"{"message":"model unavailable"}"#),
             ]))
@@ -160,12 +160,12 @@ extension BackendTests {
         @Test func aRejectedJWTIsRenewedOnceAndTheStreamGoesThrough() async throws {
             let backend = try await signedInBackend()
             server.route("GET /api/aria/token", TestEnv.tokenReply(tag: "b"))
-            server.route("POST /v1/responses", .json(#"{"detail":"expired"}"#, status: 401), greeting)
+            server.route("POST /v1/mobile/responses", .json(#"{"detail":"expired"}"#, status: 401), greeting)
 
             let events = try await collect(backend.api.stream(request(backend)))
 
             #expect(events.last?.kind == "completed")
-            let sent = server.calls("POST /v1/responses")
+            let sent = server.calls("POST /v1/mobile/responses")
             #expect(sent.count == 2, "un solo tentativo in più")
             #expect(sent[0].header("authorization") != sent[1].header("authorization"), "il secondo porta un JWT nuovo")
             #expect(server.calls("GET /api/aria/token").count == 2, "uno all'accesso, uno dopo il 401")
@@ -173,17 +173,17 @@ extension BackendTests {
 
         @Test func aSecond401IsNotRetriedAgain() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", .json(#"{"detail":"expired"}"#, status: 401))
+            server.route("POST /v1/mobile/responses", .json(#"{"detail":"expired"}"#, status: 401))
 
             await #expect { _ = try await collect(backend.api.stream(request(backend))) } throws: { error in
                 if case AriaError.http(401, _) = error { true } else { false }
             }
-            #expect(server.calls("POST /v1/responses").count == 2)
+            #expect(server.calls("POST /v1/mobile/responses").count == 2)
         }
 
         @Test func anOperatorRemovedFromTheCompanyIsSignedOutByTheStream() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
+            server.route("POST /v1/mobile/responses", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
 
             await #expect { _ = try await collect(backend.api.stream(request(backend))) } throws: { error in
                 if case AriaError.signedOut = error { true } else { false }
@@ -193,7 +193,7 @@ extension BackendTests {
 
         @Test func aGatewayErrorOnTheStreamIsOfflineNotAnAPIError() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", .hostDown())
+            server.route("POST /v1/mobile/responses", .hostDown())
 
             await #expect { _ = try await collect(backend.api.stream(request(backend))) } throws: { error in
                 if case AriaError.serverOffline = error { true } else { false }
@@ -203,18 +203,18 @@ extension BackendTests {
 
         @Test func aMessageOverTheWAFLimitNeverLeavesThePhone() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", greeting)
+            server.route("POST /v1/mobile/responses", greeting)
 
             let long = String(repeating: "x", count: 9_000)
             await #expect { _ = try await collect(backend.api.stream(request(backend, input: long))) } throws: { error in
                 if case AriaError.bodyTooLarge = error { true } else { false }
             }
-            #expect(server.calls("POST /v1/responses").isEmpty)
+            #expect(server.calls("POST /v1/mobile/responses").isEmpty)
         }
 
         @Test func aDroppedConnectionPropagatesAsAnOfflineError() async throws {
             let backend = try await signedInBackend()
-            server.route("POST /v1/responses", .failing(.notConnectedToInternet))
+            server.route("POST /v1/mobile/responses", .failing(.notConnectedToInternet))
 
             await #expect { _ = try await collect(backend.api.stream(request(backend))) } throws: { error in
                 AriaHTTP.isOffline(error)
@@ -225,7 +225,7 @@ extension BackendTests {
 
         @Test func historyListsTheSessionsOfTheConnectedOperator() async throws {
             let backend = try await signedInBackend()
-            server.route("GET /v1/agent/sessions", .json("""
+            server.route("GET /v1/mobile/chat/sessions", .json("""
             [{"session_id":"s-1","title":"Pompa 3","status":"active","created_at":"2026-10-14T08:00:00Z",
               "last_activity_at":"2026-10-14T09:30:00Z"},
              {"session_id":"s-2","title":null,"status":"closed","created_at":"2026-10-13T08:00:00Z"}]
@@ -236,32 +236,47 @@ extension BackendTests {
             #expect(sessions.map(\.sessionId) == ["s-1", "s-2"])
             #expect(sessions.first?.title == "Pompa 3")
             #expect(sessions.first?.lastActivity != nil)
-            let call = try #require(server.calls("GET /v1/agent/sessions").first)
+            let call = try #require(server.calls("GET /v1/mobile/chat/sessions").first)
             #expect(call.query == "limit=60&offset=0")
             #expect(call.header("company-id") == "c1")
         }
 
-        @Test func suggestionsAskForTheActivePlant() async throws {
+        @Test func anOperatorHasNoSuggestionsEndpointSoNothingIsCalled() async throws {
             let backend = try await signedInBackend()
-            server.route("GET /v1/chat/suggestions", .json(#"{"suggestions":["Stato della pompa 3?","Ordini aperti"]}"#))
-
-            let suggestions = await backend.suggestions()
-
-            #expect(suggestions == ["Stato della pompa 3?", "Ordini aperti"])
-            let call = try #require(server.calls("GET /v1/chat/suggestions").first)
-            #expect(call.query?.contains("plant_id=p1") == true)
-            #expect(call.query?.contains("locale=") == true)
-        }
-
-        @Test func missingSuggestionsAreEmptyNotAnError() async throws {
-            let backend = try await signedInBackend()
-            server.route("GET /v1/chat/suggestions", .json(#"{"detail":"nope"}"#, status: 500))
+            server.route("GET /v1/chat/suggestions", .json(#"{"suggestions":["Stato della pompa 3?"]}"#, status: 403))
 
             let suggestions = await backend.suggestions()
 
             #expect(suggestions.isEmpty)
+            #expect(server.calls("GET /v1/chat/suggestions").isEmpty, "fuori da /v1/mobile risponderebbe 403")
             #expect(backend.isSignedIn)
             #expect(backend.lastError == nil)
+        }
+
+        @Test func historyReadsTheMessagesAndThePendingApprovalFromTheMobileRoutes() async throws {
+            let backend = try await signedInBackend()
+            server.route("GET /v1/mobile/chat/sessions/s-1/messages", .json(#"[{"id":"m1","role":"user","text":"Ciao"}]"#))
+            server.route("GET /v1/mobile/chat/sessions/s-1/pending-interrupt", .json(#"{"interrupt":null}"#))
+            let chat = AriaChatAPI(api: backend.api)
+
+            let messages = try await chat.messages(sessionId: "s-1")
+            let pending = await chat.pendingInterrupt(sessionId: "s-1")
+
+            #expect(messages.map(\.role) == ["user"] && messages.first?.text == "Ciao")
+            #expect(pending == nil)
+            #expect(server.calls("GET /v1/mobile/chat/sessions/s-1/messages").first?.header("company-id") == "c1")
+        }
+
+        @Test func webOnlyActionsAreRefusedForAnOperatorWithoutCallingTheServer() async throws {
+            let backend = try await signedInBackend()
+            let chat = AriaChatAPI(api: backend.api)
+            let before = server.calls.count
+
+            await #expect(throws: AriaError.self) { try await chat.rename(sessionId: "s-1", title: "x") }
+            await #expect(throws: AriaError.self) { try await chat.delete(sessionId: "s-1") }
+            await chat.learning(sessionId: "s-1", answers: [])
+
+            #expect(server.calls.count == before)
         }
     }
 
@@ -292,7 +307,7 @@ extension BackendTests {
             let company = try #require(companies.first, "nessuna azienda: l'accesso non è completo")
             await context.setCompany(company.id)
 
-            let plants: [AriaPlant]? = try? await client.get("v1/plants")
+            let plants: [AriaPlant]? = try? await client.get("v1/mobile/plants")
             let plant = ConnEnv.env("ARIA_LIVE_PLANT") ?? plants?.first?.id
             if let plant { await context.setPlant(plant) }
             try await body(client, plant)

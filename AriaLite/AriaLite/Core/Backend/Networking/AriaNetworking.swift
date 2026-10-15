@@ -121,6 +121,8 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case bodyTooLarge(bytes: Int, limit: Int)
     case missingCompany
     case missingPlant
+    /// Azione della chat senza rotta sotto /v1/mobile: per un operatore il server risponderebbe 403.
+    case notOnPhone
     case decoding(String)
     case stream(String)
 
@@ -144,6 +146,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .bodyTooLarge(let bytes, let limit): String(localized: "Message too long (\(bytes) bytes, limit \(limit)).")
         case .missingCompany: String(localized: "No company selected.")
         case .missingPlant: String(localized: "Select a plant before using the chat.")
+        case .notOnPhone: String(localized: "This isn't available on the phone yet.")
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
         }
