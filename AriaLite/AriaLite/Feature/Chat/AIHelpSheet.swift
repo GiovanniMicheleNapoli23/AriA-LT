@@ -7,13 +7,10 @@
 
 import SwiftUI
 
-// Assistente AriA dentro la manutenzione: chat (FAKE) seminata sullo step corrente.
+// Assistente Aria dentro un passo: la chat del backend, col contesto del passo corrente.
 struct AIHelpSheet: View {
-    let currentItem: ChecklistItem
-    var workOrder: WorkOrder? = nil
-    /// Contesto del lavoro Aria vero (ordine + passo), al posto di quello dei dati demo.
+    /// Contesto del lavoro (ordine + passo).
     var contextText: String? = nil
-    @Environment(AppViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @State private var detent: PresentationDetent = .large
 
@@ -27,15 +24,8 @@ struct AIHelpSheet: View {
                     .padding(.top, 12)
                     .padding(.bottom, 12)
 
-                // Chat condivisa, contesto = step corrente. Con il backend: la sfera al centro con il saluto,
-                // come la chat principale; in locale il messaggio iniziale di aiuto sullo step.
-                AriaConversation(
-                    workOrder: workOrder,
-                    step: currentItem,
-                    contextText: contextText,
-                    showsEmptyState: viewModel.backend.isReady,
-                    seedsStepIntro: true
-                )
+                // Chat condivisa, contesto = passo corrente: la sfera al centro con il saluto, come la chat principale.
+                AriaConversation(contextText: contextText)
             }
             .overlay(alignment: .topTrailing) {
                 Button { dismiss() } label: {

@@ -45,11 +45,9 @@ struct SettingsSheet: View {
                     }
                 }
 
-                // MARK: – Disponibilità (account Aria)
-                if viewModel.isAriaAccount {
-                    AriaAvailabilityRow(store: viewModel.ariaWorkOrders)
-                        .padding(.horizontal, 20)
-                }
+                // MARK: – Disponibilità
+                AriaAvailabilityRow(store: viewModel.ariaWorkOrders)
+                    .padding(.horizontal, 20)
 
                 // MARK: – Server Aria (chat)
                 Button {
@@ -104,7 +102,7 @@ struct SettingsSheet: View {
         .sheet(isPresented: $showConnection) {
             AriaConnectionSheet(backend: viewModel.backend)
         }
-        .presentationDetents([.fraction(viewModel.isAriaAccount ? 0.6 : 0.45)])
+        .presentationDetents([.fraction(0.6)])
         .presentationDragIndicator(.visible)
     }
 }

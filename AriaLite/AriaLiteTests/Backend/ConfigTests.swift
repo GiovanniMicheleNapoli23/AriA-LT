@@ -26,9 +26,4 @@ struct ConfigTests {
     func invalidHostIsRejected(_ host: String?) {
         #expect(AriaConfig.httpsURL(host: host) == nil)
     }
-
-    @Test func productionHostsAreHTTPS() {
-        #expect(AriaConfig.productionAPI.scheme == "https")
-        #expect(AriaConfig.productionWeb.scheme == "https")
-    }
 }

@@ -6,7 +6,7 @@
 //
 //  Solo DEBUG: il percorso del login nella console (Console.app / `log stream`, categoria "auth").
 //  Serve a rispondere a due domande: l'app ha davvero provato il login sul server
-//  (o si è fermata alle credenziali mock?) e cosa ha risposto la web app.
+//  (o si è fermata prima?) e cosa ha risposto la web app.
 //
 //  Non si scrivono mai password, cookie o token: solo lunghezze, stato HTTP e messaggio d'errore.
 //

@@ -217,17 +217,20 @@ extension BackendTests {
         // MARK: Sessioni di versioni precedenti
 
         @Test func sessionWithoutAProfileIsDroppedAtLaunch() {
+            TestEnv.markInstalled()
             AriaKeychain.set("OLD-USERNAME-SESSION", for: "aria.mobile_session")
             let backend = AriaBackend()
             #expect(!backend.isSignedIn)
             #expect(!AriaKeychain.exists("aria.mobile_session"))
         }
 
-        @Test func oldProfileFormatIsIgnored() {
+        /// Le versioni con l'username non avevano il marcatore e tenevano il profilo sotto `aria.mobile_account`.
+        @Test func upgradeFromTheUsernameVersionSignsOut() {
             AriaKeychain.set("S", for: "aria.mobile_session")
             defaults.set(Data(#"{"id":"1","name":"M","username":"acme.mario","displayUsername":"mario"}"#.utf8),
                          forKey: "aria.mobile_account")
             #expect(!AriaBackend().isSignedIn, "il profilo con l'username non è quello nuovo")
+            #expect(!AriaKeychain.exists("aria.mobile_session"))
         }
 
         @Test func sessionWithItsProfileIsKept() throws {
@@ -241,6 +244,7 @@ extension BackendTests {
         }
 
         @Test func profileWithoutASessionIsNotShown() throws {
+            TestEnv.markInstalled()
             let account = AriaMobileAccount(id: "u1", name: "M", email: "m@a.b")
             AriaKeychain.set(String(decoding: try JSONEncoder().encode(account), as: UTF8.self), for: "aria.operator_account")
             let backend = AriaBackend()

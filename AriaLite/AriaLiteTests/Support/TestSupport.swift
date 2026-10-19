@@ -27,7 +27,7 @@ enum TestEnv {
                                "aria.install_marker",
                                "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference",
                                "aria.api_base_url", "aria.auth_base_url",
-                               "aria.api_base_url.v2", "aria.auth_base_url.v2"]
+                               "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session"]
     static let keychainAccounts = ["aria.mobile_session", "aria.dev_access_token", "aria.operator_account",
                                    "aria.web_session", "aria.link_session", "aria.link_verifier"]
 

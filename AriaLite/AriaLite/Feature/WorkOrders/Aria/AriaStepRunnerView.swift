@@ -78,39 +78,56 @@ struct AriaStepRunnerView: View {
 
     // MARK: Corpo
 
+    /// Altezza della sfumatura in fondo allo scroll (e dello spazio che la lascia vuota a fine pagina).
+    private static let scrollFade: CGFloat = 24
+
     var body: some View {
         NavigationStack {
             Group {
                 if let step = current {
-                    ZStack(alignment: .bottom) {
+                    ZStack {
                         LinearGradient(colors: [Color.liteBackground, Color.liteAccent.opacity(0.12)],
                                        startPoint: .topLeading, endPoint: .bottomTrailing)
                             .ignoresSafeArea()
-                        ScrollView {
-                            VStack(spacing: 14) {
-                                if !safetyWarnings.isEmpty { safetyCard }
-                                stepCard(step)
-                                if !isReadOnly || note(of: step) != nil || photoCount(of: step) > 0 {
-                                    HStack(spacing: 12) {
-                                        noteCard(step)
-                                        photoCard(step)
+                        VStack(spacing: 0) {
+                            ScrollView {
+                                VStack(spacing: 14) {
+                                    if !safetyWarnings.isEmpty { safetyCard }
+                                    stepCard(step)
+                                    if !isReadOnly || note(of: step) != nil || photoCount(of: step) > 0 {
+                                        HStack(spacing: 12) {
+                                            noteCard(step)
+                                            photoCard(step)
+                                        }
                                     }
+                                    photoStrip(step)
                                 }
-                                photoStrip(step)
-                                Color.clear.frame(height: 150)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 12)
+                                .padding(.bottom, Self.scrollFade)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
+                            .scrollBounceBehavior(.basedOnSize)
+                            // Il contenuto sfuma sopra la barra invece di tagliarsi netto: si capisce che continua.
+                            .mask {
+                                VStack(spacing: 0) {
+                                    Color.black
+                                    LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                                        .frame(height: Self.scrollFade)
+                                }
+                            }
+
+                            // Sotto lo scroll, non sopra: lo scroll finisce dove comincia la barra, quindi uno step
+                            // lungo con le foto non passa dietro "Ask AriA" (la barra è di vetro: si vedeva attraverso).
+                            // Dietro c'è solo il gradiente della pagina, fino sotto l'indicatore home.
+                            bottomBar(step)
                         }
-                        .scrollBounceBehavior(.basedOnSize)
-                        bottomBar(step)
                     }
                 } else {
                     ContentUnavailableView("No steps available", systemImage: "list.bullet.clipboard",
                                            description: Text("This task has no checklist items."))
                 }
             }
-            .navigationTitle(order.title)
+            .navigationTitle("Procedure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -127,8 +144,7 @@ struct AriaStepRunnerView: View {
             .sheet(item: $noteMode) { mode in noteSheet(mode) }
             .sheet(isPresented: $showAIHelp) {
                 if let step = current {
-                    AIHelpSheet(currentItem: ChecklistItem(id: UUID(), text: step.text, description: nil, isCompleted: false),
-                                contextText: order.chatContext(step: step))
+                    AIHelpSheet(contextText: order.chatContext(step: step))
                 }
             }
             .sheet(isPresented: $showComplete) {
@@ -214,6 +230,52 @@ struct AriaStepRunnerView: View {
 
     // MARK: Passo
 
+    /// Azione in evidenza, elenco puntato e indicazioni in corpo normale (AriaStepText).
+    private func stepText(_ text: AriaStepText) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let tag = text.tag {
+                Label(tag.capitalized, systemImage: text.isSafetyTag ? "exclamationmark.shield.fill" : "info.circle.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(text.isSafetyTag ? Color.orange : Color.liteAccent)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background((text.isSafetyTag ? Color.orange : Color.liteAccent).opacity(0.12), in: Capsule())
+            }
+
+            Text(text.headline)
+                .font(.system(size: 19, weight: .semibold))
+                .foregroundStyle(Color.liteText)
+                .lineSpacing(2)
+
+            if !text.items.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(text.items.enumerated()), id: \.offset) { _, item in
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Circle()
+                                .fill(Color.liteAccent.opacity(0.55))
+                                .frame(width: 5, height: 5)
+                                // A metà dell'altezza delle minuscole, non sulla linea di base.
+                                .alignmentGuide(.firstTextBaseline) { $0[.bottom] + 4 }
+                            Text(item)
+                        }
+                    }
+                }
+                .font(.system(size: 16))
+                .foregroundStyle(Color.liteText.opacity(0.85))
+                .padding(.leading, 2)
+            }
+
+            ForEach(Array(text.notes.enumerated()), id: \.offset) { _, note in
+                Text(note)
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.liteText.opacity(0.8))
+                    .lineSpacing(2)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .textSelection(.enabled)
+    }
+
     private func stepCard(_ step: AriaProcedureStep) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -227,11 +289,7 @@ struct AriaStepRunnerView: View {
                 statusBadge(step)
             }
 
-            Text(step.displayText)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Color.liteText)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
+            stepText(AriaStepText(step.displayText))
 
             if let report = step.report, report.reportedAt == nil, report.note == nil, report.photos.isEmpty {
                 Label("Marked done from the desktop", systemImage: "desktopcomputer")
@@ -453,37 +511,10 @@ struct AriaStepRunnerView: View {
     private func bottomBar(_ step: AriaProcedureStep) -> some View {
         AriaGlassEffectContainer(spacing: 12) {
             VStack(spacing: 0) {
-                Button { showAIHelp = true } label: {
-                    HStack(spacing: 12) {
-                        AriaOrb()
-                            .frame(width: 32, height: 32)
-                            .shadow(color: Color.liteAccent.opacity(0.4), radius: 5)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Ask AriA")
-                                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            Text("Get help with this step")
-                                .font(.system(size: 12))
-                                .foregroundStyle(Color.liteAccent.opacity(0.7))
-                        }
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.liteAccent.opacity(0.7))
-                    }
-                    .foregroundStyle(Color.liteAccent)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        LinearGradient(colors: [Color.liteAccent.opacity(0.14), Color.liteAccent.opacity(0.05)],
-                                       startPoint: .topLeading, endPoint: .bottomTrailing),
-                        in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.liteAccent.opacity(0.20), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-                .padding(.bottom, 10)
+                askAriaButton
+                    .padding(.horizontal, 20)
+                    .padding(.top, 14)
+                    .padding(.bottom, 10)
 
                 controls(step)
                     .padding(.horizontal, 20)
@@ -491,6 +522,48 @@ struct AriaStepRunnerView: View {
                     .padding(.bottom, 8)
             }
         }
+    }
+
+    /// Pillola di vetro con la sfera di Aria: il bordo iridescente riprende i colori della sfera.
+    private var askAriaButton: some View {
+        Button { showAIHelp = true } label: {
+            HStack(spacing: 12) {
+                AriaOrb(radius: 0.9)
+                    .frame(width: 40, height: 40)
+                    .shadow(color: Color(red: 0.89, green: 0.55, blue: 1).opacity(0.55), radius: 8)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Ask AriA")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.liteAccent)
+                    Text("Get help with this step")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(Color.liteAccent.opacity(0.6))
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.liteAccent)
+                    .frame(width: 32, height: 32)
+                    .background(Color.liteAccent.opacity(0.08), in: Circle())
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, 14)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity)
+            .contentShape(Capsule())
+            .ariaGlass(in: Capsule())
+            .overlay {
+                Capsule().strokeBorder(
+                    AngularGradient(colors: [Color(red: 0.89, green: 0.55, blue: 1), Color(red: 0.93, green: 0.76, blue: 0.93),
+                                             Color(red: 0.70, green: 0.21, blue: 0.99), Color(red: 0.89, green: 0.55, blue: 1)],
+                                    center: .center),
+                    lineWidth: 1)
+                .opacity(0.45)
+            }
+        }
+        .buttonStyle(AriaPressScaleStyle())
+        .accessibilityLabel(Text("Ask AriA"))
+        .accessibilityHint(Text("Get help with this step"))
     }
 
     private func controls(_ step: AriaProcedureStep) -> some View {
@@ -664,5 +737,14 @@ struct AriaStepRunnerView: View {
         isBusy = true
         defer { isBusy = false }
         _ = apply(await store.removePhoto(photo.id, step: step.id, of: order.id))
+    }
+}
+
+/// Si abbassa appena al tocco, senza cambiare colore.
+private struct AriaPressScaleStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }

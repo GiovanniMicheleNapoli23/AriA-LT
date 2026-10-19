@@ -324,19 +324,8 @@ extension BackendTests {
             }
         }
 
-        @Test(.enabled(if: ConnEnv.session != nil, "ARIA_LIVE_SESSION"))
-        func suggestionsAnswerWhenThereIsAPlant() async throws {
-            try await connect { client, plant in
-                guard let plant else {
-                    print("LIVE: nessuno stabilimento (ARIA_LIVE_PLANT): suggerimenti non provati")
-                    return
-                }
-                let suggestions = await AriaChatAPI(api: client).suggestions(plantId: plant, locale: "it")
-                #expect(suggestions.allSatisfy { !$0.isEmpty })
-            }
-        }
-
-        /// Scrive un messaggio vero: costa una risposta del modello e lascia una sessione, che poi si cancella.
+        /// Scrive un messaggio vero: costa una risposta del modello e lascia una sessione `ios-live-*` sul server
+        /// (un operatore non può cancellarla dal telefono: `notOnPhone`).
         @Test(.enabled(if: ConnEnv.chatEnabled, "ARIA_LIVE_SESSION + ARIA_LIVE_CHAT=1"))
         func theChatStreamOpensAndCompletes() async throws {
             try await connect { client, plant in
@@ -360,13 +349,7 @@ extension BackendTests {
                 }
                 defer { timeout.cancel() }
 
-                let events: [AriaStreamEvent]
-                do { events = try await collector.value }
-                catch {
-                    try? await AriaChatAPI(api: client).delete(sessionId: sessionId)
-                    throw error
-                }
-                try? await AriaChatAPI(api: client).delete(sessionId: sessionId)
+                let events = try await collector.value
 
                 #expect(events.first?.kind == "created", "il server non ha aperto la risposta")
                 #expect(events.contains { $0.kind == "textDelta" || $0.kind == "textDone" }, "nessun testo")

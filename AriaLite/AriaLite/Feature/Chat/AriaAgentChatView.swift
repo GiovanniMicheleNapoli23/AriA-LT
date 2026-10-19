@@ -375,7 +375,7 @@ struct AriaAgentChatView: View {
             .foregroundStyle(.green)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(Color.green.opacity(0.1), in: Capsule())
+            .ariaGlass(in: Capsule(), tint: Color.green.opacity(0.18))
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .task(id: notice) {
                 try? await Task.sleep(for: .seconds(3))
@@ -421,7 +421,7 @@ struct AriaAgentChatView: View {
         .padding(.leading, 12)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
-        .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous), tint: Color.red.opacity(0.14))
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
@@ -441,7 +441,7 @@ struct AriaAgentChatView: View {
             .disabled(backend.plants.isEmpty)
         }
         .padding(12)
-        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous), tint: Color.orange.opacity(0.14))
         .task { await backend.bootstrapIfNeeded() }
     }
 }

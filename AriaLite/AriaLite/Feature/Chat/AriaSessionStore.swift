@@ -88,6 +88,7 @@ final class AriaSessionStore {
             try await api.delete(sessionId: session.sessionId)
             sessions.removeAll { $0.sessionId == session.sessionId }
             pinnedIDs.removeAll { $0 == session.sessionId }
+            AriaTaskProgressStore.shared.forget(sessionId: session.sessionId)
             if session.sessionId == chat.sessionId { chat.newConversation() }
         } catch {
             self.error = error.localizedDescription

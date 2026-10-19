@@ -4,9 +4,9 @@
 //
 //  Created by Giovanni Michele on 08/10/26.
 //
-//  Task dell'account Aria: gli ordini di lavoro veri assegnati all'operatore
+//  Task dell'account Aria: gli ordini di lavoro assegnati all'operatore
 //  (il dettaglio e l'esecuzione dei passi sono in AriaWorkOrderDetailView).
-//  Stesso disegno della lista dei dati demo: "Today" (aperti da fare oggi o in ritardo),
+//  "Today" (aperti da fare oggi o in ritardo),
 //  "Upcoming" (aperti con scadenza futura) e "Past" (chiusi, raggruppati per giorno).
 //
 
@@ -16,6 +16,7 @@ struct AriaWorkOrdersView: View {
     let store: AriaWorkOrderStore
 
     @State private var searchText = ""
+    @State private var path: [AriaWorkOrder] = []
 
     private func matches(_ order: AriaWorkOrder) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -49,7 +50,7 @@ struct AriaWorkOrdersView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     errorPill
@@ -67,6 +68,17 @@ struct AriaWorkOrdersView: View {
             }
             .searchable(text: $searchText, prompt: Text("Search tasks..."))
         }
+        .task(id: store.openRequest) { await openRequested() }
+    }
+
+    /// Lavoro toccato in una notifica: si apre il dettaglio aggiornato. Se l'ordine non è più
+    /// dell'operatore (`gone`) o la rete manca, resta la lista.
+    private func openRequested() async {
+        guard let id = store.openRequest else { return }
+        store.openRequest = nil
+        guard path.last?.id != id else { return }
+        guard case .found(let order)? = await store.detail(of: id) else { return }
+        path = [order]
     }
 
     // MARK: Contenuto
@@ -248,7 +260,7 @@ struct AriaWorkOrdersView: View {
 
 // MARK: - Riga
 
-/// Stessa scheda delle task demo: titolo, riga di dettaglio, valore a destra e barra in fondo.
+/// Scheda della task: titolo, riga di dettaglio, valore a destra e barra in fondo.
 /// Qui il valore è la priorità e la barra è l'avanzamento dei passi (quelli con un risultato su quelli totali).
 struct AriaWorkOrderRow: View {
     let order: AriaWorkOrder

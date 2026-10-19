@@ -37,8 +37,8 @@ struct AriaSidebar: View {
                     .padding(.bottom, 22)
 
                 navRow("Chats", icon: "bubble.left.and.bubble.right", target: .chats)
-                navRow("Overview", icon: "square.grid.2x2", target: .overview)
                 navRow("Tasks", icon: "checklist", target: .tasks)
+                navRow("Calendar", icon: "calendar", target: .calendar)
 
                 if !store.pinned.isEmpty {
                     sectionTitle("Pinned")

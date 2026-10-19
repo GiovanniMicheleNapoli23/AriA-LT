@@ -10,7 +10,8 @@
 //
 //  • `available` dura 12 ore: si rimanda all'apertura dell'app e a ogni ritorno in primo piano
 //    (rimandare lo stesso valore riparte da 12 ore). `busy` / `off_duty` non scadono, non serve.
-//  • Niente notifiche push: la lista si ricarica all'apertura, al ritorno e col pull-to-refresh.
+//  • La lista si ricarica all'apertura, al ritorno, col pull-to-refresh e quando arriva una notifica
+//    push con l'app aperta (AriaPushNotifications). Il tocco su una notifica passa da `openRequest`.
 //  • 404 sul dettaglio = l'ordine non è più dell'operatore (riassegnato): sparisce dalla lista, senza errori.
 //  • Dopo ogni modifica a un passo si ricarica l'ordine: i passi li può cambiare anche un planner e le
 //    foto hanno un URL che scade dopo 10 minuti.
@@ -41,6 +42,8 @@ final class AriaWorkOrderStore {
     /// Ultimo caricamento della lista riuscito.
     private(set) var lastUpdated: Date?
     private(set) var isUpdatingAvailability = false
+    /// Ordine da aprire chiesto da fuori (tocco su una notifica): la lista lo apre e lo azzera.
+    var openRequest: String?
 
     /// Disponibilità scelta dall'operatore: è quella che l'app rimanda quando si apre.
     /// Di default `available`, altrimenti l'operatore non riceverebbe mai ordini.
@@ -241,6 +244,7 @@ final class AriaWorkOrderStore {
     func reset() {
         generation += 1
         profile = nil
+        openRequest = nil
         orders = []
         closedOrders = []
         hasLoadedClosed = false

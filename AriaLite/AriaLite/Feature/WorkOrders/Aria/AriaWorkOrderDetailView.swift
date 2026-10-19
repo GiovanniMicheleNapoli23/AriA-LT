@@ -5,9 +5,9 @@
 //  Created by Giovanni Michele on 15/10/26.
 //
 //  Il dettaglio di un lavoro Aria. Il lavoro vero sta nei passi della procedura, che si eseguono uno
-//  alla volta (AriaStepRunnerView): la schermata risponde a "cosa faccio adesso?" con la scheda del
-//  prossimo passo e un pulsante sempre in vista in basso. Sicurezza prima di partire; la descrizione
-//  (anche lunghissima), i dettagli e i passi già fatti stanno sotto o ripiegati.
+//  alla volta (AriaStepRunnerView): la schermata risponde a "cosa faccio adesso?" con la checklist, dove
+//  il prossimo passo è evidenziato, e un pulsante sempre in vista in basso. Sicurezza prima di partire;
+//  la descrizione (anche lunghissima), i dettagli e i passi già fatti stanno sotto o ripiegati.
 //
 
 import SwiftUI
@@ -17,13 +17,16 @@ struct AriaWorkOrderDetailView: View {
     let store: AriaWorkOrderStore
     @Environment(\.dismiss) private var dismiss
 
-    @State private var descriptionExpanded = false
     @State private var showDoneSteps = false
+    /// Le sezioni della scheda informazioni aperte: di partenza sono tutte chiuse.
+    @State private var openInfo: Set<InfoSection> = []
     /// `nil`: si decide da sé (aperte prima di iniziare, ripiegate dopo).
     @State private var safetyOverride: Bool?
     @State private var isLoaded = false
     @State private var runner: RunnerTarget?
     @State private var showComplete = false
+
+    private enum InfoSection { case description, notes, details }
 
     /// Da quale passo si apre l'esecuzione.
     private struct RunnerTarget: Identifiable {
@@ -49,22 +52,11 @@ struct AriaWorkOrderDetailView: View {
                 } else if !steps.isEmpty {
                     // Prima di partire la sicurezza viene prima di tutto; a lavoro iniziato sta sotto, ripiegata.
                     if reportedCount == 0, !safetyWarnings.isEmpty { safetyCard }
-                    focusCard
                     if reportedCount > 0, !safetyWarnings.isEmpty { safetyCard }
                     stepsCard
                 }
-                descriptionCard
                 resourcesCard
-                detailsCard
-                if let notes = order.notes, !notes.isEmpty {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Notes").font(.headline)
-                        Text(notes).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(16)
-                    .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-                }
+                infoCard
                 if isLoaded, steps.isEmpty, !order.isClosed { noProcedureCard }
             }
             .padding(20)
@@ -124,62 +116,6 @@ struct AriaWorkOrderDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
-    }
-
-    // MARK: Cosa faccio adesso
-
-    /// Il prossimo passo (o "tutto fatto") con l'avanzamento: la prima cosa da leggere.
-    private var focusCard: some View {
-        let fraction = Double(reportedCount) / Double(steps.count)
-        return VStack(alignment: .leading, spacing: 12) {
-            if order.isClosed {
-                Label("Task closed", systemImage: "checkmark.seal.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.green)
-            } else if let step = nextStep {
-                Button { runner = RunnerTarget(id: step.id) } label: {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Next step · \(step.number) of \(steps.count)")
-                            .font(.caption.weight(.bold))
-                            .textCase(.uppercase)
-                            .tracking(0.5)
-                            .foregroundStyle(Color.liteAccent)
-                        Text(step.displayText)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("All steps reported", systemImage: "checkmark.circle.fill")
-                        .font(.headline)
-                        .foregroundStyle(.green)
-                    Text("Complete the task to send it for verification.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                ProgressView(value: fraction)
-                    .tint(allReported ? .green : Color.liteAccent)
-                HStack {
-                    Text("\(reportedCount) of \(steps.count) steps reported")
-                    Spacer()
-                    Text(verbatim: "\(Int((fraction * 100).rounded()))%")
-                }
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 
     /// Un pulsante sempre in vista: parte, riprende, chiude o rivede.
@@ -251,60 +187,140 @@ struct AriaWorkOrderDetailView: View {
 
     // MARK: Passi
 
+    /// La checklist è l'unica scheda dei passi: in testa l'avanzamento, poi i passi. Quello da fare adesso è
+    /// evidenziato e scritto per intero, i successivi sono righe corte, quelli già fatti si ripiegano.
     private var stepsCard: some View {
-        // Finché c'è lavoro da fare i passi già fatti si ripiegano: restano quelli che contano.
         let done = steps.filter { $0.report?.status == "done" }
         let canFold = !done.isEmpty && done.count < steps.count
         let visible = canFold && !showDoneSteps ? steps.filter { $0.report?.status != "done" } : steps
-        return VStack(alignment: .leading, spacing: 0) {
-            Text("Steps").font(.headline).padding(.bottom, 6)
-            if canFold {
-                Button {
-                    withAnimation(.snappy) { showDoneSteps.toggle() }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        Text("\(done.count) steps done")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .rotationEffect(.degrees(showDoneSteps ? 180 : 0))
-                    }
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                Divider()
-            }
-            ForEach(visible) { step in
-                Button { runner = RunnerTarget(id: step.id) } label: {
-                    HStack(alignment: .top, spacing: 12) {
-                        stepMarker(step)
-                        Text(step.displayText)
-                            .font(.subheadline.weight(step.id == nextStep?.id && !order.isClosed ? .semibold : .regular))
-                            .foregroundStyle(step.report?.status == "done" ? Color.secondary : Color.primary)
-                            .multilineTextAlignment(.leading)
-                            .lineLimit(3)
-                        Spacer(minLength: 4)
-                        if let report = step.report, !report.photos.isEmpty || report.note != nil {
-                            Image(systemName: report.photos.isEmpty ? "note.text" : "photo")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
+        return VStack(alignment: .leading, spacing: 14) {
+            progressHeader
+            VStack(alignment: .leading, spacing: 2) {
+                if canFold { doneToggle(count: done.count) }
+                ForEach(visible) { step in
+                    Button { runner = RunnerTarget(id: step.id) } label: {
+                        if step.id == nextStep?.id && !order.isClosed {
+                            currentRow(step)
+                        } else {
+                            row(step)
                         }
                     }
-                    .padding(.vertical, 10)
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                if step.id != visible.last?.id { Divider() }
             }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// "Steps", la percentuale e la barra; a lavoro chiuso o finito, lo stato al posto del conteggio.
+    private var progressHeader: some View {
+        let fraction = Double(reportedCount) / Double(steps.count)
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Steps").font(.headline)
+                Spacer()
+                if order.isClosed {
+                    Label("Task closed", systemImage: "checkmark.seal.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.green)
+                } else if allReported {
+                    Label("All steps reported", systemImage: "checkmark.circle.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.green)
+                } else {
+                    Text("\(reportedCount) of \(steps.count) steps reported")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            ProgressView(value: fraction)
+                .tint(allReported ? .green : Color.liteAccent)
+        }
+    }
+
+    private func doneToggle(count: Int) -> some View {
+        Button {
+            withAnimation(.snappy) { showDoneSteps.toggle() }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text("\(count) steps done")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(showDoneSteps ? 180 : 0))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Il passo da fare adesso: riquadro evidenziato, azione in grassetto e indicazioni sotto.
+    private func currentRow(_ step: AriaProcedureStep) -> some View {
+        let text = AriaStepText(step.displayText)
+        return HStack(alignment: .top, spacing: 12) {
+            stepMarker(step)
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Next step · \(step.number) of \(steps.count)")
+                    .font(.caption.weight(.bold))
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .foregroundStyle(Color.liteAccent.opacity(0.7))
+                if let tag = text.tag {
+                    Text(verbatim: tag)
+                        .font(.caption2.weight(.bold))
+                        .tracking(0.4)
+                        .foregroundStyle(text.isSafetyTag ? Color.orange : Color.liteAccent)
+                }
+                Text(text.headline)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(5)
+                if !text.items.isEmpty || !text.notes.isEmpty {
+                    Text((text.items.isEmpty ? text.notes : text.items.map { "• " + $0 }).joined(separator: text.items.isEmpty ? " " : "\n"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(3)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.liteAccent.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.liteAccent.opacity(0.15), lineWidth: 1))
+        .contentShape(Rectangle())
+    }
+
+    /// Un passo già fatto, non fatto o ancora da fare: una riga corta.
+    private func row(_ step: AriaProcedureStep) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            stepMarker(step)
+            Text(step.displayText)
+                .font(.subheadline)
+                .foregroundStyle(step.report?.status == "done" ? Color.secondary : Color.primary)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+            Spacer(minLength: 4)
+            if let report = step.report, !report.photos.isEmpty || report.note != nil {
+                Image(systemName: report.photos.isEmpty ? "note.text" : "photo")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 
     private func stepMarker(_ step: AriaProcedureStep) -> some View {
@@ -328,45 +344,6 @@ struct AriaWorkOrderDetailView: View {
     }
 
     // MARK: Contesto
-
-    /// La descrizione, ripulita (righe vuote, elenchi) e compressa: le diagnosi lunghe non spingono giù il resto.
-    @ViewBuilder
-    private var descriptionCard: some View {
-        if let description = order.description.map(Self.tidy), !description.isEmpty {
-            let isLong = description.count > 200 || description.filter(\.isNewline).count > 2
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Description").font(.headline)
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(descriptionExpanded || !isLong ? nil : 4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-                if isLong {
-                    Button(descriptionExpanded ? "Show less" : "Show more") {
-                        withAnimation(.snappy) { descriptionExpanded.toggle() }
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .tint(Color.liteAccent)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-        }
-    }
-
-    /// Niente righe vuote di troppo, elenchi "- voce" come punti.
-    private static func tidy(_ text: String) -> String {
-        text.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-            .map { line in
-                for marker in ["- ", "* "] where line.hasPrefix(marker) { return "• " + line.dropFirst(2) }
-                return line
-            }
-            .joined(separator: "\n")
-    }
 
     @ViewBuilder
     private var resourcesCard: some View {
@@ -392,9 +369,95 @@ struct AriaWorkOrderDetailView: View {
         }
     }
 
-    /// Tipo, categoria, date: servono di rado, restano ripiegati.
-    private var detailsCard: some View {
-        DisclosureGroup("Details") {
+    // MARK: Informazioni
+
+    private var descriptionText: String? { nonEmpty(order.description) }
+    private var notesText: String? { nonEmpty(order.notes) }
+
+    private func nonEmpty(_ text: String?) -> String? {
+        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed?.isEmpty == false ? trimmed : nil
+    }
+
+    /// Descrizione, note e dettagli in un'unica scheda, ogni sezione una riga chiusa con un'anteprima:
+    /// si apre solo quello che serve.
+    @ViewBuilder
+    private var infoCard: some View {
+        let detailsPreview = [order.typeLabel, order.category, order.estimatedDurationMin.map { duration($0) }]
+            .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        let sections: [(InfoSection, LocalizedStringKey, String, String?)] = [
+            (.description, "Description", "text.alignleft", descriptionText.map(Self.preview)),
+            (.notes, "Notes", "note.text", notesText.map(Self.preview)),
+            (.details, "Details", "info.circle", detailsPreview),
+        ].filter { section in
+            switch section.0 {
+            case .description: descriptionText != nil
+            case .notes: notesText != nil
+            case .details: true
+            }
+        }
+        VStack(spacing: 0) {
+            ForEach(Array(sections.enumerated()), id: \.offset) { index, section in
+                infoRow(section.0, title: section.1, icon: section.2, preview: section.3)
+                if index < sections.count - 1 { Divider().padding(.leading, 44) }
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func infoRow(_ section: InfoSection, title: LocalizedStringKey, icon: String, preview: String?) -> some View {
+        let isOpen = openInfo.contains(section)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.snappy) {
+                    if isOpen { openInfo.remove(section) } else { openInfo.insert(section) }
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.liteAccent)
+                        .frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                        if !isOpen, let preview, !preview.isEmpty {
+                            Text(preview)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isOpen ? 180 : 0))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if isOpen {
+                infoContent(section)
+                    .padding(.leading, 48)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 14)
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func infoContent(_ section: InfoSection) -> some View {
+        switch section {
+        case .description:
+            if let text = descriptionText { AriaFormattedTextView(text: text) }
+        case .notes:
+            if let text = notesText { AriaFormattedTextView(text: text) }
+        case .details:
             VStack(spacing: 0) {
                 row("Type", order.typeLabel)
                 row("Category", order.category)
@@ -406,12 +469,15 @@ struct AriaWorkOrderDetailView: View {
                 row("Assigned", order.assignedAt.map(format))
                 row("Assignment", order.assignmentLabel)
             }
-            .padding(.top, 6)
         }
-        .font(.headline)
-        .tint(.secondary)
-        .padding(16)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// La prima riga con del testo, senza i segni di elenco e di titolo.
+    private static func preview(_ text: String) -> String {
+        let line = text.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty } ?? ""
+        return line.replacing(/^[#\-*•–·\s]+/, with: "").replacingOccurrences(of: "**", with: "")
     }
 
     /// Ordine senza passi: si può chiudere solo descrivendo cosa è stato fatto.

@@ -151,7 +151,7 @@ struct HTTPErrorTests {
         let errors: [AriaError] = [.signedOut, .locked, .linkExpired, .linkSignInUnavailable, .signInHostOffline,
                                    .serverOffline, .notMobileUser, .http(status: 500, detail: "x"), .wafBlocked,
                                    .bodyTooLarge(bytes: 9000, limit: 8000), .missingCompany, .missingPlant,
-                                   .decoding("x"), .stream("msg"), .workOrder(.workOrderClosed)]
+                                   .notOnPhone, .decoding("x"), .stream("msg"), .workOrder(.workOrderClosed)]
         for error in errors { #expect(!(error.errorDescription ?? "").isEmpty, "\(error)") }
     }
 }

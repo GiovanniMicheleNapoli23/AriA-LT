@@ -5,8 +5,7 @@
 //  Created by Giovanni Michele on 25/09/26.
 //
 //  Stato della connessione al backend Aria: login, azienda e stabilimento attivi.
-//  È separato dal login locale (mock) dell'app: la chat usa il backend solo
-//  quando `isReady`, altrimenti ricade sul motore locale.
+//  La chat e i lavori usano il backend solo quando `isReady`.
 //  Si entra con un link via email, senza password (AriaAuth), poi l'azienda arriva
 //  da GET /v1/companies.
 //
@@ -59,7 +58,7 @@ final class AriaBackend {
             .flatMap { try? JSONDecoder().decode(AriaMobileAccount.self, from: Data($0.utf8)) }
         // Una sessione senza il suo profilo è di una versione precedente (username e password,
         // o accesso dalla web): non vale più, si rifà l'accesso col link.
-        if api.auth.hasStoredLogin, saved == nil { api.auth.forgetStoredSession() }
+        // MUTANT1
         isSignedIn = api.auth.hasStoredSession
         mobileAccount = isSignedIn ? saved : nil
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,

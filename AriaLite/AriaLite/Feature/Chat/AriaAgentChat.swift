@@ -34,10 +34,14 @@ final class AriaAgentChat {
     /// Foto e file aggiunti dal "+" del composer (solo interfaccia, come sulla web: vedi AriaContextItem).
     var contextItems: [AriaContextItem] = []
 
-    /// Task spuntati, per messaggio: "<messageId>:<taskId>".
-    private(set) var checkedTasks: Set<String> = []
-    /// Segnalazioni sui task (unclear / modify / failed), per messaggio e task.
-    private(set) var taskMarks: [String: String] = [:]
+    /// Task spuntati, per step e task (vedi `taskKey`): sopravvivono a chiusura e riapertura della chat.
+    private(set) var checkedTasks: Set<String> = [] {
+        didSet { if checkedTasks != oldValue { saveTaskProgress() } }
+    }
+    /// Segnalazioni sui task (unclear / modify / failed), per step e task.
+    private(set) var taskMarks: [String: String] = [:] {
+        didSet { if taskMarks != oldValue { saveTaskProgress() } }
+    }
     private(set) var answeredElicitations: Set<String> = []
     /// Closeout proposto dalla review di fine sessione, da mostrare in un foglio.
     var pendingCloseout: AriaCloseoutChoice?
@@ -58,16 +62,23 @@ final class AriaAgentChat {
     @ObservationIgnored private var didSendContext = false
     /// Tiene la sessione tra un avvio e l'altro (solo la chat principale).
     @ObservationIgnored private let remembersSession: Bool
+    /// Dove si salvano le spunte dei task (SwiftData).
+    @ObservationIgnored private let progressStore: AriaTaskProgressStore
+    /// Durante lo svuotamento/caricamento delle spunte non si riscrive il salvataggio.
+    @ObservationIgnored private var isRestoringProgress = false
 
     private static let styleKey = "aria.chat.style"
     private static let currentSessionKey = "aria.chat.current_session"
 
-    init(backend: AriaBackend, context: String? = nil, remembersSession: Bool = false) {
+    init(backend: AriaBackend, context: String? = nil, remembersSession: Bool = false,
+         progressStore: AriaTaskProgressStore = .shared) {
         self.backend = backend
         self.context = context
         self.remembersSession = remembersSession
+        self.progressStore = progressStore
         style = UserDefaults.standard.string(forKey: Self.styleKey).flatMap(AriaChatStyle.init(rawValue:)) ?? .auto
         sessionId = (remembersSession ? UserDefaults.standard.string(forKey: Self.currentSessionKey) : nil) ?? AriaNanoID.make()
+        loadTaskProgress()
     }
 
     private var api: AriaChatAPI { AriaChatAPI(api: backend.api) }
@@ -215,8 +226,7 @@ final class AriaAgentChat {
         sessionId = AriaNanoID.make()
         messages = []
         contextItems = []
-        checkedTasks = []
-        taskMarks = [:]
+        resetTaskProgress()
         answeredElicitations = []
         learningOutcome = nil
         openedLearningId = nil
@@ -233,8 +243,8 @@ final class AriaAgentChat {
         self.sessionId = sessionId
         messages = []
         contextItems = []
-        checkedTasks = []
-        taskMarks = [:]
+        resetTaskProgress()
+        loadTaskProgress()
         answeredElicitations = []
         learningOutcome = nil
         openedLearningId = nil
@@ -260,6 +270,7 @@ final class AriaAgentChat {
                 }
             }
             messages = restored
+            restoreTaskLists()
             rememberSession()
         } catch AriaError.http(status: 404, _) where forgetIfMissing {
             newConversation()
@@ -331,16 +342,77 @@ final class AriaAgentChat {
     // MARK: - Procedura
 
     func isTaskChecked(_ task: AriaTaskList.Task, in messageId: String) -> Bool {
-        checkedTasks.contains("\(messageId):\(task.id)")
+        checkedTasks.contains(taskKey(task, in: messageId))
     }
 
     func toggleTask(_ task: AriaTaskList.Task, in messageId: String) {
-        let key = "\(messageId):\(task.id)"
+        let key = taskKey(task, in: messageId)
         if checkedTasks.contains(key) { checkedTasks.remove(key) } else { checkedTasks.insert(key) }
     }
 
     func taskMark(_ task: AriaTaskList.Task, in messageId: String) -> String? {
-        taskMarks["\(messageId):\(task.id)"]
+        taskMarks[taskKey(task, in: messageId)]
+    }
+
+    /// Chiave del task che non dipende dall'id del messaggio: in streaming è un UUID, ricaricato dal
+    /// server diventa "db-…", e la spunta deve ritrovarsi. Ogni revisione di uno step ha le sue spunte.
+    private func taskKey(_ task: AriaTaskList.Task, in messageId: String) -> String {
+        guard let list = messages.last(where: { $0.id == messageId })?.taskList else { return "\(messageId):\(task.id)" }
+        return "\(list.agent ?? ""):\(list.stepNumber):r\(list.revision ?? 0):\(task.id)"
+    }
+
+    // MARK: Spunte salvate
+
+    /// Svuota la memoria senza toccare il salvataggio: la conversazione resta riapribile dallo storico.
+    private func resetTaskProgress() {
+        isRestoringProgress = true
+        checkedTasks = []
+        taskMarks = [:]
+        isRestoringProgress = false
+    }
+
+    private func loadTaskProgress() {
+        guard remembersSession, let saved = progressStore.load(sessionId: sessionId) else { return }
+        isRestoringProgress = true
+        checkedTasks = saved.checked
+        taskMarks = saved.marks
+        isRestoringProgress = false
+    }
+
+    private func saveTaskProgress() {
+        guard remembersSession, !isRestoringProgress else { return }
+        progressStore.save(.init(checked: checkedTasks, marks: taskMarks), sessionId: sessionId)
+    }
+
+    // MARK: Checklist salvate
+
+    /// La checklist arrivata in un turno si tiene sul dispositivo: lo storico del server non la riporta.
+    private func saveTaskList(of messageId: String) {
+        guard remembersSession, let message = messages.first(where: { $0.id == messageId }),
+              let list = message.taskList, let index = assistantIndex(of: messageId) else { return }
+        progressStore.saveTaskList(list, sessionId: sessionId, responseId: message.responseId, assistantIndex: index)
+    }
+
+    /// Rimette le checklist salvate sulle risposte ricaricate dal server: per id della risposta, altrimenti
+    /// per posizione. Una checklist che il server rimandasse da sé ha la precedenza.
+    private func restoreTaskLists() {
+        guard remembersSession else { return }
+        let saved = progressStore.taskLists(sessionId: sessionId)
+        guard !saved.isEmpty else { return }
+        let assistants = messages.indices.filter { messages[$0].role == .assistant }
+        for entry in saved {
+            let byResponse = entry.responseId.flatMap { id in assistants.first { messages[$0].responseId == id } }
+            // Per posizione solo se un id non c'è: due id diversi sono due risposte diverse.
+            let byPosition = assistants.indices.contains(entry.assistantIndex) ? assistants[entry.assistantIndex] : nil
+            let positional = byPosition.flatMap { entry.responseId == nil || messages[$0].responseId == nil ? $0 : nil }
+            guard let i = byResponse ?? positional, messages[i].taskList == nil else { continue }
+            messages[i].taskList = entry.list
+        }
+    }
+
+    /// Posizione del messaggio tra le risposte di Aria della conversazione.
+    private func assistantIndex(of messageId: String) -> Int? {
+        messages.filter { $0.role == .assistant }.firstIndex { $0.id == messageId }
     }
 
     /// Chiede aiuto su un task: messaggio in inglese esatto (lo riconosce il backend) + segnale di feedback.
@@ -353,8 +425,9 @@ final class AriaAgentChat {
         case .ask: "\(head): \(custom ?? "")"
         }
         if action != .ask {
-            checkedTasks.remove("\(messageId):\(task.id)")
-            taskMarks["\(messageId):\(task.id)"] = action.rawValue
+            let key = taskKey(task, in: messageId)
+            checkedTasks.remove(key)
+            taskMarks[key] = action.rawValue
         }
         let sessionId = self.sessionId
         let api = self.api
@@ -389,6 +462,9 @@ final class AriaAgentChat {
         let api = self.api
 
         if elicitation.submit == "review" {
+            // Un operatore non ha rotte per la review né per il closeout (sotto /v1/mobile non ci sono):
+            // niente foglio che dice "non disponibile", la risposta della chiusura è già partita nella chat.
+            if backend.api.auth.isMobileSession { return }
             Task {
                 if let review = AriaReviewPayload(details) {
                     do {
@@ -561,6 +637,7 @@ final class AriaAgentChat {
             }
             isStreaming = false
             streamTask = nil
+            saveTaskList(of: messageId)
         }
     }
 

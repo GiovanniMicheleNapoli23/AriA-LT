@@ -94,16 +94,6 @@ nonisolated final class StubServer: @unchecked Sendable {
     func calls(_ key: String) -> [Call] {
         calls.filter { "\($0.method) \($0.path)" == key }
     }
-
-    /// Le richieste a percorsi senza risposta preparata.
-    var unstubbed: [Call] {
-        lock.withLock {
-            recorded.filter { call in
-                let plain = "\(call.method) \(call.path)"
-                return routes[plain] == nil && routes[call.query.map { "\(plain)?\($0)" } ?? ""] == nil
-            }
-        }
-    }
 }
 
 nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {

@@ -132,7 +132,8 @@ extension BackendTests {
         @Test func disabledAccountIsReported() async {
             server.route("POST /api/auth/mobile/verify", .json(#"{"code":"ACCOUNT_DISABLED"}"#, status: 403))
             await #expect { try await auth.completeSignIn(with: AriaSignInLink(token: "t")) } throws: { error in
-                (error as? AriaError)?.localizedDescription.lowercased().contains("disabled") == true
+                (error as? AriaError)?.localizedDescription
+                    == String(localized: "This account is disabled. Contact your company administrator.")
             }
             #expect(!auth.hasStoredLogin)
         }

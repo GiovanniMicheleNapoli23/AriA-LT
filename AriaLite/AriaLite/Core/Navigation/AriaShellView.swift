@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 26/09/26.
 //
 //  Navigazione come Claude mobile: la chat è la schermata principale e tutte le
-//  sezioni (Chat, Panoramica, Task, conversazioni fissate e recenti)
+//  sezioni (Chat, Task, Calendario, conversazioni fissate e recenti)
 //  stanno in una sidebar che si apre dal pulsante ☰ o trascinando dal bordo sinistro.
 //  Il pannello principale scivola a destra con gli angoli arrotondati.
 //
@@ -15,8 +15,8 @@ import SwiftUI
 enum AriaDestination: Hashable {
     case chat
     case chats
-    case overview
     case tasks
+    case calendar
 }
 
 extension EnvironmentValues {
@@ -82,13 +82,31 @@ struct AriaShellView: View {
         .environment(\.openSidebar) { setOpen(true) }
         .sensoryFeedback(.impact(weight: .light), trigger: isOpen)
         .task(id: viewModel.backend.isReady) { await store.load() }
-        // Account Aria: disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
+        // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
         .task {
-            if viewModel.isAriaAccount { await viewModel.ariaWorkOrders.sync() }
+            await viewModel.notifications.enable()
+            await viewModel.ariaWorkOrders.sync()
         }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active, viewModel.isAriaAccount else { return }
-            Task { await viewModel.ariaWorkOrders.sync() }
+            guard phase == .active else { return }
+            Task {
+                await viewModel.notifications.clearBadge()
+                // Il permesso dato più tardi da Impostazioni, o un token cambiato da APNs.
+                await viewModel.notifications.enable()
+                await viewModel.ariaWorkOrders.sync()
+            }
+        }
+        // Notifica toccata (anche quella che ha aperto l'app): si va ai task e si apre il lavoro.
+        .onChange(of: viewModel.notifications.pendingWorkOrderId, initial: true) { _, id in
+            guard let id else { return }
+            viewModel.notifications.pendingWorkOrderId = nil
+            viewModel.ariaWorkOrders.openRequest = id
+            select(.tasks)
+        }
+        // Lavoro arrivato con l'app aperta: la lista si aggiorna da sola.
+        .onChange(of: viewModel.notifications.lastArrival) { _, arrival in
+            guard arrival != nil else { return }
+            Task { await viewModel.ariaWorkOrders.refresh() }
         }
         .onChange(of: isOpen) { _, open in
             // Le recenti si aggiornano a ogni apertura: una chat appena iniziata prende il suo titolo.
@@ -142,14 +160,10 @@ struct AriaShellView: View {
             AriaChatHistoryView(chat: chat, store: store, backend: viewModel.backend,
                                 onOpen: openSession, onNewChat: newChat,
                                 onConnect: { showConnection = true })
-        case .overview:
-            OverviewView()
+        case .calendar:
+            AriaCalendarView(store: viewModel.ariaWorkOrders)
         case .tasks:
-            if viewModel.isAriaAccount {
-                AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
-            } else {
-                WorkOrderListView(viewModel: viewModel)
-            }
+            AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
         }
     }
 
@@ -204,6 +218,6 @@ struct AriaShellView: View {
 }
 
 #Preview {
-    AriaShellView(user: mockUsers[0])
+    AriaShellView(user: User(id: UUID(), username: "operator@example.com", name: "Operator"))
         .environment(AppViewModel())
 }

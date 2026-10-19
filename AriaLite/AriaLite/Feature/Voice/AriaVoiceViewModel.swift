@@ -9,8 +9,8 @@
 //
 //  AriaRealtimeSession usa API AVFoundation disponibili solo da iOS 27 (audio engine
 //  strutturato, AVAudioSession async). Questo ViewModel resta invece utilizzabile fino a
-//  iOS 18: la sessione vera si crea solo dentro connect(), tenuta come `Any?` (come
-//  AriaLanguageModel per Apple Intelligence); prima di iOS 27, connect() fallisce con un
+//  iOS 18: la sessione vera si crea solo dentro connect(), tenuta come `Any?`;
+//  prima di iOS 27, connect() fallisce con un
 //  messaggio chiaro invece di offrire un microfono che non funzionerebbe.
 //
 

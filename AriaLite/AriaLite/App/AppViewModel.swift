@@ -11,14 +11,8 @@ import Foundation
 @Observable
 class AppViewModel {
     var loggedInUser: User? = nil
-    var checklistCompletions: [UUID: [UUID: Bool]] = [:]
-    var fieldNotes: [UUID: [UUID: FieldNote]] = [:]
-    var photoAttachments: [UUID: [PhotoAttachment]] = [:]
-    var submissionStatus: SubmissionStatus = .idle
-    var submittedWorkOrders: Set<UUID> = []
-    var searchText: String = ""
 
-    /// Connessione al backend Aria (chat reale). Indipendente dal login locale qui sotto.
+    /// Connessione al backend Aria: chat, lavori e account.
     let backend: AriaBackend
     /// Chat principale: resta viva tra un cambio di sezione e l'altro.
     let mainChat: AriaAgentChat
@@ -26,10 +20,8 @@ class AppViewModel {
     let sessions: AriaSessionStore
     /// Lavori assegnati all'account Aria e disponibilità dell'operatore.
     let ariaWorkOrders: AriaWorkOrderStore
-
-    /// L'operatore è entrato con un account Aria (link via email), non coi dati mock:
-    /// se la sessione Aria finisce, finisce anche l'accesso all'app.
-    private(set) var isAriaAccount = false
+    /// Notifiche push dei lavori assegnati.
+    let notifications = AriaPushNotifications.shared
 
     /// L'app chiusa a chiave con Face ID.
     enum SessionLock: Equatable {
@@ -58,13 +50,13 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        notifications.attach(backend)
         // La sessione resta salvata: il link via email non si richiede a ogni avvio.
         if backend.isSignedIn, let account = backend.mobileAccount {
             loggedInUser = User(account)
-            isAriaAccount = true
         }
         // La sessione salvata si apre con Face ID prima di mostrare l'app.
-        if isAriaAccount, backend.needsUnlock { lock = .launch }
+        if loggedInUser != nil, backend.needsUnlock { lock = .launch }
     }
 
     // MARK: - Face ID
@@ -95,7 +87,7 @@ class AppViewModel {
 
     /// L'app va in background: al ritorno serve di nuovo Face ID.
     func lockForBackground() {
-        guard isAriaAccount, loggedInUser != nil, backend.needsUnlock else { return }
+        guard loggedInUser != nil, backend.needsUnlock else { return }
         if lock == .none { lock = .resume }
         unlockError = nil
         didPromptUnlock = false
@@ -170,135 +162,29 @@ class AppViewModel {
         }
         AriaAuthTrace.step("login.ok", "azienda=\(backend.activeCompanyId ?? "-") stabilimento=\(backend.activePlantId ?? "-")")
         loggedInUser = User(account)
-        isAriaAccount = true
         return .success
     }
 
     /// Sessione Aria finita da sola (scaduta, account disattivato, altro dispositivo):
-    /// un operatore entrato con l'account Aria torna al login.
+    /// l'operatore torna al login.
     func ariaSessionEnded() {
-        guard isAriaAccount, loggedInUser != nil, !backend.isSignedIn else { return }
+        guard loggedInUser != nil, !backend.isSignedIn else { return }
         logout()
     }
 
     func logout() {
-        isAriaAccount = false
         loggedInUser = nil
         lock = .none
         unlockError = nil
-        checklistCompletions = [:]
-        fieldNotes = [:]
-        photoAttachments = [:]
-        submissionStatus = .idle
         // Un altro operatore sullo stesso device non eredita la sessione Aria.
         mainChat.newConversation()
+        AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
         ariaWorkOrders.reset()
-        Task { await backend.signOut() }
-    }
-
-    // MARK: - WorkOrders
-    var filteredWorkOrders: [WorkOrder] {
-        guard let user = loggedInUser else { return [] }
-        let assigned = mockWorkOrders.filter { $0.assignedUserID == user.id }
-        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
-        guard !query.isEmpty else { return assigned }
-        return assigned.filter { $0.title.lowercased().contains(query) }
-    }
-
-    var todayWorkOrders: [WorkOrder] {
-        filteredWorkOrders.filter {
-            Calendar.current.isDateInToday($0.scheduledDate)
-        }
-    }
-
-    var pastWorkOrdersByDay: [(key: String, value: [WorkOrder])] {
-        let calendar = Calendar.current
-        let startOfToday = calendar.startOfDay(for: Date())
-        let past = filteredWorkOrders.filter { $0.scheduledDate < startOfToday }
-
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.locale = .autoupdatingCurrent
-
-        let grouped = Dictionary(grouping: past) { formatter.string(from: $0.scheduledDate) }
-
-        return grouped.sorted { lhs, rhs in
-            let d1 = formatter.date(from: lhs.key) ?? .distantPast
-            let d2 = formatter.date(from: rhs.key) ?? .distantPast
-            return d1 > d2
-        }
-    }
-
-    // MARK: - Checklist
-    func toggleItem(workOrderID: UUID, itemID: UUID, current: Bool) {
-        if checklistCompletions[workOrderID] == nil {
-            checklistCompletions[workOrderID] = [:]
-        }
-        checklistCompletions[workOrderID]?[itemID] = !current
-    }
-
-    func isItemCompleted(_ item: ChecklistItem, in workOrderID: UUID) -> Bool {
-        checklistCompletions[workOrderID]?[item.id] ?? item.isCompleted
-    }
-
-    // MARK: - Field Notes
-    func upsertNote(workOrderID: UUID, itemID: UUID, text: String) {
-        if fieldNotes[workOrderID] == nil { fieldNotes[workOrderID] = [:] }
-        let note = FieldNote(
-            id: fieldNotes[workOrderID]?[itemID]?.id ?? UUID(),
-            checklistItemID: itemID,
-            text: text,
-            createdAt: Date()
-        )
-        fieldNotes[workOrderID]?[itemID] = note
-    }
-
-    // MARK: - Photos
-    func addPhoto(_ photo: PhotoAttachment, to workOrderID: UUID) {
-        if photoAttachments[workOrderID] == nil { photoAttachments[workOrderID] = [] }
-        photoAttachments[workOrderID]?.append(photo)
-    }
-
-    func removePhoto(id: UUID, from workOrderID: UUID) {
-        photoAttachments[workOrderID]?.removeAll { $0.id == id }
-    }
-
-    // MARK: - Submit
-    func submitReport(for workOrder: WorkOrder) async {
-        guard let user = loggedInUser else { return }
-        submissionStatus = .sending
-
-        let items = workOrder.checklist.map {
-            ReportChecklistItem(
-                id: $0.id,
-                text: $0.text,
-                isCompleted: isItemCompleted($0, in: workOrder.id)
-            )
-        }
-        let notes = Array((fieldNotes[workOrder.id] ?? [:]).values)
-        let photos = photoAttachments[workOrder.id] ?? []
-
-        let report = WorkOrderReport(
-            workOrderID: workOrder.id,
-            technicianID: user.id,
-            technicianName: user.name,
-            submittedAt: Date(),
-            checklistItems: items,
-            fieldNotes: notes,
-            photos: photos
-        )
-
-        do {
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = .prettyPrinted
-            encoder.dateEncodingStrategy = .iso8601
-            _ = try encoder.encode(report)
-            try await Task.sleep(for: .seconds(0.5))
-            submittedWorkOrders.insert(workOrder.id)
-            submissionStatus = .success
-        } catch {
-            submissionStatus = .failure(error.localizedDescription)
+        Task {
+            // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
+            await notifications.unregister()
+            await backend.signOut()
         }
     }
 }

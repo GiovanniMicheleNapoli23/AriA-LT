@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct WorkOrderApp: App {
+    @UIApplicationDelegateAdaptor(AriaAppDelegate.self) private var appDelegate
     @State private var viewModel = AppViewModel()
 
     var body: some Scene {

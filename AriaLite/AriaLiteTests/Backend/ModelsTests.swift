@@ -34,7 +34,7 @@ struct ModelsTests {
         """
         let order = try decode(AriaWorkOrder.self, json)
         #expect(order.priorityLevel == .high)
-        #expect(order.statusLabel == "In progress")
+        #expect(order.statusLabel == String(localized: "In progress"))
         #expect(order.estimatedDurationMin == 90)
         #expect(order.progress == AriaProgress(done: 1, notDone: 0, total: 2))
         let procedure = try #require(order.procedure)

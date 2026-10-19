@@ -294,9 +294,11 @@ nonisolated struct AriaElicitation: Codable, Sendable, Identifiable, Hashable {
     let assembly: Assembly?
     let topic: String?
     let submit: String?
+    /// Perché il server la chiede: `closure_confirmation` è la conferma di fine procedura, che vuole anche il motivo.
+    let reason: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, question, mode, options, steps, assembly, topic, submit
+        case id, question, mode, options, steps, assembly, topic, submit, reason
         case allowCustom = "allow_custom"
     }
 
@@ -311,6 +313,7 @@ nonisolated struct AriaElicitation: Codable, Sendable, Identifiable, Hashable {
         steps = nil
         assembly = nil
         topic = nil
+        reason = nil
     }
 
     init(from decoder: any Decoder) throws {
@@ -324,7 +327,11 @@ nonisolated struct AriaElicitation: Codable, Sendable, Identifiable, Hashable {
         assembly = try c.decodeIfPresent(Assembly.self, forKey: .assembly)
         topic = try c.decodeIfPresent(String.self, forKey: .topic)
         submit = try c.decodeIfPresent(String.self, forKey: .submit)
+        reason = try c.decodeIfPresent(String.self, forKey: .reason)
     }
+
+    /// La conferma di fine procedura: chi sceglie "end" deve dire anche perché si ferma.
+    var isClosureConfirmation: Bool { reason == "closure_confirmation" }
 
     /// Una domanda singola è una catena di un solo passo (elicitationSteps della web).
     var allSteps: [AriaElicitationStep] {

@@ -18,6 +18,7 @@
       }
     },
     "/ %lld kWh" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -34,6 +35,7 @@
       }
     },
     "/ %lld pcs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -50,6 +52,7 @@
       }
     },
     "%.0f%% of target" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -66,6 +69,7 @@
       }
     },
     "%.0f%% of the threshold used" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -82,6 +86,7 @@
       }
     },
     "%@ — %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -178,6 +183,7 @@
       }
     },
     "%lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -194,6 +200,7 @@
       }
     },
     "%lld active alerts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -290,6 +297,7 @@
       }
     },
     "%lld pcs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -306,6 +314,7 @@
       }
     },
     "%lld remaining pcs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -370,6 +379,7 @@
       }
     },
     "%lld/%lld completed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -386,6 +396,7 @@
       }
     },
     "%lld/%lld completed · %lld doc" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -418,6 +429,7 @@
       }
     },
     "%lld/%lld steps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -434,6 +446,7 @@
       }
     },
     "%lld%%" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -450,6 +463,7 @@
       }
     },
     "%lld%% efficiency" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -466,6 +480,7 @@
       }
     },
     "%lld%% of target" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -482,6 +497,7 @@
       }
     },
     "%lld%% present" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -498,6 +514,7 @@
       }
     },
     "•" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -546,6 +563,7 @@
       }
     },
     "Absent" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -562,6 +580,7 @@
       }
     },
     "Access the UPS control panel and check battery state of health (SOH%). Replace batteries if SOH drops below 80%." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -688,6 +707,7 @@
 
     },
     "Air filter cleaning" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -784,6 +804,7 @@
       }
     },
     "All your work orders are completed. Nothing open right now." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -863,6 +884,22 @@
         }
       }
     },
+    "Another reason — I'll describe it" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another reason — I'll describe it"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un altro motivo — te lo descrivo"
+          }
+        }
+      }
+    },
     "Answer" : {
       "localizations" : {
         "it" : {
@@ -906,6 +943,7 @@
       }
     },
     "APC Smart-UPS 3000 Manual" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1172,6 +1210,22 @@
         }
       }
     },
+    "Aria will ask you to confirm before closing it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria will ask you to confirm before closing it."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria ti chiederà di confermare prima di chiuderla."
+          }
+        }
+      }
+    },
     "Artifact %@" : {
       "localizations" : {
         "en" : {
@@ -1270,6 +1324,7 @@
       }
     },
     "Ask Aria anything..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1523,6 +1578,7 @@
       }
     },
     "Before any work, bring the system pressure to zero using the dedicated relief valve. Wait 5 minutes before proceeding." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1539,6 +1595,7 @@
       }
     },
     "Bring the thermal bath to 100°C and wait at least 5 minutes for stabilization. Maximum allowable deviation from the calibrator is ±0.5°C." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1603,6 +1660,7 @@
       }
     },
     "Cable insulation measurement" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1614,6 +1672,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Misura dell’isolamento dei cavi"
+          }
+        }
+      }
+    },
+    "Calendar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendario"
           }
         }
       }
@@ -1731,6 +1805,7 @@
       }
     },
     "Check belt tension: allowable deflection is 10–15 mm under manual pressure. Check for absence of cracks or wear on the sides." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1747,6 +1822,7 @@
       }
     },
     "Check fire extinguishers (expiry and charge)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1780,6 +1856,7 @@
       }
     },
     "Check oil level" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1796,6 +1873,7 @@
       }
     },
     "Check residual current devices" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1812,6 +1890,7 @@
       }
     },
     "Check terminal tightness" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1828,6 +1907,7 @@
       }
     },
     "Check the expiry label on each extinguisher and verify the pressure indicator is in the green range. Expired extinguishers must be isolated and flagged for servicing." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1844,6 +1924,7 @@
       }
     },
     "Check UPS battery status" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1892,6 +1973,7 @@
       }
     },
     "Checklist" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1976,6 +2058,7 @@
       }
     },
     "Close to the limit" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2025,6 +2108,7 @@
       }
     },
     "CNC Lathe" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2041,6 +2125,7 @@
       }
     },
     "CNC Operator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2057,6 +2142,7 @@
       }
     },
     "Cold start test" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2147,6 +2233,7 @@
       }
     },
     "Complete the fire safety register with the date, outcome of each check, and technician name. The register must be kept on-site and available for fire brigade inspections." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2173,6 +2260,7 @@
       }
     },
     "Complete the task to send it for verification." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2303,6 +2391,7 @@
       }
     },
     "Connect the sensor to the reference calibrator using the appropriate adapter. Verify the calibrator has a valid calibration certificate." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2335,6 +2424,7 @@
       }
     },
     "Connect to certified calibrator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2381,6 +2471,9 @@
           }
         }
       }
+    },
+    "Connect to the Aria server to start chatting." : {
+
     },
     "CONNECTING…" : {
       "localizations" : {
@@ -2666,6 +2759,7 @@
       }
     },
     "Defect rate" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2682,6 +2776,7 @@
       }
     },
     "Delayed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2714,6 +2809,7 @@
       }
     },
     "Delivery expired on March 28th" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2730,6 +2826,7 @@
       }
     },
     "Depressurize the system" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2954,6 +3051,7 @@
       }
     },
     "Disconnect the hydraulic fittings and electrical cables from the pump. Use a collection tray for residual fluid and dispose of it properly." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3029,6 +3127,7 @@
       }
     },
     "Documents" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3061,6 +3160,7 @@
       }
     },
     "Drive belt inspection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3110,6 +3210,7 @@
       }
     },
     "Electrical Panel Inspection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3141,7 +3242,24 @@
         }
       }
     },
+    "End the procedure?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "End the procedure?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminare la procedura?"
+          }
+        }
+      }
+    },
     "Energy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3206,6 +3324,7 @@
       }
     },
     "Exceeded 80% of the daily threshold" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3217,6 +3336,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Superato l’80% della soglia giornaliera"
+          }
+        }
+      }
+    },
+    "Explain in your own words what got in the way…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explain in your own words what got in the way…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiega con parole tue cosa ti ha bloccato…"
           }
         }
       }
@@ -3254,6 +3389,7 @@
       }
     },
     "Fault" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3289,6 +3425,7 @@
       }
     },
     "Fill in and sign the commissioning form with date, measured pressure, and technician name. Attach a copy to the machine file." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3305,6 +3442,7 @@
       }
     },
     "Fill in fire safety register" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3337,6 +3475,7 @@
       }
     },
     "Fire door inspection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3353,6 +3492,7 @@
       }
     },
     "Fire Safety System Inspection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3369,6 +3509,7 @@
       }
     },
     "Fire Zone Floor Plan" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3433,6 +3574,7 @@
       }
     },
     "Full scale check (100°C)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3465,6 +3607,7 @@
       }
     },
     "Generator Maintenance" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3481,6 +3624,7 @@
       }
     },
     "Generator XG-500 Manual" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3508,6 +3652,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiedi aiuto per questo passo"
+          }
+        }
+      }
+    },
+    "Give details (optional)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give details (optional)"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornisci dettagli (facoltativo)"
           }
         }
       }
@@ -3545,6 +3705,7 @@
       }
     },
     "Gradually bring the system to nominal pressure (80 bar) and hold for 10 minutes. Visually inspect all fittings for leaks." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3577,6 +3738,7 @@
       }
     },
     "Help me find a specific order" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3593,6 +3755,7 @@
       }
     },
     "Help me with the generator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3609,6 +3772,7 @@
       }
     },
     "Here are all your work orders — tell me which one you're looking for:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3625,6 +3789,7 @@
       }
     },
     "Here are your open work orders:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3641,6 +3806,7 @@
       }
     },
     "Here's your most recent work order:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3719,6 +3885,7 @@
       }
     },
     "High energy consumption" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3768,6 +3935,7 @@
       }
     },
     "Hose reels and hydrant inspection" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3784,6 +3952,7 @@
       }
     },
     "Hourly consumption (kWh)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3800,6 +3969,7 @@
       }
     },
     "Hourly production (pcs)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3912,6 +4082,7 @@
       }
     },
     "Hydraulic Press" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3928,6 +4099,7 @@
       }
     },
     "Hydraulic Pump Replacement" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3939,6 +4111,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sostituzione pompa idraulica"
+          }
+        }
+      }
+    },
+    "I can't get any further on my own" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can't get any further on my own"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non riesco ad andare avanti da solo"
+          }
+        }
+      }
+    },
+    "I don't have the tools or the access I need" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don't have the tools or the access I need"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ho gli attrezzi o gli accessi che servono"
+          }
+        }
+      }
+    },
+    "I have a personal emergency" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have a personal emergency"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ho un'emergenza personale"
           }
         }
       }
@@ -3959,7 +4179,40 @@
         }
       }
     },
+    "I need to contact the supplier for support" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I need to contact the supplier for support"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devo contattare il fornitore per assistenza"
+          }
+        }
+      }
+    },
+    "I'd rather carry on without guidance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'd rather carry on without guidance"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preferisco procedere senza guida"
+          }
+        }
+      }
+    },
     "Idle" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3976,6 +4229,7 @@
       }
     },
     "Immerse the sensor in a melting ice bath (0°C ± 0.1°C). Wait 3 minutes for stabilization and record the value read by the sensor." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4057,6 +4311,7 @@
       }
     },
     "Install new pump" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4106,6 +4361,7 @@
       }
     },
     "ISO-9001 Calibration Procedure" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4133,6 +4389,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "È fallito"
+          }
+        }
+      }
+    },
+    "It is not safe to continue right now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It is not safe to continue right now"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adesso non è sicuro continuare"
           }
         }
       }
@@ -4186,6 +4458,7 @@
       }
     },
     "Last maintenance: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4574,6 +4847,7 @@
       }
     },
     "Machinery" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4590,6 +4864,7 @@
       }
     },
     "Machinery stopped for 2 days" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4606,6 +4881,7 @@
       }
     },
     "Machines" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4622,6 +4898,7 @@
       }
     },
     "Machining Center" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4638,6 +4915,7 @@
       }
     },
     "Main Panel Wiring Diagram" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4670,6 +4948,7 @@
       }
     },
     "Maintenance Tech." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4686,6 +4965,7 @@
       }
     },
     "Make sure you are on site before proceeding." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4718,6 +4998,7 @@
       }
     },
     "Manual bypass test" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4862,6 +5143,7 @@
       }
     },
     "Month" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4921,6 +5203,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sposta gli altri"
+          }
+        }
+      }
+    },
+    "My shift is ending" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My shift is ending"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devo smontare dal turno"
+          }
+        }
+      }
+    },
+    "My supervisor is reassigning the job" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My supervisor is reassigning the job"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il mio capo mi sta riassegnando il lavoro"
           }
         }
       }
@@ -5316,7 +5630,24 @@
         }
       }
     },
+    "No tasks on this day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No tasks on this day"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun task in questo giorno"
+          }
+        }
+      }
+    },
     "Normal" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5400,6 +5731,7 @@
       }
     },
     "Not started" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5496,6 +5828,7 @@
       }
     },
     "Notices" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5611,6 +5944,7 @@
       }
     },
     "Open AI Assistant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5836,6 +6170,7 @@
       }
     },
     "Open the filter cap and visually inspect for any leaks. Replace the oil if the level is below minimum or if it appears dark." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5967,6 +6302,7 @@
       }
     },
     "Order ORD-0418 is late" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5983,6 +6319,7 @@
       }
     },
     "Orders" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6009,6 +6346,7 @@
       }
     },
     "Out of threshold" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6074,6 +6412,7 @@
       }
     },
     "Overview" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6090,6 +6429,7 @@
       }
     },
     "Partially unroll each hose reel and check for cracks or leaks. Verify the nozzle is present and the hydrant coupling is not corroded." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6203,6 +6543,7 @@
       }
     },
     "Pending" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6219,6 +6560,7 @@
       }
     },
     "Perform a cold start without pre-heating and verify the engine reaches nominal speed within 30 seconds. Note any abnormal sounds." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6235,6 +6577,7 @@
       }
     },
     "Perform the manual bypass transfer following the procedure in the manual. Verify that loads remain powered throughout the entire operation without interruption." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6251,6 +6594,7 @@
       }
     },
     "Period" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6267,6 +6611,7 @@
       }
     },
     "Periodic Maintenance Schedule" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6427,6 +6772,7 @@
       }
     },
     "Position the new pump according to the orientation shown in the diagram. Apply Loctite 577 sealant to the threads before tightening." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6459,6 +6805,7 @@
       }
     },
     "Present" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6475,6 +6822,7 @@
       }
     },
     "Press the test button on each RCD and verify it trips correctly. Record the IDs of any non-responding units for immediate replacement." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6491,6 +6839,7 @@
       }
     },
     "PRESS-01 faulty" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6507,6 +6856,7 @@
       }
     },
     "Pressure leak test" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6612,7 +6962,24 @@
         }
       }
     },
+    "Procedure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procedure"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procedura"
+          }
+        }
+      }
+    },
     "Processing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6629,6 +6996,7 @@
       }
     },
     "Production" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6640,6 +7008,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Produzione"
+          }
+        }
+      }
+    },
+    "Production needs the line back now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Production needs the line back now"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La produzione vuole la linea subito"
           }
         }
       }
@@ -6661,6 +7045,7 @@
       }
     },
     "Pump P-200 Technical Datasheet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6677,6 +7062,7 @@
       }
     },
     "Quality" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6693,6 +7079,7 @@
       }
     },
     "Quality Control" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6907,6 +7294,7 @@
       }
     },
     "Record values on form" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7052,6 +7440,7 @@
       }
     },
     "Remove old pump" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7084,6 +7473,7 @@
       }
     },
     "Remove the air filter and blow out dust and debris with compressed air. Replace the filter if it shows tears or excessive clogging." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7100,6 +7490,7 @@
       }
     },
     "Remove the front filters and blow out dust with low-pressure compressed air. Heavily clogged filters must be replaced to prevent overheating." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7148,6 +7539,7 @@
       }
     },
     "Report" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7164,6 +7556,7 @@
       }
     },
     "Reports will be available soon." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7316,6 +7709,7 @@
       }
     },
     "Robotic Welder" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7332,6 +7726,7 @@
       }
     },
     "Running" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7638,6 +8033,22 @@
         }
       }
     },
+    "Select…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona…"
+          }
+        }
+      }
+    },
     "Send" : {
       "localizations" : {
         "en" : {
@@ -7687,6 +8098,7 @@
       }
     },
     "Sending..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7754,6 +8166,7 @@
       }
     },
     "Server Room UPS Check" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7915,6 +8328,7 @@
       }
     },
     "Show open work orders" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7975,6 +8389,7 @@
       }
     },
     "Sign commissioning form" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8075,6 +8490,7 @@
       }
     },
     "Smoke detector test" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8086,6 +8502,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Test rilevatori di fumo"
+          }
+        }
+      }
+    },
+    "Something in the interface is broken" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something in the interface is broken"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa nell'interfaccia non funziona"
           }
         }
       }
@@ -8123,6 +8555,7 @@
       }
     },
     "Standard UNI EN 3 – Fire Extinguishers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8315,6 +8748,7 @@
       }
     },
     "Submitted" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8331,6 +8765,7 @@
       }
     },
     "Success!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8395,6 +8830,7 @@
       }
     },
     "Supervisor" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8437,6 +8873,7 @@
       }
     },
     "Tap to see details" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8453,6 +8890,7 @@
       }
     },
     "Target achieved" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8549,6 +8987,7 @@
       }
     },
     "Temperature Sensor Calibration" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8580,6 +9019,38 @@
         }
       }
     },
+    "The alarm was false — it cleared on its own" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The alarm was false — it cleared on its own"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'allarme era falso — è rientrato da solo"
+          }
+        }
+      }
+    },
+    "The documentation does not match this machine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The documentation does not match this machine"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La documentazione non corrisponde a questa macchina"
+          }
+        }
+      }
+    },
     "The note is too long (2000 characters at most)." : {
       "localizations" : {
         "en" : {
@@ -8592,6 +9063,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La nota è troppo lunga (al massimo 2000 caratteri)."
+          }
+        }
+      }
+    },
+    "The parts or spares I need are not available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The parts or spares I need are not available"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I ricambi che mi servono non ci sono"
           }
         }
       }
@@ -8825,6 +9312,7 @@
       }
     },
     "This chat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9276,6 +9764,22 @@
         }
       }
     },
+    "Too many wrong or unhelpful answers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many wrong or unhelpful answers"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Troppe risposte sbagliate o inutili"
+          }
+        }
+      }
+    },
     "Too short — keep it on while you speak" : {
       "localizations" : {
         "en" : {
@@ -9342,6 +9846,7 @@
       }
     },
     "Transcribe the measured values into the attached ISO-9001 form fields. The form must be signed, dated, and archived in the document system within 24 hours." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9374,6 +9879,7 @@
       }
     },
     "Try again" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9390,6 +9896,7 @@
       }
     },
     "Try asking" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9657,6 +10164,7 @@
       }
     },
     "Use a 500V DC megohmmeter on each outgoing line from the panel. Minimum acceptable value is 1 MΩ; cables below threshold must be replaced." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9673,6 +10181,7 @@
       }
     },
     "Use a cross-head screwdriver to check tightening resistance on all terminals. Loose terminals are a primary cause of electrical arcing and overheating." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9753,6 +10262,7 @@
       }
     },
     "Use the dedicated spray (not a lighter or flame) to test each detector. Verify the alarm panel receives the signal correctly within 10 seconds." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9840,6 +10350,7 @@
 
     },
     "Ventilation filter cleaning" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9872,6 +10383,7 @@
       }
     },
     "Verify that fire doors close automatically upon release. Check the integrity of intumescent seals and the absence of obstructions." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9901,6 +10413,7 @@
 
     },
     "Waiting" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9912,6 +10425,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In attesa"
+          }
+        }
+      }
+    },
+    "Waiting for an electrician or a specialist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for an electrician or a specialist"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sto aspettando un elettricista o uno specialista"
           }
         }
       }
@@ -9950,6 +10479,7 @@
       }
     },
     "Warehouse Operator" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10009,6 +10539,7 @@
       }
     },
     "Week" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10052,6 +10583,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Su cosa stiamo lavorando?"
+          }
+        }
+      }
+    },
+    "What is stopping you from continuing?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What is stopping you from continuing?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Che tipo di problema ti impedisce di continuare?"
           }
         }
       }
@@ -10153,6 +10700,7 @@
       }
     },
     "What's the status of the latest order?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10360,7 +10908,26 @@
         }
       }
     },
+    "WORK_ORDER_ASSIGNED_TITLE" : {
+      "comment" : "Push notification title (APNs title-loc-key) when a work order is assigned to the operator.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New task assigned"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuova attività assegnata"
+          }
+        }
+      }
+    },
     "Workers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10540,6 +11107,7 @@
       }
     },
     "You don't have any work orders yet." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10607,6 +11175,7 @@
       }
     },
     "Your AI assistant for work orders. Ask a question or pick a suggestion to start." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10672,6 +11241,7 @@
       }
     },
     "Zero point check (0°C)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

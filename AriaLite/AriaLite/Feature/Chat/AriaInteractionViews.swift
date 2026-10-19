@@ -25,36 +25,90 @@ struct AriaApprovalCard: View {
     private var isEdited: Bool { edited != original }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Label(AriaChatCopy.toolLabel(interrupt.name ?? ""), systemImage: "hand.raised.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                Spacer()
-                AriaBadge(text: String(localized: "awaiting approval"), tint: .orange)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            header
             if let warning = interrupt.warning, !warning.isEmpty {
-                Text(AriaMarkdown.inline(warning)).font(.system(size: 13)).foregroundStyle(.orange)
-            }
-
-            ForEach(original.keys.sorted(), id: \.self) { key in
-                argField(key)
-            }
-
-            HStack {
-                Button("Reject", role: .destructive) { onDecide(.reject) }
-                    .buttonStyle(.bordered)
-                Spacer()
-                Button(isEdited ? "Approve with changes" : "Approve") {
-                    onDecide(isEdited ? .edit(edited) : .approve)
+                Label {
+                    Text(AriaMarkdown.inline(warning)).font(.system(size: 13))
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
                 }
-                .buttonStyle(.borderedProminent)
+                .foregroundStyle(.orange)
             }
+
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(original.keys.sorted(), id: \.self) { key in
+                    argField(key)
+                }
+            }
+
+            actions
         }
-        .padding(14)
-        .background(Color.orange.opacity(0.07), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.orange.opacity(0.35), lineWidth: 1))
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.orange.opacity(0.35), lineWidth: 1))
         .onAppear { edited = original }
         .onChange(of: interrupt.interruptId) { edited = original }
+    }
+
+    /// Cosa Aria vuole fare (a capo, mai tagliato) e lo stato "in attesa" sotto, non stretto accanto al titolo.
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "hand.raised.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.orange)
+                .frame(width: 34, height: 34)
+                .background(Color.orange.opacity(0.16), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(AriaChatCopy.toolLabel(interrupt.name ?? ""))
+                    .font(.system(size: 17, weight: .semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                AriaBadge(text: String(localized: "awaiting approval"), tint: .orange)
+            }
+        }
+    }
+
+    /// Approvare è l'azione principale e prende lo spazio; rifiutare è accanto, in vetro con il rosso del testo.
+    private var actions: some View {
+        HStack(spacing: 10) {
+            Button(role: .destructive) { onDecide(.reject) } label: {
+                Text("Reject")
+                    .font(.system(size: 16, weight: .semibold))
+                    .padding(.horizontal, 10)
+                    .frame(minHeight: 46)
+            }
+            .ariaGlassButtonStyle()
+            .buttonBorderShape(.capsule)
+            .tint(.red)
+
+            Button { onDecide(isEdited ? .edit(edited) : .approve) } label: {
+                Text(isEdited ? "Approve with changes" : "Approve")
+                    .font(.system(size: 16, weight: .semibold))
+                    .frame(maxWidth: .infinity, minHeight: 46)
+            }
+            .ariaProminentGlassButtonStyle(tint: .accentColor)
+            .buttonBorderShape(.capsule)
+        }
+        .animation(.snappy(duration: 0.2), value: isEdited)
+    }
+
+    /// Etichetta piccola sopra e valore in un campo pieno e discreto (niente bordo bianco su fondo bianco).
+    private func field<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+            content()
+        }
+    }
+
+    private func fieldBox<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     @ViewBuilder
@@ -63,39 +117,44 @@ struct AriaApprovalCard: View {
         switch edited[key] ?? original[key] ?? .null {
         case .bool(let value):
             Toggle(label, isOn: Binding(get: { value }, set: { edited[key] = .bool($0) }))
-                .font(.system(size: 13))
+                .font(.system(size: 15))
         case .number(let value):
-            VStack(alignment: .leading, spacing: 3) {
-                Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                TextField(label, value: Binding(get: { value }, set: { edited[key] = .number($0) }), format: .number)
-                    .keyboardType(.decimalPad)
-                    .textFieldStyle(.roundedBorder)
+            field(label) {
+                fieldBox {
+                    TextField(label, value: Binding(get: { value }, set: { edited[key] = .number($0) }), format: .number)
+                        .keyboardType(.decimalPad)
+                        .font(.system(size: 16))
+                }
             }
         case .string(let value):
-            VStack(alignment: .leading, spacing: 3) {
-                Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                TextField(label, text: Binding(get: { value }, set: { edited[key] = .string($0) }), axis: .vertical)
-                    .lineLimit(1...5)
-                    .textFieldStyle(.roundedBorder)
+            field(label) {
+                fieldBox {
+                    TextField(label, text: Binding(get: { value }, set: { edited[key] = .string($0) }), axis: .vertical)
+                        .lineLimit(1...5)
+                        .font(.system(size: 16))
+                }
             }
         case .array(let items) where key == "moves":
             // Spostamenti di calendario: tabella in sola lettura.
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-                ForEach(Array(items.enumerated()), id: \.offset) { _, move in
-                    let id = (move["work_order_id"] ?? move["workOrderId"] ?? move["id"])?.stringValue ?? ""
-                    let to = (move["due_date"] ?? move["dueDate"] ?? move["to"])?.stringValue ?? ""
-                    Text(verbatim: "WO \(id)\(move["title"]?.stringValue.map { " · \($0)" } ?? ""): \(move["from"]?.stringValue.map { "\($0) → " } ?? "")\(to)")
-                        .font(.system(size: 12))
+            field(label) {
+                fieldBox {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(Array(items.enumerated()), id: \.offset) { _, move in
+                            let id = (move["work_order_id"] ?? move["workOrderId"] ?? move["id"])?.stringValue ?? ""
+                            let to = (move["due_date"] ?? move["dueDate"] ?? move["to"])?.stringValue ?? ""
+                            Text(verbatim: "WO \(id)\(move["title"]?.stringValue.map { " · \($0)" } ?? ""): \(move["from"]?.stringValue.map { "\($0) → " } ?? "")\(to)")
+                                .font(.system(size: 13))
+                        }
+                    }
                 }
             }
         case .null:
             EmptyView()
         case let other:
-            VStack(alignment: .leading, spacing: 3) {
-                Text(label).font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+            // Valore che non si modifica (liste, oggetti): in sola lettura, senza l'aspetto di un campo.
+            field(label) {
                 Text(verbatim: other.compactDescription)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: 13, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineLimit(6)
             }

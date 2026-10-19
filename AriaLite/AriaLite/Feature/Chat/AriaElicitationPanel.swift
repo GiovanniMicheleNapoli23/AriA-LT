@@ -9,6 +9,8 @@
 //  sulla riga scelta, si torna alla domanda precedente, "Altra risposta" apre il campo solo se serve,
 //  e il pannello si riduce a una pillola per leggere la chat o scrivere liberamente.
 //  Le risposte si compongono come fa la web (buildAnswer / assembleChatTurn).
+//  La conferma di fine procedura (`reason: closure_confirmation`) chiede anche il motivo: scegliendo "end"
+//  compaiono i 16 motivi e le note facoltative, e la risposta parte come "<label>. Reason: <codice>. Details: <nota>".
 //
 
 import SwiftUI
@@ -40,6 +42,9 @@ struct AriaElicitationPanel: View {
     @State private var writingCustom = false
     @State private var followUp: AriaElicitationOption?
     @State private var followUpValue = ""
+    /// Conferma di fine procedura: il motivo scelto (obbligatorio per chiudere) e le note.
+    @State private var closureReason: AriaClosureReason?
+    @State private var closureDetails = ""
     /// Direzione dell'animazione tra un passo e l'altro.
     @State private var forward = true
     @FocusState private var fieldFocused: Bool
@@ -50,6 +55,14 @@ struct AriaElicitationPanel: View {
     private var isSingle: Bool { step.mode != "multi" && step.mode != "rank" }
     private var canGoBack: Bool { followUp != nil || stepIndex > 0 }
     private var typed: String { writingCustom ? custom.trimmingCharacters(in: .whitespacesAndNewlines) : "" }
+    /// Ha scelto di terminare la procedura: "No, continua" non chiede niente e non aspetta un motivo.
+    private var endingProcedure: Bool {
+        guard elicitation.isClosureConfirmation, isSingle,
+              let id = selected.first, let option = step.options.first(where: { $0.id == id }) else { return false }
+        return option.value == "end"
+    }
+    /// Chiudere senza motivo lascia un buco che nessuno può colmare dopo: l'invio aspetta la scelta.
+    private var closureReady: Bool { !endingProcedure || closureReason != nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -173,8 +186,63 @@ struct AriaElicitationPanel: View {
     private var optionList: some View {
         VStack(spacing: 8) {
             ForEach(step.options) { optionRow($0) }
+            if endingProcedure { closureForm }
             if step.allowCustom { customRow }
         }
+        .animation(.snappy(duration: 0.2), value: endingProcedure)
+    }
+
+    /// Tra l'ultima opzione e la freccia d'invio, solo dopo aver scelto di terminare (come la web).
+    private var closureForm: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("What is stopping you from continuing?")
+                .font(.system(size: 14, weight: .semibold))
+            Menu {
+                ForEach(AriaClosureReason.allCases) { reason in
+                    Button {
+                        closureReason = reason
+                    } label: {
+                        if closureReason == reason {
+                            Label(reason.label, systemImage: "checkmark")
+                        } else {
+                            Text(reason.label)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(closureReason?.label ?? String(localized: "Select…"))
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(closureReason == nil ? Color.secondary : Color.primary)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(closureReason == nil ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.35),
+                                  lineWidth: closureReason == nil ? 1.5 : 0.5))
+                .contentShape(Rectangle())
+            }
+            .accessibilityLabel(Text("What is stopping you from continuing?"))
+
+            Text("Give details (optional)")
+                .font(.system(size: 14, weight: .semibold))
+            TextField("Explain in your own words what got in the way…", text: $closureDetails, axis: .vertical)
+                .font(.system(size: 15))
+                .lineLimit(2...5)
+                .focused($fieldFocused)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .padding(12)
+        .background(Color.primary.opacity(0.03), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     /// Nella scelta singola la riga selezionata porta la freccia d'invio: l'opzione scelta È la risposta.
@@ -213,7 +281,7 @@ struct AriaElicitationPanel: View {
             .accessibilityAddTraits(isOn ? .isSelected : [])
 
             if isSingle, isOn {
-                sendButton(enabled: true, action: submit)
+                sendButton(enabled: closureReady, action: submit)
                     .transition(.scale.combined(with: .opacity))
             }
         }
@@ -279,9 +347,9 @@ struct AriaElicitationPanel: View {
             .padding(.trailing, 8)
             .padding(.vertical, 6)
             .frame(minHeight: 52)
-            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color.accentColor.opacity(fieldFocused ? 0.5 : 0.2), lineWidth: 1.5))
+                .strokeBorder(Color.accentColor.opacity(fieldFocused ? 0.6 : 0.3), lineWidth: 1.5))
             .onAppear { fieldFocused = true }
         } else {
             Button {
@@ -291,19 +359,29 @@ struct AriaElicitationPanel: View {
                     if isSingle, !custom.trimmingCharacters(in: .whitespaces).isEmpty { selected = [] }
                 }
             } label: {
+                // Un campo di testo, non una scheda: fondo pieno e bordo netto lo staccano dalle opzioni (grigie e piatte),
+                // e la freccia spenta a destra dice che qui si scrive e si invia.
                 HStack(spacing: 12) {
                     Image(systemName: "pencil")
                         .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(.secondary)
                         .frame(width: 22, height: 22)
                     Text("Other answer…")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 34, height: 34)
+                        .background(Color.secondary.opacity(0.3), in: Circle())
                 }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 14)
+                .padding(.leading, 14)
+                .padding(.trailing, 8)
                 .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(Color.secondary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+                    .strokeBorder(Color.primary.opacity(0.18), lineWidth: 1))
                 .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -412,6 +490,7 @@ struct AriaElicitationPanel: View {
     }
 
     private func submit() {
+        guard closureReady else { return }
         commit(currentAnswer())
     }
 
@@ -433,9 +512,23 @@ struct AriaElicitationPanel: View {
             let joined = picked.joined(separator: ", ")
             return typed.isEmpty ? joined : "\(joined). \(typed)"
         default:
+            if endingProcedure, let label = picked.first {
+                return Self.closureAnswer(label: label, reason: closureReason?.rawValue ?? "", details: closureDetails)
+            }
             if !typed.isEmpty { return picked.first.map { "\($0). \(typed)" } ?? typed }
             return picked.first ?? ""
         }
+    }
+
+    /// composeClosureAnswer della web: l'etichetta canonica resta in testa (il server riconosce il consenso
+    /// dall'inizio del messaggio), poi il codice del motivo in inglese e le parole dell'operatore, mai tradotte.
+    static func closureAnswer(label: String, reason: String, details: String) -> String {
+        var parts = [label.trimmingCharacters(in: .whitespacesAndNewlines).trimmingSuffix(".")]
+        let code = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !code.isEmpty { parts.append("Reason: \(code)") }
+        let note = details.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !note.isEmpty { parts.append("Details: \(note)") }
+        return parts.joined(separator: ". ")
     }
 
     /// Salva la risposta del passo; all'ultimo compone il turno e lo manda (commitStepAnswer della web).
@@ -486,6 +579,8 @@ struct AriaElicitationPanel: View {
     }
 
     private func clearInputs() {
+        closureReason = nil
+        closureDetails = ""
         selected = []
         custom = ""
         writingCustom = false
@@ -557,4 +652,55 @@ struct AriaElicitationPill: View {
         }
         .buttonStyle(.plain)
     }
+}
+
+
+// MARK: - Motivi di chiusura
+
+/// I motivi del dialogo di fine procedura (CLOSURE_REASONS di aria-web, stesso ordine). Sul filo va il codice
+/// in inglese; il testo mostrato all'operatore è la traduzione.
+enum AriaClosureReason: String, CaseIterable, Identifiable, Sendable {
+    case cannotProceed = "cannot_proceed"
+    case workAlone = "work_alone"
+    case waitingSpecialist = "waiting_specialist"
+    case vendor
+    case missingParts = "missing_parts"
+    case missingTools = "missing_tools"
+    case unsafe
+    case falseAlarm = "false_alarm"
+    case documentation
+    case wrongAnswers = "wrong_answers"
+    case uiBug = "ui_bug"
+    case productionPriority = "production_priority"
+    case reassigned
+    case shiftEnd = "shift_end"
+    case personalEmergency = "personal_emergency"
+    case other
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .cannotProceed: String(localized: "I can't get any further on my own")
+        case .workAlone: String(localized: "I'd rather carry on without guidance")
+        case .waitingSpecialist: String(localized: "Waiting for an electrician or a specialist")
+        case .vendor: String(localized: "I need to contact the supplier for support")
+        case .missingParts: String(localized: "The parts or spares I need are not available")
+        case .missingTools: String(localized: "I don't have the tools or the access I need")
+        case .unsafe: String(localized: "It is not safe to continue right now")
+        case .falseAlarm: String(localized: "The alarm was false — it cleared on its own")
+        case .documentation: String(localized: "The documentation does not match this machine")
+        case .wrongAnswers: String(localized: "Too many wrong or unhelpful answers")
+        case .uiBug: String(localized: "Something in the interface is broken")
+        case .productionPriority: String(localized: "Production needs the line back now")
+        case .reassigned: String(localized: "My supervisor is reassigning the job")
+        case .shiftEnd: String(localized: "My shift is ending")
+        case .personalEmergency: String(localized: "I have a personal emergency")
+        case .other: String(localized: "Another reason — I'll describe it")
+        }
+    }
+}
+
+private extension String {
+    func trimmingSuffix(_ suffix: String) -> String { hasSuffix(suffix) ? String(dropLast(suffix.count)) : self }
 }
