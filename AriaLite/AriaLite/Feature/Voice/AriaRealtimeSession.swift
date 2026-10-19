@@ -83,22 +83,22 @@ final class AriaRealtimeSession: NSObject {
     }
     /// Mutex per thread-safety (sostituisce NSLock + var MainActor)
     private let echo = Mutex(EchoState())
-    /// Timer di cooldown dopo l'ultima riproduzione
-    private var unmuteCooldownWork: DispatchWorkItem?
+    /// Cooldown dopo l'ultima riproduzione (si annulla se l'AI riprende a parlare o c'è un barge-in)
+    private var unmuteCooldown: Task<Void, Never>?
     /// Soglia RMS per rilevare barge-in locale (voce vera vs eco speaker)
     private let bargeInRMSThreshold: Float = 0.025
     /// Chunk consecutivi sopra soglia necessari per confermare barge-in
     private let bargeInFramesNeeded = 2
     /// Response ID corrente per poterlo cancellare
     private var currentResponseId: String?
-    /// Coda seriale per operazioni di stato (barge-in, unmute, ecc.)
-    private let stateQueue = DispatchQueue(label: "com.aria.realtime.state")
 
     // MARK: WebSocket
 
     private var webSocket: URLSessionWebSocketTask?
     private var wsURLSession: URLSession?
     private var connectionContinuation: CheckedContinuation<Void, Error>?
+    /// Ascolto dei messaggi del server: un solo loop, in ordine, sul MainActor
+    private var receiveTask: Task<Void, Never>?
     /// Viene impostato a true se il WS si chiude subito dopo didOpen (es. errore server)
     private var earlyDisconnect = false
 
@@ -191,23 +191,12 @@ final class AriaRealtimeSession: NSObject {
         state = .disconnected
     }
 
-    deinit {
+    /// Isolato: smonta audio e WebSocket sul MainActor, dove vive tutto lo stato.
+    isolated deinit {
         tearDownAudio()
         closeWebSocket()
     }
 
-    /// Invia un messaggio di testo (anziché audio) durante la sessione
-    func sendTextMessage(_ text: String) {
-        sendJSON([
-            "type": "conversation.item.create",
-            "item": [
-                "type": "message",
-                "role": "user",
-                "content": [["type": "input_text", "text": text]]
-            ] as [String: Any]
-        ])
-        sendJSON(["type": "response.create"])
-    }
 
     // ═══════════════════════════════════════════════
     // MARK: - Audio Session
@@ -354,13 +343,17 @@ final class AriaRealtimeSession: NSObject {
                 // Ma controlla se l'utente sta parlando (barge-in locale)
                 let rms = Self.computeRMS(buffer: buffer)
                 if rms > self.bargeInRMSThreshold {
-                    let count = self.echo.withLock { state -> Int in
+                    // Soglia raggiunta: si azzera il conteggio nello stesso lock, così parte un solo barge-in
+                    let needed = self.bargeInFramesNeeded
+                    let fire = self.echo.withLock { state -> Bool in
                         state.bargeInFrameCount += 1
-                        return state.bargeInFrameCount
+                        guard state.bargeInFrameCount >= needed else { return false }
+                        state.bargeInFrameCount = 0
+                        return true
                     }
-                    if count >= self.bargeInFramesNeeded {
-                        // Dispatch OFF audio thread—NEVER call playerNode/sendJSON from here
-                        self.stateQueue.async { [weak self] in
+                    if fire {
+                        // Fuori dal thread audio — MAI playerNode/sendJSON da qui
+                        Task { @MainActor [weak self] in
                             self?.executeLocalBargeIn()
                         }
                     }
@@ -394,7 +387,7 @@ final class AriaRealtimeSession: NSObject {
             $0.responseAudioComplete = false
             $0.bargeInFrameCount = 0
         }
-        unmuteCooldownWork?.cancel()
+        unmuteCooldown?.cancel()
 
         if !skipDeactivation {
             // Disattivazione asincrona: non blocca il thread chiamante (spesso il main).
@@ -476,30 +469,29 @@ final class AriaRealtimeSession: NSObject {
         echo.withLock { $0.pendingBufferCount += 1 }
 
         playerNode.scheduleBuffer(buf, completionCallbackType: .dataPlayedBack) { [weak self] _ in
-            self?.onBufferPlayedBack()
-        }
-    }
-
-    /// Chiamato quando un buffer audio è stato effettivamente riprodotto dallo speaker
-    private func onBufferPlayedBack() {
-        let (remaining, done) = echo.withLock { state in
-            state.pendingBufferCount = max(0, state.pendingBufferCount - 1)
-            return (state.pendingBufferCount, state.responseAudioComplete)
-        }
-
-        if done && remaining <= 0 {
-            stateQueue.async { [weak self] in
+            // Thread del player: solo il Mutex, poi si torna sul MainActor
+            guard let self, self.bufferPlayedBack() else { return }
+            Task { @MainActor [weak self] in
                 self?.scheduleUnmuteCooldown()
             }
         }
     }
 
+    /// Un buffer è stato riprodotto dallo speaker. True = era l'ultimo della risposta.
+    nonisolated private func bufferPlayedBack() -> Bool {
+        echo.withLock { state in
+            state.pendingBufferCount = max(0, state.pendingBufferCount - 1)
+            return state.responseAudioComplete && state.pendingBufferCount <= 0
+        }
+    }
+
     /// Dopo che l'ultimo buffer è riprodotto, aspetta prima di accettare nuovo speech
     private func scheduleUnmuteCooldown() {
-        // Deve girare su stateQueue (già garantito dai chiamanti)
-        unmuteCooldownWork?.cancel()
-        let work = DispatchWorkItem { [weak self] in
-            guard let self else { return }
+        unmuteCooldown?.cancel()
+        unmuteCooldown = Task { [weak self] in
+            // 500ms di cooldown dopo l'ultimo buffer riprodotto
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let self else { return }
             self.echo.withLock {
                 $0.isAISpeaking = false
                 $0.bargeInFrameCount = 0
@@ -508,9 +500,6 @@ final class AriaRealtimeSession: NSObject {
             self.sendJSON(["type": "input_audio_buffer.clear"])
             AriaVoiceTrace.step("audio", "pronto per nuovo input (buffer svuotato post-playback)")
         }
-        unmuteCooldownWork = work
-        // 500ms di cooldown dopo l'ultimo buffer riprodotto
-        self.stateQueue.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
     // ═══════════════════════════════════════════════
@@ -531,11 +520,11 @@ final class AriaRealtimeSession: NSObject {
         return sqrtf(sumSquares / Float(frames))
     }
 
-    /// Barge-in rilevato localmente — eseguito su stateQueue, MAI dal thread audio
+    /// Barge-in rilevato localmente — eseguito sul MainActor, MAI dal thread audio
     private func executeLocalBargeIn() {
         AriaVoiceTrace.step("audio", "barge-in locale, cancello la risposta")
 
-        unmuteCooldownWork?.cancel()
+        unmuteCooldown?.cancel()
 
         echo.withLock {
             $0.pendingBufferCount = 0
@@ -544,7 +533,7 @@ final class AriaRealtimeSession: NSObject {
             $0.bargeInFrameCount = 0
         }
 
-        // Stop playback (safe perché siamo su stateQueue, non audio thread)
+        // Stop playback (safe perché siamo sul MainActor, non sul thread audio)
         interruptPlayback()
 
         // Cancella la risposta in corso sul server
@@ -590,28 +579,24 @@ final class AriaRealtimeSession: NSObject {
         configuration.httpShouldSetCookies = false
         configuration.httpCookieAcceptPolicy = .never
         configuration.httpCookieStorage = nil
-        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+        // Delegate sulla coda main: i callback toccano lo stato MainActor (vedi l'extension in fondo)
+        let session = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
         self.wsURLSession = session
 
         let ws = session.webSocketTask(with: request)
         self.webSocket = ws
         ws.resume()
 
-        // Attendi che il WebSocket sia effettivamente aperto (con timeout)
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            // Child task sul MainActor: connectionContinuation è isolata lì
-            group.addTask { @MainActor in
-                try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                    self.connectionContinuation = cont
-                }
-            }
-            group.addTask {
-                try await Task.sleep(nanoseconds: 15_000_000_000) // 15s timeout
-                throw AriaEngineService.AriaEngineError.sessionFailed("WebSocket connection timed out after 15s")
-            }
-            // Il primo che completa vince; cancella l'altro
-            try await group.next()
-            group.cancelAll()
+        // Attendi che il WebSocket sia effettivamente aperto (con timeout). La continuation si riprende
+        // una sola volta: da didOpen / didCompleteWithError o, dopo 15s, dal timeout.
+        let timeout = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard !Task.isCancelled else { return }
+            self?.resumeConnection(throwing: AriaEngineService.AriaEngineError.sessionFailed("WebSocket connection timed out after 15s"))
+        }
+        defer { timeout.cancel() }
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            connectionContinuation = cont
         }
 
         // Inizia ad ascoltare — e attendi un breve intervallo per
@@ -623,7 +608,20 @@ final class AriaRealtimeSession: NSObject {
         }
     }
 
+    /// Riprende chi aspetta l'apertura del WebSocket (nil = aperto). Le chiamate successive non fanno nulla.
+    private func resumeConnection(throwing error: Error? = nil) {
+        guard let continuation = connectionContinuation else { return }
+        connectionContinuation = nil
+        if let error {
+            continuation.resume(throwing: error)
+        } else {
+            continuation.resume()
+        }
+    }
+
     private func closeWebSocket() {
+        receiveTask?.cancel()
+        receiveTask = nil
         webSocket?.cancel(with: .normalClosure, reason: nil)
         webSocket = nil
         wsURLSession?.invalidateAndCancel()
@@ -632,30 +630,31 @@ final class AriaRealtimeSession: NSObject {
 
     // MARK: Receive loop
 
+    /// Un messaggio alla volta, nell'ordine di arrivo (i delta audio devono restare in sequenza).
     private func receiveLoop() {
-        webSocket?.receive { [weak self] result in
-            guard let self else { return }
-
-            switch result {
-            case .success(let message):
-                switch message {
-                case .string(let text):
-                    if let data = text.data(using: .utf8),
-                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        self.handleEvent(json)
-                    }
-                case .data(let data):
-                    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                        self.handleEvent(json)
-                    }
-                @unknown default:
-                    break
+        guard let webSocket else { return }
+        receiveTask?.cancel()
+        receiveTask = Task { [weak self] in
+            while !Task.isCancelled {
+                let message: URLSessionWebSocketTask.Message
+                do {
+                    message = try await webSocket.receive()
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    AriaVoiceTrace.failure("ws receive", error)
+                    self?.state = .disconnected
+                    return
                 }
-                self.receiveLoop()   // continua ad ascoltare
-
-            case .failure(let error):
-                AriaVoiceTrace.failure("ws receive", error)
-                DispatchQueue.main.async { self.state = .disconnected }
+                guard let self else { return }
+                let data: Data?
+                switch message {
+                case .string(let text): data = text.data(using: .utf8)
+                case .data(let raw): data = raw
+                @unknown default: data = nil
+                }
+                if let data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    self.handleEvent(json)
+                }
             }
         }
     }
@@ -759,7 +758,7 @@ final class AriaRealtimeSession: NSObject {
                     return was
                 }
                 if !wasAlreadySpeaking {
-                    unmuteCooldownWork?.cancel()
+                    unmuteCooldown?.cancel()
                     AriaVoiceTrace.step("audio", "AI sta parlando (mic sospeso al server, barge-in locale attivo)")
                 }
                 playAudioDelta(delta)
@@ -774,7 +773,7 @@ final class AriaRealtimeSession: NSObject {
 
         // ── L'utente ha iniziato a parlare (barge-in server-side) ──
         case "input_audio_buffer.speech_started":
-            unmuteCooldownWork?.cancel()
+            unmuteCooldown?.cancel()
             echo.withLock {
                 $0.isAISpeaking = false
                 $0.pendingBufferCount = 0
@@ -856,9 +855,7 @@ final class AriaRealtimeSession: NSObject {
                 sendFunctionResult(callId: callId, output: "Error: \(error.localizedDescription)")
             }
 
-            await MainActor.run {
-                delegate?.session(self, isSearchingDocuments: false)
-            }
+            delegate?.session(self, isSearchingDocuments: false)
         }
     }
 
@@ -877,34 +874,40 @@ final class AriaRealtimeSession: NSObject {
 
 // MARK: - URLSessionWebSocketDelegate
 
+// URLSession chiama il delegate da nonisolated: i metodi lo sono, ma la sessione nasce con
+// `delegateQueue: .main`, quindi girano sempre sul main thread e possono entrare nel MainActor
+// in modo sincrono (assumeIsolated lo verifica a runtime).
 @available(iOS 27.0, *)
 extension AriaRealtimeSession: URLSessionWebSocketDelegate {
 
-    func urlSession(_ session: URLSession,
-                    webSocketTask: URLSessionWebSocketTask,
-                    didOpenWithProtocol proto: String?) {
-        AriaVoiceTrace.step("ws", "didOpen")
-        connectionContinuation?.resume()
-        connectionContinuation = nil
+    nonisolated func urlSession(_ session: URLSession,
+                                webSocketTask: URLSessionWebSocketTask,
+                                didOpenWithProtocol proto: String?) {
+        MainActor.assumeIsolated {
+            AriaVoiceTrace.step("ws", "didOpen")
+            resumeConnection()
+        }
     }
 
-    func urlSession(_ session: URLSession,
-                    webSocketTask: URLSessionWebSocketTask,
-                    didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
-                    reason: Data?) {
-        AriaVoiceTrace.step("ws", "didClose code=\(closeCode.rawValue)")
-        earlyDisconnect = true
-        DispatchQueue.main.async { self.state = .disconnected }
+    nonisolated func urlSession(_ session: URLSession,
+                                webSocketTask: URLSessionWebSocketTask,
+                                didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+                                reason: Data?) {
+        MainActor.assumeIsolated {
+            AriaVoiceTrace.step("ws", "didClose code=\(closeCode.rawValue)")
+            earlyDisconnect = true
+            state = .disconnected
+        }
     }
 
-    func urlSession(_ session: URLSession,
-                    task: URLSessionTask,
-                    didCompleteWithError error: Error?) {
-        if let error {
+    nonisolated func urlSession(_ session: URLSession,
+                                task: URLSessionTask,
+                                didCompleteWithError error: Error?) {
+        guard let error else { return }
+        MainActor.assumeIsolated {
             AriaVoiceTrace.failure("ws didCompleteWithError", error)
-            connectionContinuation?.resume(throwing: error)
-            connectionContinuation = nil
-            DispatchQueue.main.async { self.state = .disconnected }
+            resumeConnection(throwing: error)
+            state = .disconnected
         }
     }
 }

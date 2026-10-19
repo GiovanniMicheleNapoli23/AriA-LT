@@ -39,6 +39,7 @@ struct AriaCalendarView: View {
             let byDay = ordersByDay
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    AriaSyncStatusView(store: store)
                     monthCard(byDay)
                     dayList(byDay[selected] ?? [])
                 }

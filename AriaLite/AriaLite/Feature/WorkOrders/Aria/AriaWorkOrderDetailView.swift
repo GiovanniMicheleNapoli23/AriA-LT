@@ -19,14 +19,20 @@ struct AriaWorkOrderDetailView: View {
 
     @State private var showDoneSteps = false
     /// Le sezioni della scheda informazioni aperte: di partenza sono tutte chiuse.
-    @State private var openInfo: Set<InfoSection> = []
+    @State private var openInfo: Set<InfoSection>
     /// `nil`: si decide da sé (aperte prima di iniziare, ripiegate dopo).
     @State private var safetyOverride: Bool?
     @State private var isLoaded = false
     @State private var runner: RunnerTarget?
     @State private var showComplete = false
 
-    private enum InfoSection { case description, notes, details }
+    nonisolated enum InfoSection: Hashable { case description, notes, details }
+
+    init(order: AriaWorkOrder, store: AriaWorkOrderStore, openInfo: Set<InfoSection> = []) {
+        _order = State(initialValue: order)
+        self.store = store
+        _openInfo = State(initialValue: openInfo)
+    }
 
     /// Da quale passo si apre l'esecuzione.
     private struct RunnerTarget: Identifiable {
@@ -46,8 +52,9 @@ struct AriaWorkOrderDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                AriaSyncStatusView(store: store)
                 header
-                if !isLoaded && order.procedure == nil {
+                if !isLoaded && order.procedure == nil, !store.isOffline {
                     ProgressView().frame(maxWidth: .infinity).padding(.vertical, 24)
                 } else if !steps.isEmpty {
                     // Prima di partire la sicurezza viene prima di tutto; a lavoro iniziato sta sotto, ripiegata.
@@ -57,17 +64,21 @@ struct AriaWorkOrderDetailView: View {
                 }
                 resourcesCard
                 infoCard
-                if isLoaded, steps.isEmpty, !order.isClosed { noProcedureCard }
+                if isLoaded, steps.isEmpty, !order.isClosed {
+                    // Offline e mai aperto online: i passi non sono sul telefono, non è che non ci siano.
+                    if store.isOffline && order.procedure == nil { offlineStepsCard } else { noProcedureCard }
+                }
             }
             .padding(20)
         }
         .liteBackground()
         .navigationTitle("Task")
         .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) { if !steps.isEmpty { actionBar } }
+        .ariaBottomBar { if !steps.isEmpty { actionBar } }
         .refreshable { await reload() }
         .task { await reload() }
-        .fullScreenCover(item: $runner, onDismiss: { Task { await reload() } }) { target in
+        // Uscire dall'esecuzione è la fine (o una pausa) della procedura: il lotto parte subito.
+        .fullScreenCover(item: $runner, onDismiss: { Task { await store.flush(); await reload() } }) { target in
             AriaStepRunnerView(order: $order, store: store, startingAt: target.id)
         }
         .sheet(isPresented: $showComplete) {
@@ -131,13 +142,10 @@ struct AriaWorkOrderDetailView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
-        .tint(order.isClosed ? Color.liteAccent : allReported ? .green : Color.liteAccent)
+        .ariaProminentGlassButtonStyle(tint: order.isClosed ? Color.liteAccent : allReported ? .green : Color.liteAccent)
         .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        .background(.bar)
     }
 
     private var actionTitle: LocalizedStringKey {
@@ -473,7 +481,7 @@ struct AriaWorkOrderDetailView: View {
     }
 
     /// La prima riga con del testo, senza i segni di elenco e di titolo.
-    private static func preview(_ text: String) -> String {
+    nonisolated private static func preview(_ text: String) -> String {
         let line = text.split(whereSeparator: \.isNewline)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .first { !$0.isEmpty } ?? ""
@@ -497,6 +505,16 @@ struct AriaWorkOrderDetailView: View {
         }
         .padding(16)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var offlineStepsCard: some View {
+        Label("The steps of this task aren't saved on this phone yet. They download as soon as you're back online.",
+              systemImage: "icloud.slash")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: Dati

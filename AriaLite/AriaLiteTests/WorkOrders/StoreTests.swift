@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 15/10/26.
 //
-//  AriaWorkOrderStore: sincronizzazione della lista e della disponibilità, dettaglio, modifiche ai passi
-//  con ricarica dell'ordine, completamento, e cosa succede quando la sessione finisce o la rete cade.
+//  AriaWorkOrderStore: sincronizzazione della lista e della disponibilità, dettaglio, e cosa succede
+//  quando la sessione finisce o la rete cade. Le modifiche (passi, foto, chiusura) sono in OfflineSyncTests.
 //
 
 import Foundation
@@ -89,7 +89,8 @@ extension BackendTests {
         }
 
         @Test func signedOutStoreDoesNothing() async {
-            let store = AriaWorkOrderStore(backend: AriaBackend())
+            let store = AriaWorkOrderStore(backend: AriaBackend(), network: AriaNetworkMonitor(monitoring: false),
+                                           offline: AriaOfflineStore(inMemory: true))
             await store.sync()
             await store.refresh()
             #expect(server.calls.isEmpty)
@@ -151,134 +152,7 @@ extension BackendTests {
             #expect(store.errorMessage == nil, "404 sul dettaglio non è un errore da mostrare")
         }
 
-        // MARK: Passi
-
-        @Test func reportingAStepSendsTheResultThenReloadsTheOrder() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true, reported: 1)))
-
-            let change = await store.report(.done(note: nil), step: "s1", of: "o1")
-
-            #expect(change.order?.procedure?.steps.first?.report?.isDone == true)
-            let sequence = server.calls.map { "\($0.method) \($0.path)" }.filter { $0.contains("work-orders") }
-            #expect(sequence == ["PUT /v1/mobile/work-orders/o1/steps/s1", "GET /v1/mobile/work-orders/o1"])
-        }
-
-        @Test func notDoneWithoutAReasonFailsLocallyWithAReadableMessage() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            let before = server.calls.count
-            let change = await store.report(.notDone(note: ""), step: "s1", of: "o1")
-            #expect(change.failureMessage == AriaServerCode.noteRequired.localized)
-            #expect(server.calls.count == before)
-        }
-
-        @Test func stepRemovedOnTheDesktopReloadsTheOrderAndReportsFailure() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            stubHome(open: [TestEnv.orderJSON(id: "o1", title: "Before")])
-            await store.sync()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1",
-                         .json(#"{"detail":{"code":"step_not_found","message":"m"}}"#, status: 404))
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(id: "o1", title: "After", withProcedure: true)))
-
-            let change = await store.report(.done(note: nil), step: "s1", of: "o1")
-
-            #expect(change.failureMessage == AriaServerCode.stepNotFound.localized)
-            #expect(store.orders.first?.title == "After", "l'ordine è stato ricaricato")
-        }
-
-        @Test func closedOrderReloadsAndRefusesTheChange() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1",
-                         .json(#"{"detail":{"code":"work_order_closed","message":"m"}}"#, status: 409))
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(status: "completed", withProcedure: true)))
-            let change = await store.report(.done(note: nil), step: "s1", of: "o1")
-            #expect(change.failureMessage == AriaServerCode.workOrderClosed.localized)
-            #expect(server.calls("GET /v1/mobile/work-orders/o1").count == 1)
-        }
-
-        @Test func orderNoLongerOursOnAStepCallIsGoneAndRemoved() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            stubHome(open: [TestEnv.orderJSON(id: "o1")])
-            await store.sync()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(#"{"detail":"Not found"}"#, status: 404))
-            let change = await store.report(.done(note: nil), step: "s1", of: "o1")
-            #expect(change.isGone)
-            #expect(store.orders.isEmpty)
-        }
-
-        @Test func clearingAResultReloadsTheOrder() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            server.route("DELETE /v1/mobile/work-orders/o1/steps/s1", .noContent)
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true, reported: 0)))
-            let change = await store.clearReport(step: "s1", of: "o1")
-            #expect(change.order?.progress?.reported == 0)
-        }
-
-        @Test func addingAPhotoRunsTheWholeFlowAndReloads() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            let base = "/v1/mobile/work-orders/o1/steps/s1/photos"
-            server.route("POST \(base)", .json(#"{"photoId":"p1","upload":{"url":"https://s3.test/b","fields":{"key":"k"}},"expiresIn":300}"#, status: 201))
-            server.route("POST /b", .noContent)
-            server.route("POST \(base)/p1/confirm", .json(TestEnv.stepJSON()))
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true, reported: 1)))
-
-            let change = await store.addPhoto(jpeg: Data(count: 100), step: "s1", of: "o1")
-
-            #expect(change.order != nil)
-            #expect(server.calls("POST /b").count == 1)
-            #expect(server.calls("GET /v1/mobile/work-orders/o1").count == 1)
-        }
-
-        @Test func photoLimitIsReportedWithoutReloadingTheList() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            server.route("POST /v1/mobile/work-orders/o1/steps/s1/photos",
-                         .json(#"{"detail":{"code":"photo_limit_reached","message":"m"}}"#, status: 409))
-            let change = await store.addPhoto(jpeg: Data(count: 100), step: "s1", of: "o1")
-            #expect(change.failureMessage == AriaServerCode.photoLimitReached.localized)
-        }
-
-        @Test func removingAPhotoReloadsTheOrder() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            server.route("DELETE /v1/mobile/work-orders/o1/steps/s1/photos/p1", .json(TestEnv.stepJSON()))
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true)))
-            let change = await store.removePhoto("p1", step: "s1", of: "o1")
-            #expect(change.order != nil)
-        }
-
-        // MARK: Completamento
-
-        @Test func completingMovesTheOrderFromOpenToClosed() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            stubHome(open: [TestEnv.orderJSON(id: "o1"), TestEnv.orderJSON(id: "o2")],
-                     closed: [TestEnv.orderJSON(id: "old", status: "completed")])
-            await store.sync()
-            server.route("POST /v1/mobile/work-orders/o1/complete", .json(TestEnv.orderJSON(id: "o1", status: "completed")))
-
-            let change = await store.complete("o1", resolutionNotes: "Replaced")
-
-            #expect(change.order?.isClosed == true)
-            #expect(store.orders.map(\.id) == ["o2"])
-            #expect(store.closedOrders.map(\.id) == ["o1", "old"], "la più recente in cima")
-        }
-
-        @Test func incompleteStepsLeaveTheListsUntouched() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            stubHome(open: [TestEnv.orderJSON(id: "o1")])
-            await store.sync()
-            server.route("POST /v1/mobile/work-orders/o1/complete",
-                         .json(#"{"detail":{"code":"steps_incomplete","message":"m","missing":["s2"]}}"#, status: 409))
-            let change = await store.complete("o1", resolutionNotes: "x")
-            #expect(change.failureMessage == AriaServerCode.stepsIncomplete.localized)
-            #expect(store.orders.map(\.id) == ["o1"] && store.closedOrders.isEmpty)
-        }
-
-        @Test func blankResolutionNotesFailBeforeAnyRequestOfTheirOwn() async throws {
-            let (_, store) = try await TestEnv.signedInStore()
-            let change = await store.complete("o1", resolutionNotes: "  ")
-            #expect(change.failureMessage == AriaServerCode.resolutionNotesRequired.localized)
-            #expect(server.calls("POST /v1/mobile/work-orders/o1/complete").isEmpty)
-        }
+        // MARK: Passi, foto e completamento: vedi OfflineSyncTests
 
         // MARK: Sessione e rete
 

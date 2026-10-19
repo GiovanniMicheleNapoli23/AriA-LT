@@ -18,7 +18,6 @@ final class AriaAgentChat {
     private(set) var messages: [AriaAgentMessage] = []
     private(set) var isStreaming = false
     private(set) var isLoadingHistory = false
-    private(set) var suggestions: [String] = []
     var lastError: String? {
         didSet { lastErrorIsOffline = false }
     }
@@ -161,10 +160,7 @@ final class AriaAgentChat {
         dismissLearningOutcome()
         openedLearningId = nil
 
-        var input = trimmed
-        if let context, !didSendContext, toolCall == nil {
-            input = "\(context)\n---\n\(trimmed)"
-        }
+        let input = if let context, !didSendContext, toolCall == nil { "\(context)\n---\n\(trimmed)" } else { trimmed }
         messages.append(.user(trimmed))
         let reply = AriaAgentMessage.pendingAssistant()
         messages.append(reply)
@@ -288,18 +284,6 @@ final class AriaAgentChat {
     private func rememberSession() {
         guard remembersSession else { return }
         UserDefaults.standard.set(sessionId, forKey: Self.currentSessionKey)
-    }
-
-    // MARK: - Suggerimenti
-
-    /// Server + generici, mescolati, senza doppioni, al massimo 6 (composeSuggestions della web).
-    func loadSuggestions() async {
-        let generic = AriaChatCopy.genericSuggestions.shuffled()
-        suggestions = Array(generic.prefix(6))
-        guard let plantId = backend.activePlantId else { return }
-        let server = await api.suggestions(plantId: plantId, locale: backend.api.context.locale).shuffled()
-        var seen = Set<String>()
-        suggestions = Array((server + generic).filter { seen.insert($0.lowercased()).inserted }.prefix(6))
     }
 
     // MARK: - Feedback
@@ -533,11 +517,6 @@ final class AriaAgentChat {
                 backend.handle(error)
             }
         }
-    }
-
-    /// "Non ora" sulla domanda riaperta dal chip: torna quella automatica (se c'è).
-    func closeOpenedLearning() {
-        openedLearningId = nil
     }
 
     func dismissLearningOutcome() {

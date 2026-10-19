@@ -58,7 +58,7 @@ final class AriaBackend {
             .flatMap { try? JSONDecoder().decode(AriaMobileAccount.self, from: Data($0.utf8)) }
         // Una sessione senza il suo profilo è di una versione precedente (username e password,
         // o accesso dalla web): non vale più, si rifà l'accesso col link.
-        // MUTANT1
+        if api.auth.hasStoredLogin, saved == nil { api.auth.forgetStoredSession() }
         isSignedIn = api.auth.hasStoredSession
         mobileAccount = isSignedIn ? saved : nil
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,

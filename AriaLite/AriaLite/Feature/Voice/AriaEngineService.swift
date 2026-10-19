@@ -37,15 +37,10 @@ final class AriaEngineService: Sendable {
         self.password = password
     }
 
-    // MARK: - Shared (singleton configurabile)
+    // MARK: - Shared
 
     /// Istanza condivisa: host e chiave arrivano da Info.plist.
-    nonisolated(unsafe) static var shared = AriaEngineService()
-
-    /// Sostituisce l'istanza shared (host o chiave diversi da Info.plist).
-    static func configure(baseURL: URL = defaultBaseURL, password: String) {
-        shared = AriaEngineService(baseURL: baseURL, password: password)
-    }
+    static let shared = AriaEngineService()
 
     // MARK: - Token
 
@@ -121,20 +116,6 @@ final class AriaEngineService: Sendable {
         return results.enumerated().map { i, r in
             "[\(i + 1)] (\(r.meta?.filename ?? "doc")) \(r.text)"
         }.joined(separator: "\n\n")
-    }
-
-    // MARK: - RAG Status
-
-    struct RAGStatus: Codable, Sendable {
-        let totalChunks: Int
-        let files: [String]
-        let fileCount: Int
-    }
-
-    /// Stato della knowledge base (numero documenti caricati).
-    func getRAGStatus() async throws -> RAGStatus {
-        let (data, _) = try await performGET(path: "/rag/status")
-        return try JSONDecoder().decode(RAGStatus.self, from: data)
     }
 
     // MARK: - HTTP Helpers

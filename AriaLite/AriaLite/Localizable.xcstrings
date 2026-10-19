@@ -264,6 +264,166 @@
         }
       }
     },
+    "%lld changes couldn't be synced" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld change couldn't be synced"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld changes couldn't be synced"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifica non è stata accettata"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifiche non sono state accettate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld changes haven't reached the server yet. If you log out now, they will be lost." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld change hasn't reached the server yet. If you log out now, it will be lost."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld changes haven't reached the server yet. If you log out now, they will be lost."
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifica non è ancora arrivata al server. Se esci adesso andrà persa."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifiche non sono ancora arrivate al server. Se esci adesso andranno perse."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld changes waiting to sync" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld change waiting to sync"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld changes waiting to sync"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifica in attesa di invio"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld modifiche in attesa di invio"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld changes will sync when you're back online" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %lld change will sync when you're back online"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %lld changes will sync when you're back online"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %lld modifica partirà al ritorno della rete"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Offline · %lld modifiche partiranno al ritorno della rete"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld of %lld steps reported" : {
       "localizations" : {
         "en" : {
@@ -3688,6 +3848,22 @@
         }
       }
     },
+    "Good afternoon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good afternoon"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buon pomeriggio"
+          }
+        }
+      }
+    },
     "Good answer" : {
       "localizations" : {
         "en" : {
@@ -3700,6 +3876,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Risposta utile"
+          }
+        }
+      }
+    },
+    "Good evening" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good evening"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buonasera"
+          }
+        }
+      }
+    },
+    "Good morning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Good morning"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buongiorno"
           }
         }
       }
@@ -3722,6 +3930,7 @@
       }
     },
     "Help me clean the belt dryer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3818,6 +4027,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ecco il tuo ordine di lavoro più recente:"
+          }
+        }
+      }
+    },
+    "Hi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciao"
           }
         }
       }
@@ -4034,6 +4259,7 @@
       }
     },
     "How do I safely isolate the fan before access?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4746,6 +4972,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posizione"
+          }
+        }
+      }
+    },
+    "Log out anyway" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out anyway"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esci comunque"
+          }
+        }
+      }
+    },
+    "Log out with unsynced changes?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log out with unsynced changes?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uscire con modifiche non inviate?"
           }
         }
       }
@@ -5747,6 +6005,22 @@
         }
       }
     },
+    "Not synced" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not synced"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non sincronizzate"
+          }
+        }
+      }
+    },
     "not written" : {
       "localizations" : {
         "en" : {
@@ -5875,6 +6149,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OFFLINE"
+          }
+        }
+      }
+    },
+    "Offline · showing tasks saved on this phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline · showing tasks saved on this phone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline · stai vedendo i task salvati sul telefono"
           }
         }
       }
@@ -6643,6 +6933,22 @@
         }
       }
     },
+    "Photo removed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo removed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto tolta"
+          }
+        }
+      }
+    },
     "Photo storage is not available on the server." : {
       "localizations" : {
         "en" : {
@@ -6687,6 +6993,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le foto vengono caricate quando segni il passo."
+          }
+        }
+      }
+    },
+    "Photos upload with the next sync." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photos upload with the next sync."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le foto partono con il prossimo invio."
           }
         }
       }
@@ -8345,6 +8667,7 @@
       }
     },
     "Show open work orders by priority" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8635,6 +8958,54 @@
         }
       }
     },
+    "Step marked done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step marked done"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo segnato come fatto"
+          }
+        }
+      }
+    },
+    "Step marked not done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step marked not done"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo segnato come non fatto"
+          }
+        }
+      }
+    },
+    "Step result removed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step result removed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esito del passo tolto"
+          }
+        }
+      }
+    },
     "Steps" : {
       "localizations" : {
         "en" : {
@@ -8814,6 +9185,7 @@
       }
     },
     "Summarise today's downtime and its main causes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8858,6 +9230,62 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passo allo specialista"
+          }
+        }
+      }
+    },
+    "Sync now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync now"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia ora"
+          }
+        }
+      }
+    },
+    "Syncing %lld changes…" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Syncing %lld change…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Syncing %lld changes…"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Invio di %lld modifica…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Invio di %lld modifiche…"
+                }
+              }
+            }
           }
         }
       }
@@ -8954,6 +9382,22 @@
         }
       }
     },
+    "Task completed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task completed"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Task completato"
+          }
+        }
+      }
+    },
     "Tasks" : {
       "localizations" : {
         "en" : {
@@ -8966,6 +9410,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Attività"
+          }
+        }
+      }
+    },
+    "Tasks appear here once the phone has been online at least once." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasks appear here once the phone has been online at least once."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I task compaiono qui dopo che il telefono è stato online almeno una volta."
           }
         }
       }
@@ -9015,6 +9475,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grazie — Aria ha imparato dal tuo feedback."
+          }
+        }
+      }
+    },
+    "The AI chat needs a connection. Tasks and the calendar keep working offline." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The AI chat needs a connection. Tasks and the calendar keep working offline."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La chat con l'AI ha bisogno della rete. Task e calendario funzionano anche offline."
           }
         }
       }
@@ -9148,6 +9624,22 @@
         }
       }
     },
+    "The server didn't accept these changes. Each task now shows what is on the server." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server didn't accept these changes. Each task now shows what is on the server."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il server non ha accettato queste modifiche. Ogni task ora mostra quello che c'è sul server."
+          }
+        }
+      }
+    },
     "The server didn't return a proposal." : {
       "localizations" : {
         "en" : {
@@ -9242,6 +9734,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qui compariranno gli step che Aria ti dà in questa chat."
+          }
+        }
+      }
+    },
+    "The steps of this task aren't saved on this phone yet. They download as soon as you're back online." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The steps of this task aren't saved on this phone yet. They download as soon as you're back online."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I passi di questo task non sono ancora salvati sul telefono. Si scaricano appena torni online."
           }
         }
       }
@@ -9595,6 +10103,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questa task è chiusa e non si può più modificare."
+          }
+        }
+      }
+    },
+    "This task is no longer assigned to you." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This task is no longer assigned to you."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo task non è più assegnato a te."
+          }
+        }
+      }
+    },
+    "This task isn't saved on the phone yet. Open it once while online." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This task isn't saved on the phone yet. Open it once while online."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo task non è ancora salvato sul telefono. Aprilo una volta mentre sei online."
           }
         }
       }
@@ -10463,6 +11003,7 @@
       }
     },
     "Walk me through the belt dryer start-up procedure" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10604,6 +11145,7 @@
       }
     },
     "What maintenance is due this week?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10684,6 +11226,7 @@
       }
     },
     "What's the next scheduled inspection?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10765,6 +11308,7 @@
       }
     },
     "Which spare parts are running low?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11170,6 +11714,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non ti saranno assegnati nuovi task finché sei occupato o fuori servizio."
+          }
+        }
+      }
+    },
+    "You're offline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're offline"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sei offline"
           }
         }
       }

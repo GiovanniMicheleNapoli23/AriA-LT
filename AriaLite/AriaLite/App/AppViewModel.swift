@@ -169,10 +169,14 @@ class AppViewModel {
     /// l'operatore torna al login.
     func ariaSessionEnded() {
         guard loggedInUser != nil, !backend.isSignedIn else { return }
-        logout()
+        // Le modifiche ai lavori non ancora partite restano: rientrando, lo stesso operatore le manda.
+        logout(keepOfflineWork: true)
     }
 
-    func logout() {
+    /// Modifiche ai lavori fatte sul telefono e non ancora arrivate al server: uscendo si perdono.
+    var unsyncedChanges: Int { ariaWorkOrders.pendingCount }
+
+    func logout(keepOfflineWork: Bool = false) {
         loggedInUser = nil
         lock = .none
         unlockError = nil
@@ -180,7 +184,7 @@ class AppViewModel {
         mainChat.newConversation()
         AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
-        ariaWorkOrders.reset()
+        ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

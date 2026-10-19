@@ -79,12 +79,6 @@ struct AriaAgentMessage: Identifiable {
     /// Ricostruito dallo storico: gli id `db-` non coincidono con quelli del turno dal vivo.
     var isHydrated: Bool { id.hasPrefix("db-") }
 
-    /// Non c'è ancora niente da mostrare: al suo posto l'indicatore di digitazione.
-    var isAwaitingContent: Bool {
-        role == .assistant && !finished && displayText.isEmpty && toolCalls.isEmpty
-            && artifacts.isEmpty && reasoning.isEmpty
-    }
-
     // MARK: - Eventi
 
     mutating func apply(_ event: AriaStreamEvent) {

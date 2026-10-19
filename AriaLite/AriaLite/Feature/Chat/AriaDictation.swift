@@ -270,7 +270,7 @@ final class AriaDictation {
             request?.append(buffer)
             capture?.write(buffer)
             let level = min(1, rms(of: buffer) * 8)
-            Task { @MainActor in owner?.level = level }
+            Task { @MainActor [owner] in owner?.level = level }
         }
     }
 
@@ -278,7 +278,7 @@ final class AriaDictation {
         { [weak owner] result, error in
             let text = result?.bestTranscription.formattedString
             let done = (result?.isFinal ?? false) || error != nil
-            Task { @MainActor in owner?.receive(text, done: done) }
+            Task { @MainActor [owner] in owner?.receive(text, done: done) }
         }
     }
 

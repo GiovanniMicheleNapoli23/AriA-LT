@@ -201,12 +201,40 @@ enum AriaMarkdown {
         var isHeading: Bool { if case .heading = self { true } else { false } }
     }
 
+    /// I risultati si ricordano: le viste rileggono lo stesso testo a ogni valutazione (a ogni pezzo di una
+    /// risposta in streaming, per tutti i messaggi della chat) e il parsing costa millisecondi.
+    private final class Cached<Value> {
+        let value: Value
+        init(_ value: Value) { self.value = value }
+    }
+
+    private static let inlineCache = makeCache(Cached<AttributedString>.self, limit: 2000)
+    private static let blocksCache = makeCache(Cached<[Block]>.self, limit: 200)
+
+    private static func makeCache<Value: AnyObject>(_ type: Value.Type, limit: Int) -> NSCache<NSString, Value> {
+        let cache = NSCache<NSString, Value>()
+        cache.countLimit = limit
+        return cache
+    }
+
     static func inline(_ text: String) -> AttributedString {
+        let key = text as NSString
+        if let hit = inlineCache.object(forKey: key) { return hit.value }
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+        let parsed = (try? AttributedString(markdown: text, options: options)) ?? AttributedString(text)
+        inlineCache.setObject(Cached(parsed), forKey: key)
+        return parsed
     }
 
     static func blocks(_ text: String) -> [Block] {
+        let key = text as NSString
+        if let hit = blocksCache.object(forKey: key) { return hit.value }
+        let parsed = parseBlocks(text)
+        blocksCache.setObject(Cached(parsed), forKey: key)
+        return parsed
+    }
+
+    private static func parseBlocks(_ text: String) -> [Block] {
         var blocks: [Block] = []
         var paragraph: [String] = []
         var listItems: [ListItem] = []

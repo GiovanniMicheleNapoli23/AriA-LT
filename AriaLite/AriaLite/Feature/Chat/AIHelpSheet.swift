@@ -7,42 +7,57 @@
 
 import SwiftUI
 
+/// La chat di "Ask AriA" di un'esecuzione: la tiene il chiamante, il foglio la legge da qui.
+/// Un oggetto osservabile e non un `@State` opzionale: il contenuto di `.sheet(isPresented:)` può essere
+/// costruito con il valore di prima del tocco che lo apre (era nil → foglio vuoto); questo invece è
+/// sempre lo stesso oggetto e la chat si legge quando il foglio si disegna.
+@Observable
+final class AriaHelpChatSlot {
+    var chat: AriaAgentChat?
+}
+
 // Assistente Aria dentro un passo: la chat del backend, col contesto del passo corrente.
+// La chat è del chiamante: chiudere il foglio la minimizza soltanto (la conversazione resta e si riapre
+// da "Ask AriA"); è il chiamante a azzerarla quando cambia il passo.
 struct AIHelpSheet: View {
-    /// Contesto del lavoro (ordine + passo).
-    var contextText: String? = nil
+    let slot: AriaHelpChatSlot
+    @Binding var detent: PresentationDetent
     @Environment(\.dismiss) private var dismiss
-    @State private var detent: PresentationDetent = .large
+
+    /// Fino a questo detent il passo dietro resta toccabile (e leggibile) mentre il foglio è aperto.
+    static let detents: Set<PresentationDetent> = [.medium, .large]
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Handle
-                Capsule()
-                    .fill(Color.secondary.opacity(0.3))
-                    .frame(width: 36, height: 4)
-                    .padding(.top, 12)
-                    .padding(.bottom, 12)
-
-                // Chat condivisa, contesto = passo corrente: la sfera al centro con il saluto, come la chat principale.
-                AriaConversation(contextText: contextText)
-            }
-            .overlay(alignment: .topTrailing) {
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
+            Group {
+                if let chat = slot.chat {
+                    // Chat condivisa, contesto = passo corrente: la sfera al centro con il saluto, come la chat principale.
+                    AriaConversation(agentChat: chat)
+                        // Un'altra chat (nuovo passo) riparte da zero: bozza e pannelli compresi.
+                        .id(ObjectIdentifier(chat))
+                } else {
+                    Color.clear
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Close"))
-                .padding(.top, 14)
-                .padding(.trailing, 20)
             }
             .background(Color(.systemGroupedBackground))
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if #available(iOS 26.0, *) {
+                        Button(role: .close) { dismiss() }
+                    } else {
+                        Button { dismiss() } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        }
+                        .accessibilityLabel(Text("Close"))
+                    }
+                }
+            }
         }
-        .presentationDetents([.medium, .large], selection: $detent)
-        .presentationDragIndicator(.hidden)
+        .presentationDetents(Self.detents, selection: $detent)
+        .presentationDragIndicator(.visible)
+        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         .preferredColorScheme(.light)
     }
 }

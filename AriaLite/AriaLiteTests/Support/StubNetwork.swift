@@ -117,7 +117,9 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         let reply = (call.query.flatMap { StubServer.shared.next(for: "\(plain)?\($0)") })
             ?? StubServer.shared.next(for: plain)
             ?? Reply(status: 599, body: Data("unstubbed \(call.method) \(call.path)".utf8))
-        let deliver = { [self] in
+        // @Sendable: può partire da DispatchQueue.global (risposte con ritardo); self è @unchecked Sendable
+        // e `stopped` si legge sotto stopLock.
+        let deliver: @Sendable () -> Void = { [self] in
             stopLock.lock()
             let skip = stopped
             stopLock.unlock()

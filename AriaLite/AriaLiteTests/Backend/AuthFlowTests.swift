@@ -178,7 +178,7 @@ extension BackendTests {
             await auth.invalidate()
             let fresh = try await auth.validAccessToken()
             #expect(server.calls("GET /api/aria/token").count == 2)
-            #expect(fresh.contains(".") && fresh != TestEnv.jwt(tag: "a"))
+            #expect(TestEnv.jwtTag(fresh) == "b")
         }
 
         @Test func concurrentCallersShareASingleRenewal() async throws {
@@ -188,7 +188,9 @@ extension BackendTests {
 
             let tokens = try await withThrowingTaskGroup(of: String.self) { group in
                 for _ in 0..<8 { group.addTask { try await auth.validAccessToken() } }
-                return try await group.reduce(into: []) { $0.append($1) }
+                var all: [String] = []
+                for try await token in group { all.append(token) }
+                return all
             }
             #expect(Set(tokens).count == 1, "tutti ricevono lo stesso JWT")
             #expect(server.calls("GET /api/aria/token").count == 2, "una sola richiesta di rinnovo, non otto")

@@ -53,6 +53,9 @@ struct AriaWorkOrdersView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    AriaSyncStatusView(store: store)
+                        .padding(.top, 8)
+                        .padding(.horizontal, 16)
                     errorPill
                     content
                 }
@@ -86,7 +89,12 @@ struct AriaWorkOrdersView: View {
     @ViewBuilder
     private var content: some View {
         if !store.hasLoaded {
-            if store.isLoading {
+            if store.isOffline {
+                // Mai scaricata e senza rete: non c'è una copia da mostrare.
+                ContentUnavailableView("You're offline", systemImage: "wifi.slash",
+                                       description: Text("Tasks appear here once the phone has been online at least once."))
+                    .padding(.top, 40)
+            } else if store.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity)
                     .padding(.top, 60)
@@ -239,7 +247,7 @@ struct AriaWorkOrdersView: View {
     /// Lista già a schermo ma l'ultimo aggiornamento è fallito: una riga sottile, senza il testo dell'errore.
     @ViewBuilder
     private var errorPill: some View {
-        if store.hasLoaded, store.errorMessage != nil {
+        if store.hasLoaded, store.errorMessage != nil, !store.isOffline {
             HStack(spacing: 8) {
                 Image(systemName: "wifi.exclamationmark").foregroundStyle(.orange)
                 Text("Couldn't refresh")

@@ -10,6 +10,7 @@ struct SettingsSheet: View {
     let user: User
     let viewModel: AppViewModel
     @State private var showConnection = false
+    @State private var confirmingLogout = false
 
     var body: some View {
         ZStack {
@@ -79,7 +80,8 @@ struct SettingsSheet: View {
                 let logoutRed = Color(red: 0.82, green: 0.18, blue: 0.18)
 
                 Button(role: .destructive) {
-                    viewModel.logout()
+                    // Lavoro fatto offline non ancora partito: uscendo si perde, quindi si chiede prima.
+                    if viewModel.unsyncedChanges > 0 { confirmingLogout = true } else { viewModel.logout() }
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -96,6 +98,13 @@ struct SettingsSheet: View {
                     )
                 }
                 .padding(.horizontal, 20)
+                .confirmationDialog("Log out with unsynced changes?", isPresented: $confirmingLogout,
+                                    titleVisibility: .visible) {
+                    Button("Log out anyway", role: .destructive) { viewModel.logout() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("\(viewModel.unsyncedChanges) changes haven't reached the server yet. If you log out now, they will be lost.")
+                }
             }
             .padding(.top, 32)
         }

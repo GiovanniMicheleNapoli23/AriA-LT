@@ -756,11 +756,10 @@ nonisolated enum AriaDate {
         return formatter
     }()
     private nonisolated(unsafe) static let plain = ISO8601DateFormatter()
-    private static let zoneSuffix = /[+-]\d\d:?\d\d$/
 
     static func parse(_ raw: String?) -> Date? {
         guard let raw, !raw.isEmpty else { return nil }
-        let withZone = raw.hasSuffix("Z") || raw.contains(zoneSuffix) ? raw : raw + "Z"
+        let withZone = raw.hasSuffix("Z") || raw.contains(/[+-]\d\d:?\d\d$/) ? raw : raw + "Z"
         if let date = fractional.date(from: withZone) { return date }
         return plain.date(from: withZone)
     }
