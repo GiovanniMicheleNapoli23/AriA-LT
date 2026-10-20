@@ -82,6 +82,9 @@ nonisolated struct AriaResponsesRequest: Encodable, Sendable {
     var streamOptions = StreamOptions()
     /// Senza, niente tool call / artifact / interrupt.
     var includeMetadataEvents = true
+    /// `true`: la risposta continua sul server anche se lo stream si chiude (vuole l'`Idempotency-Key`).
+    /// Non vale per una chiamata diretta a un tool. `nil` = non si manda (turno legato alla richiesta).
+    var background: Bool? = nil
     /// I trace servono solo al Glass Box admin della web.
     var includeTrace = false
     var model: String? = nil
@@ -93,7 +96,7 @@ nonisolated struct AriaResponsesRequest: Encodable, Sendable {
     var resume: AriaResumePayload? = nil
 
     enum CodingKeys: String, CodingKey {
-        case input, stream, model, style, locale, instructions, resume
+        case input, stream, model, style, locale, instructions, resume, background
         case plantId = "plant_id"
         case sessionId = "session_id"
         case companyId = "company_id"
@@ -603,12 +606,15 @@ nonisolated struct AriaPersistedMessage: Decodable, Sendable {
     let usage: AriaUsage?
     let responseId: String?
     let episode: Int?
+    /// La checklist dello step che il turno ha mandato in streaming (`aria.task_list`); nil sulle righe vecchie.
+    let taskList: AriaTaskList?
 
     enum CodingKeys: String, CodingKey {
         case id, role, text, reasoning, sources, artifacts, pipeline, usage, responseId, episode
         case toolCalls = "tool_calls"
         case uiActions = "ui_actions"
         case imageReferences = "image_references"
+        case taskList = "task_list"
     }
 
     init(from decoder: any Decoder) throws {
@@ -626,6 +632,85 @@ nonisolated struct AriaPersistedMessage: Decodable, Sendable {
         usage = try? c.decodeIfPresent(AriaUsage.self, forKey: .usage)
         responseId = try? c.decodeIfPresent(String.self, forKey: .responseId)
         episode = try? c.decodeIfPresent(Int.self, forKey: .episode)
+        taskList = try? c.decodeIfPresent(AriaTaskList.self, forKey: .taskList)
+    }
+}
+
+// MARK: - Turni (operatore mobile)
+
+/// Un turno della chat in background: va avanti sul server anche se lo stream si chiude.
+/// GET /v1/agent/sessions/{id}/turns/{response_id}.
+nonisolated struct AriaTurn: Decodable, Sendable {
+    nonisolated enum Status: String, Decodable, Sendable {
+        case running, completed, paused, cancelled, failed
+        /// Il server si è riavviato a metà risposta.
+        case interrupted
+
+        /// Finito senza una risposta intera: per chiedere di nuovo serve una `Idempotency-Key` nuova.
+        var isOver: Bool { [.cancelled, .failed, .interrupted].contains(self) }
+    }
+
+    let responseId: String
+    let status: Status
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case responseId = "response_id"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        responseId = try c.decode(String.self, forKey: .responseId)
+        // Uno stato che l'app non conosce è comunque finito: non si resta ad aspettare.
+        status = (try? c.decode(Status.self, forKey: .status)) ?? .failed
+    }
+}
+
+/// GET /v1/agent/sessions/{id}: le spunte salvate e il turno ancora aperto (servono solo questi).
+nonisolated struct AriaChatSessionState: Decodable, Sendable {
+    nonisolated struct ActiveTurn: Decodable, Sendable {
+        let responseId: String
+        let status: AriaTurn.Status
+
+        enum CodingKeys: String, CodingKey {
+            case status
+            case responseId = "response_id"
+        }
+    }
+
+    let checklist: AriaChecklist?
+    let activeTurn: ActiveTurn?
+
+    enum CodingKeys: String, CodingKey {
+        case checklist
+        case activeTurn = "active_turn"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        checklist = try? c.decodeIfPresent(AriaChecklist.self, forKey: .checklist)
+        activeTurn = try? c.decodeIfPresent(ActiveTurn.self, forKey: .activeTurn)
+    }
+}
+
+/// Le spunte di una sessione sul server: chiave `{response_id}:{task id}`, solo quelle spuntate.
+/// Body di PUT …/checklist (sostituisce tutta la mappa) e campo `checklist` della sessione.
+nonisolated struct AriaChecklist: Codable, Sendable {
+    /// Al massimo 500 chiavi, e un body sotto gli 8 KB del firewall.
+    static let maxKeys = 500
+
+    let checks: [String: Bool]
+
+    init(checked keys: some Sequence<String>) {
+        checks = Dictionary(uniqueKeysWithValues: Set(keys).map { ($0, true) })
+    }
+
+    var checked: Set<String> { Set(checks.filter(\.value).keys) }
+
+    /// La forma che il server accetta (`{response_id}:task_<intero positivo>`, al massimo 256 caratteri):
+    /// le altre chiavi restano sul telefono.
+    static func isServerKey(_ key: String) -> Bool {
+        key.count <= 256 && key.wholeMatch(of: /[\x21-\x7e]+:task_[1-9][0-9]*/) != nil
     }
 }
 
@@ -651,7 +736,7 @@ nonisolated struct AriaPlant: Decodable, Sendable, Identifiable, Hashable {
     let id: String
     let name: String
     let code: String?
-    /// Dove si trova (solo GET /v1/mobile/plants).
+    /// Dove si trova (se il server lo manda).
     let location: String?
 }
 

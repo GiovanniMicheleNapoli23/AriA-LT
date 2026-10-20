@@ -137,8 +137,7 @@ extension AriaWorkOrderStore {
         case .removePhoto(let stepId, let photoId):
             _ = try await api.removePhoto(photoId, step: stepId, of: orderId)
         case .complete(let notes, _):
-            let raw = try await api.data("POST", "v1/mobile/work-orders/\(orderId)/complete",
-                                         body: try JSONEncoder().encode(["resolutionNotes": notes]))
+            let raw = try await api.completeData(order: orderId, resolutionNotes: notes)
             // La risposta è l'ordine chiuso: diventa il dettaglio salvato, senza rileggerlo.
             if let json = try? JSONDecoder().decode(AriaJSON.self, from: raw) { offline.saveDetail(json, accountId: account) }
         }
@@ -199,7 +198,10 @@ extension AriaWorkOrderStore {
             var pending = stale[...]
             func addNext() {
                 guard let id = pending.popFirst() else { return }
-                group.addTask { try? await api.data("GET", "v1/mobile/work-orders/\(id)") }
+                group.addTask {
+                    try? await api.workOrderData("GET", "v1/work-orders/\(id)",
+                                                 query: [URLQueryItem(name: "include", value: "procedure")])
+                }
             }
             for _ in 0..<3 { addNext() }
             for await raw in group {

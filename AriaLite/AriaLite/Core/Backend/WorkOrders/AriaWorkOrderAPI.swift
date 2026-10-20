@@ -4,10 +4,13 @@
 //
 //  Created by Giovanni Michele on 15/10/26.
 //
-//  Chiamate /v1/mobile dei passi della procedura, delle foto e del completamento.
-//  Ogni chiamata manda Authorization e Company-Id (AriaAPIClient) e risponde 404 per un ordine
-//  che non è dell'operatore.
+//  Chiamate condivise `/v1/work-orders` per elenco, dettaglio, passi della procedura, foto e completamento
+//  (le rotte `/v1/mobile` non esistono più). Ogni chiamata manda Authorization e Company-Id (AriaAPIClient)
+//  e risponde 404 per un ordine che non è dell'operatore.
 //
+//  • I lavori, i passi e le foto arrivano in snake_case (`step_progress`, `reported_at`): le risposte si
+//    portano in camelCase una volta sola, qui (`workOrderData`), così i modelli, la copia offline e la coda
+//    non cambiano. `/v1/me` e la disponibilità sono già camelCase.
 //  • Un passo si indirizza per `id`, mai per `number`.
 //  • Mettere un risultato è idempotente: si può rimandare dopo una caduta di rete.
 //    Il PRIMO risultato porta l'ordine in `in_progress`.
@@ -22,7 +25,7 @@ import Foundation
 import UIKit
 #endif
 
-/// Quali ordini elencare (`status` di GET /v1/mobile/work-orders).
+/// Quali ordini elencare (`status_group` di GET /v1/work-orders).
 nonisolated enum AriaWorkOrderFilter: String, Sendable {
     case open, closed, all
 }
@@ -55,6 +58,11 @@ private nonisolated struct AriaStepBody: Encodable, Sendable {
 private nonisolated struct AriaPhotoRequestBody: Encodable, Sendable {
     let mimeType: String
     let sizeBytes: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case mimeType = "mime_type"
+        case sizeBytes = "size_bytes"
+    }
 }
 
 /// 201 di POST …/photos: dove caricare il file.
@@ -66,10 +74,18 @@ private nonisolated struct AriaPhotoTicket: Decodable, Sendable {
     let photoId: String
     let upload: Upload
     let expiresIn: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case photoId = "photo_id"
+        case upload
+        case expiresIn = "expires_in"
+    }
 }
 
 private nonisolated struct AriaCompleteBody: Encodable, Sendable {
     let resolutionNotes: String
+
+    private enum CodingKeys: String, CodingKey { case resolutionNotes = "resolution_notes" }
 }
 
 private extension String {
@@ -80,25 +96,72 @@ extension AriaAPIClient {
     private static let maxPhotoBytes = 10 * 1024 * 1024
     private static let maxNoteLength = 2000
 
+    /// Una risposta sui lavori con le chiavi in camelCase (vedi l'intestazione). Vuota (204) resta vuota.
+    @concurrent
+    func workOrderData(_ method: String, _ path: String, query: [URLQueryItem] = [],
+                       body: (any Encodable & Sendable)? = nil) async throws -> Data {
+        let raw = try await data(method, path, query: query, body: try body.map { try JSONEncoder().encode($0) })
+        return Self.camelCased(raw)
+    }
+
+    static func camelCased(_ raw: Data) -> Data {
+        guard !raw.isEmpty, let json = try? JSONDecoder().decode(AriaJSON.self, from: raw),
+              let converted = try? JSONEncoder().encode(json.camelCased()) else { return raw }
+        return converted
+    }
+
     /// Ordine con la procedura. 404 = non è più dell'operatore (`AriaError.http`, status 404).
     func workOrder(id: String) async throws -> AriaWorkOrder {
-        try await get("v1/mobile/work-orders/\(id)")
+        let raw = try await workOrderData("GET", "v1/work-orders/\(id)", query: [URLQueryItem(name: "include", value: "procedure")])
+        do { return try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
+        catch { throw AriaError.decoding("AriaWorkOrder: \(error)") }
+    }
+
+    /// Gli ordini assegnati, a pagine di `pageSize` con `offset` crescente finché una pagina è più corta
+    /// (nel frattempo ne possono arrivare o sparire: un ordine visto due volte resta uno). `maxPages` ferma
+    /// un server che non finisce mai. Le chiavi sono già in camelCase.
+    func workOrders(_ filter: AriaWorkOrderFilter, pageSize: Int = 50, maxPages: Int = 20) async throws -> [AriaJSON] {
+        let pageSize = min(max(pageSize, 1), 200)
+        var orders: [AriaJSON] = []
+        var seen: Set<String> = []
+        for page in 0..<maxPages {
+            let raw = try await workOrderData("GET", "v1/work-orders", query: [
+                URLQueryItem(name: "status_group", value: filter.rawValue),
+                URLQueryItem(name: "limit", value: String(pageSize)),
+                URLQueryItem(name: "offset", value: String(page * pageSize)),
+            ])
+            // Si decodifica comunque con il modello: una risposta che l'app non sa leggere non sostituisce la copia buona.
+            do { _ = try JSONDecoder().decode(AriaWorkOrderList.self, from: raw) }
+            catch { throw AriaError.decoding("AriaWorkOrderList: \(error)") }
+            guard let items = AriaWorkOrderOverlay.orders(inList: raw) else { throw AriaError.decoding("AriaWorkOrderList") }
+            for item in items {
+                guard let id = item["id"]?.stringValue else { continue }
+                if seen.insert(id).inserted { orders.append(item) }
+            }
+            if items.count < pageSize { break }
+        }
+        return orders
     }
 
     // MARK: Passi
 
-    /// Mette il risultato di un passo (o lo cambia: le foto restano). Restituisce il passo.
-    func report(_ result: AriaStepResult, step stepId: String, of orderId: String) async throws -> AriaProcedureStep {
+    /// Mette il risultato di un passo (o lo cambia: le foto restano). Restituisce il risultato com'è sul server
+    /// (nel PUT è al livello più alto, non dentro un passo). Se la risposta non si legge, la scrittura è andata
+    /// comunque a buon fine: si restituisce quello che si è mandato.
+    @discardableResult
+    func report(_ result: AriaStepResult, step stepId: String, of orderId: String) async throws -> AriaStepReport {
         let body = AriaStepBody(result)
         // Controlli che il server rifarebbe (422): evitano un giro a vuoto.
         if case .notDone = result, body.note.isNilOrEmpty { throw AriaError.workOrder(.noteRequired) }
         if (body.note?.count ?? 0) > Self.maxNoteLength { throw AriaError.workOrder(.noteTooLong) }
-        return try await send("PUT", "v1/mobile/work-orders/\(orderId)/steps/\(stepId)", body: body)
+        let raw = try await workOrderData("PUT", "v1/work-orders/\(orderId)/steps/\(stepId)", body: body)
+        return (try? JSONDecoder().decode(AriaStepReport.self, from: raw))
+            ?? AriaStepReport(status: body.status, note: body.note)
     }
 
     /// Annulla il risultato di un passo e le sue foto (204).
     func clearReport(step stepId: String, of orderId: String) async throws {
-        _ = try await data("DELETE", "v1/mobile/work-orders/\(orderId)/steps/\(stepId)")
+        _ = try await data("DELETE", "v1/work-orders/\(orderId)/steps/\(stepId)")
     }
 
     // MARK: Foto
@@ -106,19 +169,19 @@ extension AriaAPIClient {
     /// Aggiunge una foto JPEG a un passo che ha già un risultato. Restituisce il passo con la foto.
     func addPhoto(jpeg: Data, step stepId: String, of orderId: String) async throws -> AriaProcedureStep {
         guard jpeg.count <= Self.maxPhotoBytes else { throw AriaError.workOrder(.photoTooLarge) }
-        let base = "v1/mobile/work-orders/\(orderId)/steps/\(stepId)/photos"
+        let base = "v1/work-orders/\(orderId)/steps/\(stepId)/photos"
         let ticket: AriaPhotoTicket = try await send(
             "POST", base, body: AriaPhotoRequestBody(mimeType: "image/jpeg", sizeBytes: jpeg.count))
         try await Self.upload(jpeg, mimeType: "image/jpeg", to: ticket.upload.url, fields: ticket.upload.fields,
                               within: TimeInterval(ticket.expiresIn))
         // Ripetere la conferma non fa danni.
-        let raw = try await data("POST", "\(base)/\(ticket.photoId)/confirm")
+        let raw = try await workOrderData("POST", "\(base)/\(ticket.photoId)/confirm")
         return try Self.decodeStep(raw)
     }
 
     /// Toglie una foto da un passo. Restituisce il passo.
     func removePhoto(_ photoId: String, step stepId: String, of orderId: String) async throws -> AriaProcedureStep {
-        let raw = try await data("DELETE", "v1/mobile/work-orders/\(orderId)/steps/\(stepId)/photos/\(photoId)")
+        let raw = try await workOrderData("DELETE", "v1/work-orders/\(orderId)/steps/\(stepId)/photos/\(photoId)")
         return try Self.decodeStep(raw)
     }
 
@@ -166,10 +229,17 @@ extension AriaAPIClient {
     /// Chiude l'ordine (`completed`). Ogni passo deve avere un risultato (`steps_incomplete` con
     /// `missing`); dopo, ogni chiamata sui passi risponde `work_order_closed`. La verifica resta al desktop.
     func complete(order orderId: String, resolutionNotes: String) async throws -> AriaWorkOrder {
+        let raw = try await completeData(order: orderId, resolutionNotes: resolutionNotes)
+        do { return try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
+        catch { throw AriaError.decoding("AriaWorkOrder: \(error)") }
+    }
+
+    /// Come `complete`, con l'ordine chiuso così com'è (camelCase) per salvarlo senza rileggerlo.
+    func completeData(order orderId: String, resolutionNotes: String) async throws -> Data {
         let notes = resolutionNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if notes.isEmpty { throw AriaError.workOrder(.resolutionNotesRequired) }
-        return try await send("POST", "v1/mobile/work-orders/\(orderId)/complete",
-                              body: AriaCompleteBody(resolutionNotes: notes))
+        return try await workOrderData("POST", "v1/work-orders/\(orderId)/complete",
+                                       body: AriaCompleteBody(resolutionNotes: notes))
     }
 }
 

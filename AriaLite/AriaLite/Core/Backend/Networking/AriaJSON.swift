@@ -92,6 +92,27 @@ nonisolated enum AriaJSON: Codable, Sendable, Hashable {
         return String(decoding: data, as: UTF8.self)
     }
 
+    /// Le stesse chiavi in camelCase (`step_progress` → `stepProgress`), a ogni livello. Le chiavi senza
+    /// underscore restano com'erano: vale anche per i JSON già salvati col vecchio formato.
+    /// I valori non cambiano (`not_done` resta `not_done`).
+    func camelCased() -> AriaJSON {
+        switch self {
+        case .object(let object):
+            .object(Dictionary(object.map { (Self.camelCase($0.key), $0.value.camelCased()) }) { first, _ in first })
+        case .array(let items):
+            .array(items.map { $0.camelCased() })
+        default:
+            self
+        }
+    }
+
+    private static func camelCase(_ key: String) -> String {
+        guard key.contains("_") else { return key }
+        let parts = key.split(separator: "_", omittingEmptySubsequences: true)
+        guard let first = parts.first else { return key }
+        return String(first) + parts.dropFirst().map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined()
+    }
+
     /// Converte un JSON libero (es. `artifact.data`) in un tipo Swift.
     func decoded<T: Decodable>(as type: T.Type) throws -> T {
         try JSONDecoder().decode(T.self, from: JSONEncoder().encode(self))

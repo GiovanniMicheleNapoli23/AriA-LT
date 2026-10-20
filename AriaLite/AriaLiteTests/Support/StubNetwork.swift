@@ -73,6 +73,10 @@ nonisolated final class StubServer: @unchecked Sendable {
 
     /// `key` = "METODO /percorso" oppure "METODO /percorso?query". Le risposte escono in ordine; l'ultima si ripete.
     func route(_ key: String, _ replies: Reply...) {
+        route(key, replies)
+    }
+
+    func route(_ key: String, _ replies: [Reply]) {
         lock.withLock { routes[key] = replies }
     }
 

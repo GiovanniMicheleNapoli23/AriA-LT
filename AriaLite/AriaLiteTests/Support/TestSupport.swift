@@ -79,7 +79,7 @@ enum TestEnv {
         server.route("POST /api/auth/mobile/verify", verifyReply())
         server.route("GET /api/aria/token", tokenReply())
         server.route("GET /v1/companies", .json(companies))
-        server.route("GET /v1/mobile/plants", plants)
+        server.route("GET /v1/plants", plants)
     }
 
     /// Lo stesso install di prima: il Keychain rimasto è di chi usa l'app, non di una disinstallazione.
@@ -93,7 +93,7 @@ enum TestEnv {
         try await backend.sendSignInLink(email: email)
     }
 
-    /// Un ordine nel formato di GET /v1/mobile/work-orders.
+    /// Un ordine nel formato di GET /v1/work-orders.
     static func orderJSON(id: String = "o1", status: String = "assigned", title: String = "Fix", withProcedure: Bool = false,
                           reported: Int = 0, total: Int = 2, updatedAt: String? = nil) -> String {
         let steps = (1...max(total, 1)).map { n in
@@ -108,9 +108,16 @@ enum TestEnv {
         return #"{"id":"\#(id)","title":"\#(title)","status":"\#(status)","priority":"high","progress":{"done":\#(reported),"notDone":0,"total":\#(total)}\#(stamp)\#(procedure)}"#
     }
 
+    /// Un passo della procedura (nel formato del filo: snake_case).
     static func stepJSON(id: String = "s1", status: String? = "done") -> String {
-        let report = status.map { #"{"status":"\#($0)","note":null,"photos":[],"reportedAt":"2026-10-09T09:12:00Z"}"# } ?? "null"
+        let report = status.map { #"{"status":"\#($0)","note":null,"photos":[],"reported_at":"2026-10-09T09:12:00Z"}"# } ?? "null"
         return #"{"id":"\#(id)","number":1,"text":"Step 1","report":\#(report)}"#
+    }
+
+    /// La risposta di PUT …/steps/{id}: il risultato al livello più alto, non dentro un passo.
+    static func stepReportJSON(id: String = "s1", status: String = "done", note: String? = nil) -> String {
+        let note = note.map { #""\#($0)""# } ?? "null"
+        return #"{"step_id":"\#(id)","status":"\#(status)","note":\#(note),"photos":[],"reported_at":"2026-10-09T09:12:00Z","reported_by":"u1"}"#
     }
 
     /// Un AriaAuth già con una sessione aperta (verify + JWT passati dalla rete finta).

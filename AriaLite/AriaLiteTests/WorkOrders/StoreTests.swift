@@ -16,8 +16,8 @@ extension BackendTests {
     @Suite("Work order store")
     struct Store {
         private let server = StubServer.shared
-        private let openKey = "GET /v1/mobile/work-orders?status=open&limit=50"
-        private let closedKey = "GET /v1/mobile/work-orders?status=closed&limit=200"
+        private let openKey = "GET /v1/work-orders?status_group=open&limit=50&offset=0"
+        private let closedKey = "GET /v1/work-orders?status_group=closed&limit=200&offset=0"
 
         init() { TestEnv.reset() }
 
@@ -26,8 +26,9 @@ extension BackendTests {
         }
 
         private func stubHome(open: [String] = [], closed: [String] = [], availability: String = "available") {
-            server.route("PUT /v1/mobile/me/availability", .json(meJSON(availability)))
-            server.route("GET /v1/mobile/me", .json(meJSON(availability)))
+            server.route("PUT /v1/me/availability", .json(meJSON(availability)))
+            // GET /v1/me ha il profilo operatore dentro `operatorProfile`.
+            server.route("GET /v1/me", .json(#"{"id":"u1","name":"M","email":"m@a.b","operatorProfile":\#(meJSON(availability))}"#))
             server.route(openKey, .json("[\(open.joined(separator: ","))]"))
             server.route(closedKey, .json("[\(closed.joined(separator: ","))]"))
         }
@@ -47,7 +48,7 @@ extension BackendTests {
             #expect(store.hasLoaded && store.hasLoadedClosed)
             #expect(store.lastUpdated != nil)
             #expect(store.errorMessage == nil && !store.isLoading)
-            let put = try #require(server.calls("PUT /v1/mobile/me/availability").first)
+            let put = try #require(server.calls("PUT /v1/me/availability").first)
             #expect(put.json as? [String: String] == ["availability": "available"])
         }
 
@@ -58,8 +59,8 @@ extension BackendTests {
 
             await store.sync()
 
-            #expect(server.calls("PUT /v1/mobile/me/availability").isEmpty, "busy e off_duty non scadono: niente rinnovo")
-            #expect(server.calls("GET /v1/mobile/me").count == 1)
+            #expect(server.calls("PUT /v1/me/availability").isEmpty, "busy e off_duty non scadono: niente rinnovo")
+            #expect(server.calls("GET /v1/me").count == 1)
             #expect(store.profile?.availability == .busy)
         }
 
@@ -68,15 +69,15 @@ extension BackendTests {
             stubHome()
             await store.sync()
             await store.sync()
-            #expect(server.calls("PUT /v1/mobile/me/availability").count == 2)
+            #expect(server.calls("PUT /v1/me/availability").count == 2)
         }
 
         @Test func pullToRefreshReloadsWithoutRenewingAvailability() async throws {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome(open: [TestEnv.orderJSON()])
             await store.refresh()
-            #expect(server.calls("PUT /v1/mobile/me/availability").isEmpty)
-            #expect(server.calls("GET /v1/mobile/me").count == 1)
+            #expect(server.calls("PUT /v1/me/availability").isEmpty)
+            #expect(server.calls("GET /v1/me").count == 1)
             #expect(store.orders.count == 1)
         }
 
@@ -84,8 +85,8 @@ extension BackendTests {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome()
             await store.sync()
-            #expect(server.calls("GET /v1/mobile/work-orders").map(\.query) == ["status=open&limit=50", "status=closed&limit=200"])
-            #expect(server.calls("GET /v1/mobile/work-orders").allSatisfy { $0.header("company-id") == "c1" })
+            #expect(server.calls("GET /v1/work-orders").map(\.query) == ["status_group=open&limit=50&offset=0", "status_group=closed&limit=200&offset=0"])
+            #expect(server.calls("GET /v1/work-orders").allSatisfy { $0.header("company-id") == "c1" })
         }
 
         @Test func signedOutStoreDoesNothing() async {
@@ -105,15 +106,15 @@ extension BackendTests {
             await store.setAvailability(.offDuty)
             #expect(store.preferredAvailability == .offDuty)
             #expect(UserDefaults.standard.string(forKey: "aria.availability_preference") == "off_duty")
-            #expect(server.calls("PUT /v1/mobile/me/availability").first?.json as? [String: String] == ["availability": "off_duty"])
-            #expect(!server.calls("GET /v1/mobile/work-orders").isEmpty, "cambia la disponibilità, cambia cosa arriva")
+            #expect(server.calls("PUT /v1/me/availability").first?.json as? [String: String] == ["availability": "off_duty"])
+            #expect(!server.calls("GET /v1/work-orders").isEmpty, "cambia la disponibilità, cambia cosa arriva")
             #expect(!store.isUpdatingAvailability)
         }
 
         @Test func serverRefusingTheChangeKeepsThePreviousChoice() async throws {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome()
-            server.route("PUT /v1/mobile/me/availability", .json(#"{"detail":"bad"}"#, status: 422))
+            server.route("PUT /v1/me/availability", .json(#"{"detail":"bad"}"#, status: 422))
             await store.setAvailability(.busy)
             #expect(store.preferredAvailability == .available)
             #expect(UserDefaults.standard.string(forKey: "aria.availability_preference") == nil)
@@ -123,7 +124,7 @@ extension BackendTests {
         @Test func choosingTheCurrentAvailabilityIsANoOp() async throws {
             let (_, store) = try await TestEnv.signedInStore()
             await store.setAvailability(.available)
-            #expect(server.calls("PUT /v1/mobile/me/availability").isEmpty)
+            #expect(server.calls("PUT /v1/me/availability").isEmpty)
         }
 
         // MARK: Dettaglio
@@ -132,7 +133,7 @@ extension BackendTests {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome(open: [TestEnv.orderJSON(id: "o1", title: "Old")])
             await store.sync()
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(id: "o1", title: "New", withProcedure: true)))
+            server.route("GET /v1/work-orders/o1", .json(TestEnv.orderJSON(id: "o1", title: "New", withProcedure: true)))
 
             guard case .found(let order)? = await store.detail(of: "o1") else { Issue.record("atteso .found"); return }
 
@@ -144,7 +145,7 @@ extension BackendTests {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome(open: [TestEnv.orderJSON(id: "o1"), TestEnv.orderJSON(id: "o2")])
             await store.sync()
-            server.route("GET /v1/mobile/work-orders/o1", .json(#"{"detail":"Not found"}"#, status: 404))
+            server.route("GET /v1/work-orders/o1", .json(#"{"detail":"Not found"}"#, status: 404))
 
             guard case .gone? = await store.detail(of: "o1") else { Issue.record("atteso .gone"); return }
 
@@ -171,7 +172,7 @@ extension BackendTests {
         @Test func disabledOperatorIsSignedOut() async throws {
             let (backend, store) = try await TestEnv.signedInStore()
             stubHome()
-            server.route("PUT /v1/mobile/me/availability", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
+            server.route("PUT /v1/me/availability", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
             await store.sync()
             #expect(!backend.isSignedIn)
         }

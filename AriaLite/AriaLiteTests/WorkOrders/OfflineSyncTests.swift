@@ -17,9 +17,9 @@ extension BackendTests {
     @Suite("Offline sync")
     struct OfflineSync {
         private let server = StubServer.shared
-        private let detailKey = "GET /v1/mobile/work-orders/o1"
-        private let openKey = "GET /v1/mobile/work-orders?status=open&limit=50"
-        private let closedKey = "GET /v1/mobile/work-orders?status=closed&limit=200"
+        private let detailKey = "GET /v1/work-orders/o1"
+        private let openKey = "GET /v1/work-orders?status_group=open&limit=50&offset=0"
+        private let closedKey = "GET /v1/work-orders?status_group=closed&limit=200&offset=0"
 
         init() { TestEnv.reset() }
 
@@ -42,8 +42,9 @@ extension BackendTests {
 
         private func stubHome(open: [String] = [], closed: [String] = []) {
             let me = #"{"id":"u1","name":"M","email":"m@a.b","specialties":[],"availability":"available"}"#
-            server.route("PUT /v1/mobile/me/availability", .json(me))
-            server.route("GET /v1/mobile/me", .json(me))
+            server.route("PUT /v1/me/availability", .json(me))
+            // GET /v1/me ha il profilo operatore dentro `operatorProfile`.
+            server.route("GET /v1/me", .json(#"{"id":"u1","name":"M","email":"m@a.b","operatorProfile":\#(me)}"#))
             server.route(openKey, .json("[\(open.joined(separator: ","))]"))
             server.route(closedKey, .json("[\(closed.joined(separator: ","))]"))
         }
@@ -53,7 +54,7 @@ extension BackendTests {
         @Test func aResultIsVisibleAtOnceAndLeavesInOneBatchWithASingleReload() async throws {
             let (_, store) = try await storeWithOrder()
             let before = server.calls.count
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
             server.route(detailKey, .json(TestEnv.orderJSON(status: "in_progress", withProcedure: true, reported: 1)))
 
             let change = await store.report(.done(note: nil), step: "s1", of: "o1")
@@ -65,7 +66,7 @@ extension BackendTests {
 
             await store.flush()
 
-            #expect(workOrderCalls(after: before) == ["PUT /v1/mobile/work-orders/o1/steps/s1", "GET /v1/mobile/work-orders/o1"])
+            #expect(workOrderCalls(after: before) == ["PUT /v1/work-orders/o1/steps/s1", "GET /v1/work-orders/o1"])
             #expect(store.pendingCount == 0)
             #expect(store.lastSyncedAt != nil)
             #expect(store.current("o1")?.procedure?.steps.first?.report?.isDone == true)
@@ -74,8 +75,8 @@ extension BackendTests {
         @Test func manyStepsOfAProcedureNeedOneReloadNotOnePerStep() async throws {
             let (_, store) = try await storeWithOrder()
             let before = server.calls.count
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
+            server.route("PUT /v1/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
             _ = await store.report(.done(note: nil), step: "s2", of: "o1")
 
@@ -87,14 +88,14 @@ extension BackendTests {
 
         @Test func twoResultsForTheSameStepBecomeOneCall() async throws {
             let (_, store) = try await storeWithOrder()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON(status: "not_done")))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON(status: "not_done")))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
             _ = await store.report(.notDone(note: "Manca il pezzo"), step: "s1", of: "o1")
             #expect(store.pendingCount == 1)
 
             await store.flush()
 
-            let puts = server.calls("PUT /v1/mobile/work-orders/o1/steps/s1")
+            let puts = server.calls("PUT /v1/work-orders/o1/steps/s1")
             #expect(puts.count == 1)
             #expect(puts.first?.json as? [String: String] == ["status": "not_done", "note": "Manca il pezzo"])
         }
@@ -112,11 +113,11 @@ extension BackendTests {
 
         @Test func undoingAResultAlreadyOnTheServerSendsTheDelete() async throws {
             let (_, store) = try await storeWithOrder(reported: 1)
-            server.route("DELETE /v1/mobile/work-orders/o1/steps/s1", .noContent)
+            server.route("DELETE /v1/work-orders/o1/steps/s1", .noContent)
             _ = await store.clearReport(step: "s1", of: "o1")
             #expect(store.pendingCount == 1)
             await store.flush()
-            #expect(server.calls("DELETE /v1/mobile/work-orders/o1/steps/s1").count == 1)
+            #expect(server.calls("DELETE /v1/work-orders/o1/steps/s1").count == 1)
         }
 
         @Test func notDoneWithoutAReasonFailsLocallyWithAReadableMessage() async throws {
@@ -163,12 +164,12 @@ extension BackendTests {
             network.simulate(.offline)
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
             stubHome(open: [TestEnv.orderJSON()])
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
 
             network.simulate(.online)
 
             #expect(await TestEnv.waitUntil { store.pendingCount == 0 && !store.isSyncingChanges })
-            #expect(server.calls("PUT /v1/mobile/work-orders/o1/steps/s1").count == 1)
+            #expect(server.calls("PUT /v1/work-orders/o1/steps/s1").count == 1)
         }
 
         @Test func completingOfflineClosesTheTaskOnThePhoneAndQueuesTheClosure() async throws {
@@ -182,7 +183,7 @@ extension BackendTests {
             #expect(store.orders.isEmpty)
             #expect(store.closedOrders.map(\.id) == ["o1"])
             #expect(store.pendingCount == 1)
-            #expect(server.calls("POST /v1/mobile/work-orders/o1/complete").isEmpty)
+            #expect(server.calls("POST /v1/work-orders/o1/complete").isEmpty)
         }
 
         @Test func completingChecksTheStepsOnThePhoneFirst() async throws {
@@ -216,9 +217,9 @@ extension BackendTests {
             await store.sync()
             server.route(detailKey, .json(TestEnv.orderJSON(withProcedure: true)))
             _ = await store.detail(of: "o1")
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
-            server.route("POST /v1/mobile/work-orders/o1/complete", .json(TestEnv.orderJSON(id: "o1", status: "completed")))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
+            server.route("PUT /v1/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
+            server.route("POST /v1/work-orders/o1/complete", .json(TestEnv.orderJSON(id: "o1", status: "completed")))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
             _ = await store.report(.done(note: nil), step: "s2", of: "o1")
             let before = server.calls.count
@@ -226,9 +227,9 @@ extension BackendTests {
             let change = await store.complete("o1", resolutionNotes: "Replaced")
 
             #expect(change.order?.isClosed == true)
-            #expect(workOrderCalls(after: before) == ["PUT /v1/mobile/work-orders/o1/steps/s1",
-                                                       "PUT /v1/mobile/work-orders/o1/steps/s2",
-                                                       "POST /v1/mobile/work-orders/o1/complete"],
+            #expect(workOrderCalls(after: before) == ["PUT /v1/work-orders/o1/steps/s1",
+                                                       "PUT /v1/work-orders/o1/steps/s2",
+                                                       "POST /v1/work-orders/o1/complete"],
                     "in ordine, e la risposta della chiusura è già l'ordine aggiornato: niente rilettura")
             #expect(store.orders.map(\.id) == ["o2"])
             #expect(store.closedOrders.map(\.id) == ["o1", "old"], "la più recente in cima")
@@ -237,7 +238,7 @@ extension BackendTests {
 
         @Test func aClosureRefusedByTheServerIsReportedHereAndTheOrderStaysOpen() async throws {
             let (_, store) = try await storeWithOrder(reported: 2)
-            server.route("POST /v1/mobile/work-orders/o1/complete",
+            server.route("POST /v1/work-orders/o1/complete",
                          .json(#"{"detail":{"code":"steps_incomplete","message":"m","missing":["s2"]}}"#, status: 409))
             let change = await store.complete("o1", resolutionNotes: "x")
             #expect(change.failureMessage == AriaServerCode.stepsIncomplete.localized)
@@ -249,7 +250,7 @@ extension BackendTests {
 
         @Test func aStepRemovedOnTheDesktopBecomesASyncIssue() async throws {
             let (_, store) = try await storeWithOrder()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1",
+            server.route("PUT /v1/work-orders/o1/steps/s1",
                          .json(#"{"detail":{"code":"step_not_found","message":"m"}}"#, status: 404))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
 
@@ -263,8 +264,8 @@ extension BackendTests {
 
         @Test func anOrderNoLongerOursIsRemovedWithItsQueue() async throws {
             let (_, store) = try await storeWithOrder()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(#"{"detail":"Not found"}"#, status: 404))
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(#"{"detail":"Not found"}"#, status: 404))
+            server.route("PUT /v1/work-orders/o1/steps/s2", .json(TestEnv.stepJSON(id: "s2")))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
             _ = await store.report(.done(note: nil), step: "s2", of: "o1")
 
@@ -272,13 +273,13 @@ extension BackendTests {
 
             #expect(store.orders.isEmpty && store.current("o1") == nil)
             #expect(store.pendingCount == 0)
-            #expect(server.calls("PUT /v1/mobile/work-orders/o1/steps/s2").isEmpty, "il resto della coda dell'ordine non parte")
+            #expect(server.calls("PUT /v1/work-orders/o1/steps/s2").isEmpty, "il resto della coda dell'ordine non parte")
             #expect(store.syncIssues.first?.kind == .gone)
         }
 
         @Test func aServerThatIsDownKeepsTheChangeForLater() async throws {
             let (_, store) = try await storeWithOrder()
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json("{}", status: 503))
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json("{}", status: 503))
             _ = await store.report(.done(note: nil), step: "s1", of: "o1")
 
             await store.flush()
@@ -311,9 +312,9 @@ extension BackendTests {
             _ = await store.addPhoto(jpeg: Data(count: 100), step: "s1", of: "o1")
             #expect(store.pendingPhotos(step: "s1", of: "o1").count == 1)
 
-            let base = "/v1/mobile/work-orders/o1/steps/s1/photos"
-            server.route("PUT /v1/mobile/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
-            server.route("POST \(base)", .json(#"{"photoId":"p1","upload":{"url":"https://s3.test/b","fields":{"key":"k"}},"expiresIn":300}"#, status: 201))
+            let base = "/v1/work-orders/o1/steps/s1/photos"
+            server.route("PUT /v1/work-orders/o1/steps/s1", .json(TestEnv.stepJSON()))
+            server.route("POST \(base)", .json(#"{"photo_id":"p1","upload":{"url":"https://s3.test/b","fields":{"key":"k"}},"expires_in":300}"#, status: 201))
             server.route("POST /b", .noContent)
             server.route("POST \(base)/p1/confirm", .json(TestEnv.stepJSON()))
             let before = server.calls.count
@@ -321,8 +322,8 @@ extension BackendTests {
             await store.flush()
 
             #expect(server.calls.dropFirst(before).map { "\($0.method) \($0.path)" } == [
-                "PUT /v1/mobile/work-orders/o1/steps/s1", "POST \(base)", "POST /b", "POST \(base)/p1/confirm",
-                "GET /v1/mobile/work-orders/o1",
+                "PUT /v1/work-orders/o1/steps/s1", "POST \(base)", "POST /b", "POST \(base)/p1/confirm",
+                "GET /v1/work-orders/o1",
             ])
             #expect(store.pendingPhotos(step: "s1", of: "o1").isEmpty)
         }
@@ -369,9 +370,9 @@ extension BackendTests {
             stubHome(open: [TestEnv.orderJSON()])
             await store.sync()
             await store.sync()
-            #expect(server.calls.filter { $0.path == "/v1/mobile/work-orders" && $0.query == "status=open&limit=50" }.count == 1)
+            #expect(server.calls.filter { $0.path == "/v1/work-orders" && $0.query == "status_group=open&limit=50&offset=0" }.count == 1)
             await store.refresh()
-            #expect(server.calls.filter { $0.path == "/v1/mobile/work-orders" && $0.query == "status=open&limit=50" }.count == 2,
+            #expect(server.calls.filter { $0.path == "/v1/work-orders" && $0.query == "status_group=open&limit=50&offset=0" }.count == 2,
                     "il pull-to-refresh ricarica sempre")
         }
 
@@ -380,10 +381,10 @@ extension BackendTests {
             let monday = "2026-10-19T08:00:00Z", tuesday = "2026-10-20T08:00:00Z"
             stubHome(open: [TestEnv.orderJSON(id: "o1", updatedAt: monday), TestEnv.orderJSON(id: "o2", updatedAt: monday)])
             server.route(detailKey, .json(TestEnv.orderJSON(id: "o1", withProcedure: true, updatedAt: monday)))
-            server.route("GET /v1/mobile/work-orders/o2", .json(TestEnv.orderJSON(id: "o2", withProcedure: true, updatedAt: monday)))
+            server.route("GET /v1/work-orders/o2", .json(TestEnv.orderJSON(id: "o2", withProcedure: true, updatedAt: monday)))
 
             await store.refresh()
-            #expect(server.calls(detailKey).count == 1 && server.calls("GET /v1/mobile/work-orders/o2").count == 1)
+            #expect(server.calls(detailKey).count == 1 && server.calls("GET /v1/work-orders/o2").count == 1)
             #expect(store.current("o2")?.procedure != nil, "i passi sono sul telefono prima ancora di aprire l'ordine")
 
             // Il giorno dopo un planner cambia solo o1.
@@ -392,7 +393,7 @@ extension BackendTests {
             await store.refresh()
 
             #expect(server.calls(detailKey).count == 2)
-            #expect(server.calls("GET /v1/mobile/work-orders/o2").count == 1, "o2 non è cambiato: non si riscarica")
+            #expect(server.calls("GET /v1/work-orders/o2").count == 1, "o2 non è cambiato: non si riscarica")
         }
 
         @Test func lowDataModeSkipsThePrefetch() async throws {
@@ -410,13 +411,13 @@ extension BackendTests {
             let (_, store) = try await TestEnv.signedInStore(network: network)
             await store.setAvailability(.busy)
             #expect(store.availability == .busy)
-            #expect(server.calls("PUT /v1/mobile/me/availability").isEmpty)
+            #expect(server.calls("PUT /v1/me/availability").isEmpty)
 
             stubHome()
             network.simulate(.online)
 
-            #expect(await TestEnv.waitUntil { !server.calls("PUT /v1/mobile/me/availability").isEmpty })
-            #expect(server.calls("PUT /v1/mobile/me/availability").first?.json as? [String: String] == ["availability": "busy"])
+            #expect(await TestEnv.waitUntil { !server.calls("PUT /v1/me/availability").isEmpty })
+            #expect(server.calls("PUT /v1/me/availability").first?.json as? [String: String] == ["availability": "busy"])
         }
 
         @Test func loggingOutWipesThePhoneButAnExpiredSessionKeepsTheQueue() async throws {

@@ -73,6 +73,13 @@ private func isNotFound(_ error: any Error) -> Bool {
     return false
 }
 
+/// GET /v1/me: il profilo operatore è in `operatorProfile`.
+private func operatorProfile(_ client: AriaAPIClient) async throws -> AriaMobileProfile {
+    let me = try await client.data("GET", "v1/me")
+    let raw = try #require(AriaOperatorProfileJSON(inMe: me), "l'utente non è un operatore")
+    return try JSONDecoder().decode(AriaMobileProfile.self, from: raw)
+}
+
 extension BackendTests {
     // MARK: - Configurazione di produzione (senza rete)
 
@@ -191,14 +198,14 @@ extension BackendTests {
         // MARK: Dati
 
         @Test(.enabled(if: LiveEnv.publicChecks, "ARIA_LIVE=1"),
-              arguments: ["v1/companies", "v1/mobile/me", "v1/mobile/work-orders"])
+              arguments: ["v1/companies", "v1/me", "v1/work-orders"])
         func dataRoutesRefuseARequestWithoutAJWT(path: String) async throws {
             let reply = try await call("GET", LiveEnv.config.apiBaseURL.appending(path: path))
             #expect(reply.status == 401)
         }
 
         @Test(.enabled(if: LiveEnv.publicChecks, "ARIA_LIVE=1"),
-              arguments: ["v1/companies", "v1/mobile/me", "v1/mobile/work-orders"])
+              arguments: ["v1/companies", "v1/me", "v1/work-orders"])
         func dataRoutesRefuseAJWTTheyDidNotSign(path: String) async throws {
             let reply = try await call("GET", LiveEnv.config.apiBaseURL.appending(path: path),
                                        headers: ["Authorization": "Bearer \(TestEnv.jwt())", "Company-Id": "c1"])
@@ -266,10 +273,7 @@ extension BackendTests {
         }
 
         private func openOrders(_ client: AriaAPIClient, limit: Int = 50) async throws -> [AriaWorkOrder] {
-            let list: AriaWorkOrderList = try await client.get(
-                "v1/mobile/work-orders",
-                query: [URLQueryItem(name: "status", value: "open"), URLQueryItem(name: "limit", value: "\(limit)")])
-            return list.orders
+            try await client.workOrders(.open, pageSize: limit, maxPages: 1).map { try $0.decoded(as: AriaWorkOrder.self) }
         }
 
         // MARK: Sessione e azienda
@@ -307,7 +311,7 @@ extension BackendTests {
         @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
         func theProfileDecodes() async throws {
             try await connect { live in
-                let profile: AriaMobileProfile = try await live.client.get("v1/mobile/me")
+                let profile = try await operatorProfile(live.client)
                 #expect(!profile.id.isEmpty)
                 #expect(profile.email.contains("@"))
             }
@@ -317,7 +321,7 @@ extension BackendTests {
         func aCallWithoutCompanyIdIsA400() async throws {
             try await connect { live in
                 let jwt = try await live.auth.validAccessToken()
-                var req = URLRequest(url: LiveEnv.config.apiBaseURL.appending(path: "v1/mobile/me"))
+                var req = URLRequest(url: LiveEnv.config.apiBaseURL.appending(path: "v1/me"))
                 req.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
                 let (_, response) = try await AriaHTTP.cookielessSession().data(for: req)
                 #expect((response as? HTTPURLResponse)?.statusCode == 400)
@@ -330,11 +334,8 @@ extension BackendTests {
         func openClosedAndAllListsDecodeAndAgreeOnStatus() async throws {
             try await connect { live in
                 func list(_ filter: AriaWorkOrderFilter, limit: Int) async throws -> [AriaWorkOrder] {
-                    let list: AriaWorkOrderList = try await live.client.get(
-                        "v1/mobile/work-orders",
-                        query: [URLQueryItem(name: "status", value: filter.rawValue),
-                                URLQueryItem(name: "limit", value: "\(limit)")])
-                    return list.orders
+                    try await live.client.workOrders(filter, pageSize: limit, maxPages: 1)
+                        .map { try $0.decoded(as: AriaWorkOrder.self) }
                 }
                 let open = try await list(.open, limit: 200)
                 let closed = try await list(.closed, limit: 200)
@@ -353,10 +354,8 @@ extension BackendTests {
         @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
         func theLimitIsRespected() async throws {
             try await connect { live in
-                let one: AriaWorkOrderList = try await live.client.get(
-                    "v1/mobile/work-orders",
-                    query: [URLQueryItem(name: "status", value: "all"), URLQueryItem(name: "limit", value: "1")])
-                #expect(one.orders.count <= 1)
+                let one = try await live.client.workOrders(.all, pageSize: 1, maxPages: 1)
+                #expect(one.count <= 1)
             }
         }
 
@@ -471,20 +470,20 @@ extension BackendTests {
         @Test(.enabled(if: LiveEnv.writeChecks, "ARIA_LIVE_SESSION + ARIA_LIVE_WRITE=1"))
         func availabilityRoundTripsAndIsRestored() async throws {
             try await connect { client in
-                let before: AriaMobileProfile = try await client.get("v1/mobile/me")
+                let before = try await operatorProfile(client)
                 let original = before.availability ?? .available
                 let other: AriaAvailability = original == .busy ? .available : .busy
 
                 let changed: AriaMobileProfile = try await client.send(
-                    "PUT", "v1/mobile/me/availability", body: AriaAvailabilityBody(availability: other))
+                    "PUT", "v1/me/availability", body: AriaAvailabilityBody(availability: other))
                 #expect(changed.availability == other)
                 #expect(changed.availabilityAt != nil)
 
-                let reread: AriaMobileProfile = try await client.get("v1/mobile/me")
+                let reread = try await operatorProfile(client)
                 #expect(reread.availability == other)
 
                 let restored: AriaMobileProfile = try await client.send(
-                    "PUT", "v1/mobile/me/availability", body: AriaAvailabilityBody(availability: original))
+                    "PUT", "v1/me/availability", body: AriaAvailabilityBody(availability: original))
                 #expect(restored.availability == original)
             }
         }
@@ -499,19 +498,18 @@ extension BackendTests {
                 }
 
                 let done = try await client.report(.done(note: "  test live  "), step: target.step, of: target.order)
-                #expect(done.id == target.step)
-                #expect(done.report?.status == "done")
-                #expect(done.report?.note == "test live", "la nota si manda senza spazi ai bordi")
+                #expect(done.status == "done")
+                #expect(done.note == "test live", "la nota si manda senza spazi ai bordi")
 
                 // Idempotente: rimandarlo non cambia il risultato.
                 let again = try await client.report(.done(note: "test live"), step: target.step, of: target.order)
-                #expect(again.report?.status == "done")
-                #expect(again.report?.reportedAt != nil)
+                #expect(again.status == "done")
+                #expect(again.reportedAt != nil)
 
                 let notDone = try await client.report(.notDone(note: "non eseguito: prova live"), step: target.step,
                                                       of: target.order)
-                #expect(notDone.report?.status == "not_done")
-                #expect(notDone.report?.note == "non eseguito: prova live")
+                #expect(notDone.status == "not_done")
+                #expect(notDone.note == "non eseguito: prova live")
 
                 let stored = try await reportOfStep()
                 #expect(stored?.status == "not_done")

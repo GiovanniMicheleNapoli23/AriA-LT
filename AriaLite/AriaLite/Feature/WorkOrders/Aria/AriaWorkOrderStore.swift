@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 08/10/26.
 //
 //  Lavori assegnati all'operatore mobile e la sua disponibilità, sull'host dei lavori
-//  (GET /v1/mobile/me, PUT /v1/mobile/me/availability, GET /v1/mobile/work-orders[/{id}]),
+//  (GET /v1/me, PUT /v1/me/availability, GET /v1/work-orders[/{id}]),
 //  più i risultati dei passi, le foto e il completamento (AriaWorkOrderAPI).
 //
 //  Due database: quello remoto del server e quello locale (AriaOfflineStore). Si lavora sempre sul
@@ -173,13 +173,13 @@ final class AriaWorkOrderStore {
         await prefetchDetails()
     }
 
-    /// Task chiusi (completati, verificati, annullati) per la sezione "Past", fino a 200: il massimo di GET /v1/mobile/work-orders.
+    /// Task chiusi (completati, verificati, annullati) per la sezione "Past", fino a 200: il massimo di GET /v1/work-orders (una pagina).
     func loadClosedOrders() async {
         guard !isLoadingClosed, network.isOnline, await prepare(), let account else { return }
         isLoadingClosed = true
         defer { isLoadingClosed = false }
         do {
-            let list = try await fetchList(status: "closed", limit: 200)
+            let list = try await fetchList(.closed, pageSize: 200, maxPages: 1)
             offline.saveList(list, bucket: "closed", accountId: account)
             offline.saveValue(Data(), name: "list.closed", accountId: account)
             rebuild()
@@ -418,7 +418,7 @@ final class AriaWorkOrderStore {
 
     // MARK: Privato
 
-    /// Ogni chiamata /v1/mobile vuole il Company-Id (400 senza): lo dà GET /v1/companies.
+    /// Ogni chiamata sull'azienda vuole il Company-Id (400 senza): lo dà GET /v1/companies.
     func prepare() async -> Bool {
         guard backend.isSignedIn else { return false }
         await backend.bootstrapIfNeeded()
@@ -442,14 +442,22 @@ final class AriaWorkOrderStore {
     }
 
     private func putAvailability(_ value: AriaAvailability) async throws {
-        let raw = try await backend.api.data("PUT", "v1/mobile/me/availability",
+        // La risposta è il profilo operatore, senza involucro `operatorProfile`.
+        let raw = try await backend.api.data("PUT", "v1/me/availability",
                                              body: try JSONEncoder().encode(AriaAvailabilityBody(availability: value)))
         try saveProfile(raw)
         UserDefaults.standard.removeObject(forKey: Self.availabilityPendingKey)
     }
 
+    /// GET /v1/me: il profilo operatore è in `operatorProfile`, che per chi non è un operatore è null
+    /// (niente controlli di esecuzione: `profile` resta vuoto).
     private func getProfile() async throws {
-        try saveProfile(try await backend.api.data("GET", "v1/mobile/me"))
+        let me = try await backend.api.data("GET", "v1/me")
+        guard let operatorProfile = AriaOperatorProfileJSON(inMe: me) else {
+            profile = nil
+            return
+        }
+        try saveProfile(operatorProfile)
     }
 
     private func saveProfile(_ raw: Data) throws {
@@ -458,19 +466,14 @@ final class AriaWorkOrderStore {
         if let account { offline.saveValue(raw, name: "me", accountId: account) }
     }
 
-    func fetchList(status: String, limit: Int) async throws -> [AriaJSON] {
-        let raw = try await backend.api.data("GET", "v1/mobile/work-orders",
-                                             query: [URLQueryItem(name: "status", value: status),
-                                                     URLQueryItem(name: "limit", value: String(limit))])
-        // Si decodifica comunque con il modello: una risposta che l'app non sa leggere non sostituisce la copia buona.
-        do { _ = try JSONDecoder().decode(AriaWorkOrderList.self, from: raw) }
-        catch { throw AriaError.decoding("AriaWorkOrderList: \(error)") }
-        guard let orders = AriaWorkOrderOverlay.orders(inList: raw) else { throw AriaError.decoding("AriaWorkOrderList") }
-        return orders
+    /// Gli ordini assegnati, tutte le pagine (vedi AriaAPIClient.workOrders), con le chiavi in camelCase.
+    func fetchList(_ filter: AriaWorkOrderFilter, pageSize: Int, maxPages: Int = 20) async throws -> [AriaJSON] {
+        try await backend.api.workOrders(filter, pageSize: pageSize, maxPages: maxPages)
     }
 
     func fetchDetail(_ id: String) async throws -> AriaJSON {
-        let raw = try await backend.api.data("GET", "v1/mobile/work-orders/\(id)")
+        let raw = try await backend.api.workOrderData("GET", "v1/work-orders/\(id)",
+                                                      query: [URLQueryItem(name: "include", value: "procedure")])
         do { _ = try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
         catch { throw AriaError.decoding("AriaWorkOrder: \(error)") }
         return try JSONDecoder().decode(AriaJSON.self, from: raw)
@@ -483,7 +486,7 @@ final class AriaWorkOrderStore {
         isLoading = true
         defer { if current == generation { isLoading = false } }
         do {
-            let list = try await fetchList(status: "open", limit: 50)
+            let list = try await fetchList(.open, pageSize: 50)
             guard current == generation else { return }
             offline.saveList(list, bucket: "open", accountId: account)
             offline.saveValue(Data(), name: "list.open", accountId: account)

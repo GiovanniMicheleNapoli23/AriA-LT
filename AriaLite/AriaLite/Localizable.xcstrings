@@ -1305,6 +1305,22 @@
         }
       }
     },
+    "Aria is still answering. Wait for the answer, then try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria is still answering. Wait for the answer, then try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria sta ancora rispondendo. Aspetta la risposta, poi riprova."
+          }
+        }
+      }
+    },
     "Aria is waiting for your decision" : {
       "localizations" : {
         "it" : {
@@ -9511,6 +9527,38 @@
         }
       }
     },
+    "The answer had already finished." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The answer had already finished."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La risposta era già finita."
+          }
+        }
+      }
+    },
+    "The answer was interrupted. Ask again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The answer was interrupted. Ask again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La risposta si è interrotta. Chiedi di nuovo."
+          }
+        }
+      }
+    },
     "The documentation does not match this machine" : {
       "localizations" : {
         "en" : {
@@ -9523,6 +9571,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La documentazione non corrisponde a questa macchina"
+          }
+        }
+      }
+    },
+    "The message could not be sent. Try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The message could not be sent. Try again."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il messaggio non è partito. Riprova."
           }
         }
       }

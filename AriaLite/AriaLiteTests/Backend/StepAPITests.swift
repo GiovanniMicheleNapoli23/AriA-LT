@@ -16,7 +16,7 @@ extension BackendTests {
     @Suite("Steps, photos, completion")
     struct StepAPI {
         private let server = StubServer.shared
-        private let stepPath = "/v1/mobile/work-orders/o1/steps/s1"
+        private let stepPath = "/v1/work-orders/o1/steps/s1"
 
         init() { TestEnv.reset() }
 
@@ -24,11 +24,11 @@ extension BackendTests {
 
         @Test func doneWithoutANoteSendsOnlyTheStatus() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("PUT \(stepPath)", .json(TestEnv.stepJSON()))
+            server.route("PUT \(stepPath)", .json(TestEnv.stepReportJSON()))
 
             let step = try await client.report(.done(note: nil), step: "s1", of: "o1")
 
-            #expect(step.report?.isDone == true)
+            #expect(step.isDone, "il PUT risponde col risultato al livello più alto")
             let call = try #require(server.calls("PUT \(stepPath)").first)
             #expect(call.host == TestEnv.apiHost)
             #expect(call.json as? [String: String] == ["status": "done"], "la nota facoltativa non compare")
@@ -37,7 +37,7 @@ extension BackendTests {
 
         @Test func noteIsTrimmedAndEmptyDoneNoteIsDropped() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("PUT \(stepPath)", .json(TestEnv.stepJSON()))
+            server.route("PUT \(stepPath)", .json(TestEnv.stepReportJSON()))
             _ = try await client.report(.done(note: "  checked  "), step: "s1", of: "o1")
             _ = try await client.report(.done(note: "   "), step: "s1", of: "o1")
             let calls = server.calls("PUT \(stepPath)")
@@ -47,9 +47,9 @@ extension BackendTests {
 
         @Test func notDoneSendsTheReason() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("PUT \(stepPath)", .json(TestEnv.stepJSON(status: "not_done")))
+            server.route("PUT \(stepPath)", .json(TestEnv.stepReportJSON(status: "not_done", note: "Seized bolt")))
             let step = try await client.report(.notDone(note: "Seized bolt"), step: "s1", of: "o1")
-            #expect(step.report?.status == "not_done")
+            #expect(step.status == "not_done" && step.note == "Seized bolt")
             #expect(server.calls("PUT \(stepPath)").first?.json as? [String: String] == ["status": "not_done", "note": "Seized bolt"])
         }
 
@@ -71,7 +71,7 @@ extension BackendTests {
                 (error as? AriaError)?.serverCode == .noteTooLong
             }
             #expect(server.calls.count == before)
-            server.route("PUT \(stepPath)", .json(TestEnv.stepJSON()))
+            server.route("PUT \(stepPath)", .json(TestEnv.stepReportJSON()))
             _ = try await client.report(.done(note: String(repeating: "a", count: 2000)), step: "s1", of: "o1")
         }
 
@@ -104,17 +104,64 @@ extension BackendTests {
             }
         }
 
-        @Test func fetchingAnOrderUsesTheDetailEndpoint() async throws {
+        @Test func fetchingAnOrderUsesTheDetailEndpointWithTheProcedure() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true, reported: 1)))
+            server.route("GET /v1/work-orders/o1", .json(TestEnv.orderJSON(withProcedure: true, reported: 1)))
             let order = try await client.workOrder(id: "o1")
             #expect(order.procedure?.steps.count == 2)
             #expect(order.progress?.reported == 1)
+            #expect(server.calls("GET /v1/work-orders/o1").first?.query == "include=procedure")
+        }
+
+        @Test func snakeCaseOnTheWireDecodesLikeCamelCase() async throws {
+            let client = try await TestEnv.signedInClient()
+            let wire = #"""
+            {"id":"o1","title":"Fix","status":"assigned","priority":"high","asset_tag":"PUMP-1","plant_id":"p1",
+             "due_date":"2026-10-30T10:00:00Z","step_progress":{"done":1,"not_done":1,"total":3},
+             "procedure":{"steps":[{"id":"a1b2c3d4e5f6","number":1,"text":"Isolate","report":
+                 {"status":"not_done","note":"Seized","photos":[{"photo_id":"ph1","url":"https://s3.test/p.jpg","mime_type":"image/jpeg"}],
+                  "reported_at":"2026-10-09T09:12:00.5Z"}}],
+              "safety_warnings":["LOTO"],"tools_needed":["Puller"],"parts_needed":[],"progress":{"done":0,"not_done":1,"total":1}}}
+            """#
+            server.route("GET /v1/work-orders/o1", .json(wire))
+
+            let order = try await client.workOrder(id: "o1")
+
+            #expect(order.assetTag == "PUMP-1" && order.plantId == "p1" && order.dueDate != nil)
+            #expect(order.procedure?.safetyWarnings == ["LOTO"] && order.procedure?.toolsNeeded == ["Puller"])
+            let report = try #require(order.procedure?.steps.first?.report)
+            #expect(report.status == "not_done" && report.reportedAt != nil)
+            #expect(report.photos.map(\.id) == ["ph1"] && report.photos.first?.mimeType == "image/jpeg")
+        }
+
+        @Test func theListCarriesStepProgressAndPagesUntilAShortPage() async throws {
+            let client = try await TestEnv.signedInClient()
+            func page(_ ids: [String]) -> Reply {
+                .json("[" + ids.map { #"{"id":"\#($0)","title":"T","status":"assigned","step_progress":{"done":1,"not_done":0,"total":2}}"# }.joined(separator: ",") + "]")
+            }
+            server.route("GET /v1/work-orders?status_group=open&limit=2&offset=0", page(["a", "b"]))
+            server.route("GET /v1/work-orders?status_group=open&limit=2&offset=2", page(["b", "c"]))
+            server.route("GET /v1/work-orders?status_group=open&limit=2&offset=4", page(["d"]))
+
+            let orders = try await client.workOrders(.open, pageSize: 2)
+
+            #expect(orders.compactMap { $0["id"]?.stringValue } == ["a", "b", "c", "d"], "un ordine visto due volte resta uno")
+            let decoded = try orders.map { try $0.decoded(as: AriaWorkOrder.self) }
+            #expect(decoded.first?.progress == AriaProgress(done: 1, notDone: 0, total: 2), "step_progress della lista")
+            #expect(server.calls("GET /v1/work-orders").count == 3)
+        }
+
+        @Test func closedOrdersAreOnePageOfTwoHundred() async throws {
+            let client = try await TestEnv.signedInClient()
+            server.route("GET /v1/work-orders?status_group=closed&limit=200&offset=0", .json("[]"))
+            let orders = try await client.workOrders(.closed, pageSize: 200, maxPages: 1)
+            #expect(orders.isEmpty)
+            #expect(server.calls("GET /v1/work-orders").count == 1)
         }
 
         // MARK: Foto
 
-        private let ticket = #"{"photoId":"p1","upload":{"url":"https://s3.test/bucket","fields":{"key":"k/1.jpg","policy":"POL","x-amz-signature":"SIG","Content-Type":"image/jpeg"}},"expiresIn":300}"#
+        private let ticket = #"{"photo_id":"p1","upload":{"url":"https://s3.test/bucket","fields":{"key":"k/1.jpg","policy":"POL","x-amz-signature":"SIG","Content-Type":"image/jpeg"}},"expires_in":300}"#
 
         @Test func photoFlowRequestsUploadsThenConfirms() async throws {
             let client = try await TestEnv.signedInClient()
@@ -127,8 +174,8 @@ extension BackendTests {
             _ = try await client.addPhoto(jpeg: jpeg, step: "s1", of: "o1")
 
             let request = try #require(server.calls("POST \(photosPath)").first)
-            #expect(request.json?["mimeType"] as? String == "image/jpeg")
-            #expect(request.json?["sizeBytes"] as? Int == 4321)
+            #expect(request.json?["mime_type"] as? String == "image/jpeg")
+            #expect(request.json?["size_bytes"] as? Int == 4321)
             #expect(request.header("authorization") != nil)
 
             let upload = try #require(server.calls("POST /bucket").first)
@@ -258,11 +305,11 @@ extension BackendTests {
 
         @Test func completingSendsTheResolutionNotesTrimmed() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("POST /v1/mobile/work-orders/o1/complete", .json(TestEnv.orderJSON(status: "completed")))
+            server.route("POST /v1/work-orders/o1/complete", .json(TestEnv.orderJSON(status: "completed")))
             let order = try await client.complete(order: "o1", resolutionNotes: "  Replaced the breaker  ")
             #expect(order.status == "completed" && order.isClosed)
-            let call = try #require(server.calls("POST /v1/mobile/work-orders/o1/complete").first)
-            #expect(call.json as? [String: String] == ["resolutionNotes": "Replaced the breaker"])
+            let call = try #require(server.calls("POST /v1/work-orders/o1/complete").first)
+            #expect(call.json as? [String: String] == ["resolution_notes": "Replaced the breaker"])
         }
 
         @Test func completingWithBlankNotesNeverReachesTheServer() async throws {
@@ -276,7 +323,7 @@ extension BackendTests {
 
         @Test func incompleteStepsListWhichOnesAreMissing() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("POST /v1/mobile/work-orders/o1/complete",
+            server.route("POST /v1/work-orders/o1/complete",
                          .json(#"{"detail":{"code":"steps_incomplete","message":"m","missing":["s2","s3"]}}"#, status: 409))
             await #expect { try await client.complete(order: "o1", resolutionNotes: "done") } throws: { error in
                 if case AriaError.workOrder(.stepsIncomplete, let missing)? = error as? AriaError { missing == ["s2", "s3"] } else { false }

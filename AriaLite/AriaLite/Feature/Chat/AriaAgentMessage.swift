@@ -42,7 +42,12 @@ struct AriaAgentMessage: Identifiable {
     var interrupt: AriaInterrupt? = nil
     var interruptOutcome: AriaInterruptOutcome? = nil
     var usage: AriaUsage? = nil
+    /// Il turno più recente di questa risposta (`resp_…`): cambia se una pausa riprende con un turno nuovo.
     var responseId: String? = nil
+    /// La risposta che ha portato la checklist: le spunte sul server hanno questa chiave (`{response_id}:{task id}`).
+    var taskListResponseId: String? = nil
+    /// L'`Idempotency-Key` con cui è partito il messaggio: la stessa se lo si rimanda dopo una caduta di rete.
+    var requestId: String? = nil
     var episode: Int? = nil
     var finished = true
     var error: String? = nil
@@ -95,7 +100,8 @@ struct AriaAgentMessage: Identifiable {
         case .completed(let status, let usage):
             finished = true
             if let usage { self.usage = usage }
-            if status == "failed" { error = String(localized: "The response failed.") }
+            // Il server manda prima `error` col motivo, poi `completed` con status failed: il motivo non si copre.
+            if status == "failed", error == nil { error = String(localized: "The response failed.") }
         case .failed(let message):
             finished = true
             error = message
@@ -136,6 +142,7 @@ struct AriaAgentMessage: Identifiable {
             interruptOutcome = nil
         case .taskList(let list):
             taskList = list
+            taskListResponseId = responseId
         case .pipeline(let name, let data):
             pipeline.append(AriaPipelineEntry(name: name, data: data))
         case .ignored:
@@ -169,6 +176,7 @@ struct AriaAgentMessage: Identifiable {
         usage = row.usage
         responseId = row.responseId
         episode = row.episode
+        taskList = row.taskList
         for entry in row.pipeline ?? [] {
             let name = entry["type"]?.stringValue ?? ""
             switch name {
@@ -178,11 +186,12 @@ struct AriaAgentMessage: Identifiable {
                 if case .array(let facts)? = entry["facts"] { memoryFactsUsed = facts.compactMap(\.stringValue) }
                 pipeline.append(AriaPipelineEntry(name: name, data: entry))
             case "aria.task_list":
-                if let list = try? entry.decoded(as: AriaTaskList.self) { taskList = list }
+                if taskList == nil, let list = try? entry.decoded(as: AriaTaskList.self) { taskList = list }
             default:
                 if AriaStreamEvent.pipelineEvents.contains(name) { pipeline.append(AriaPipelineEntry(name: name, data: entry)) }
             }
         }
+        if taskList != nil { taskListResponseId = row.responseId }
     }
 
     init(id: String, role: Role, text: String = "", finished: Bool = true) {

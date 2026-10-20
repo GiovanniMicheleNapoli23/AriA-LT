@@ -208,7 +208,7 @@ nonisolated enum AriaWorkOrderOverlay {
         })
     }
 
-    /// Gli ordini di una risposta di GET /v1/mobile/work-orders (array, o avvolto come in AriaWorkOrderList).
+    /// Gli ordini di una risposta di GET /v1/work-orders (array, o avvolto come in AriaWorkOrderList).
     static func orders(inList raw: Data) -> [AriaJSON]? {
         guard let json = try? JSONDecoder().decode(AriaJSON.self, from: raw) else { return nil }
         if case .array(let items) = json { return items }

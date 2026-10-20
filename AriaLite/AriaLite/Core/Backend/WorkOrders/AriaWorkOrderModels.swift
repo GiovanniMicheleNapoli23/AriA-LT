@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 08/10/26.
 //
-//  Modelli dei lavori dell'operatore mobile (GET /v1/mobile/me, /v1/mobile/work-orders[/{id}]),
-//  della procedura a passi e dei loro risultati.
+//  Modelli dei lavori dell'operatore (GET /v1/me → operatorProfile, /v1/work-orders[/{id}]),
+//  della procedura a passi e dei loro risultati. Le chiavi sono in camelCase: le risposte sui lavori
+//  (snake_case sul filo) ci arrivano già convertite da AriaAPIClient.workOrderData.
 //  I valori fissi arrivano come stringhe e si leggono con proprietà tipizzate: un valore
 //  nuovo del server non deve far fallire la decodifica dell'intera lista.
 //
@@ -35,7 +36,7 @@ nonisolated enum AriaAvailability: String, Codable, Sendable, CaseIterable {
     }
 }
 
-/// GET /v1/mobile/me e risposta di PUT /v1/mobile/me/availability.
+/// `operatorProfile` di GET /v1/me, e risposta di PUT /v1/me/availability (l'oggetto, senza involucro).
 nonisolated struct AriaMobileProfile: Decodable, Sendable, Equatable {
     let id: String
     let name: String
@@ -60,7 +61,15 @@ nonisolated struct AriaMobileProfile: Decodable, Sendable, Equatable {
     }
 }
 
-/// Body di PUT /v1/mobile/me/availability: nessun altro campo (il server risponde 422).
+/// Il profilo operatore dentro la risposta di GET /v1/me: `nil` per un utente della piattaforma che non lo è
+/// (`operatorProfile` assente o null). Il JSON restituito è quello del solo profilo, com'è nella copia offline.
+nonisolated func AriaOperatorProfileJSON(inMe raw: Data) -> Data? {
+    guard let profile = (try? JSONDecoder().decode(AriaJSON.self, from: raw))?["operatorProfile"],
+          profile.objectValue != nil else { return nil }
+    return try? JSONEncoder().encode(profile)
+}
+
+/// Body di PUT /v1/me/availability: nessun altro campo (il server risponde 422).
 nonisolated struct AriaAvailabilityBody: Encodable, Sendable {
     let availability: AriaAvailability
 }
@@ -104,13 +113,13 @@ nonisolated struct AriaWorkOrder: Decodable, Sendable, Identifiable, Hashable {
     let updatedAt: Date?
     /// Passi con un risultato finora. Nella lista c'è sempre; il dettaglio ha anche i passi.
     let progress: AriaProgress?
-    /// Solo nel dettaglio (GET /v1/mobile/work-orders/{id}).
+    /// Solo nel dettaglio (GET /v1/work-orders/{id}?include=procedure).
     let procedure: AriaProcedure?
 
     private enum CodingKeys: String, CodingKey {
         case id, title, description, type, category, priority, status, assetTag, plantId, zone
         case scheduledDate, dueDate, estimatedDurationMin, assignedAt, assignmentSource, notes
-        case createdAt, updatedAt, progress, procedure
+        case createdAt, updatedAt, progress, stepProgress, procedure
     }
 
     init(from decoder: any Decoder) throws {
@@ -135,8 +144,10 @@ nonisolated struct AriaWorkOrder: Decodable, Sendable, Identifiable, Hashable {
         createdAt = try date(.createdAt)
         updatedAt = try date(.updatedAt)
         procedure = try c.decodeIfPresent(AriaProcedure.self, forKey: .procedure)
-        // Il dettaglio ha l'avanzamento anche dentro la procedura.
-        progress = try c.decodeIfPresent(AriaProgress.self, forKey: .progress) ?? procedure?.progress
+        // La lista lo manda come `step_progress`; il dettaglio ha l'avanzamento anche dentro la procedura.
+        progress = try c.decodeIfPresent(AriaProgress.self, forKey: .progress)
+            ?? c.decodeIfPresent(AriaProgress.self, forKey: .stepProgress)
+            ?? procedure?.progress
     }
 
     var priorityLevel: AriaWorkOrderPriority? {
@@ -195,6 +206,22 @@ nonisolated struct AriaProgress: Decodable, Sendable, Hashable {
     let done: Int
     let notDone: Int
     let total: Int
+
+    init(done: Int, notDone: Int, total: Int) {
+        self.done = done
+        self.notDone = notDone
+        self.total = total
+    }
+
+    private enum CodingKeys: String, CodingKey { case done, notDone, total }
+
+    /// Un conteggio che manca vale 0: un avanzamento strano non deve far cadere la lista intera.
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        done = try c.decodeIfPresent(Int.self, forKey: .done) ?? 0
+        notDone = try c.decodeIfPresent(Int.self, forKey: .notDone) ?? 0
+        total = try c.decodeIfPresent(Int.self, forKey: .total) ?? 0
+    }
 
     /// Passi con un risultato, fatti o no.
     var reported: Int { done + notDone }
@@ -258,6 +285,13 @@ nonisolated struct AriaStepReport: Decodable, Sendable, Hashable {
         case status, note, photos, reportedAt
     }
 
+    init(status: String, note: String?, photos: [AriaStepPhoto] = [], reportedAt: Date? = nil) {
+        self.status = status
+        self.note = note
+        self.photos = photos
+        self.reportedAt = reportedAt
+    }
+
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         status = try c.decode(String.self, forKey: .status)
@@ -274,6 +308,20 @@ nonisolated struct AriaStepPhoto: Decodable, Sendable, Identifiable, Hashable {
     let id: String
     let url: URL?
     let mimeType: String
+
+    private enum CodingKeys: String, CodingKey { case id, photoId, url, mimeType }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        // Il server la chiama `photo_id` nel ticket e nella conferma; `id` in un passo: si accettano entrambe.
+        if let id = try c.decodeIfPresent(String.self, forKey: .id) {
+            self.id = id
+        } else {
+            id = try c.decode(String.self, forKey: .photoId)
+        }
+        url = try? c.decodeIfPresent(URL.self, forKey: .url)
+        mimeType = try c.decodeIfPresent(String.self, forKey: .mimeType) ?? "image/jpeg"
+    }
 }
 
 /// Esito che l'operatore dà a un passo.
@@ -305,7 +353,7 @@ nonisolated struct AriaWireDate: Decodable, Sendable {
     }
 }
 
-/// GET /v1/mobile/work-orders: un array di ordini; si accetta anche un oggetto che lo avvolge.
+/// GET /v1/work-orders: un array di ordini; si accetta anche un oggetto che lo avvolge.
 nonisolated struct AriaWorkOrderList: Decodable, Sendable {
     let orders: [AriaWorkOrder]
 

@@ -134,7 +134,7 @@ final class AriaPushNotifications: NSObject {
 
     private func upload() async {
         guard let token = deviceToken, token != uploadedToken, let backend, backend.isSignedIn else { return }
-        // Ogni chiamata /v1/mobile vuole il Company-Id.
+        // Ogni chiamata sull'azienda vuole il Company-Id.
         await backend.bootstrapIfNeeded()
         guard backend.isSignedIn, backend.activeCompanyId != nil else { return }
         let body = AriaPushRegistration(

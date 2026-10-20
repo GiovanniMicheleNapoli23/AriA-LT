@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 25/09/26.
 //
 //  Client HTTP verso aria-backend: header comuni, retry su 401,
-//  richieste JSON e stream SSE di POST /v1/responses.
+//  richieste JSON (AriaEndpoint + `call`) e stream SSE di POST /v1/responses.
 //
 
 import Foundation
@@ -60,44 +60,34 @@ nonisolated final class AriaAPIClient: Sendable {
     }
 
     // MARK: JSON
+    // Scorciatoie di `call` (AriaEndpoint.swift), per chi descrive la chiamata sul posto.
 
     /// `companyScoped: false` per GET /v1/companies: l'azienda è quello che la chiamata
     /// serve a scoprire, e un Company-Id rimasto da un altro account la farebbe fallire.
-    @concurrent
     func get<T: Decodable & Sendable>(_ path: String, query: [URLQueryItem] = [],
                                       companyScoped: Bool = true) async throws -> T {
-        let raw = try await data("GET", path, query: query, companyScoped: companyScoped)
-        do { return try JSONDecoder().decode(T.self, from: raw) }
-        catch { throw AriaError.decoding("\(T.self): \(error)") }
+        try await call(AriaEndpoint(method: "GET", path: path, query: query, companyScoped: companyScoped))
     }
 
-    /// POST / PATCH con body JSON; la risposta si decodifica in `T`.
-    @concurrent
+    /// POST / PATCH / PUT con body JSON; la risposta si decodifica in `T`.
     func send<T: Decodable & Sendable>(_ method: String, _ path: String,
                                        body: some Encodable & Sendable) async throws -> T {
-        let raw = try await data(method, path, body: try JSONEncoder().encode(body))
-        do { return try JSONDecoder().decode(T.self, from: raw) }
-        catch { throw AriaError.decoding("\(T.self): \(error)") }
+        try await call(AriaEndpoint(method: method, path: path, body: body))
     }
 
     /// Come `send`, quando la risposta non serve (204 o un oggetto qualsiasi).
-    @concurrent
-    func perform(_ method: String, _ path: String, body: some Encodable & Sendable) async throws {
-        _ = try await data(method, path, body: try JSONEncoder().encode(body))
-    }
-
-    @concurrent
-    func perform(_ method: String, _ path: String) async throws {
-        _ = try await data(method, path)
+    func perform(_ method: String, _ path: String, body: (any Encodable & Sendable)? = nil) async throws {
+        let _: AriaNoContent = try await call(AriaEndpoint(method: method, path: path, body: body))
     }
 
     /// Un solo retry su 401: si conia un JWT nuovo (GET /api/aria/token) e si riprova.
     @concurrent
     func data(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
-              companyScoped: Bool = true) async throws -> Data {
+              headers: [String: String] = [:], companyScoped: Bool = true) async throws -> Data {
         var retried = false
         while true {
-            let req = try await request(method, path, query: query, body: body, companyScoped: companyScoped)
+            let req = try await request(method, path, query: query, body: body, headers: headers,
+                                        companyScoped: companyScoped)
             let (data, response) = try await session.data(for: req)
             if (response as? HTTPURLResponse)?.statusCode == 401, !retried {
                 retried = true
@@ -120,7 +110,7 @@ nonisolated final class AriaAPIClient: Sendable {
     @concurrent
     func transcribe(audio: Data, filename: String, mimeType: String,
                     language: String?, prompt: String?) async throws -> String? {
-        // /v1/audio non è sotto /v1/mobile: per un operatore resta il testo del riconoscimento sul telefono.
+        // /v1/audio non è tra le rotte dell'operatore: resta il testo del riconoscimento sul telefono.
         if auth.isMobileSession { return nil }
         let boundary = "aria-\(UUID().uuidString)"
         var body = Data()
@@ -162,18 +152,22 @@ nonisolated final class AriaAPIClient: Sendable {
 
     // MARK: SSE
 
-    /// Apre POST /v1/responses (per un operatore mobile POST /v1/mobile/responses: stesso body, stesso stream)
-    /// e restituisce gli eventi già interpretati man mano che arrivano.
-    /// Cancellare il Task che consuma lo stream chiude la connessione.
-    func stream(_ payload: AriaResponsesRequest) -> AsyncThrowingStream<AriaStreamEvent, any Error> {
+    /// Apre POST /v1/responses e restituisce gli eventi già interpretati man mano che arrivano.
+    /// Cancellare il Task che consuma lo stream chiude la connessione. Un turno `background` va avanti sul server
+    /// lo stesso: si ferma con AriaChatAPI.cancelTurn.
+    /// `idempotencyKey`: obbligatoria per un turno `background`; la stessa chiave rimanda lo stesso invio
+    /// (il server non lo esegue due volte). L'id della risposta arriva in `X-Response-ID`: se c'è, esce come
+    /// primo evento `.created`, prima ancora del corpo.
+    func stream(_ payload: AriaResponsesRequest,
+                idempotencyKey: String? = nil) -> AsyncThrowingStream<AriaStreamEvent, any Error> {
         AsyncThrowingStream { continuation in
             let task = Task(name: "aria.responses.stream") {
                 do {
                     let body = try JSONEncoder().encode(payload)
                     var retried = false
                     while true {
-                        let path = self.auth.isMobileSession ? "v1/mobile/responses" : "v1/responses"
-                        let req = try await self.request("POST", path, body: body,
+                        let req = try await self.request("POST", "v1/responses", body: body,
+                                                         headers: idempotencyKey.map { ["Idempotency-Key": $0] } ?? [:],
                                                          accept: "text/event-stream")
                         let (bytes, response) = try await self.streamSession.bytes(for: req)
                         let status = (response as? HTTPURLResponse)?.statusCode ?? -1
@@ -194,6 +188,9 @@ nonisolated final class AriaAPIClient: Sendable {
                         }
                         var parser = AriaSSEParser()
                         AriaStreamTrace.event("open", "status", bytes: status)
+                        if let id = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-Response-ID"), !id.isEmpty {
+                            continuation.yield(.created(responseId: id))
+                        }
                         for try await byte in bytes {
                             if let event = parser.consume(byte) {
                                 AriaStreamTrace.event("recv", event.event, bytes: event.data.utf8.count)
@@ -224,9 +221,9 @@ nonisolated final class AriaAPIClient: Sendable {
     }
 
     private func request(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
-                         accept: String = "application/json",
+                         headers: [String: String] = [:], accept: String = "application/json",
                          companyScoped: Bool = true) async throws -> URLRequest {
-        // Il limite è del firewall davanti all'API, e vale anche per /v1/mobile.
+        // Il limite è del firewall davanti all'API.
         if let body, body.count > config.maxBodyBytes {
             throw AriaError.bodyTooLarge(bytes: body.count, limit: config.maxBodyBytes)
         }
@@ -246,6 +243,7 @@ nonisolated final class AriaAPIClient: Sendable {
         req.setValue(config.userAgent, forHTTPHeaderField: "User-Agent")
         req.setValue(accept, forHTTPHeaderField: "Accept")
         if body != nil { req.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        for (name, value) in headers { req.setValue(value, forHTTPHeaderField: name) }
         return req
     }
 }
