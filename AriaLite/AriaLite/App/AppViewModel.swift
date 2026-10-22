@@ -121,19 +121,9 @@ class AppViewModel {
         case failure(String)
     }
 
-    /// Passo 1: manda il link di accesso all'email.
-    func sendLoginLink(email: String) async -> LoginResult {
-        AriaAuthTrace.step("login.sendLink", "server=\(backend.authURL.absoluteString)")
-        do {
-            try await backend.sendSignInLink(email: email)
-            return .success
-        } catch {
-            AriaAuthTrace.failure("login.sendLink.failed", error)
-            return AriaHTTP.isOffline(error) ? .offline : .failure(error.localizedDescription)
-        }
-    }
+    // Il passo 1 (l'invio dei link) è di LoginViewModel: qui solo ciò che apre la sessione.
 
-    /// Passo 2: il link incollato dall'operatore. È valido una volta sola e per 15 minuti.
+    /// Passo 2: il link incollato, dell'operatore (15') o della web (10'). Vale una volta sola.
     func completeLogin(with pasted: String) async -> LoginResult {
         guard let link = backend.magicLink(in: pasted) else {
             return .failure(String(localized: "This is not an Aria sign-in link. Copy the link from the email and try again."))
@@ -141,7 +131,8 @@ class AppViewModel {
         return await signIn(with: link)
     }
 
-    /// Passo 2, con il link aperto dal sistema (`aria://sign-in#token=…`, o un Universal Link se l'host lo permette).
+    /// Passo 2, con il link aperto dal sistema: il magic link della web (Universal Link: l'host lo apre nell'app
+    /// grazie a `callbackURL=/?from=aria-ios`), `aria://sign-in#token=…`, o `/m/sign-in` se l'host lo permette.
     func open(_ url: URL) {
         guard let link = backend.signInLink(from: url) else { return }
         // Con un accesso già aperto il link non serve: per cambiare account si esce prima.
@@ -159,7 +150,7 @@ class AppViewModel {
 
     #if DEBUG
     /// Solo sviluppo: il link arriva come argomento di avvio, perché gli appunti Mac ↔ simulatore
-    /// a volte non funzionano:
+    /// a volte non funzionano. Vale l'una o l'altra forma del link (operatore o web):
     /// xcrun simctl launch --terminate-running-process booted com.giovanniMichele.AriaLite -AriaMagicLink "<link>"
     func signInWithLaunchLink() async {
         guard loggedInUser == nil, let raw = UserDefaults.standard.string(forKey: "AriaMagicLink"),

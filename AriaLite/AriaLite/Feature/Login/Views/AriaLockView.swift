@@ -47,7 +47,7 @@ struct AriaLockView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
-        .background { backdrop }
+        .background { LoginBackdrop() }
         .preferredColorScheme(.light)
         .confirmationDialog("Use a different account?", isPresented: $confirmSignOut, titleVisibility: .visible) {
             Button("Logout", role: .destructive) { viewModel.logout() }
@@ -55,17 +55,6 @@ struct AriaLockView: View {
         } message: {
             Text("To sign in again you will need a new link from your email.")
         }
-    }
-
-    private var backdrop: some View {
-        ZStack {
-            Color.liteBackground
-            RadialGradient(colors: [Color(red: 0.62, green: 0.52, blue: 0.78).opacity(0.16), .clear],
-                           center: UnitPoint(x: 0.5, y: 0.28), startRadius: 0, endRadius: 320)
-            RadialGradient(colors: [Color.liteAccent.opacity(0.06), .clear],
-                           center: .bottom, startRadius: 0, endRadius: 460)
-        }
-        .ignoresSafeArea()
     }
 
     @ViewBuilder
