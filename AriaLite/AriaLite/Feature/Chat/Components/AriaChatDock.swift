@@ -11,7 +11,7 @@
 import SwiftUI
 
 struct AriaChatDock: View {
-    @Bindable var model: AriaAgentChatViewModel
+    let model: AriaAgentChatViewModel
     let inputFocused: FocusState<Bool>.Binding
     /// Il composer chiede di mostrare la pausa in attesa (approvazione o LOTO) nella lista.
     var onShowPending: () -> Void
@@ -85,8 +85,7 @@ struct AriaChatDock: View {
             .padding(.top, 4)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         case .composer:
-            AriaChatComposer(chat: model.chat, backend: model.backend, voice: model.voice, draft: $model.draft,
-                             inputFocused: inputFocused, onShowPending: onShowPending)
+            AriaChatComposer(model: model.composer, inputFocused: inputFocused, onShowPending: onShowPending)
                 .transition(.opacity)
         }
     }

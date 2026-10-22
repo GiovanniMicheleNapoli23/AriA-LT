@@ -19,10 +19,11 @@ final class AriaAgentChatViewModel {
     let backend: AriaBackend
     /// Microfono della chat vocale esistente (quando il campo è vuoto).
     let voice: AriaVoiceViewModel?
+    /// Il composer ha la sua logica (bozza, dettatura, contesto): la chat lo tiene e lo consulta.
+    let composer: AriaChatComposerViewModel
 
     // MARK: - State
 
-    var draft = ""
     let greeting = AriaChatCopy.greeting()
     /// I chip di partenza (GET /v1/chat/suggestions): vuoti = nessun chip.
     private(set) var suggestions: [String] = []
@@ -48,13 +49,13 @@ final class AriaAgentChatViewModel {
         self.chat = chat
         self.backend = backend
         self.voice = voice
+        composer = AriaChatComposerViewModel(chat: chat, backend: backend, voice: voice)
     }
 
     // MARK: - Derived
 
-    var isComposing: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+    /// Mentre l'operatore scrive la sfera della chat vuota "pensa".
+    var isComposing: Bool { composer.hasText }
 
     var salutation: String {
         AriaChatCopy.salutation(name: backend.mobileAccount?.name)
