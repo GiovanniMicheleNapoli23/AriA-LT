@@ -24,7 +24,8 @@ struct AdminSparePartsPlaceholder: View {
                     .padding(.top, 60)
             case .failed(let failure):
                 VStack(spacing: 14) {
-                    ContentUnavailableView(failure.isForbidden ? LocalizedStringKey("No access") : "Can't load spare parts",
+                    let title: LocalizedStringKey = failure.isForbidden ? "No access" : "Can't load spare parts"
+                    ContentUnavailableView(title,
                                            systemImage: failure.isForbidden ? "lock" : "wifi.exclamationmark",
                                            description: Text(verbatim: failure.message))
                     if !failure.isForbidden {

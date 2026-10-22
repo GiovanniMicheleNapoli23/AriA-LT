@@ -113,6 +113,14 @@ nonisolated struct AdminSparePartRows<Element: Decodable & Sendable>: Decodable,
                 }
             }
         }
+        // Chiave sconosciuta: il primo array di righe leggibili, ovunque sia. Meglio che una lista vuota
+        // (che direbbe "nessun ricambio sotto scorta" a torto).
+        for key in container.allKeys {
+            if let rows = try? container.decode(AriaLossyArray<Element>.self, forKey: key), !rows.items.isEmpty {
+                items = rows.items
+                return
+            }
+        }
         items = []
     }
 }

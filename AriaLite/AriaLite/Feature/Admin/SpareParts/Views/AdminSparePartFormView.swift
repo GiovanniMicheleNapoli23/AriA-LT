@@ -104,7 +104,7 @@ struct AdminSparePartFormView: View {
         Section {
             Toggle("Non-stock item", isOn: $viewModel.nonStock)
             LabeledContent("Stock quantity") {
-                TextField("0", text: $viewModel.stockQuantity)
+                TextField(text: $viewModel.stockQuantity) { Text(verbatim: "0") }
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
             }
@@ -144,8 +144,8 @@ struct AdminSparePartFormView: View {
                     Text("Loading vendors...").foregroundStyle(.secondary)
                 }
                 .font(.footnote)
-            } else if let failure = viewModel.vendors.failure, viewModel.vendors.vendors.isEmpty {
-                Text(verbatim: failure.message)
+            } else if viewModel.vendors.failure != nil, viewModel.vendors.vendors.isEmpty {
+                Text("Vendors couldn't be loaded.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
