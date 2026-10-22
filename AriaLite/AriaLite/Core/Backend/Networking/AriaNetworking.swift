@@ -25,6 +25,9 @@ nonisolated struct AriaConfig: Sendable {
     var authBaseURL: URL
     /// Web app Next.js: serve ad aprire i link relativi delle risposte (es. /work-orders/12) nel browser.
     var webBaseURL = AriaConfig.productionWeb
+    /// Chiave pubblica Cloudflare Turnstile della web: better-auth vuole il captcha per mandare il magic link.
+    /// La chiave accetta solo i domini della web: il widget si carica con l'origine di `webBaseURL`.
+    var turnstileSiteKey = "0x4AAAAAADF3cO-EJy4kf-nF"
     /// Mandato come X-Aria-Client: solo diagnostica, non è un segreto.
     var clientId = "aria-ios/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0")"
     /// `AriaPLT-Mobile/<versione> (<os> <versione os>; <modello>)`: è il nome del dispositivo
@@ -109,6 +112,10 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case linkSignInUnavailable
     /// L'host di accesso non risponde (502/503/504 del gateway). Non è un problema del link.
     case signInHostOffline
+    /// 429 sull'invio o sulla verifica del link, con i secondi da aspettare se l'host li dice.
+    case tooManyAttempts(retryAfter: Int?)
+    /// Magic link della web senza captcha Turnstile pronto, o rifiutato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
+    case captchaRejected
     /// Il sistema non è raggiungibile (nessuna rete, server giù): non è un errore dell'operatore.
     case serverOffline
     /// 403 `not_a_mobile_user`: il login è valido ma non è quello di un utente mobile.
@@ -141,6 +148,12 @@ nonisolated enum AriaError: LocalizedError, Sendable {
             String(localized: "This server doesn't support signing in with an email link. Ask your company administrator.")
         case .signInHostOffline:
             String(localized: "The sign-in server is offline. Try again later.")
+        case .tooManyAttempts(let seconds?) where seconds > 0:
+            String(localized: "Too many attempts. Try again in \(seconds) seconds.")
+        case .tooManyAttempts:
+            String(localized: "Too many attempts. Wait a minute and try again.")
+        case .captchaRejected:
+            String(localized: "The security check for web accounts wasn't ready. If no email arrives, send the link again.")
         case .serverOffline:
             String(localized: "Aria is offline. Try again in a moment.")
         case .notMobileUser:

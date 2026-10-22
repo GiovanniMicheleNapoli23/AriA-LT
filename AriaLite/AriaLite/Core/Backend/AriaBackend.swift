@@ -6,11 +6,23 @@
 //
 //  Stato della connessione al backend Aria: login, azienda e stabilimento attivi.
 //  La chat e i lavori usano il backend solo quando `isReady`.
-//  Si entra con un link via email, senza password (AriaAuth), poi l'azienda arriva
-//  da GET /v1/companies.
+//  Si entra con un link via email, senza password (AriaAuth): l'app chiede insieme il link
+//  dell'operatore e il magic link della web, e completa l'accesso con quello che arriva.
+//  Poi l'azienda arriva da GET /v1/companies.
 //
 import Foundation
 import Observation
+
+/// Esito dell'invio dei link di accesso: almeno uno è partito.
+nonisolated struct AriaLinkDelivery: Sendable, Equatable {
+    /// Link dell'operatore accettato (202 anche per un indirizzo che non è di un operatore).
+    let mobileSent: Bool
+    /// Magic link della web accettato.
+    let webSent: Bool
+    /// L'altro link non è partito per un motivo che l'utente può risolvere (captcha non pronto, troppi
+    /// tentativi): una nota sotto "controlla l'email", non un errore.
+    let note: String?
+}
 
 /// Il link di accesso non corrisponde alla richiesta fatta da questo dispositivo.
 nonisolated enum AriaSignInError: LocalizedError, Sendable {
@@ -62,8 +74,8 @@ final class AriaBackend {
         Self.moveMobileAccountToKeychain()
         let saved = AriaKeychain.get(Self.mobileAccountKey)
             .flatMap { try? JSONDecoder().decode(AriaMobileAccount.self, from: Data($0.utf8)) }
-        // Una sessione senza il suo profilo è di una versione precedente (username e password,
-        // o accesso dalla web): non vale più, si rifà l'accesso col link.
+        // Una sessione (dell'operatore o della web) senza il suo profilo è di una versione precedente
+        // o di un accesso non completato: non vale, si rifà l'accesso col link.
         if api.auth.hasStoredLogin, saved == nil { api.auth.forgetStoredSession() }
         isSignedIn = api.auth.hasStoredSession
         mobileAccount = isSignedIn ? saved : nil
@@ -143,11 +155,46 @@ final class AriaBackend {
         }
     }
 
-    /// Passo 1: manda il link all'email. Risponde sempre 202, anche per un indirizzo che non è di un operatore.
-    func sendSignInLink(email: String) async throws {
+    /// Passo 1: manda insieme il link dell'operatore e, con un captcha Turnstile, il magic link della web.
+    /// Solo quello del tipo di account giusto spedisce un'email (request-link risponde 202 a ogni indirizzo).
+    /// Basta che uno parta; se non parte nessuno vale l'errore dell'operatore (i suoi messaggi su rete
+    /// e 429 sono i più chiari). Senza `captcha` parte solo il link dell'operatore.
+    @discardableResult
+    func sendSignInLink(email: String, captcha: String? = nil) async throws -> AriaLinkDelivery {
         let email = Self.normalized(email)
-        try await api.auth.requestLink(email: email)
+        let auth = api.auth
+        async let mobileFailure = Self.failure { try await auth.requestLink(email: email) }
+        async let webFailure = Self.failure {
+            guard let captcha else { throw AriaError.captchaRejected }
+            try await auth.requestWebLink(email: email, captcha: captcha)
+        }
+        let (mobile, web) = await (mobileFailure, webFailure)
+        if let mobile, web != nil { throw mobile }
+
         setPendingLink(email)
+        let delivery = AriaLinkDelivery(mobileSent: mobile == nil, webSent: web == nil,
+                                        note: mobile.map(\.localizedDescription) ?? web.flatMap(Self.webNote))
+        AriaAuthTrace.step("link.sent", "operatore=\(delivery.mobileSent) web=\(delivery.webSent)")
+        return delivery
+    }
+
+    /// L'errore di un invio, o `nil` se è andato.
+    private nonisolated static func failure(_ send: @Sendable () async throws -> Void) async -> (any Error)? {
+        do {
+            try await send()
+            return nil
+        } catch {
+            return error
+        }
+    }
+
+    /// Il magic link della web non è partito: lo si dice solo se l'utente può farci qualcosa.
+    /// Altri rifiuti (es. un indirizzo senza account della web) non dicono nulla a un operatore.
+    private static func webNote(_ error: any Error) -> String? {
+        switch error as? AriaError {
+        case .captchaRejected?, .tooManyAttempts?: error.localizedDescription
+        default: nil
+        }
     }
 
     /// Torna al passo dell'email (per chiedere un nuovo link).
@@ -171,14 +218,30 @@ final class AriaBackend {
         api.auth.signInLink(from: url)
     }
 
-    /// Passo 2: il token del link contro una sessione, poi l'azienda.
+    /// Passo 2: il link contro una sessione, poi l'azienda. Link dell'operatore: la verifica restituisce
+    /// l'operatore. Magic link della web: chi è (e se è un operatore o un account della piattaforma)
+    /// lo dice GET /v1/me.
     /// Il link vale solo per l'email a cui l'accesso è stato chiesto da questo dispositivo: senza
     /// questo vincolo un link con il token di un altro account (`aria://` lo apre chiunque) farebbe
-    /// entrare l'operatore nell'account di chi lo manda.
+    /// entrare l'utente nell'account di chi lo manda.
     func completeSignIn(with link: AriaSignInLink) async throws {
         // Nessuna richiesta da qui: si rifiuta senza chiamare il server, il token non si consuma.
         guard let requested = pendingLinkEmail else { throw AriaSignInError.noPendingRequest }
-        let account = try await api.auth.completeSignIn(with: link)
+        let account: AriaMobileAccount
+        switch link {
+        case .mobile:
+            account = try await api.auth.completeSignIn(with: link)
+        case .web(let url):
+            try await api.auth.completeWebSignIn(with: url)
+            do {
+                account = try await me().account
+            } catch {
+                // Sessione aperta ma account sconosciuto: non resta nel Keychain senza profilo.
+                AriaAuthTrace.failure("webLink.me.failed", error)
+                await api.auth.discardSession()
+                throw error
+            }
+        }
         guard Self.normalized(account.email) == Self.normalized(requested) else {
             // Account diverso: la sessione appena aperta si chiude sul server e la richiesta resta in attesa.
             await api.auth.signOut()

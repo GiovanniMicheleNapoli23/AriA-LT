@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 25/09/26.
 //
-//  Collegamento al backend Aria: login dell'operatore con un link via email (senza password)
-//  sull'host di accesso, poi azienda e stabilimento.
+//  Collegamento al backend Aria: chi è collegato (operatore o account della piattaforma), azienda
+//  e stabilimento. Da scollegati, il link via email dell'operatore (senza password e senza captcha:
+//  il magic link della web si chiede dalla schermata di login); si incolla l'uno o l'altro link.
 //  In DEBUG anche server personalizzati e access token incollato.
 //
 
@@ -69,6 +70,13 @@ struct AriaConnectionSheet: View {
             LabeledContent("Sign-in", value: backend.authURL.host() ?? backend.authURL.absoluteString)
             if let account = backend.mobileAccount {
                 LabeledContent("Account", value: account.email)
+                // Lo decide il backend (GET /v1/me), non il link usato per entrare.
+                LabeledContent("Account type") {
+                    switch account.kind {
+                    case .operator: Text("Operator")
+                    case .admin: Text("Platform account")
+                    }
+                }
             }
             LabeledContent("Status") {
                 Label(backend.isReady ? "Online" : "No plant", systemImage: "circle.fill")
