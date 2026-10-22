@@ -28,7 +28,7 @@ struct AdminSparePartFilterChip: View {
         }
         .font(.footnote.weight(.semibold))
         .lineLimit(1)
-        .foregroundStyle(isSelected ? Color.white : tint)
+        .foregroundStyle(isSelected ? Color.liteOnAccent : tint)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background {

@@ -82,6 +82,7 @@ struct AriaChatHistoryView: View {
                 Button("Connect", action: onConnect)
                     .buttonStyle(.borderedProminent)
                     .tint(Color.liteAccent)
+                    .foregroundStyle(Color.liteOnAccent)
             }
         case .loading:
             ProgressView()

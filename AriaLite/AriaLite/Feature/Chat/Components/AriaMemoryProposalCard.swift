@@ -91,6 +91,7 @@ struct AriaMemoryProposalCard: View {
     private var sendButton: some View {
         Button("Send for review") { decide(true, model.sentContent) }
             .buttonStyle(.borderedProminent)
+            .foregroundStyle(Color.liteOnAccent)
             .disabled(!model.canSend)
             .accessibilityIdentifier("memory.send")
     }

@@ -124,6 +124,7 @@ private struct AriaProcedureDockContent: View {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
             .tint(model.list.stepTint)
+            .foregroundStyle(model.list.stepOnTint)
         }
         .animation(.snappy, value: model.previous == nil)
     }

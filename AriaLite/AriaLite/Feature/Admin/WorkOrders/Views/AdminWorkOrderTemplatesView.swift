@@ -92,7 +92,7 @@ struct AdminWorkOrderTemplatesView: View {
         }
         .swipeActions(edge: .leading) {
             Button("Create Work Order", systemImage: "plus.square.on.square") { viewModel.confirmApply(template) }
-                .tint(.liteAccent)
+                .tint(.liteSwipeAccent)
         }
         .contextMenu {
             Button("Create Work Order", systemImage: "plus.square.on.square") { viewModel.confirmApply(template) }

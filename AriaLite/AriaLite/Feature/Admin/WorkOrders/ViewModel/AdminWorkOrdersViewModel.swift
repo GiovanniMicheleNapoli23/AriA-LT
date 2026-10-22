@@ -41,9 +41,6 @@ final class AdminWorkOrdersViewModel {
 
     /// Il form di creazione aperto (sheet).
     var createForm: AdminWorkOrderFormViewModel?
-    /// I modelli di ordine, aperti dalla toolbar.
-    let templates: AdminWorkOrderTemplatesViewModel
-    var isShowingTemplates = false
 
     static let pageSize = 50
 
@@ -56,9 +53,7 @@ final class AdminWorkOrdersViewModel {
     init(backend: AriaBackend) {
         self.backend = backend
         directory = AdminWorkOrderDirectory(backend: backend)
-        templates = AdminWorkOrderTemplatesViewModel(backend: backend)
         actions = AdminWorkOrderQuickActions(backend: backend)
-        templates.onOrderCreated = { [weak self] in self?.reload() }
         actions.onUpdated = { [weak self] order in self?.didUpdate(order) }
         actions.onReload = { [weak self] id in await self?.refreshOrder(id) }
     }
@@ -82,8 +77,6 @@ final class AdminWorkOrdersViewModel {
         isForbidden = false
         createForm = nil
         loadedPlantId = nil
-        isShowingTemplates = false
-        templates.reset()
         directory.reset()
     }
 

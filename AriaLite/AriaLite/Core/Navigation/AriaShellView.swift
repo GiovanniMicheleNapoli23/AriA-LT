@@ -160,7 +160,7 @@ struct AriaShellView: View {
         let shape = RoundedRectangle(cornerRadius: 44 * progress, style: .continuous)
         return content
             .overlay {
-                Color.liteSurface
+                Color.litePanelVeil
                     .opacity(0.45 * progress)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)

@@ -23,6 +23,8 @@ struct AriaChatComposer: View {
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Come il lato dei cerchi (stessa base e stessa scala).
+    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 38
 
     var body: some View {
         Group {
@@ -107,8 +109,10 @@ struct AriaChatComposer: View {
             // In orizzontale con la tastiera restano ~150 pt: oltre due righe il campo scorre al suo interno.
             .lineLimit(verticalSizeClass == .compact ? 1...2 : 1...6)
             .focused(inputFocused)
-            .padding(.vertical, 9)
+            .padding(.vertical, 6)
             .padding(.leading, 2)
+            // Alto quanto i cerchi: a riga singola il testo, il "+", il microfono e il pulsante hanno lo stesso centro.
+            .frame(minHeight: rowHeight)
             .accessibilityIdentifier("chat.input")
     }
 
@@ -194,11 +198,11 @@ private struct AriaComposerPrimaryButton: View {
                     .fill(tint)
                     .frame(width: side, height: side)
                 if model.isVoiceConnecting {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(onTint)
                 } else {
                     Image(systemName: symbol)
                         .font(.subheadline.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(onTint)
                         .contentTransition(.symbolEffect(.replace))
                 }
             }
@@ -218,6 +222,14 @@ private struct AriaComposerPrimaryButton: View {
         case .stop: .red
         case .idle: Color.secondary.opacity(0.35)
         case .send, .voice: .accentColor
+        }
+    }
+
+    /// L'icona sopra il cerchio: nera sull'accento chiaro della modalità scura.
+    private var onTint: Color {
+        switch model.primaryRole {
+        case .send, .voice: .liteOnAccent
+        case .stop, .idle: .white
         }
     }
 

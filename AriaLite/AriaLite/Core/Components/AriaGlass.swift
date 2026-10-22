@@ -43,19 +43,25 @@ extension View {
         if #available(iOS 26.0, *) {
             buttonStyle(.glass)
         } else {
-            buttonStyle(AriaMaterialButtonStyle(tint: nil))
+            buttonStyle(AriaMaterialButtonStyle(tint: nil, foreground: .liteAccent))
         }
     }
 
     /// Pulsante di vetro in evidenza, colorato (`.glassProminent` da iOS 26): sulle versioni precedenti,
-    /// un pieno dello stesso colore.
+    /// un pieno dello stesso colore. `foreground` è il colore della label: `liteOnAccent` sui pieni d'accento,
+    /// che in scuro sono chiari.
     @ViewBuilder
-    func ariaProminentGlassButtonStyle(tint: Color) -> some View {
+    func ariaProminentGlassButtonStyle(tint: Color, foreground: Color = .white) -> some View {
         if #available(iOS 26.0, *) {
-            buttonStyle(.glassProminent).tint(tint)
+            buttonStyle(.glassProminent).tint(tint).foregroundStyle(foreground)
         } else {
-            buttonStyle(AriaMaterialButtonStyle(tint: tint))
+            buttonStyle(AriaMaterialButtonStyle(tint: tint, foreground: foreground))
         }
+    }
+
+    /// Il pulsante in evidenza col colore dell'app.
+    func ariaAccentGlassButtonStyle() -> some View {
+        ariaProminentGlassButtonStyle(tint: .liteAccent, foreground: .liteOnAccent)
     }
 
     /// Barra flottante in fondo (un pulsante, senza fondo suo): da iOS 26 è una `safeAreaBar`, sotto cui il
@@ -97,16 +103,17 @@ func AriaGlassEffectContainer<Content: View>(spacing: CGFloat = 0, @ViewBuilder 
 /// della label, con la stessa attenuazione al tocco.
 private struct AriaMaterialButtonStyle: ButtonStyle {
     var tint: Color?
+    var foreground: Color
 
     func makeBody(configuration: Configuration) -> some View {
         Group {
             if let tint {
                 configuration.label
-                    .foregroundStyle(.white)
+                    .foregroundStyle(foreground)
                     .background(tint, in: Capsule())
             } else {
                 configuration.label
-                    .foregroundStyle(Color.liteAccent)
+                    .foregroundStyle(foreground)
                     .background(.regularMaterial, in: Capsule())
                     .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
             }

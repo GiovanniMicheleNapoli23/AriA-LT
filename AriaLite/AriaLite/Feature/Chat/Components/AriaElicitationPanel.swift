@@ -219,7 +219,7 @@ private struct AriaElicitationPanelContent: View {
                             .font(.caption.weight(.bold).monospacedDigit())
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1)
-                            .background(.white.opacity(0.25), in: Capsule())
+                            .background(Color.liteOnAccent.opacity(0.25), in: Capsule())
                     }
                     Image(systemName: model.isLast ? "arrow.up" : "arrow.right")
                         .font(.footnote.weight(.bold))
@@ -230,6 +230,7 @@ private struct AriaElicitationPanelContent: View {
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
+            .foregroundStyle(Color.liteOnAccent)
             .disabled(!model.canSubmitSet)
         }
         .animation(.snappy, value: model.selected.isEmpty)

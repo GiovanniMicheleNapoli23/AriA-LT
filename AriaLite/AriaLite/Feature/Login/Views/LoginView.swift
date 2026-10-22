@@ -70,7 +70,6 @@ struct LoginView: View {
         }
         .background { LoginBackdrop() }
         .sensoryFeedback(.error, trigger: model.shakes)
-        .preferredColorScheme(.light)
         .onAppear(perform: enter)
         // Esito del link toccato nell'email: errore e scossone come per quello incollato.
         .onChange(of: model.openedLinkResult, initial: true) { _, result in

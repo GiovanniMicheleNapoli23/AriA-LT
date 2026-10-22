@@ -49,6 +49,5 @@ struct AIHelpSheet: View {
         .presentationDetents(Self.detents, selection: $detent)
         .presentationDragIndicator(.visible)
         .presentationBackgroundInteraction(.enabled(upThrough: .medium))
-        .preferredColorScheme(.light)
     }
 }

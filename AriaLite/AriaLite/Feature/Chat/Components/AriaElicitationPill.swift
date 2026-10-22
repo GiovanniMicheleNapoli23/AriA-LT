@@ -37,7 +37,7 @@ struct AriaElicitationPill: View {
                 Spacer(minLength: 8)
                 Text("Answer")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(isLearning ? Color.white : Color.liteOnAccent)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(isLearning ? AriaLearningStyle.tint : Color.accentColor, in: Capsule())

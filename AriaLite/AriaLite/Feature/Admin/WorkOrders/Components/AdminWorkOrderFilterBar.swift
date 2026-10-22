@@ -50,7 +50,6 @@ struct AdminWorkOrderFilterBar: View {
             }
         }
         .pickerStyle(.segmented)
-        .controlSize(.large)
     }
 
     // MARK: Pulsanti
@@ -188,7 +187,7 @@ extension View {
     @ViewBuilder
     func adminWorkOrderChipStyle(isOn: Bool) -> some View {
         if isOn {
-            ariaProminentGlassButtonStyle(tint: .liteAccent)
+            ariaAccentGlassButtonStyle()
         } else {
             ariaGlassButtonStyle().foregroundStyle(Color.liteText)
         }

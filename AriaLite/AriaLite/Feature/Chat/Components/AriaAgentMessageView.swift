@@ -45,7 +45,7 @@ struct AriaAgentMessageView: View {
             Spacer(minLength: 55)
             Text(message.text)
                 .font(.callout)
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.liteOnAccent)
                 .padding(.horizontal, 15)
                 .padding(.vertical, 11)
                 .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))

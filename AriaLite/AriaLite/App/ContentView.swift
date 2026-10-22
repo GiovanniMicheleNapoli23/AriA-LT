@@ -22,7 +22,6 @@ struct ContentView: View {
                 } else {
                     // Navigazione come Claude mobile: chat al centro, sezioni nella sidebar.
                     AriaShellView(user: user)
-                        .preferredColorScheme(.light)
                 }
             } else {
                 LoginView(viewModel: viewModel)

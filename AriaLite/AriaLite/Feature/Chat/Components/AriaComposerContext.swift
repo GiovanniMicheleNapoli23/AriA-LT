@@ -153,7 +153,8 @@ private struct AriaContextRingGlyph: View {
     let tint: Color
     @ScaledMetric(relativeTo: .body) private var ring: CGFloat = 18
     @ScaledMetric(relativeTo: .body) private var width: CGFloat = 36
-    @ScaledMetric(relativeTo: .body) private var height: CGFloat = 44
+    /// Alto quanto gli altri cerchi della barra (38): più alto, la riga cresce e il resto non è più centrato.
+    @ScaledMetric(relativeTo: .body) private var height: CGFloat = 38
 
     var body: some View {
         ZStack {
@@ -217,6 +218,7 @@ private struct AriaContextPopover: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color.liteOnAccent)
                 .controlSize(.small)
                 .disabled(isCompacting)
                 .accessibilityIdentifier("chat.makeRoom")

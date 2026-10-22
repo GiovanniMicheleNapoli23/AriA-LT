@@ -173,7 +173,8 @@ struct AriaWorkOrderDetailView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
-        .ariaProminentGlassButtonStyle(tint: order.isClosed ? Color.liteAccent : allReported ? .green : Color.liteAccent)
+        .ariaProminentGlassButtonStyle(tint: !order.isClosed && allReported ? .green : Color.liteAccent,
+                                       foreground: !order.isClosed && allReported ? .white : Color.liteOnAccent)
         .ariaReadableWidth()
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -376,7 +377,7 @@ struct AriaWorkOrderDetailView: View {
                     .font(.caption.weight(.bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .foregroundStyle(isNext ? Color.white : Color.liteAccent)
+                    .foregroundStyle(isNext ? Color.liteOnAccent : Color.liteAccent)
                     .frame(width: markerSize, height: markerSize)
                     .background(isNext ? Color.liteAccent : Color.liteAccent.opacity(0.12), in: Circle())
             }
@@ -536,6 +537,7 @@ struct AriaWorkOrderDetailView: View {
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.capsule)
             .tint(Color.liteAccent)
+            .foregroundStyle(Color.liteOnAccent)
         }
         .padding(16)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))

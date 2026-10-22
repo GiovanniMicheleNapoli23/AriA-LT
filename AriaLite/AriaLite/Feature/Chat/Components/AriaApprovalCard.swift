@@ -113,7 +113,7 @@ private struct AriaApprovalCardContent: View {
                 .font(.callout.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 46)
         }
-        .ariaProminentGlassButtonStyle(tint: .accentColor)
+        .ariaProminentGlassButtonStyle(tint: .accentColor, foreground: .liteOnAccent)
         .buttonBorderShape(.capsule)
     }
 

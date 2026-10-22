@@ -61,7 +61,7 @@ struct AriaElicitationOptionRow: View {
         .background(isOn ? Color.accentColor.opacity(0.12) : Color.primary.opacity(0.045),
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .strokeBorder(isOn ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.35), lineWidth: isOn ? 1.5 : 0.5))
+            .strokeBorder(isOn ? Color.accentColor.opacity(0.5) : Color.liteGlassEdge, lineWidth: isOn ? 1.5 : 0.5))
         .animation(.snappy(duration: 0.2), value: isOn)
     }
 
@@ -76,7 +76,7 @@ struct AriaElicitationOptionRow: View {
                     Circle().fill(Color.accentColor)
                     Text(verbatim: "\(rank + 1)")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.liteOnAccent)
                 }
             }
             .frame(width: indicatorSide, height: indicatorSide)
@@ -192,7 +192,7 @@ struct AriaClosureReasonForm: View {
                 .frame(maxWidth: .infinity, minHeight: 46, alignment: .leading)
                 .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(model.closureReason == nil ? Color.accentColor.opacity(0.5) : Color.white.opacity(0.35),
+                    .strokeBorder(model.closureReason == nil ? Color.accentColor.opacity(0.5) : Color.liteGlassEdge,
                                   lineWidth: model.closureReason == nil ? 1.5 : 0.5))
                 .contentShape(Rectangle())
             }
@@ -264,7 +264,7 @@ struct AriaElicitationSendButton: View {
         Button(action: action) {
             Image(systemName: isLast ? "arrow.up" : "arrow.right")
                 .font(.footnote.weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(enabled ? Color.liteOnAccent : .white)
                 .frame(width: side, height: side)
                 .background(enabled ? Color.accentColor : Color.secondary.opacity(0.35), in: Circle())
         }

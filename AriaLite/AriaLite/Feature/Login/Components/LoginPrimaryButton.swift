@@ -19,13 +19,13 @@ struct LoginPrimaryButton: View {
         Button(action: action) {
             ZStack {
                 if isBusy {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(Color.liteOnAccent)
                 } else {
                     Text(title)
                         .font(.headline)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Color.liteOnAccent)
             // 54pt a testo "Large"; coi testi grandi cresce quanto il titolo, non di più.
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity)

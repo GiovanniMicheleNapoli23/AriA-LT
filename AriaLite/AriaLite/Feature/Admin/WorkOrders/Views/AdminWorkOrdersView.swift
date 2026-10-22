@@ -41,10 +41,6 @@ struct AdminWorkOrdersView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Templates", systemImage: "doc.on.doc") { viewModel.isShowingTemplates = true }
-                        .disabled(viewModel.isForbidden)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
                     Button("New Work Order", systemImage: "plus") { viewModel.startCreating() }
                         .disabled(viewModel.isForbidden)
                 }
@@ -52,9 +48,6 @@ struct AdminWorkOrdersView: View {
             .searchable(text: $viewModel.searchText, prompt: Text("Search title, asset or zone"))
             .sheet(item: $viewModel.createForm) { form in
                 AdminWorkOrderCreateView(viewModel: form)
-            }
-            .navigationDestination(isPresented: $viewModel.isShowingTemplates) {
-                AdminWorkOrderTemplatesView(viewModel: viewModel.templates)
             }
             .adminWorkOrderQuickActions(viewModel.actions)
         }

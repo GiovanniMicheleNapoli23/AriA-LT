@@ -164,7 +164,7 @@ struct AriaCompleteSheet: View {
             if !isCompact {
                 Button(action: submit) {
                     ZStack {
-                        if isSending { ProgressView().tint(.white) } else {
+                        if isSending { ProgressView().tint(Color.liteOnAccent) } else {
                             Label("Complete task", systemImage: "checkmark.seal.fill")
                                 .font(.headline)
                         }
@@ -174,6 +174,7 @@ struct AriaCompleteSheet: View {
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .tint(Color.liteAccent)
+                .foregroundStyle(Color.liteOnAccent)
                 .disabled(!canComplete)
             }
         }

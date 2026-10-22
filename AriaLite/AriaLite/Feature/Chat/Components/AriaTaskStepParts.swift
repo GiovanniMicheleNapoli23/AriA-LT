@@ -13,6 +13,8 @@ import SwiftUI
 extension AriaTaskList {
     /// Arancione per gli step di sicurezza.
     var stepTint: Color { isSafety ? .orange : .accentColor }
+    /// Testo sopra `stepTint`.
+    var stepOnTint: Color { isSafety ? .white : .liteOnAccent }
 }
 
 /// L'esito dell'aiuto chiesto su un task (non chiaro / da cambiare / fallito).

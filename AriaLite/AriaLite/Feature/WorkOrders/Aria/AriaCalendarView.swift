@@ -152,7 +152,7 @@ struct AriaCalendarView: View {
                     .font(.callout.weight(isToday || isSelected ? .bold : .regular))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .foregroundStyle(isSelected ? Color.white : isToday ? Color.liteAccent : Color.primary)
+                    .foregroundStyle(isSelected ? Color.liteOnAccent : isToday ? Color.liteAccent : Color.primary)
                     .frame(width: daySide, height: daySide)
                     .background {
                         if isSelected {

@@ -61,11 +61,10 @@ struct AriaSidebar: View {
                 recents
             }
             .padding(.horizontal, 12)
-            // Spazio per la barra in fondo (profilo + Nuova chat).
-            .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
-        .overlay(alignment: .bottom) { bottomBar }
+        // La barra in fondo (profilo + Nuova chat) fa spazio da sé: anche se coi testi grandi diventa più alta.
+        .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .modifier(AriaRenameSessionAlert(session: $renaming, store: store))
     }
 
@@ -134,33 +133,18 @@ struct AriaSidebar: View {
     // MARK: - Profilo + Nuova chat
 
     private var bottomBar: some View {
-        HStack(spacing: 12) {
-            Button(action: showSettings) {
-                Text(user.name.prefix(1))
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.liteAccent)
-                    .frame(width: avatarSide, height: avatarSide)
-                    .ariaGlass(in: Circle(), interactive: true)
+        // "Nuova chat" ha sempre la sua etichetta: coi testi grandi, se non ci sta accanto al profilo,
+        // va sotto e prende tutta la larghezza (e il testo può andare a capo).
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                settingsButton
+                Spacer()
+                newChatButton(fillsWidth: false)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Settings"))
-
-            Spacer()
-
-            Button(action: newChat) {
-                // Coi testi grandi la sidebar non ha posto per l'etichetta: resta il "+".
-                ViewThatFits(in: .horizontal) {
-                    Label("New chat", systemImage: "plus")
-                    Label("New chat", systemImage: "plus").labelStyle(.iconOnly)
-                }
-                .font(.headline)
-                .foregroundStyle(.white)
-                .padding(.horizontal, 22)
-                .padding(.vertical, 8)
-                .frame(minHeight: 52)
-                .background(Color.liteAccent, in: Capsule())
+            VStack(alignment: .leading, spacing: 12) {
+                settingsButton
+                newChatButton(fillsWidth: true)
             }
-            .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
         .padding(.top, 24)
@@ -171,6 +155,33 @@ struct AriaSidebar: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
         }
+    }
+
+    private var settingsButton: some View {
+        Button(action: showSettings) {
+            Text(user.name.prefix(1))
+                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .foregroundStyle(Color.liteAccent)
+                .frame(width: avatarSide, height: avatarSide)
+                .ariaGlass(in: Circle(), interactive: true)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Settings"))
+    }
+
+    private func newChatButton(fillsWidth: Bool) -> some View {
+        Button(action: newChat) {
+            Label("New chat", systemImage: "plus")
+                .font(.headline)
+                .lineLimit(fillsWidth ? nil : 1)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color.liteOnAccent)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 8)
+                .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: 52)
+                .background(Color.liteAccent, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -223,7 +223,6 @@ struct AriaStepRunnerView: View {
                 Text(errorMessage ?? "")
             }
         }
-        .preferredColorScheme(.light)
     }
 
     // MARK: Sicurezza
@@ -661,7 +660,7 @@ struct AriaStepRunnerView: View {
                     actionLabel("Done", systemImage: "checkmark")
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
-                .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
+                .ariaAccentGlassButtonStyle()
                 .disabled(isBusy)
                 .ariaGlassEffectID("main-action", in: glassNamespace)
             } else {
@@ -708,7 +707,7 @@ struct AriaStepRunnerView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 46)
         }
-        .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
+        .ariaAccentGlassButtonStyle()
         .disabled(isBusy)
         .ariaGlassEffectID("main-action", in: glassNamespace)
     }

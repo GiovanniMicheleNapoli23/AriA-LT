@@ -88,7 +88,7 @@ struct AdminWorkOrderCreateView: View {
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 46)
         }
-        .ariaProminentGlassButtonStyle(tint: .liteAccent)
+        .ariaAccentGlassButtonStyle()
         .disabled(!viewModel.canAdvance)
     }
 
@@ -99,7 +99,7 @@ struct AdminWorkOrderCreateView: View {
         } label: {
             Group {
                 if viewModel.isSaving {
-                    ProgressView().tint(.white)
+                    ProgressView().tint(Color.liteOnAccent)
                 } else {
                     Label("Create Work Order", systemImage: "checkmark")
                 }
@@ -107,7 +107,7 @@ struct AdminWorkOrderCreateView: View {
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 46)
         }
-        .ariaProminentGlassButtonStyle(tint: .liteAccent)
+        .ariaAccentGlassButtonStyle()
         .disabled(!viewModel.canSave)
     }
 }
