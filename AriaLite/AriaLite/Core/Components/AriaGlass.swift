@@ -124,29 +124,37 @@ private struct AriaBottomPanel: ViewModifier {
     private static let margin: CGFloat = 8
     private static let topRadius: CGFloat = 28
 
-    /// Con l'indicatore home il vetro scende nell'area sicura fino al margine dal fondo; senza (schermo
-    /// squadrato) non c'è niente sotto e il margine è una semplice spaziatura.
-    private var hasHomeIndicator: Bool {
+    /// Area sicura in fondo vista dal pannello: quella dell'indicatore home se è attaccato al fondo, molto
+    /// più alta sopra la tastiera (lì il vetro non può scendere). `nil` finché non è misurata.
+    @State private var bottomInset: CGFloat?
+
+    /// Inset dell'indicatore home della finestra (0 sugli schermi squadrati).
+    private var homeIndicatorInset: CGFloat {
         let scene = UIApplication.shared.connectedScenes.first { $0 is UIWindowScene } as? UIWindowScene
-        return (scene?.keyWindow?.safeAreaInsets.bottom ?? 0) > 0
+        return scene?.keyWindow?.safeAreaInsets.bottom ?? 0
     }
 
+    /// Con l'indicatore home il vetro scende nell'area sicura fino al margine dal fondo; senza (schermo
+    /// squadrato) o con la tastiera aperta non c'è niente sotto e il margine è una semplice spaziatura.
     func body(content: Content) -> some View {
-        let extends = hasHomeIndicator
+        let home = homeIndicatorInset
+        let extends = home > 0 && (bottomInset ?? home) <= home + 1
         content
             .background {
-                background
+                background(extends: extends)
                     .padding(.bottom, extends ? Self.margin : 0)
                     .ignoresSafeArea(.container, edges: extends ? .bottom : [])
             }
             .padding(.horizontal, Self.margin)
             .padding(.bottom, extends ? 0 : Self.margin)
+            // Dopo il padding: il bordo misurato tocca sempre l'area sicura, qualunque sia `extends`.
+            .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.bottom } action: { bottomInset = $0 }
     }
 
     /// Da iOS 26 gli angoli in basso seguono lo schermo (`ConcentricRectangle`, mai meno di quelli in alto);
     /// prima un raggio fisso vicino a quello dei telefoni con l'indicatore home.
     @ViewBuilder
-    private var background: some View {
+    private func background(extends: Bool) -> some View {
         if #available(iOS 26.0, *) {
             let shape = ConcentricRectangle(uniformTopCorners: .fixed(Self.topRadius),
                                             uniformBottomCorners: .concentric(minimum: .fixed(Self.topRadius)))
@@ -154,7 +162,7 @@ private struct AriaBottomPanel: ViewModifier {
                 .glassEffect(.regular, in: shape)
                 .overlay { if let stroke { shape.stroke(stroke, lineWidth: 1) } }
         } else {
-            let bottom: CGFloat = hasHomeIndicator ? 38 : Self.topRadius
+            let bottom: CGFloat = extends ? 38 : Self.topRadius
             let shape = UnevenRoundedRectangle(topLeadingRadius: Self.topRadius, bottomLeadingRadius: bottom,
                                                bottomTrailingRadius: bottom, topTrailingRadius: Self.topRadius,
                                                style: .continuous)

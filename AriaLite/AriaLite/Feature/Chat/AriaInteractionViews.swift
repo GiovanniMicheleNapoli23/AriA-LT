@@ -20,6 +20,7 @@ struct AriaApprovalCard: View {
     var onDecide: (AriaResumeDecision) -> Void
 
     @State private var edited: [String: AriaJSON] = [:]
+    @FocusState private var focusedKey: String?
 
     private var original: [String: AriaJSON] { interrupt.args ?? [:] }
     private var isEdited: Bool { edited != original }
@@ -48,6 +49,7 @@ struct AriaApprovalCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.orange.opacity(0.35), lineWidth: 1))
+        .preference(key: AriaInlineEditorFocusKey.self, value: focusedKey != nil)
         .onAppear { edited = original }
         .onChange(of: interrupt.interruptId) { edited = original }
     }
@@ -124,6 +126,7 @@ struct AriaApprovalCard: View {
                     TextField(label, value: Binding(get: { value }, set: { edited[key] = .number($0) }), format: .number)
                         .keyboardType(.decimalPad)
                         .font(.system(size: 16))
+                        .focused($focusedKey, equals: key)
                 }
             }
         case .string(let value):
@@ -132,6 +135,7 @@ struct AriaApprovalCard: View {
                     TextField(label, text: Binding(get: { value }, set: { edited[key] = .string($0) }), axis: .vertical)
                         .lineLimit(1...5)
                         .font(.system(size: 16))
+                        .focused($focusedKey, equals: key)
                 }
             }
         case .array(let items) where key == "moves":
@@ -189,20 +193,24 @@ struct AriaLotoSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 10) {
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 26))
-                    .foregroundStyle(.red)
-                Text("Safety confirmation required")
-                    .font(.system(size: 20, weight: .bold))
-            }
-            if let alarm = interrupt.alarmCode, !alarm.isEmpty {
-                AriaBadge(text: "\(String(localized: "Alarm")): \(alarm)", tint: .red)
-            }
+            // Intestazione e avviso scorrono insieme: sul telefono basso (o in orizzontale) l'avviso resta leggibile.
             ScrollView {
-                AriaMarkdownView(text: AriaAgentMessage.stripElicitBlock(interrupt.warning ?? ""))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 26))
+                            .foregroundStyle(.red)
+                        Text("Safety confirmation required")
+                            .font(.system(size: 20, weight: .bold))
+                    }
+                    if let alarm = interrupt.alarmCode, !alarm.isEmpty {
+                        AriaBadge(text: "\(String(localized: "Alarm")): \(alarm)", tint: .red)
+                    }
+                    AriaMarkdownView(text: AriaAgentMessage.stripElicitBlock(interrupt.warning ?? ""))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
+            .scrollBounceBehavior(.basedOnSize)
             VStack(spacing: 10) {
                 Button {
                     onDecide(.loto(confirmed: true))
@@ -220,7 +228,8 @@ struct AriaLotoSheet: View {
             }
         }
         .padding(24)
-        .presentationDetents([.medium, .large])
+        // A metà altezza l'avviso LOTO (da leggere prima di confermare) aveva due righe: si apre intero.
+        .presentationDetents([.large])
         .interactiveDismissDisabled()
     }
 }

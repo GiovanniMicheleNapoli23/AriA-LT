@@ -53,6 +53,14 @@ struct AriaLearningOutcomePanel: View {
     @State private var showContext = false
     @State private var notified: Set<String> = []
     @State private var notifying = false
+    /// In orizzontale su iPhone lo schermo è basso: intestazione e azioni devono restare nella chat.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// Altezza massima di fatti e contesto (scorrono insieme).
+    private var maxContentHeight: CGFloat {
+        if verticalSizeClass == .compact { return 120 }
+        return showContext ? 360 : 240
+    }
 
     private var pending: [String] {
         outcome.items.filter(\.isProposed).compactMap(\.factId).filter { !notified.contains($0) }
@@ -87,22 +95,25 @@ struct AriaLearningOutcomePanel: View {
                 }
             }
 
-            if !outcome.items.isEmpty {
+            if !outcome.items.isEmpty || showContext {
                 ScrollView {
                     VStack(spacing: 8) {
                         ForEach(Array(outcome.items.enumerated()), id: \.offset) { _, item in
                             itemRow(item)
                         }
+                        // Il contesto scorre con i fatti: intestazione e azioni restano sempre visibili.
+                        if showContext { context }
                     }
                 }
-                .frame(maxHeight: 240)
+                .frame(maxHeight: maxContentHeight)
                 .fixedSize(horizontal: false, vertical: true)
                 .scrollBounceBehavior(.basedOnSize)
                 // I fatti nella lingua dell'operatore (arrivano dopo: intanto l'originale).
-                .task(id: outcome.items) { chat.requestTranslations(outcome.items.map { ($0.factId, $0.content) }) }
+                .task(id: outcome.items) {
+                    guard !outcome.items.isEmpty else { return }
+                    chat.requestTranslations(outcome.items.map { ($0.factId, $0.content) })
+                }
             }
-
-            if showContext { context }
 
             if !outcome.isSaving { actions }
         }

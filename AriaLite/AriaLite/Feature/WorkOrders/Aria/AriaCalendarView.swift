@@ -16,8 +16,12 @@ struct AriaCalendarView: View {
 
     @State private var month = Calendar.current.startOfMonth(for: .now)
     @State private var selected = Calendar.current.startOfDay(for: .now)
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var calendar: Calendar { .current }
+
+    /// iPhone in orizzontale: il mese a sinistra e le task del giorno accanto, altrimenti finiscono sotto la piega.
+    private var sideBySide: Bool { verticalSizeClass == .compact }
 
     /// Aperti e chiusi insieme, per giorno. Senza nessuna data un lavoro non ha un posto nel calendario.
     private var ordersByDay: [Date: [AriaWorkOrder]] {
@@ -37,15 +41,23 @@ struct AriaCalendarView: View {
     var body: some View {
         NavigationStack {
             let byDay = ordersByDay
+            let layout = sideBySide
+                ? AnyLayout(HStackLayout(alignment: .top, spacing: 20))
+                : AnyLayout(VStackLayout(alignment: .leading, spacing: 20))
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     AriaSyncStatusView(store: store)
-                    monthCard(byDay)
-                    dayList(byDay[selected] ?? [])
+                    layout {
+                        monthCard(byDay)
+                            .frame(maxWidth: sideBySide ? 360 : .infinity)
+                        dayList(byDay[selected] ?? [])
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 24)
+                .ariaReadableWidth()
             }
             .refreshable { await store.refresh() }
             .liteBackground()
@@ -99,6 +111,8 @@ struct AriaCalendarView: View {
             }
         }
         .padding(16)
+        // Sette colonne devono starci anche a 320pt: oltre xxLarge il mese non cresce più (la lista sotto sì).
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 20))
         // Un trascinamento orizzontale cambia mese, come sfogliare.
         .gesture(
@@ -131,7 +145,9 @@ struct AriaCalendarView: View {
         } label: {
             VStack(spacing: 4) {
                 Text(verbatim: "\(calendar.component(.day, from: day))")
-                    .font(.system(size: 16, weight: isToday || isSelected ? .bold : .regular))
+                    .font(.callout.weight(isToday || isSelected ? .bold : .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundStyle(isSelected ? Color.white : isToday ? Color.liteAccent : Color.primary)
                     .frame(width: 34, height: 34)
                     .background {

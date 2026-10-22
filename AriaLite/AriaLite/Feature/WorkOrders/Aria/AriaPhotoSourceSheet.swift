@@ -16,19 +16,14 @@ struct PhotoSourceSheet: View {
     @Binding var selectedPhotoItems: [PhotosPickerItem]
     let onCamera: () -> Void
     @Environment(\.dismiss) private var dismiss
+    /// Altezza misurata del contenuto: il foglio è alto quanto serve, né tagliato né vuoto.
+    @State private var sheetHeight: CGFloat = 214
 
     var body: some View {
         VStack(spacing: 16) {
-            // Handle
-            Capsule()
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 36, height: 4)
-                .padding(.top, 10)
-
             Text("Add Photo")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.primary)
-                .padding(.top, 4)
 
             HStack(spacing: 16) {
                 // Galleria
@@ -56,10 +51,16 @@ struct PhotoSourceSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
-        .presentationDetents([.height(200)])
-        
+        // Sopra c'è posto per la maniglia di sistema.
+        .padding(.top, 24)
+        .padding(.bottom, 24)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { sheetHeight = $0 }
+        .presentationDetents([.height(sheetHeight)])
+        .presentationDragIndicator(.visible)
+        // iPad: il form sheet si adatta all'altezza del contenuto invece di lasciarlo a metà.
+        .presentationSizing(.form.fitted(horizontal: false, vertical: true))
     }
 }
 

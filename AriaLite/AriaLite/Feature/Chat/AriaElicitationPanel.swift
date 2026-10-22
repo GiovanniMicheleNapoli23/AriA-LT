@@ -73,21 +73,25 @@ struct AriaElicitationPanel: View {
                     followUpForm(option)
                 } else {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(AriaMarkdown.inline(step.question))
-                            .font(.system(size: 17, weight: .semibold))
-                            .fixedSize(horizontal: false, vertical: true)
-                        if case .learning(let reason?) = kind {
-                            Text(AriaMarkdown.inline(reason))
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                        scrolling {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(AriaMarkdown.inline(step.question))
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if case .learning(let reason?) = kind {
+                                    Text(AriaMarkdown.inline(reason))
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                if !isSingle {
+                                    Text(step.mode == "rank" ? "Tap in order of priority" : "Choose all that apply")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                                optionList
+                            }
                         }
-                        if !isSingle {
-                            Text(step.mode == "rank" ? "Tap in order of priority" : "Choose all that apply")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
-                        options
                         if !isSingle { footer }
                     }
                 }
@@ -174,10 +178,11 @@ struct AriaElicitationPanel: View {
 
     // MARK: Opzioni
 
-    /// Alta quanto le opzioni (la ScrollView prende l'altezza del contenuto) e ferma: scorre solo
-    /// se supera `maxOptionsHeight`, cioè se le opzioni proprio non entrano nello schermo.
-    private var options: some View {
-        ScrollView { optionList }
+    /// Alta quanto il contenuto (la ScrollView prende l'altezza del contenuto) e ferma: scorre solo
+    /// se supera `maxOptionsHeight`, cioè se domanda e opzioni proprio non entrano nello schermo
+    /// (iPhone in orizzontale con la tastiera): l'intestazione e il pulsante d'invio restano visibili.
+    private func scrolling(@ViewBuilder _ content: () -> some View) -> some View {
+        ScrollView { content() }
             .frame(maxHeight: maxOptionsHeight)
             .fixedSize(horizontal: false, vertical: true)
             .scrollBounceBehavior(.basedOnSize)

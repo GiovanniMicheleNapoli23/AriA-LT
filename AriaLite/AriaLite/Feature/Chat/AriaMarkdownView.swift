@@ -13,7 +13,18 @@ import SwiftUI
 
 struct AriaMarkdownView: View {
     let text: String
-    var font: Font = .system(size: 16)
+    /// Font del testo; senza, 16 pt che seguono il Dynamic Type.
+    var font: Font? = nil
+
+    // Le misure di sempre alla dimensione standard, ma crescono con il Dynamic Type.
+    @ScaledMetric(relativeTo: .callout) private var bodySize: CGFloat = 16
+    @ScaledMetric(relativeTo: .title3) private var h1Size: CGFloat = 21
+    @ScaledMetric(relativeTo: .title3) private var h2Size: CGFloat = 19
+    @ScaledMetric(relativeTo: .headline) private var h3Size: CGFloat = 17
+    @ScaledMetric(relativeTo: .footnote) private var codeSize: CGFloat = 13
+    @ScaledMetric(relativeTo: .subheadline) private var markerSize: CGFloat = 15
+
+    private var bodyFont: Font { font ?? .system(size: bodySize) }
 
     /// Interlinea del testo: sul telefono le righe fitte si leggono male.
     private static let lineSpacing: CGFloat = 4
@@ -44,12 +55,12 @@ struct AriaMarkdownView: View {
         switch block {
         case .heading(let level, let content):
             Text(AriaMarkdown.inline(content))
-                .font(.system(size: level == 1 ? 21 : level == 2 ? 19 : 17, weight: .semibold))
+                .font(.system(size: level == 1 ? h1Size : level == 2 ? h2Size : h3Size, weight: .semibold))
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
         case .paragraph(let content):
             Text(AriaMarkdown.inline(content))
-                .font(font)
+                .font(bodyFont)
                 .lineSpacing(Self.lineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
         case .list(let items):
@@ -60,7 +71,7 @@ struct AriaMarkdownView: View {
             }
         case .quote(let content):
             Text(AriaMarkdown.inline(content))
-                .font(font)
+                .font(bodyFont)
                 .lineSpacing(Self.lineSpacing)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -71,7 +82,7 @@ struct AriaMarkdownView: View {
         case .code(let content):
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(content)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.system(size: codeSize, design: .monospaced))
                     .lineSpacing(3)
                     .padding(12)
             }
@@ -93,7 +104,7 @@ struct AriaMarkdownView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             if item.isNumbered {
                 Text(item.marker)
-                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                    .font(.system(size: markerSize, weight: .semibold).monospacedDigit())
                     .foregroundStyle(Color.liteAccent.opacity(0.75))
                     .frame(minWidth: 16, alignment: .trailing)
             } else {
@@ -104,7 +115,7 @@ struct AriaMarkdownView: View {
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
             }
             Text(AriaMarkdown.inline(item.text))
-                .font(font)
+                .font(bodyFont)
                 .lineSpacing(Self.lineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -117,12 +128,15 @@ private struct AriaMarkdownTable: View {
     let header: [String]
     let rows: [[String]]
 
+    @ScaledMetric(relativeTo: .footnote) private var headerSize: CGFloat = 13
+    @ScaledMetric(relativeTo: .subheadline) private var cellSize: CGFloat = 15
+
     var body: some View {
         Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 16, verticalSpacing: 0) {
             GridRow {
                 ForEach(Array(header.enumerated()), id: \.offset) { _, cell in
                     Text(AriaMarkdown.inline(cell))
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: headerSize, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .padding(.vertical, 8)
                 }
@@ -132,7 +146,7 @@ private struct AriaMarkdownTable: View {
                 GridRow {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
                         Text(AriaMarkdown.inline(cell))
-                            .font(.system(size: 15))
+                            .font(.system(size: cellSize))
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.vertical, 9)
                     }
@@ -150,22 +164,25 @@ private struct AriaMarkdownRowCards: View {
     let header: [String]
     let rows: [[String]]
 
+    @ScaledMetric(relativeTo: .footnote) private var labelSize: CGFloat = 13
+    @ScaledMetric(relativeTo: .subheadline) private var valueSize: CGFloat = 15
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 VStack(alignment: .leading, spacing: 6) {
                     Text(AriaMarkdown.inline(row.first ?? ""))
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: valueSize, weight: .semibold))
                         .fixedSize(horizontal: false, vertical: true)
                     Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 6) {
                         ForEach(Array(zip(header.dropFirst(), row.dropFirst()).enumerated()), id: \.offset) { _, pair in
                             if !pair.1.isEmpty {
                                 GridRow {
                                     Text(AriaMarkdown.inline(pair.0))
-                                        .font(.system(size: 13))
+                                        .font(.system(size: labelSize))
                                         .foregroundStyle(.secondary)
                                     Text(AriaMarkdown.inline(pair.1))
-                                        .font(.system(size: 15))
+                                        .font(.system(size: valueSize))
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }

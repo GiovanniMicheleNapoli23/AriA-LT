@@ -38,6 +38,7 @@ struct AriaChatComposer: View {
     @State private var draftBeforeDictation: String?
     @State private var showContext = false
     @AppStorage(AriaDictation.languageKey) private var dictationLanguage = AriaDictation.automatic
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var trimmed: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var hasText: Bool { !trimmed.isEmpty }
@@ -135,7 +136,8 @@ struct AriaChatComposer: View {
                 TextField(dictation.isListening ? "Listening…" : dictation.isTranscribing ? "Writing it down…" : "Ask Aria",
                           text: $draft, axis: .vertical)
                     .font(.system(size: 17))
-                    .lineLimit(1...6)
+                    // In orizzontale con la tastiera restano ~150 pt: oltre due righe il campo scorre al suo interno.
+                    .lineLimit(verticalSizeClass == .compact ? 1...2 : 1...6)
                     .focused(inputFocused)
                     .padding(.vertical, 9)
                     .padding(.leading, 2)

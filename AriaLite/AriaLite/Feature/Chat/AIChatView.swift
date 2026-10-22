@@ -92,6 +92,8 @@ struct AriaConversation: View {
         if viewModel.backend.isReady {
             if let chat = agentChat ?? ownAgentChat {
                 AriaAgentChatView(chat: chat, backend: viewModel.backend, showsEmptyState: showsEmptyState, voice: voice)
+                    // Il view model della schermata nasce con la chat: un'altra chat, una schermata nuova.
+                    .id(ObjectIdentifier(chat))
             } else {
                 Color(.systemGroupedBackground).onAppear {
                     // Contesto del passo: viaggia col primo messaggio (modo A della guida).

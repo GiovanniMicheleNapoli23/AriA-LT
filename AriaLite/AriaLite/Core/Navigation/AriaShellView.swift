@@ -91,7 +91,9 @@ struct AriaShellView: View {
                 .opacity(0.3 + 0.7 * progress)
 
                 main(progress: progress)
-                    .offset(x: offset)
+                    // Il pannello disegna anche nell'area sicura a sinistra (notch in orizzontale):
+                    // scivola oltre anche quella, se no copre la sidebar.
+                    .offset(x: offset + progress * geo.safeAreaInsets.leading)
             }
             .simultaneousGesture(dragGesture(width: width))
         }

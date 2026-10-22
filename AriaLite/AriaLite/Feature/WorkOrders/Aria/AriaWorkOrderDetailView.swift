@@ -25,6 +25,8 @@ struct AriaWorkOrderDetailView: View {
     @State private var isLoaded = false
     @State private var runner: RunnerTarget?
     @State private var showComplete = false
+    /// Il cerchio del numero di passo cresce col testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .caption) private var markerSize: CGFloat = 22
 
     nonisolated enum InfoSection: Hashable { case description, notes, details }
 
@@ -69,6 +71,7 @@ struct AriaWorkOrderDetailView: View {
                     if store.isOffline && order.procedure == nil { offlineStepsCard } else { noProcedureCard }
                 }
             }
+            .ariaReadableWidth()
             .padding(20)
         }
         .liteBackground()
@@ -102,18 +105,22 @@ struct AriaWorkOrderDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(order.statusLabel)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.liteAccent)
-                if let level = order.priorityLevel { AriaPriorityBadge(level: level) }
-                Spacer()
-                if let due = order.dueDate, !order.isClosed {
-                    let text = due.formatted(.dateTime.month(.abbreviated).day().hour().minute())
-                    Label(order.isOverdue ? String(localized: "Overdue · \(text)") : text,
-                          systemImage: order.isOverdue ? "exclamationmark.clock.fill" : "clock")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(order.isOverdue ? Color.red : Color.secondary)
+            // Una riga se ci sta; altrimenti la scadenza va sotto, e con i caratteri enormi tutto in colonna.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    statusText
+                    priorityBadge
+                    Spacer()
+                    dueLabel
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack { statusText; priorityBadge }
+                    dueLabel
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    statusText
+                    priorityBadge
+                    dueLabel
                 }
             }
             Text(order.title)
@@ -126,6 +133,28 @@ struct AriaWorkOrderDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var statusText: some View {
+        Text(order.statusLabel)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(Color.liteAccent)
+    }
+
+    @ViewBuilder
+    private var priorityBadge: some View {
+        if let level = order.priorityLevel { AriaPriorityBadge(level: level) }
+    }
+
+    @ViewBuilder
+    private var dueLabel: some View {
+        if let due = order.dueDate, !order.isClosed {
+            let text = due.formatted(.dateTime.month(.abbreviated).day().hour().minute())
+            Label(order.isOverdue ? String(localized: "Overdue · \(text)") : text,
+                  systemImage: order.isOverdue ? "exclamationmark.clock.fill" : "clock")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(order.isOverdue ? Color.red : Color.secondary)
         }
     }
 
@@ -143,6 +172,7 @@ struct AriaWorkOrderDetailView: View {
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
         .ariaProminentGlassButtonStyle(tint: order.isClosed ? Color.liteAccent : allReported ? .green : Color.liteAccent)
+        .ariaReadableWidth()
         .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 8)
@@ -342,13 +372,15 @@ struct AriaWorkOrderDetailView: View {
             default:
                 Text(verbatim: "\(step.number)")
                     .font(.caption.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundStyle(isNext ? Color.white : Color.liteAccent)
-                    .frame(width: 22, height: 22)
+                    .frame(width: markerSize, height: markerSize)
                     .background(isNext ? Color.liteAccent : Color.liteAccent.opacity(0.12), in: Circle())
             }
         }
-        .font(.system(size: 22))
-        .frame(width: 24, height: 24)
+        .font(.system(size: markerSize))
+        .frame(width: markerSize + 2, height: markerSize + 2)
     }
 
     // MARK: Contesto

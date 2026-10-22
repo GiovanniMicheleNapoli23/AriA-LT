@@ -90,38 +90,79 @@ struct AriaCompleteSheet: View {
     @State private var isSending = false
     @State private var errorMessage: String?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var trimmed: String { notes.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var canComplete: Bool { !trimmed.isEmpty && unreportedCount == 0 && !isSending }
+    /// iPhone in orizzontale: con la tastiera aperta resta poco spazio, il foglio scorre e "Complete task" va in alto.
+    private var isCompact: Bool { verticalSizeClass == .compact }
+
+    private func submit() {
+        Task {
+            isSending = true
+            errorMessage = await onComplete(trimmed)
+            isSending = false
+            if errorMessage == nil { dismiss() }
+        }
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Describe what was done. The task will be closed and sent for verification.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                if unreportedCount > 0 {
-                    Label("Steps without a result: \(unreportedCount)", systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.orange)
+            Group {
+                if isCompact {
+                    ScrollView { form }
+                        .scrollDismissesKeyboard(.interactively)
+                } else {
+                    form
                 }
-                TextEditor(text: $notes)
-                    .scrollContentBackground(.hidden)
-                    .padding(10)
-                    .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .disabled(isSending)
-                if let errorMessage {
-                    Label(errorMessage, systemImage: "exclamationmark.circle.fill")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(.red)
+            }
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Complete task")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }.tint(Color.liteAccent).disabled(isSending)
                 }
-                Button {
-                    Task {
-                        isSending = true
-                        errorMessage = await onComplete(trimmed)
-                        isSending = false
-                        if errorMessage == nil { dismiss() }
+                if isCompact {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: submit) {
+                            if isSending { ProgressView() } else { Text("Complete task").fontWeight(.semibold) }
+                        }
+                        .tint(Color.liteAccent)
+                        .disabled(!canComplete)
                     }
-                } label: {
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isSending)
+    }
+
+    private var form: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Describe what was done. The task will be closed and sent for verification.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if unreportedCount > 0 {
+                Label("Steps without a result: \(unreportedCount)", systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.orange)
+            }
+            TextEditor(text: $notes)
+                .scrollContentBackground(.hidden)
+                // Nello scroll non c'è altezza da riempire: almeno qualche riga di testo.
+                .frame(minHeight: isCompact ? 100 : nil)
+                .padding(10)
+                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .disabled(isSending)
+            if let errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.circle.fill")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.red)
+            }
+            if !isCompact {
+                Button(action: submit) {
                     ZStack {
                         if isSending { ProgressView().tint(.white) } else {
                             Label("Complete task", systemImage: "checkmark.seal.fill")
@@ -133,20 +174,9 @@ struct AriaCompleteSheet: View {
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .tint(Color.liteAccent)
-                .disabled(trimmed.isEmpty || unreportedCount > 0 || isSending)
-            }
-            .padding(16)
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Complete task")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.tint(Color.liteAccent).disabled(isSending)
-                }
+                .disabled(!canComplete)
             }
         }
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .interactiveDismissDisabled(isSending)
+        .padding(16)
     }
 }

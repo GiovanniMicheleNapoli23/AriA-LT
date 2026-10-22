@@ -50,34 +50,29 @@ struct AriaAvailabilityRow: View {
                 }
             }
         } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "person.crop.circle.badge.clock")
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(Color.liteAccent)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Availability")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                    Text(caption)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                }
-                Spacer(minLength: 8)
-                if store.isUpdatingAvailability {
-                    ProgressView()
-                } else {
-                    HStack(spacing: 6) {
-                        Circle().fill(store.availability.color).frame(width: 8, height: 8)
-                        Text(store.availability.localized)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                // Su una riga se titolo e stato ci stanno interi; altrimenti (testo grande, schermo stretto) lo stato va sotto.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) {
+                        icon
+                        title.fixedSize()
+                        Spacer(minLength: 8)
+                        status.fixedSize()
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 12) {
+                            icon
+                            title
+                        }
+                        status
                     }
                 }
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                Text(caption)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
             .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
@@ -85,5 +80,33 @@ struct AriaAvailabilityRow: View {
         .buttonStyle(.plain)
         .disabled(store.isUpdatingAvailability)
         .sensoryFeedback(.selection, trigger: store.availability)
+    }
+
+    private var icon: some View {
+        Image(systemName: "person.crop.circle.badge.clock")
+            .font(.body.weight(.medium))
+            .foregroundStyle(Color.liteAccent)
+    }
+
+    private var title: some View {
+        Text("Availability")
+            .font(.body.weight(.medium))
+            .foregroundStyle(.primary)
+    }
+
+    private var status: some View {
+        HStack(spacing: 6) {
+            if store.isUpdatingAvailability {
+                ProgressView()
+            } else {
+                Circle().fill(store.availability.color).frame(width: 8, height: 8)
+                Text(store.availability.localized)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
     }
 }

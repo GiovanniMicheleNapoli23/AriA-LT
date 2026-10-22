@@ -15,6 +15,7 @@ struct AriaSyncStatusView: View {
     let store: AriaWorkOrderStore
 
     @State private var showIssues = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private enum Phase: Equatable {
         case hidden, issues(Int), offline(Int), syncing(Int), waiting(Int)
@@ -75,22 +76,30 @@ struct AriaSyncStatusView: View {
 
     private func pill<Icon: View, Label: View>(tint: Color, @ViewBuilder icon: () -> Icon, @ViewBuilder text: () -> Label,
                                                @ViewBuilder action: () -> some View = { EmptyView() }) -> some View {
-        HStack(spacing: 8) {
-            icon()
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(tint)
-            text()
-                .font(.footnote)
-                .foregroundStyle(.primary.opacity(0.8))
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+        // Testo molto grande: il messaggio intero su più righe e il pulsante sotto, in un riquadro invece della capsula.
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        let layout = stacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(spacing: 8))
+        return layout {
+            HStack(alignment: stacked ? .firstTextBaseline : .center, spacing: 8) {
+                icon()
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(tint)
+                text()
+                    .font(.footnote)
+                    .foregroundStyle(.primary.opacity(0.8))
+                    .lineLimit(stacked ? nil : 2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             action()
                 .font(.footnote.weight(.semibold))
                 .tint(tint)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .ariaGlass(in: Capsule(), tint: tint.opacity(0.1))
+        .ariaGlass(in: stacked ? AnyShape(RoundedRectangle(cornerRadius: 16, style: .continuous)) : AnyShape(Capsule()),
+                   tint: tint.opacity(0.1))
         .frame(maxWidth: .infinity)
         .transition(.move(edge: .top).combined(with: .opacity))
         .accessibilityElement(children: .combine)

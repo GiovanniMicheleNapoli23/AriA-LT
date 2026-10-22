@@ -28,6 +28,35 @@ final class ChatSuggestionsUITests: AriaUITestCase {
         }
     }
 
+    /// Con la tastiera aperta la chat vuota passa al layout compatto: i chip restano sopra il composer
+    /// e sotto la barra in alto, senza coprirli.
+    func testChipsStayBetweenTheBarAndTheComposerWithTheKeyboardOpen() throws {
+        _ = try firstChip()
+        let input = element("chat.input")
+        input.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "La tastiera non si è aperta")
+        // Il passaggio al layout compatto è animato.
+        Thread.sleep(forTimeInterval: 1)
+        // Con "Connect Hardware Keyboard" attivo nel simulatore resta solo una barra: non c'è niente da provare.
+        // (la tastiera esiste lo stesso, fuori schermo: contano i tasti che si possono toccare).
+        guard app.keyboards.keys.firstMatch.isHittable else {
+            throw XCTSkip("Tastiera software nascosta (tastiera fisica collegata al simulatore: I/O › Keyboard).")
+        }
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Chat vuota con la tastiera"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        let barBottom = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : 0
+        for index in 0..<chips.count {
+            let chip = chips.element(boundBy: index)
+            XCTAssertLessThanOrEqual(chip.frame.maxY, input.frame.minY, "Il chip \(index) finisce sotto il composer")
+            XCTAssertGreaterThanOrEqual(chip.frame.minY, barBottom, "Il chip \(index) finisce sotto la barra in alto")
+        }
+        XCTAssertTrue(chips.firstMatch.isHittable, "Il primo chip non si può toccare con la tastiera aperta")
+    }
+
     func testTappingAChipSendsItAsTheFirstMessage() throws {
         let chip = try firstChip()
         let text = chip.label

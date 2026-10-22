@@ -85,6 +85,15 @@ final class AriaIsland {
         finish(animated: true, accepted: accepted)
     }
 
+    /// Rotazione o finestra ridimensionata: l'isola e la larghezza dello schermo cambiano, la capsula si
+    /// ricentra (tenendo l'altezza già misurata del contenuto).
+    fileprivate func relayout(in window: UIWindow) {
+        guard current != nil else { return }
+        let height = geometry.expanded.height
+        geometry = Geometry(window: window)
+        geometry.fit(height: height)
+    }
+
     private func finish(animated: Bool, accepted: Bool = false) {
         lifecycle?.cancel()
         lifecycle = nil
@@ -210,6 +219,15 @@ private final class AriaIslandHost: UIHostingController<AriaIslandView> {
 
     override var prefersStatusBarHidden: Bool { hidesStatusBar }
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation { .fade }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        // A transizione finita dimensioni e area sicura della finestra sono già quelle nuove.
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            guard let window = self?.view.window else { return }
+            withAnimation(AriaIsland.collapseAnimation) { AriaIsland.shared.relayout(in: window) }
+        }
+    }
 }
 
 // MARK: - Vista

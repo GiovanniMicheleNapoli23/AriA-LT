@@ -242,10 +242,11 @@ struct AriaTableArtifact: View {
                         ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                             GridRow {
                                 ForEach(columns, id: \.key) { column in
-                                    Text(row[column.key]?.stringValue ?? "—")
-                                        .font(.system(size: 13))
-                                        .lineLimit(2)
-                                        .frame(maxWidth: 220, alignment: .leading)
+                                    AriaCappedWidth(max: 220) {
+                                        Text(row[column.key]?.stringValue ?? "—")
+                                            .font(.system(size: 13))
+                                            .lineLimit(2)
+                                    }
                                 }
                             }
                             .contentShape(Rectangle())
@@ -262,6 +263,21 @@ struct AriaTableArtifact: View {
         guard var path = data["row_link_template"]?.nonEmptyString else { return }
         for (key, value) in row { path = path.replacingOccurrences(of: "{\(key)}", with: value.stringValue ?? "") }
         actions.open(path)
+    }
+}
+
+/// Una ScrollView orizzontale non propone una larghezza: la proposta si limita a `max`,
+/// così il testo va a capo (e la riga si alza) invece di troncarsi su una riga.
+private struct AriaCappedWidth: Layout {
+    var max: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = Swift.min(proposal.width ?? max, max)
+        return subviews.first?.sizeThatFits(ProposedViewSize(width: width, height: nil)) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
     }
 }
 

@@ -59,6 +59,7 @@ struct AriaWorkOrdersView: View {
                     errorPill
                     content
                 }
+                .ariaReadableWidth()
             }
             .refreshable { await store.refresh() }
             .liteBackground()
@@ -161,7 +162,7 @@ struct AriaWorkOrdersView: View {
                 )
                 .padding(.top, 12)
 
-                VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 0) {
                     ForEach(pastByDay, id: \.day) { item in
                         Text(item.day.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
@@ -273,6 +274,8 @@ struct AriaWorkOrdersView: View {
 struct AriaWorkOrderRow: View {
     let order: AriaWorkOrder
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     private var progress: Double {
         if ["completed", "verified"].contains(order.status) { return 1 }
         if let steps = order.progress, steps.total > 0 { return steps.fraction }
@@ -293,8 +296,13 @@ struct AriaWorkOrderRow: View {
     }
 
     var body: some View {
+        // Testo molto grande: priorità e scadenza vanno sotto il titolo, che altrimenti si spezza a metà parola.
+        let isAX = dynamicTypeSize.isAccessibilitySize
+        let header = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            : AnyLayout(HStackLayout(alignment: .top))
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
+            header {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(order.title)
                         .font(.subheadline.weight(.semibold))
@@ -303,10 +311,10 @@ struct AriaWorkOrderRow: View {
                     Text(detailLine)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .lineLimit(isAX ? 3 : 1)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
+                if !isAX { Spacer() }
+                VStack(alignment: isAX ? .leading : .trailing, spacing: 3) {
                     if let level = order.priorityLevel {
                         Text(level.localized)
                             .font(.caption.weight(.bold))

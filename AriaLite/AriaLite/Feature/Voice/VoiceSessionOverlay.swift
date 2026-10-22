@@ -67,7 +67,8 @@ struct VoiceSessionOverlay: View {
                     voice.isMuted.toggle()
                 } label: {
                     Image(systemName: voice.isMuted ? "mic.slash.fill" : "mic.fill")
-                        .font(.subheadline.bold())
+                        // Glifo fisso come i pulsanti del composer: con il Dynamic Type uscirebbe dal cerchio da 34 pt.
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(voice.isMuted ? .red : Color.liteAccent)
                         .frame(width: 34, height: 34)
                         .ariaGlass(in: Circle(), tint: voice.isMuted ? .red.opacity(0.15) : Color.liteAccent.opacity(0.1))

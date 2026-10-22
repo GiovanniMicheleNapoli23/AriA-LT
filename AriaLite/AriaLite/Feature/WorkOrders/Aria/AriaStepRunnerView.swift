@@ -41,6 +41,7 @@ struct AriaStepRunnerView: View {
     @State private var showSafety = false
     @Namespace private var glassNamespace
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(AppViewModel.self) private var viewModel
 
     private enum NoteMode: Identifiable {
@@ -126,6 +127,7 @@ struct AriaStepRunnerView: View {
                                     }
                                     photoStrip(step)
                                 }
+                                .ariaReadableWidth()
                                 .padding(.horizontal, 16)
                                 .padding(.top, 12)
                                 .padding(.bottom, Self.scrollFade)
@@ -144,6 +146,8 @@ struct AriaStepRunnerView: View {
                             // lungo con le foto non passa dietro "Ask AriA" (la barra è di vetro: si vedeva attraverso).
                             // Dietro c'è solo il gradiente della pagina, fino sotto l'indicatore home.
                             bottomBar(step)
+                                // +40: i 20 di padding per lato della barra, così i pulsanti si allineano alle schede.
+                                .ariaReadableWidth(AriaLayout.readableWidth + 40)
                         }
                     }
                 } else {
@@ -537,64 +541,87 @@ struct AriaStepRunnerView: View {
 
     private func bottomBar(_ step: AriaProcedureStep) -> some View {
         AriaGlassEffectContainer(spacing: 12) {
-            VStack(spacing: 0) {
-                askAriaButton
-                    .padding(.horizontal, 20)
-                    .padding(.top, 14)
-                    .padding(.bottom, 10)
+            if verticalSizeClass == .compact {
+                // iPhone in orizzontale: una riga sola, altrimenti la barra si prende metà dello schermo.
+                HStack(spacing: 10) {
+                    askAriaButton(compact: true)
+                    controls(step)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+            } else {
+                VStack(spacing: 0) {
+                    askAriaButton(compact: false)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+                        .padding(.bottom, 10)
 
-                controls(step)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
-                    .padding(.bottom, 8)
+                    controls(step)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .padding(.bottom, 8)
+                }
             }
         }
     }
 
     /// Pillola di vetro con la sfera di Aria: il bordo iridescente riprende i colori della sfera.
-    private var askAriaButton: some View {
+    /// `compact`: solo la sfera, in un cerchio alto quanto i pulsanti accanto.
+    private func askAriaButton(compact: Bool) -> some View {
         Button {
             if help.chat == nil { resetHelpChat() }
             showAIHelp = true
         } label: {
-            HStack(spacing: 12) {
+            if compact {
                 AriaOrb(radius: 0.9)
-                    .frame(width: 40, height: 40)
-                    .shadow(color: Color(red: 0.89, green: 0.55, blue: 1).opacity(0.55), radius: 8)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Ask AriA")
-                        .font(.system(size: 17, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color.liteAccent)
-                    Text("Get help with this step")
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Color.liteAccent.opacity(0.6))
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "sparkles")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.liteAccent)
-                    .frame(width: 32, height: 32)
-                    .background(Color.liteAccent.opacity(0.08), in: Circle())
-            }
-            .padding(.leading, 10)
-            .padding(.trailing, 14)
-            .padding(.vertical, 9)
-            .frame(maxWidth: .infinity)
-            .contentShape(Capsule())
-            .ariaGlass(in: Capsule())
-            .overlay {
-                Capsule().strokeBorder(
-                    AngularGradient(colors: [Color(red: 0.89, green: 0.55, blue: 1), Color(red: 0.93, green: 0.76, blue: 0.93),
-                                             Color(red: 0.70, green: 0.21, blue: 0.99), Color(red: 0.89, green: 0.55, blue: 1)],
-                                    center: .center),
-                    lineWidth: 1)
-                .opacity(0.45)
+                    .frame(width: 34, height: 34)
+                    .frame(width: 46, height: 46)
+                    .contentShape(Circle())
+                    .ariaGlass(in: Circle())
+            } else {
+                askAriaPill
             }
         }
         .buttonStyle(AriaPressScaleStyle())
         .matchedTransitionSource(id: Self.askAriaSource, in: glassNamespace)
         .accessibilityLabel(Text("Ask AriA"))
         .accessibilityHint(Text("Get help with this step"))
+    }
+
+    private var askAriaPill: some View {
+        HStack(spacing: 12) {
+            AriaOrb(radius: 0.9)
+                .frame(width: 40, height: 40)
+                .shadow(color: Color(red: 0.89, green: 0.55, blue: 1).opacity(0.55), radius: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Ask AriA")
+                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.liteAccent)
+                Text("Get help with this step")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(Color.liteAccent.opacity(0.6))
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "sparkles")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.liteAccent)
+                .frame(width: 32, height: 32)
+                .background(Color.liteAccent.opacity(0.08), in: Circle())
+        }
+        .padding(.leading, 10)
+        .padding(.trailing, 14)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity)
+        .contentShape(Capsule())
+        .ariaGlass(in: Capsule())
+        .overlay {
+            Capsule().strokeBorder(
+                AngularGradient(colors: [Color(red: 0.89, green: 0.55, blue: 1), Color(red: 0.93, green: 0.76, blue: 0.93),
+                                         Color(red: 0.70, green: 0.21, blue: 0.99), Color(red: 0.89, green: 0.55, blue: 1)],
+                                center: .center),
+                lineWidth: 1)
+            .opacity(0.45)
+        }
     }
 
     private func controls(_ step: AriaProcedureStep) -> some View {
@@ -616,8 +643,7 @@ struct AriaStepRunnerView: View {
                 if let next = nextTarget { nextButton(next) }
             } else if step.report == nil {
                 Button { noteMode = .notDone } label: {
-                    Label("Not done", systemImage: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
+                    actionLabel("Not done", systemImage: "xmark")
                         .foregroundStyle(.red)
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
@@ -627,8 +653,7 @@ struct AriaStepRunnerView: View {
                 Button {
                     Task { await report(.done(note: draftNotes[step.id]), step: step) }
                 } label: {
-                    Label("Done", systemImage: "checkmark")
-                        .font(.system(size: 15, weight: .semibold))
+                    actionLabel("Done", systemImage: "checkmark")
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .ariaProminentGlassButtonStyle(tint: Color.liteAccent)
@@ -636,8 +661,7 @@ struct AriaStepRunnerView: View {
                 .ariaGlassEffectID("main-action", in: glassNamespace)
             } else {
                 Button { Task { await undo(step) } } label: {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                        .font(.system(size: 15, weight: .semibold))
+                    actionLabel("Undo", systemImage: "arrow.uturn.backward")
                         .frame(maxWidth: .infinity, minHeight: 46)
                 }
                 .ariaGlassButtonStyle()
@@ -647,8 +671,7 @@ struct AriaStepRunnerView: View {
                     nextButton(next)
                 } else {
                     Button { showComplete = true } label: {
-                        Label("Complete task", systemImage: "checkmark.seal.fill")
-                            .font(.system(size: 15, weight: .semibold))
+                        actionLabel("Complete task", systemImage: "checkmark.seal.fill")
                             .frame(maxWidth: .infinity, minHeight: 46)
                     }
                     .ariaProminentGlassButtonStyle(tint: .green)
@@ -658,6 +681,18 @@ struct AriaStepRunnerView: View {
             }
         }
         .animation(.spring(duration: 0.4), value: step.report?.status)
+    }
+
+    /// Etichetta di un pulsante della barra. Da iOS 26 il vetro aggiunge il suo padding e su un iPhone
+    /// stretto "Complete task" andava a capo: se non ci sta, via l'icona e il testo si stringe un po'.
+    private func actionLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        ViewThatFits(in: .horizontal) {
+            Label(title, systemImage: systemImage)
+            Text(title)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+        }
+        .font(.system(size: 15, weight: .semibold))
     }
 
     private func nextButton(_ target: AriaProcedureStep) -> some View {

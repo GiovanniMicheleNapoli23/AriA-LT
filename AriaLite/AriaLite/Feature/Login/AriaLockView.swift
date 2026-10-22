@@ -19,24 +19,34 @@ struct AriaLockView: View {
     let viewModel: AppViewModel
 
     @State private var confirmSignOut = false
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    /// iPhone in orizzontale: sfera e logo più piccoli, così i pulsanti restano in vista.
+    private var isCompactHeight: Bool { verticalSizeClass == .compact }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 40)
-            VStack(spacing: 22) {
-                AriaOrb(mood: viewModel.isUnlocking ? .thinking : .idle, radius: 0.8)
-                    .frame(width: 104, height: 104)
-                    .shadow(color: Color.liteAccent.opacity(0.18), radius: 18, x: 0, y: 10)
-                AriaWordmark(size: 40, stacked: true)
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: isCompactHeight ? 16 : 40)
+                    VStack(spacing: isCompactHeight ? 12 : 22) {
+                        AriaOrb(mood: viewModel.isUnlocking ? .thinking : .idle, radius: 0.8)
+                            .frame(width: isCompactHeight ? 64 : 104, height: isCompactHeight ? 64 : 104)
+                            .shadow(color: Color.liteAccent.opacity(0.18), radius: 18, x: 0, y: 10)
+                        AriaWordmark(size: isCompactHeight ? 28 : 40, stacked: true)
+                    }
+                    Spacer(minLength: isCompactHeight ? 16 : 40)
+                    account
+                    Spacer(minLength: 24)
+                    actions
+                }
+                .padding(.horizontal, 24)
+                .frame(maxWidth: 480)
+                // Centrato come prima quando ci sta; se lo schermo è basso scorre.
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            Spacer(minLength: 40)
-            account
-            Spacer(minLength: 24)
-            actions
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: 480)
-        .frame(maxWidth: .infinity)
         .background { backdrop }
         .preferredColorScheme(.light)
         .confirmationDialog("Use a different account?", isPresented: $confirmSignOut, titleVisibility: .visible) {
@@ -136,34 +146,46 @@ struct AriaLockView: View {
 
 /// La schermata di sblocco al ritorno dal background, in una finestra sopra tutte le altre:
 /// copre anche fogli e avvisi aperti, che una vista sovrapposta lascerebbe scoperti.
+/// Una finestra per ogni scena (più finestre dell'app su iPad), condivise tra le ContentView:
+/// la prima che chiude a chiave le copre tutte, le altre non ne aggiungono.
 @MainActor
 final class AriaLockWindow {
-    private var window: UIWindow?
-    private weak var previousKeyWindow: UIWindow?
+    private struct Lock {
+        let window: UIWindow
+        weak var previousKeyWindow: UIWindow?
+    }
+
+    private static var locks: [ObjectIdentifier: Lock] = [:]
 
     func show(_ viewModel: AppViewModel) {
-        guard window == nil,
-              let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first
-        else { return }
+        let scenes = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .filter { Self.locks[ObjectIdentifier($0)] == nil }
+        guard !scenes.isEmpty else { return }
         // La tastiera starebbe sopra la finestra.
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        previousKeyWindow = scene.keyWindow
-        let window = UIWindow(windowScene: scene)
-        window.windowLevel = .alert + 1
-        window.overrideUserInterfaceStyle = .light
-        window.rootViewController = UIHostingController(rootView: AriaLockView(viewModel: viewModel))
-        window.makeKeyAndVisible()
-        self.window = window
+        for scene in scenes {
+            let previousKeyWindow = scene.keyWindow
+            let window = UIWindow(windowScene: scene)
+            window.windowLevel = .alert + 1
+            window.overrideUserInterfaceStyle = .light
+            window.rootViewController = UIHostingController(rootView: AriaLockView(viewModel: viewModel))
+            window.makeKeyAndVisible()
+            Self.locks[ObjectIdentifier(scene)] = Lock(window: window, previousKeyWindow: previousKeyWindow)
+        }
     }
 
     func hide() {
-        guard let window else { return }
-        self.window = nil
-        previousKeyWindow?.makeKey()
-        UIView.animate(withDuration: 0.25) {
-            window.alpha = 0
-        } completion: { _ in
-            window.isHidden = true
+        let locks = Self.locks.values
+        Self.locks = [:]
+        for lock in locks {
+            let window = lock.window
+            lock.previousKeyWindow?.makeKey()
+            UIView.animate(withDuration: 0.25) {
+                window.alpha = 0
+            } completion: { _ in
+                window.isHidden = true
+            }
         }
     }
 }

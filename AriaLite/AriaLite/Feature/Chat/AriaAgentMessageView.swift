@@ -280,10 +280,17 @@ struct AriaAgentMessageView: View {
             switch entry.name {
             case "aria.cmms_work_order_created" where entry.data["detected"]?.boolValue == true:
                 AriaCard(tint: .blue) {
-                    HStack {
-                        Label("Work order suggested", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
-                        Spacer()
-                        AriaBadge(text: String(localized: "auto-detected"), tint: .blue)
+                    // Su 375-390 pt in italiano etichetta e badge non stanno su una riga: il badge va sotto.
+                    ViewThatFits(in: .horizontal) {
+                        HStack {
+                            Label("Work order suggested", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
+                            Spacer()
+                            AriaBadge(text: String(localized: "auto-detected"), tint: .blue).fixedSize()
+                        }
+                        VStack(alignment: .leading, spacing: 6) {
+                            Label("Work order suggested", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
+                            AriaBadge(text: String(localized: "auto-detected"), tint: .blue)
+                        }
                     }
                     if let title = entry.data["title"]?.nonEmptyString { Text(title).font(.system(size: 14, weight: .medium)) }
                     if let suggestion = entry.data["suggestion"]?.nonEmptyString {
@@ -544,6 +551,7 @@ private struct AriaMemoryProposalCard: View {
             }
             .controlSize(.small)
         }
+        .preference(key: AriaInlineEditorFocusKey.self, value: editorFocused)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("memory.card")
         .task(id: proposal.factId) { chat.requestTranslations([(proposal.factId, proposal.content)]) }

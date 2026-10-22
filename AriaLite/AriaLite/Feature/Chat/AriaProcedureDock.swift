@@ -21,6 +21,8 @@ struct AriaProcedureDock: View {
     @State private var question = ""
     /// Direzione dell'animazione tra un task e l'altro.
     @State private var forward = true
+    /// In orizzontale su iPhone lo schermo è basso: il pannello non deve coprire tutta la chat.
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     private var doneCount: Int { list.tasks.filter { chat.isTaskChecked($0, in: messageId) }.count }
     private var next: AriaTaskList.Task? { list.tasks.first { !chat.isTaskChecked($0, in: messageId) } }
@@ -50,8 +52,8 @@ struct AriaProcedureDock: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    // Alto quanto il testo; scorre solo se il task è lunghissimo.
-                    .frame(maxHeight: 220)
+                    // Alto quanto il testo; scorre solo se il task è lunghissimo (in orizzontale oltre due righe).
+                    .frame(maxHeight: verticalSizeClass == .compact ? 48 : 220)
                     .fixedSize(horizontal: false, vertical: true)
                     .scrollBounceBehavior(.basedOnSize)
                     if let mark = chat.taskMark(task, in: messageId) { ariaTaskMarkBadge(mark) }
@@ -63,10 +65,12 @@ struct AriaProcedureDock: View {
                 actions(task)
             }
 
-            Label("Complete the steps to answer Aria's question", systemImage: "lock.fill")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
+            if verticalSizeClass != .compact {
+                Label("Complete the steps to answer Aria's question", systemImage: "lock.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
