@@ -59,6 +59,7 @@ final class AdminAssetFormViewModel {
     }
 
     var isEditing: Bool { original != nil }
+    var title: String { isEditing ? String(localized: "Edit asset") : String(localized: "New asset") }
     var plants: [AriaPlant] { backend.plants }
 
     /// Le scelte del picker: quelle note più il valore attuale se il server ne ha uno nuovo.

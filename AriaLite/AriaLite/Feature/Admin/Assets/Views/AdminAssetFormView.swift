@@ -48,7 +48,7 @@ struct AdminAssetFormView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(viewModel.isEditing ? "Edit asset" : "New asset")
+            .navigationTitle(viewModel.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

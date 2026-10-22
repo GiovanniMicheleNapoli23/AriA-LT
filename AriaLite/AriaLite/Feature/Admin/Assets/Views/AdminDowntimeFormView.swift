@@ -57,7 +57,7 @@ struct AdminDowntimeFormView: View {
             }
             .tint(Color.liteAccent)
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(viewModel.isEditing ? "Edit downtime" : "Log downtime")
+            .navigationTitle(viewModel.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

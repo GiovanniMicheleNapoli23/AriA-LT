@@ -46,6 +46,7 @@ final class AdminDowntimeFormViewModel {
     }
 
     var isEditing: Bool { original != nil }
+    var title: String { isEditing ? String(localized: "Edit downtime") : String(localized: "Log downtime") }
 
     /// L'ordine collegato, anche se non è fra quelli scaricati (resta scelto com'era).
     var workOrderOptions: [AdminWorkOrderOption] {
