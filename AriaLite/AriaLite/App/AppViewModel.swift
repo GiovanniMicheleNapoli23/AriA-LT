@@ -24,9 +24,34 @@ class AppViewModel {
     let notifications = AriaPushNotifications.shared
 
     /// Sezioni della web, per gli account della piattaforma (non operatori).
+    let adminDocuments: AdminDocumentsViewModel
+    let adminKnowledgeGraph: AdminKnowledgeGraphViewModel
+    let adminAgentStudio: AdminAgentStudioViewModel
+    let adminMarketplace: AdminMarketplaceViewModel
+    let adminExtractionReview: AdminExtractionReviewViewModel
+    let adminLearnedKnowledge: AdminLearnedKnowledgeViewModel
+    let adminReasoningConsole: AdminReasoningConsoleViewModel
+    let adminScenarioAnalysis: AdminScenarioAnalysisViewModel
+    let adminCrafted: AdminCraftedViewModel
     let adminWorkOrders: AdminWorkOrdersViewModel
+    let adminMaintenance: AdminMaintenanceViewModel
+    let adminInspections: AdminInspectionsViewModel
+    let adminTaskboard: AdminTaskboardViewModel
     let adminAssets: AdminAssetsViewModel
     let adminSpareParts: AdminSparePartsViewModel
+    let adminPurchaseOrders: AdminPurchaseOrdersViewModel
+    let adminVendors: AdminVendorsViewModel
+    let adminAlarms: AdminAlarmsViewModel
+    let adminReports: AdminReportsViewModel
+    let adminLLMUsage: AdminLLMUsageViewModel
+    let adminPlants: AdminPlantsViewModel
+    let adminCategories: AdminCategoriesViewModel
+    let adminTeams: AdminTeamsViewModel
+    let adminMembers: AdminMembersViewModel
+    let adminMobileUsers: AdminMobileUsersViewModel
+    let adminWorkflows: AdminWorkflowsViewModel
+    let adminAuditLog: AdminAuditLogViewModel
+    let adminCompanySettings: AdminCompanySettingsViewModel
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
     var accountKind: AriaAccountKind { backend.accountKind }
@@ -62,9 +87,34 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        adminDocuments = AdminDocumentsViewModel(backend: backend)
+        adminKnowledgeGraph = AdminKnowledgeGraphViewModel(backend: backend)
+        adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
+        adminMarketplace = AdminMarketplaceViewModel(backend: backend)
+        adminExtractionReview = AdminExtractionReviewViewModel(backend: backend)
+        adminLearnedKnowledge = AdminLearnedKnowledgeViewModel(backend: backend)
+        adminReasoningConsole = AdminReasoningConsoleViewModel(backend: backend)
+        adminScenarioAnalysis = AdminScenarioAnalysisViewModel(backend: backend)
+        adminCrafted = AdminCraftedViewModel(backend: backend)
         adminWorkOrders = AdminWorkOrdersViewModel(backend: backend)
+        adminMaintenance = AdminMaintenanceViewModel(backend: backend)
+        adminInspections = AdminInspectionsViewModel(backend: backend)
+        adminTaskboard = AdminTaskboardViewModel(backend: backend)
         adminAssets = AdminAssetsViewModel(backend: backend)
         adminSpareParts = AdminSparePartsViewModel(backend: backend)
+        adminPurchaseOrders = AdminPurchaseOrdersViewModel(backend: backend)
+        adminVendors = AdminVendorsViewModel(backend: backend)
+        adminAlarms = AdminAlarmsViewModel(backend: backend)
+        adminReports = AdminReportsViewModel(backend: backend)
+        adminLLMUsage = AdminLLMUsageViewModel(backend: backend)
+        adminPlants = AdminPlantsViewModel(backend: backend)
+        adminCategories = AdminCategoriesViewModel(backend: backend)
+        adminTeams = AdminTeamsViewModel(backend: backend)
+        adminMembers = AdminMembersViewModel(backend: backend)
+        adminMobileUsers = AdminMobileUsersViewModel(backend: backend)
+        adminWorkflows = AdminWorkflowsViewModel(backend: backend)
+        adminAuditLog = AdminAuditLogViewModel(backend: backend)
+        adminCompanySettings = AdminCompanySettingsViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -218,9 +268,34 @@ class AppViewModel {
         AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
         ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
+        adminDocuments.reset()
+        adminKnowledgeGraph.reset()
+        adminAgentStudio.reset()
+        adminMarketplace.reset()
+        adminExtractionReview.reset()
+        adminLearnedKnowledge.reset()
+        adminReasoningConsole.reset()
+        adminScenarioAnalysis.reset()
+        adminCrafted.reset()
         adminWorkOrders.reset()
+        adminMaintenance.reset()
+        adminInspections.reset()
+        adminTaskboard.reset()
         adminAssets.reset()
         adminSpareParts.reset()
+        adminPurchaseOrders.reset()
+        adminVendors.reset()
+        adminAlarms.reset()
+        adminReports.reset()
+        adminLLMUsage.reset()
+        adminPlants.reset()
+        adminCategories.reset()
+        adminTeams.reset()
+        adminMembers.reset()
+        adminMobileUsers.reset()
+        adminWorkflows.reset()
+        adminAuditLog.reset()
+        adminCompanySettings.reset()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()
