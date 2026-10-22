@@ -111,6 +111,19 @@ class AriaUITestCase: XCTestCase {
         more.tap()
     }
 
+    /// Una riga in fondo a una lista (foglio a metà altezza, step lungo) non esiste finché non si scorre:
+    /// si scorre verso l'alto finché compare.
+    @discardableResult
+    func reveal(_ identifier: String, swipes: Int = 4) -> XCUIElement {
+        let target = element(identifier)
+        var left = swipes
+        while !target.exists, left > 0 {
+            app.swipeUp()
+            left -= 1
+        }
+        return target
+    }
+
     /// Una chat con una procedura (checklist) è il presupposto del closeout e del report: dipende da cosa risponde
     /// l'agente, quindi se non la propone il test si salta invece di fallire.
     func startProcedureChat() throws {
