@@ -24,6 +24,8 @@ struct AriaAgentChatView: View {
     @State private var greeting = AriaChatCopy.greeting()
     /// Entrata del saluto.
     @State private var emptyAppeared = false
+    /// I chip di partenza (GET /v1/chat/suggestions): vuoti = nessun chip.
+    @State private var suggestions: [String] = []
     @FocusState private var inputFocused: Bool
     /// La domanda guidata è stata ridotta a pillola (si legge o si scrive liberamente).
     @State private var questionCollapsed = false
@@ -250,9 +252,49 @@ struct AriaAgentChatView: View {
             .offset(y: emptyAppeared ? 0 : 8)
             .transition(.opacity)
 
+            if !suggestions.isEmpty {
+                starterChips
+                    .padding(.top, 28)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
             Spacer(minLength: 24)
         }
+        .animation(.smooth(duration: 0.4), value: suggestions)
         .task { withAnimation(.smooth(duration: 0.6).delay(0.05)) { emptyAppeared = true } }
+        // Nella lingua dell'app; si richiedono quando la chat diventa pronta (accesso, stabilimento).
+        .task(id: backend.isReady) {
+            guard backend.isReady else { suggestions = []; return }
+            suggestions = Array(await backend.suggestions().prefix(4))
+        }
+    }
+
+    /// Un tocco manda il suggerimento come primo messaggio.
+    private var starterChips: some View {
+        VStack(spacing: 8) {
+            ForEach(suggestions, id: \.self) { suggestion in
+                Button {
+                    inputFocused = false
+                    chat.send(suggestion)
+                } label: {
+                    Text(suggestion)
+                        .font(.system(size: 14, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .disabled(chat.isStreaming || chat.pendingInterrupt != nil)
+                .accessibilityIdentifier("chat.suggestion")
+            }
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: 520)
     }
 
     private var isComposing: Bool {

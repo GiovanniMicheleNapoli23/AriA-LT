@@ -44,3 +44,7 @@ GoogleService-Info.plist
 
 # Claude Code: impostazioni locali della macchina
 .claude/settings.local.json
+
+# Serena: cache e config locale per-macchina
+.serena/cache/
+.serena/project.local.yml

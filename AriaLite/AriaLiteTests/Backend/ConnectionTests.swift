@@ -241,18 +241,6 @@ extension BackendTests {
             #expect(call.header("company-id") == "c1")
         }
 
-        @Test func anOperatorHasNoSuggestionsEndpointSoNothingIsCalled() async throws {
-            let backend = try await signedInBackend()
-            server.route("GET /v1/chat/suggestions", .json(#"{"suggestions":["Stato della pompa 3?"]}"#, status: 403))
-
-            let suggestions = await backend.suggestions()
-
-            #expect(suggestions.isEmpty)
-            #expect(server.calls("GET /v1/chat/suggestions").isEmpty, "fuori da /v1/mobile risponderebbe 403")
-            #expect(backend.isSignedIn)
-            #expect(backend.lastError == nil)
-        }
-
         @Test func historyReadsTheMessagesAndThePendingApprovalFromTheMobileRoutes() async throws {
             let backend = try await signedInBackend()
             server.route("GET /v1/agent/sessions/s-1/messages", .json(#"[{"id":"m1","role":"user","text":"Ciao"}]"#))
@@ -265,20 +253,6 @@ extension BackendTests {
             #expect(messages.map(\.role) == ["user"] && messages.first?.text == "Ciao")
             #expect(pending == nil)
             #expect(server.calls("GET /v1/agent/sessions/s-1/messages").first?.header("company-id") == "c1")
-        }
-
-        @Test func actionsOutsideTheOperatorInventoryAreRefusedWithoutCallingTheServer() async throws {
-            let backend = try await signedInBackend()
-            let chat = AriaChatAPI(api: backend.api)
-            let before = server.calls.count
-
-            await #expect(throws: AriaError.self) { try await chat.confirmMemory(companyId: "c1", factId: "f1", accept: true) }
-            await #expect(throws: AriaError.self) {
-                try await chat.closeout(companyId: "c1", sessionId: "s-1", AriaCloseoutRequest())
-            }
-            // Rinomina, elimina, feedback, review e learning invece sono consentiti (ChatTurnsTests).
-
-            #expect(server.calls.count == before)
         }
     }
 

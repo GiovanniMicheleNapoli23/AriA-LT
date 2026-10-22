@@ -101,7 +101,7 @@ extension AriaAPIClient {
     func workOrderData(_ method: String, _ path: String, query: [URLQueryItem] = [],
                        body: (any Encodable & Sendable)? = nil) async throws -> Data {
         let raw = try await data(method, path, query: query, body: try body.map { try JSONEncoder().encode($0) })
-        return Self.camelCased(raw)
+        return await Self.camelCased(raw)
     }
 
     static func camelCased(_ raw: Data) -> Data {

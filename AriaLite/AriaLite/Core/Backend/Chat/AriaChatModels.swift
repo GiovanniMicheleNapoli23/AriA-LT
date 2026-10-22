@@ -744,6 +744,83 @@ nonisolated struct AriaSuggestionsResponse: Decodable, Sendable {
     let suggestions: [String]
 }
 
+// MARK: - Contesto della sessione (camelCase lato API)
+
+/// GET /v1/chat/sessions/{id}/context e la risposta di …/context/compact (l'uso dopo la compattazione).
+/// `percentUsed` e `autoCompactAt` sono percentuali (0–100), non rapporti.
+nonisolated struct AriaContextUsage: Decodable, Sendable, Equatable {
+    let usedTokens: Int
+    let limitTokens: Int
+    let messageTokens: Int?
+    /// Contesto recuperato e istruzioni: compattare non li riduce.
+    let overheadTokens: Int?
+    let percentUsed: Double
+    let autoCompactAt: Double?
+    let compactions: Int?
+    let compactableMessages: Int?
+    let canCompact: Bool
+}
+
+// MARK: - Fatti imparati (camelCase lato API)
+
+/// Body di POST …/memory-facts/{id}/confirm. `content` solo se l'operatore ha riscritto il fatto.
+nonisolated struct AriaMemoryDecision: Encodable, Sendable {
+    enum Decision: String, Encodable, Sendable { case accept, reject }
+    let decision: Decision
+    let content: String?
+}
+
+/// Il fatto dopo la decisione: la card si ridisegna da `status` (accept lo lascia in attesa di un admin).
+nonisolated struct AriaMemoryFact: Decodable, Sendable, Equatable {
+    let id: String
+    let content: String
+    let status: String?
+}
+
+/// Body di POST …/memory-facts/translations: `id` è una chiave scelta dall'app, torna come chiave della mappa.
+nonisolated struct AriaFactTranslationRequest: Encodable, Sendable {
+    nonisolated struct Item: Encodable, Sendable, Equatable {
+        let id: String
+        let text: String
+    }
+    /// Il server traduce solo i primi 60 elementi di una richiesta.
+    static let maxItems = 60
+    /// Ogni testo: 1–2000 caratteri.
+    static let maxTextLength = 2000
+
+    let locale: String
+    let items: [Item]
+}
+
+nonisolated struct AriaFactTranslationResponse: Decodable, Sendable {
+    /// Una chiave mancante vuol dire "mostra l'originale".
+    let translations: [String: String]
+}
+
+// MARK: - Report della sessione (camelCase lato API)
+
+/// Body di POST …/sessions/{id}/report. Senza `workOrderId` il report va sulla sessione di chat.
+nonisolated struct AriaReportArchiveRequest: Encodable, Sendable {
+    var workOrderId: String? = nil
+    var title: String? = nil
+}
+
+/// Il report archiviato. `downloadUrl` dura poco: si richiede, non si tiene.
+nonisolated struct AriaReportArchive: Decodable, Sendable {
+    let attachmentId: String?
+    let filename: String?
+    let entityType: String?
+    let entityId: String?
+    let sizeBytes: Int?
+    let downloadUrl: String?
+}
+
+/// Il .docx di GET …/sessions/{id}/report.docx, già scritto in un file temporaneo da condividere.
+nonisolated struct AriaReportFile: Sendable, Equatable {
+    let url: URL
+    let filename: String
+}
+
 // MARK: - Closeout (camelCase lato API)
 
 nonisolated struct AriaCloseoutRequest: Encodable, Sendable {
@@ -760,12 +837,21 @@ nonisolated struct AriaCloseoutRequest: Encodable, Sendable {
     var startDate: String? = nil
     var recurrenceType: String? = nil
     var recurrenceInterval: Int? = nil
-    /// "file" = lascia i lavori già previsti quel giorno; "shift" = spostali.
+    /// "file" = lascia i lavori già previsti quel giorno; "shift" = spostali (vietato all'operatore: 422).
     var conflictChoice: String? = nil
+
+    /// I limiti dell'operatore (guida, sezione 6): mai "shift", e come assegnatario solo sé stesso.
+    /// Lasciare `assigneeId` vuoto tiene la preselezione della proposta.
+    func limitedToOperator(_ ownId: String?) -> Self {
+        var body = self
+        if body.conflictChoice == "shift" { body.conflictChoice = nil }
+        if let assignee = body.assigneeId, assignee != ownId { body.assigneeId = nil }
+        return body
+    }
 }
 
 nonisolated struct AriaCloseoutProposal: Decodable, Sendable {
-    nonisolated struct Candidate: Decodable, Sendable, Identifiable, Hashable { let id: String; let name: String; let reason: String? }
+    nonisolated struct Candidate: Decodable, Sendable, Identifiable, Hashable { let id: String; let name: String?; let reason: String? }
     nonisolated struct Assignee: Decodable, Sendable { let selected: String?; let candidates: [Candidate]? }
     nonisolated struct Location: Decodable, Sendable, Identifiable, Hashable { let id: Int; let name: String }
     nonisolated struct Unresolved: Decodable, Sendable { let value: String?; let valid: [String]? }
@@ -790,6 +876,7 @@ nonisolated struct AriaCloseoutProposal: Decodable, Sendable {
     let recurrenceType: String?
     let recurrenceInterval: Int?
     let unresolved: [String: Unresolved]?
+    /// Per l'operatore sempre vuoto: non vede gli ordini dei colleghi.
     let conflicts: [Conflict]?
 }
 
@@ -809,6 +896,11 @@ nonisolated struct AriaCloseoutResult: Decodable, Sendable {
     let aria: AriaExternalWriteOutcome?
     let maintainx: AriaExternalWriteOutcome?
     let proposal: AriaCloseoutProposal?
+    /// Il report archiviato insieme all'ordine (`report: true`).
+    let reportArchived: Bool?
+    let filename: String?
+    let sizeBytes: Int?
+    let downloadUrl: String?
 }
 
 // MARK: - Utilità

@@ -98,6 +98,8 @@ struct AriaLearningOutcomePanel: View {
                 .frame(maxHeight: 240)
                 .fixedSize(horizontal: false, vertical: true)
                 .scrollBounceBehavior(.basedOnSize)
+                // I fatti nella lingua dell'operatore (arrivano dopo: intanto l'originale).
+                .task(id: outcome.items) { chat.requestTranslations(outcome.items.map { ($0.factId, $0.content) }) }
             }
 
             if showContext { context }
@@ -139,7 +141,7 @@ struct AriaLearningOutcomePanel: View {
                     .padding(.vertical, 2)
                     .background((item.isProposed ? Color.orange : Color.green).opacity(0.12), in: Capsule())
             }
-            Text(item.content)
+            Text(chat.translated(item.content, id: item.factId))
                 .font(.system(size: 14))
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -188,7 +190,7 @@ struct AriaLearningOutcomePanel: View {
 
             Spacer(minLength: 0)
 
-            if !pending.isEmpty {
+            if !pending.isEmpty, chat.canConfirmMemory {
                 Button {
                     notify()
                 } label: {

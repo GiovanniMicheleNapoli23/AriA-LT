@@ -123,8 +123,11 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case bodyTooLarge(bytes: Int, limit: Int)
     case missingCompany
     case missingPlant
-    /// Azione della chat che l'operatore non ha tra le rotte consentite: il server risponderebbe 403.
+    /// Funzione non ancora aperta all'operatore: 403 `operation_forbidden` (backend senza la rotta).
+    /// L'app nasconde la funzione invece di riprovare.
     case notOnPhone
+    /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
+    case invalidChoice(field: String, valid: [String], message: String)
     case decoding(String)
     case stream(String)
 
@@ -150,6 +153,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .missingCompany: String(localized: "No company selected.")
         case .missingPlant: String(localized: "Select a plant before using the chat.")
         case .notOnPhone: String(localized: "This isn't available on the phone yet.")
+        case .invalidChoice(_, _, let message): message
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
         }
@@ -256,8 +260,16 @@ nonisolated enum AriaHTTP {
         if http.statusCode == 403, code(from: data) == "not_a_mobile_user" {
             throw AriaError.notMobileUser
         }
+        if http.statusCode == 403, code(from: data) == "operation_forbidden" {
+            throw AriaError.notOnPhone
+        }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)
+        }
+        if http.statusCode == 422, let detail = (try? JSONDecoder().decode(AriaJSON.self, from: data))?["detail"],
+           let field = detail["field"]?.stringValue, let valid = detail["valid"]?.arrayValue {
+            throw AriaError.invalidChoice(field: field, valid: valid.compactMap(\.stringValue),
+                                          message: detail["message"]?.stringValue ?? AriaHTTP.detail(from: data))
         }
         if let code = code(from: data).flatMap(AriaServerCode.init(rawValue:)) {
             let missing = (try? JSONDecoder().decode(AriaJSON.self, from: data))?["detail"]?["missing"]?

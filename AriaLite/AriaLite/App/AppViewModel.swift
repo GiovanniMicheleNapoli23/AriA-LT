@@ -47,10 +47,18 @@ class AppViewModel {
     init() {
         let backend = AriaBackend()
         self.backend = backend
+        #if DEBUG
+        // UI test: si riparte senza la sessione rimasta nel Keychain, che chiederebbe Face ID.
+        if Self.uiTestSession != nil { backend.discardSavedSessionForUITests() }
+        #endif
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
-        notifications.attach(backend)
+        #if DEBUG
+        // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
+        // aperta al posto della barra di scrittura).
+        if Self.uiTestSession != nil { mainChat.newConversation() }
+        #endif
         // La sessione resta salvata: il link via email non si richiede a ogni avvio.
         if backend.isSignedIn, let account = backend.mobileAccount {
             loggedInUser = User(account)
@@ -146,6 +154,29 @@ class AppViewModel {
         guard loggedInUser == nil, let raw = UserDefaults.standard.string(forKey: "AriaMagicLink"),
               let link = backend.magicLink(in: raw) else { return }
         openedLinkResult = await signIn(with: link)
+    }
+
+    /// Solo UI test: la sessione di un operatore (`set-auth-token`) arriva come variabile d'ambiente di avvio
+    /// (`ARIA_UITEST_SESSION`), perché il link via email vale una volta sola e arriva in una casella di posta.
+    private static var uiTestSession: String? {
+        let raw = ProcessInfo.processInfo.environment["ARIA_UITEST_SESSION"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw?.isEmpty == false ? raw : nil
+    }
+
+    func signInForUITests() async {
+        guard loggedInUser == nil, let token = Self.uiTestSession else { return }
+        do {
+            try await backend.useSessionToken(token)
+        } catch {
+            AriaAuthTrace.failure("uitest.session.failed", error)
+            openedLinkResult = .failure(error.localizedDescription)
+            return
+        }
+        guard backend.isSignedIn, let account = backend.mobileAccount else {
+            openedLinkResult = .failure(backend.lastError ?? AriaError.signedOut.localizedDescription)
+            return
+        }
+        loggedInUser = User(account)
     }
     #endif
 

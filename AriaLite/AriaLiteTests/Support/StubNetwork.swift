@@ -139,7 +139,7 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocolDidFinishLoading(self)
         }
         if reply.delay > 0 {
-            DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay, execute: deliver)
+            DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay) { deliver() }
         } else {
             deliver()
         }

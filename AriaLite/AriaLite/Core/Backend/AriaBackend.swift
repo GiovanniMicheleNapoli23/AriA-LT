@@ -45,6 +45,12 @@ final class AriaBackend {
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
 
+    /// Funzioni a cui il backend ha risposto 403 `operation_forbidden` (release senza la rotta per l'operatore):
+    /// si nascondono fino al prossimo avvio, senza riprovare.
+    private(set) var unavailableFeatures: Set<AriaServerFeature> = []
+    /// Capacità della dettatura e vocabolario dell'azienda: si chiedono una volta per sessione.
+    @ObservationIgnored private var dictationSupport: Task<AriaDictationSupport, Never>?
+
     @ObservationIgnored private var didBootstrap = false
 
     init() {
@@ -199,6 +205,26 @@ final class AriaBackend {
         isSignedIn = true
         await bootstrap()
     }
+
+    /// Solo UI test: parte da zero, senza la sessione che un test precedente ha lasciato nel Keychain
+    /// (che all'avvio chiederebbe Face ID).
+    func discardSavedSessionForUITests() {
+        api.auth.forgetStoredSession()
+        api.auth.forgetDeveloperToken()
+        setMobileAccount(nil)
+        isSignedIn = false
+    }
+
+    /// Solo UI test: entra come operatore con una sessione già emessa; il profilo è `operatorProfile` di GET /v1/me.
+    func useSessionToken(_ token: String) async throws {
+        try await api.auth.useSessionToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
+        let raw = try await api.data("GET", "v1/me", companyScoped: false)
+        guard let profile = AriaOperatorProfileJSON(inMe: raw) else { throw AriaError.signedOut }
+        let me = try JSONDecoder().decode(AriaMobileProfile.self, from: profile)
+        setMobileAccount(AriaMobileAccount(id: me.id, name: me.name, email: me.email))
+        isSignedIn = true
+        await bootstrap()
+    }
     #endif
 
     func signOut() async {
@@ -213,6 +239,21 @@ final class AriaBackend {
         activeCompanyId = nil
         activePlantId = nil
         lastError = nil
+        unavailableFeatures = []
+        dictationSupport = nil
+    }
+
+    // MARK: Funzioni che il server può non avere ancora
+
+    func isAvailable(_ feature: AriaServerFeature) -> Bool { !unavailableFeatures.contains(feature) }
+
+    /// Da chiamare con l'errore di una funzione: se è `operation_forbidden` la funzione sparisce.
+    /// Restituisce `true` in quel caso, così chi chiama non mostra un errore.
+    @discardableResult
+    func markUnavailable(_ feature: AriaServerFeature, ifRefused error: any Error) -> Bool {
+        guard case .notOnPhone? = error as? AriaError else { return false }
+        unavailableFeatures.insert(feature)
+        return true
     }
 
     /// Cambia server (DEBUG). Da scollegati: i token di un server non valgono sull'altro.
@@ -268,6 +309,8 @@ final class AriaBackend {
     }
 
     private func loadPlants(for companyId: String?) async throws {
+        // Il vocabolario della dettatura è dell'azienda: con un'altra si richiede.
+        if companyId != activeCompanyId { dictationSupport = nil }
         await api.context.setCompany(companyId)
         activeCompanyId = companyId
         if companyId == nil {
@@ -285,15 +328,39 @@ final class AriaBackend {
 
     // MARK: Chat
 
-    /// Suggerimenti iniziali della chat per lo stabilimento attivo (vuoto se non disponibili).
+    /// I chip di una chat vuota (GET /v1/chat/suggestions, nella lingua dell'app). Vuoto da scollegati, se il
+    /// server non ne ha o non risponde: i chip semplicemente non ci sono. Un 403 `operation_forbidden` li
+    /// nasconde per il resto della sessione.
     func suggestions() async -> [String] {
-        // I suggerimenti non sono tra le operazioni dell'operatore (403): la chat usa quelli generici.
-        guard let plantId = activePlantId, !api.auth.isMobileSession else { return [] }
-        let response: AriaSuggestionsResponse? = try? await api.get("v1/chat/suggestions", query: [
-            URLQueryItem(name: "plant_id", value: plantId),
-            URLQueryItem(name: "locale", value: api.context.locale),
-        ])
-        return response?.suggestions ?? []
+        guard isSignedIn, isAvailable(.suggestions) else { return [] }
+        do {
+            return try await AriaChatAPI(api: api).suggestions()
+        } catch {
+            markUnavailable(.suggestions, ifRefused: error)
+            return []
+        }
+    }
+
+    /// Dettatura sul server e vocabolario dell'azienda, chiesti una volta (all'apertura del composer).
+    /// Senza risposta vale `.unavailable`: resta il riconoscimento sul telefono, e si richiede la volta dopo.
+    func dictation() async -> AriaDictationSupport {
+        if let dictationSupport { return await dictationSupport.value }
+        let audio = AriaAudioAPI(api: api)
+        let task = Task<AriaDictationSupport, Never> {
+            async let capabilities = audio.capabilities()
+            async let vocabulary = audio.vocabulary()
+            // Il vocabolario aiuta il riconoscitore sul telefono anche senza la dettatura sul server.
+            let terms = (try? await vocabulary) ?? []
+            guard let capabilities = try? await capabilities else {
+                return AriaDictationSupport(capabilities: .unavailable, vocabulary: terms, fetched: false)
+            }
+            return AriaDictationSupport(capabilities: capabilities, vocabulary: terms)
+        }
+        dictationSupport = task
+        let support = await task.value
+        // Solo una risposta mancata si richiede la volta dopo; "dettatura spenta" detto dal server vale.
+        if !support.fetched, dictationSupport == task { dictationSupport = nil }
+        return support
     }
 
     func handle(_ error: any Error) {
@@ -306,4 +373,32 @@ final class AriaBackend {
         }
         lastError = error.localizedDescription
     }
+}
+
+/// Le funzioni della guida "operator member parity" (20/10/2026): su un backend precedente rispondono
+/// 403 `operation_forbidden` e si nascondono.
+nonisolated enum AriaServerFeature: Hashable, Sendable {
+    case suggestions
+    case contextMeter
+    case dictation
+    case memoryConfirm
+    case factTranslation
+    case closeout
+    case report
+}
+
+/// Cosa sa fare la dettatura su questo server.
+nonisolated struct AriaDictationSupport: Sendable, Equatable {
+    let capabilities: AriaDictationCapabilities
+    /// Codici e termini dell'azienda per il riconoscitore sul telefono.
+    let vocabulary: [String]
+    /// `false` se le capacità non sono arrivate (rete, backend senza la rotta): si richiedono la volta dopo.
+    var fetched = true
+
+    static let none = AriaDictationSupport(capabilities: .unavailable, vocabulary: [], fetched: false)
+
+    var transcribes: Bool { capabilities.available }
+    var polishes: Bool { capabilities.polish == true }
+    /// La registrazione più grande che si manda (in byte); oltre resta il testo del telefono.
+    var maxAudioBytes: Int? { capabilities.maxAudioMb.map { Int($0 * 1_000_000) } }
 }

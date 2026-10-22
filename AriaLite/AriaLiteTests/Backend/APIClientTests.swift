@@ -171,14 +171,21 @@ extension BackendTests {
 
         @Test func cookiesAreNeverSentOrStored() async throws {
             let client = try await TestEnv.signedInClient()
-            HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [
-                .domain: TestEnv.authHost, .path: "/", .name: "sid", .value: "leak"])!)
+            // HTTPCookieStorage's IPC to cfprefsd runs on an unqualified-QoS thread; calling it
+            // synchronously from the test's user-interactive context trips the thread performance
+            // checker's priority-inversion detector, so we drop to .utility while we touch it.
+            await Task.detached(priority: .utility) {
+                await HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [
+                    .domain: TestEnv.authHost, .path: "/", .name: "sid", .value: "leak"])!)
+            }.value
             server.route("GET /v1/me", .json(me(), headers: ["Set-Cookie": "tracking=1; Path=/"]))
 
             let _: AriaMobileProfile = try await client.get("v1/me")
 
             #expect(server.calls("GET /v1/me").first?.header("cookie") == nil)
-            let stored = HTTPCookieStorage.shared.cookies(for: URL(string: "https://\(TestEnv.authHost)/")!) ?? []
+            let stored = await Task.detached(priority: .utility) {
+                HTTPCookieStorage.shared.cookies(for: URL(string: "https://\(await TestEnv.authHost)/")!) ?? []
+            }.value
             #expect(!stored.contains { $0.name == "tracking" })
         }
 

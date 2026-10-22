@@ -57,6 +57,15 @@ final class AriaAgentChat {
     private(set) var declinedLearning: Set<String> = []
     /// Cresce a ogni tocco sul chip: la vista riapre il pannello anche se era ridotto a pillola.
     private(set) var learningReveal = 0
+    /// Quanto della finestra di contesto usa la sessione (nil finché non si è chiesto, o se il server non lo dice).
+    private(set) var contextUsage: AriaContextUsage?
+    /// La sessione che si sta compattando: un'altra conversazione aperta nel frattempo non la vede.
+    private var compactingSession: String?
+    var isCompacting: Bool { compactingSession == sessionId }
+    /// Il server non ha una procedura da chiudere per questa chat (404): niente closeout né report.
+    private(set) var closeoutUnavailable = false
+    /// Fatti imparati nella lingua dell'operatore, per chiave (`factTranslationKey`). Manca = l'originale.
+    private(set) var factTranslations: [String: String] = [:]
 
     @ObservationIgnored private var streamTask: Task<Void, Never>?
     @ObservationIgnored private let backend: AriaBackend
@@ -74,6 +83,10 @@ final class AriaAgentChat {
     @ObservationIgnored private var liveTurn: (responseId: String?, messageId: String)?
     /// Le spunte partono per il server poco dopo l'ultimo tocco, tutte insieme.
     @ObservationIgnored private var checklistSync: Task<Void, Never>?
+    /// Testi da tradurre raccolti per un attimo e mandati insieme (una card alla volta farebbe una richiesta ciascuna).
+    @ObservationIgnored private var pendingTranslations: [String: String] = [:]
+    @ObservationIgnored private var requestedTranslations: Set<String> = []
+    @ObservationIgnored private var translationFlush: Task<Void, Never>?
     /// L'`Idempotency-Key` di un invio nuovo (seam per i test).
     @ObservationIgnored var makeRequestID: () -> String = { UUID().uuidString.lowercased() }
 
@@ -82,6 +95,7 @@ final class AriaAgentChat {
     /// Tentativi senza rete prima di dire che Aria non si raggiunge (~1 minuto con l'intervallo normale).
     static var turnPollPatience = 30
     static var checklistDebounce: Duration = .milliseconds(600)
+    static var translationDebounce: Duration = .milliseconds(250)
 
     private static let styleKey = "aria.chat.style"
     private static let currentSessionKey = "aria.chat.current_session"
@@ -287,7 +301,14 @@ final class AriaAgentChat {
         declinedLearning = []
         didSendContext = false
         lastError = nil
+        resetSessionTools()
         if remembersSession { UserDefaults.standard.removeObject(forKey: Self.currentSessionKey) }
+    }
+
+    /// Contatore del contesto e closeout valgono per una sessione: con un'altra si richiedono.
+    private func resetSessionTools() {
+        contextUsage = nil
+        closeoutUnavailable = false
     }
 
     /// Apre una conversazione salvata: messaggi e, se c'è, la pausa in attesa.
@@ -297,6 +318,7 @@ final class AriaAgentChat {
         self.sessionId = sessionId
         messages = []
         contextItems = []
+        resetSessionTools()
         resetTaskProgress()
         loadTaskProgress()
         answeredElicitations = []
@@ -394,17 +416,97 @@ final class AriaAgentChat {
         }
     }
 
-    func confirmMemory(_ proposal: AriaMemoryProposal, in messageId: String, accept: Bool) {
+    /// La scelta sulla card "Aria dovrebbe ricordarlo?". `accept` non salva: manda il fatto (con l'eventuale
+    /// `content` riscritto) agli amministratori, e resta in attesa. `reject` lo scarta.
+    func confirmMemory(_ proposal: AriaMemoryProposal, in messageId: String, accept: Bool, content: String? = nil) {
         guard let companyId = backend.activeCompanyId else { return }
         update(messageId) { $0.memoryProposals.removeAll { $0.factId == proposal.factId } }
+        let content = content == proposal.content ? nil : content
         Task {
             do {
-                try await api.confirmMemory(companyId: companyId, factId: proposal.factId, accept: accept)
-                if accept { notice = String(localized: "Saved to Aria's knowledge.") }
+                try await api.confirmMemory(companyId: companyId, factId: proposal.factId, accept: accept, content: content)
+                // `accept` lascia il fatto in attesa di un amministratore: "inviato", mai "salvato".
+                notice = accept ? String(localized: "Sent for review — an admin will check it.") : nil
+            } catch AriaError.http(let status, _) where status == 404 {
+                // Il fatto non c'è più: la card resta tolta.
+            } catch AriaError.http(let status, let message) where status == 409 {
+                // Già deciso, cambiato nel frattempo o in contrasto con quello che Aria sa per certo.
+                lastError = message
             } catch {
+                if backend.markUnavailable(.memoryConfirm, ifRefused: error) { return }
                 update(messageId) { $0.memoryProposals.append(proposal) }
                 handle(error)
             }
+        }
+    }
+
+    // MARK: - Fatti nella lingua dell'operatore
+
+    /// La chiave di un fatto mostrato: il suo id, altrimenti il testo.
+    static func factTranslationKey(id: String?, text: String) -> String { id ?? "text:\(text)" }
+
+    /// Il testo da mostrare: la traduzione se c'è, altrimenti l'originale.
+    func translated(_ text: String, id: String?) -> String {
+        factTranslations[Self.factTranslationKey(id: id, text: text)] ?? text
+    }
+
+    /// Le card chiedono la traduzione quando compaiono (`.task`): si raccolgono per un attimo e partono
+    /// in un solo lotto. Ogni testo si chiede una volta.
+    func requestTranslations(_ facts: [(id: String?, text: String)]) {
+        guard backend.isAvailable(.factTranslation), let companyId = backend.activeCompanyId else { return }
+        for fact in facts {
+            let key = Self.factTranslationKey(id: fact.id, text: fact.text)
+            guard requestedTranslations.insert(key).inserted else { continue }
+            pendingTranslations[key] = fact.text
+        }
+        guard !pendingTranslations.isEmpty, translationFlush == nil else { return }
+        let api = self.api
+        let locale = backend.api.context.locale
+        translationFlush = Task {
+            try? await Task.sleep(for: Self.translationDebounce)
+            let batch = pendingTranslations
+            pendingTranslations = [:]
+            translationFlush = nil
+            do {
+                let translations = try await api.translateFacts(companyId: companyId, locale: locale, batch)
+                factTranslations.merge(translations) { _, new in new }
+            } catch {
+                backend.markUnavailable(.factTranslation, ifRefused: error)
+            }
+        }
+    }
+
+    // MARK: - Contesto della sessione
+
+    /// Il contatore del menu "···". Una chat ancora vuota non ha niente da contare.
+    func loadContextUsage() async {
+        guard backend.isAvailable(.contextMeter), !messages.isEmpty else { return }
+        let sessionId = self.sessionId
+        do {
+            let usage = try await api.contextUsage(sessionId: sessionId)
+            if sessionId == self.sessionId { contextUsage = usage }
+        } catch {
+            if backend.markUnavailable(.contextMeter, ifRefused: error), sessionId == self.sessionId { contextUsage = nil }
+        }
+    }
+
+    /// "Fai spazio": i turni più vecchi diventano un riassunto per il modello; la conversazione resta intera.
+    func compactContext() async {
+        guard contextUsage?.canCompact == true, compactingSession == nil else { return }
+        let sessionId = self.sessionId
+        compactingSession = sessionId
+        defer { compactingSession = nil }
+        do {
+            let usage = try await api.compactContext(sessionId: sessionId)
+            guard sessionId == self.sessionId else { return }
+            contextUsage = usage
+            // 404: la sessione non è (più) dell'operatore, niente è stato compattato.
+            if usage != nil { notice = String(localized: "Made room — older messages are now summarized for Aria.") }
+        } catch {
+            // L'esito di un'altra conversazione non si mostra in questa.
+            guard sessionId == self.sessionId else { return }
+            if backend.markUnavailable(.contextMeter, ifRefused: error) { contextUsage = nil; return }
+            handle(error)
         }
     }
 
@@ -567,8 +669,7 @@ final class AriaAgentChat {
                         lastError = String(localized: "Could not save the review.")
                     }
                 }
-                // Il closeout non è tra le operazioni dell'operatore: per lui la chiusura finisce con la review.
-                if !api.isOperator, let choice = AriaCloseoutChoice(details) { pendingCloseout = choice }
+                if canCloseOut, let choice = AriaCloseoutChoice(details) { pendingCloseout = choice }
             }
             return
         }
@@ -644,17 +745,69 @@ final class AriaAgentChat {
             }
             notice = String(localized: "Sent for validation — an admin will review it.")
             return true
+        } catch AriaError.http(let status, let message) where status == 409 {
+            // Già deciso o cambiato nel frattempo: lo dice il server.
+            lastError = message
+            return false
         } catch {
+            // Backend senza la rotta per l'operatore: "Notify" sparisce, riprovare non servirebbe.
+            if backend.markUnavailable(.memoryConfirm, ifRefused: error) { return false }
             lastError = String(localized: "Could not send it for validation.")
             return false
         }
     }
 
-    // MARK: - Closeout
+    // MARK: - Closeout e report
+
+    /// Closeout, report e .docx si offrono solo se il server li ha e questa chat ha una procedura da chiudere.
+    var canCloseOut: Bool { backend.isAvailable(.closeout) && !closeoutUnavailable }
+    var canDownloadReport: Bool { backend.isAvailable(.report) && !closeoutUnavailable && !messages.isEmpty }
+
+    /// Le card dei fatti da imparare si mostrano finché il server accetta la decisione.
+    var canConfirmMemory: Bool { backend.isAvailable(.memoryConfirm) }
+    /// Accesso col link: closeout con i limiti dell'operatore.
+    var isOperator: Bool { api.isOperator }
+    /// L'operatore collegato: l'unico assegnatario che può scegliere nel closeout.
+    var operatorId: String? { backend.mobileAccount?.id }
 
     func closeout(_ request: AriaCloseoutRequest) async throws -> AriaCloseoutResult {
         guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
-        return try await api.closeout(companyId: companyId, sessionId: sessionId, request)
+        do {
+            return try await api.closeout(companyId: companyId, sessionId: sessionId, request, operatorId: operatorId)
+        } catch {
+            noteSessionToolFailure(error, feature: .closeout)
+            throw error
+        }
+    }
+
+    /// Solo il report, senza ordine: va sulla sessione di chat.
+    func archiveReport() async throws -> AriaReportArchive {
+        guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
+        do {
+            return try await api.archiveReport(companyId: companyId, sessionId: sessionId)
+        } catch {
+            noteSessionToolFailure(error, feature: .report)
+            throw error
+        }
+    }
+
+    /// Il report in Word, nella lingua dell'app, pronto da condividere.
+    func reportDocument() async throws -> AriaReportFile {
+        guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
+        do {
+            return try await api.reportDocument(companyId: companyId, sessionId: sessionId,
+                                                locale: backend.api.context.locale)
+        } catch {
+            noteSessionToolFailure(error, feature: .report)
+            throw error
+        }
+    }
+
+    /// 404 = la chat non ha una procedura da chiudere (`No session record`) o non è dell'operatore
+    /// (`Session not found`): l'azione sparisce per questa chat. 403 `operation_forbidden`: per tutte.
+    private func noteSessionToolFailure(_ error: any Error, feature: AriaServerFeature) {
+        if backend.markUnavailable(feature, ifRefused: error) { return }
+        if case AriaError.http(404, _)? = error as? AriaError { closeoutUnavailable = true }
     }
 
     /// Dopo l'archiviazione, un messaggio locale con l'esito (come la web).

@@ -421,6 +421,155 @@ extension BackendTests {
                 }
             }
         }
+
+        // MARK: Rotte "operator member parity" (20/10/2026)
+        //
+        // Una per test, così il risultato dice quale rotta il server ha aperto all'operatore. Niente si scrive:
+        // le chiamate sono letture, testi da ripulire o tradurre (senza stato) o puntano a una sessione e a un
+        // fatto che non esistono (404 = la rotta c'è; 403 `operation_forbidden` = non è aperta all'operatore).
+
+        /// Il server ha risposto con la rotta: niente `notOnPhone`.
+        private func expectOpen(_ route: String, _ body: () async throws -> Void) async {
+            do {
+                try await body()
+            } catch AriaError.notOnPhone {
+                Issue.record("\(route): 403 operation_forbidden, la rotta non è aperta all'operatore su questo server")
+            } catch {
+                Issue.record("\(route): \(error)")
+            }
+        }
+
+        /// Una sessione o un fatto che non esistono: 404 vuol dire che la rotta c'è e controlla di chi è la risorsa.
+        private func expectNotFound(_ route: String, _ body: () async throws -> Void) async {
+            do {
+                try await body()
+                Issue.record("\(route): atteso 404 per una risorsa inesistente, invece è andata a buon fine")
+            } catch AriaError.notOnPhone {
+                Issue.record("\(route): 403 operation_forbidden, la rotta non è aperta all'operatore su questo server")
+            } catch {
+                #expect(isHTTP(error, 404), "\(route): atteso 404, arrivato \(error)")
+            }
+        }
+
+        private static let missingSession = "live-probe-missing-session"
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeChatSuggestions() async throws {
+            try await connect { live in
+                await expectOpen("GET /v1/chat/suggestions") {
+                    let chips = try await AriaChatAPI(api: live.client).suggestions()
+                    #expect(chips.allSatisfy { !$0.isEmpty })
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeContextUsage() async throws {
+            try await connect { live in
+                await expectOpen("GET /v1/chat/sessions/{id}/context") {
+                    // Sessione che il server non conosce: nessun contatore (404 → nil), non un errore.
+                    let usage = try await AriaChatAPI(api: live.client).contextUsage(sessionId: Self.missingSession)
+                    #expect(usage == nil)
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeContextCompact() async throws {
+            try await connect { live in
+                await expectOpen("POST /v1/chat/sessions/{id}/context/compact") {
+                    let usage = try await AriaChatAPI(api: live.client).compactContext(sessionId: Self.missingSession)
+                    #expect(usage == nil)
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeDictationCapabilities() async throws {
+            try await connect { live in
+                await expectOpen("GET /v1/audio/transcriptions/capabilities") {
+                    let capabilities = try await AriaAudioAPI(api: live.client).capabilities()
+                    if let max = capabilities.maxAudioMb { #expect(max > 0) }
+                    print("LIVE: dettatura sul server \(capabilities.available), polish \(capabilities.polish ?? false), max \(capabilities.maxAudioMb ?? 0) MB")
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeDictationVocabulary() async throws {
+            try await connect { live in
+                await expectOpen("GET /v1/audio/vocabulary") {
+                    let terms = try await AriaAudioAPI(api: live.client).vocabulary()
+                    #expect(Set(terms).count == terms.count, "termini ripetuti")
+                    print("LIVE: vocabolario dell'azienda, \(terms.count) termini")
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeDictationPolish() async throws {
+            try await connect { live in
+                await expectOpen("POST /v1/audio/polish") {
+                    let polished = try await AriaAudioAPI(api: live.client)
+                        .polish("la pompa p101 è in allarme pressione bassa controllo la valvola", language: "it")
+                    #expect(!polished.isEmpty)
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeFactTranslations() async throws {
+            try await connect { live in
+                await expectOpen("POST /v1/companies/{id}/memory-facts/translations") {
+                    let out = try await AriaChatAPI(api: live.client).translateFacts(
+                        companyId: live.companyId, locale: "it",
+                        ["k1": "The main conveyor belt drive motor trips above 24 V."])
+                    #expect(out.keys.allSatisfy { $0 == "k1" })
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeMemoryConfirm() async throws {
+            try await connect { live in
+                await expectNotFound("POST /v1/companies/{id}/memory-facts/{fact}/confirm") {
+                    _ = try await AriaChatAPI(api: live.client).confirmMemory(
+                        companyId: live.companyId, factId: "live-probe-missing-fact", accept: false)
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeCloseout() async throws {
+            try await connect { live in
+                await expectNotFound("POST /v1/companies/{id}/sessions/{session}/closeout") {
+                    // Senza `confirm`: è solo la proposta, e la sessione non esiste.
+                    _ = try await AriaChatAPI(api: live.client).closeout(
+                        companyId: live.companyId, sessionId: Self.missingSession,
+                        AriaCloseoutRequest(workOrder: true, report: false))
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeReportArchive() async throws {
+            try await connect { live in
+                await expectNotFound("POST /v1/companies/{id}/sessions/{session}/report") {
+                    _ = try await AriaChatAPI(api: live.client).archiveReport(companyId: live.companyId,
+                                                                              sessionId: Self.missingSession)
+                }
+            }
+        }
+
+        @Test(.enabled(if: LiveEnv.readChecks, "ARIA_LIVE_SESSION"))
+        func routeReportDocx() async throws {
+            try await connect { live in
+                await expectNotFound("GET /v1/companies/{id}/sessions/{session}/report.docx") {
+                    _ = try await AriaChatAPI(api: live.client).reportDocument(companyId: live.companyId,
+                                                                               sessionId: Self.missingSession, locale: "it")
+                }
+            }
+        }
     }
 
     // MARK: - Scritture (ARIA_LIVE_WRITE=1)

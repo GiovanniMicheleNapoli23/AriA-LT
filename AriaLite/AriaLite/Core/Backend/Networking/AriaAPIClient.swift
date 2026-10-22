@@ -84,6 +84,13 @@ nonisolated final class AriaAPIClient: Sendable {
     @concurrent
     func data(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
               headers: [String: String] = [:], companyScoped: Bool = true) async throws -> Data {
+        try await response(method, path, query: query, body: body, headers: headers, companyScoped: companyScoped).data
+    }
+
+    /// Come `data`, con gli header della risposta (es. `Content-Disposition` di un file scaricato).
+    @concurrent
+    func response(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
+                  headers: [String: String] = [:], companyScoped: Bool = true) async throws -> (data: Data, http: HTTPURLResponse) {
         var retried = false
         while true {
             let req = try await request(method, path, query: query, body: body, headers: headers,
@@ -97,21 +104,22 @@ nonisolated final class AriaAPIClient: Sendable {
             if let offline = AriaHTTP.hostDownError(response) { throw offline }
             try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
-            return data
+            guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
+            return (data, http)
         }
     }
 
     // MARK: Audio
 
-    /// Trascrizione della dettatura con Whisper sul backend (lib/api/transcription.ts della web):
-    /// multipart con `file`, `language` (assente = automatico) e `prompt` (il testo già scritto, per il contesto).
-    /// `nil` se il servizio non è attivo (503): resta il testo del riconoscimento sul telefono.
-    /// Il limite dei body JSON (WAF) non vale qui: la web carica l'audio sullo stesso percorso.
+    /// Trascrizione della dettatura sul backend (POST /v1/audio/transcriptions, aperta anche all'operatore):
+    /// multipart con `file`, `language` (la lingua di dettatura scelta, assente = automatico) e `prompt`
+    /// (il testo già scritto, per il contesto). Il boundary lo sceglie l'app, il `file` è la prima parte.
+    /// `nil` se il servizio non è configurato (503): resta il testo del riconoscimento sul telefono.
+    /// Gli altri rifiuti (400 registrazione vuota, 413 oltre `maxAudioMb`, 502 provider giù, 403 del firewall)
+    /// escono come errore: chi chiama tiene il testo dal vivo (eventualmente ripulito con `polish`).
     @concurrent
     func transcribe(audio: Data, filename: String, mimeType: String,
                     language: String?, prompt: String?) async throws -> String? {
-        // /v1/audio non è tra le rotte dell'operatore: resta il testo del riconoscimento sul telefono.
-        if auth.isMobileSession { return nil }
         let boundary = "aria-\(UUID().uuidString)"
         var body = Data()
         func append(_ string: String) { body.append(Data(string.utf8)) }

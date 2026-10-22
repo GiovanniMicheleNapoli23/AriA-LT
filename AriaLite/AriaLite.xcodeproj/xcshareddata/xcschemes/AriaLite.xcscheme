@@ -41,6 +41,17 @@
                ReferencedContainer = "container:AriaLite.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "7DB0A1012F9A000100C0FFEE"
+               BuildableName = "AriaLiteUITests.xctest"
+               BlueprintName = "AriaLiteUITests"
+               ReferencedContainer = "container:AriaLite.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

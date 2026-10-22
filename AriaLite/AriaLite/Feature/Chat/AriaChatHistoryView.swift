@@ -132,8 +132,12 @@ struct AriaChatHistoryView: View {
 
 // MARK: - Closeout
 
-/// Chiude l'intervento fatto in chat e lo archivia come work order in ARIA (e MaintainX se collegato).
-/// Due fasi come la web: anteprima senza scrivere niente, poi conferma.
+/// Chiude l'intervento fatto in chat e lo archivia come work order in ARIA (e MaintainX se collegato),
+/// col report allegato. Due fasi come la web: anteprima senza scrivere niente, poi conferma.
+/// Solo il report (senza ordine) va con POST …/report sulla sessione di chat.
+///
+/// L'operatore ha meno scelte di un membro della web (guida, sezione 6): niente "sposta gli altri" (non vede
+/// gli ordini dei colleghi) e come assegnatario solo sé stesso; lasciarlo vuoto tiene la preselezione.
 struct AriaCloseoutSheet: View {
     let chat: AriaAgentChat
     let choice: AriaCloseoutChoice
@@ -142,8 +146,13 @@ struct AriaCloseoutSheet: View {
     @State private var proposal: AriaCloseoutProposal?
     @State private var request = AriaCloseoutRequest()
     @State private var result: AriaCloseoutResult?
+    @State private var archive: AriaReportArchive?
     @State private var busy = false
     @State private var error: String?
+    /// I valori accettati che il server ha mandato con un 422 (`detail.valid`), per campo: i picker si rifanno da qui.
+    @State private var validChoices: [String: [String]] = [:]
+
+    private var isDone: Bool { result != nil || archive != nil }
 
     var body: some View {
         NavigationStack {
@@ -151,25 +160,42 @@ struct AriaCloseoutSheet: View {
                 if let result {
                     outcome("ARIA", result.aria)
                     outcome("MaintainX", result.maintainx)
+                    if result.reportArchived == true {
+                        reportSection(filename: result.filename, sizeBytes: result.sizeBytes, downloadUrl: result.downloadUrl)
+                    }
+                } else if let archive {
+                    reportSection(filename: archive.filename, sizeBytes: archive.sizeBytes, downloadUrl: archive.downloadUrl)
                 } else if let proposal {
                     form(proposal)
+                } else if !choice.workOrder {
+                    Section {
+                        Text("The intervention report will be archived with this chat.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 } else if error == nil {
                     HStack { Spacer(); ProgressView(); Spacer() }
+                        .accessibilityIdentifier("closeout.loading")
                 }
                 if let error {
-                    Section { Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.footnote) }
+                    Section {
+                        Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.footnote)
+                            .accessibilityIdentifier("closeout.error")
+                    }
                 }
             }
             .navigationTitle("Close out intervention")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(result == nil ? "Cancel" : "Done") { dismiss() }
+                    Button(isDone ? "Done" : "Cancel") { dismiss() }
+                        .accessibilityIdentifier("closeout.dismiss")
                 }
-                if result == nil {
+                if !isDone {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Confirm") { Task { await confirm() } }
-                            .disabled(busy || (choice.workOrder && proposal == nil))
+                            .disabled(busy || !chat.canCloseOut || (choice.workOrder && proposal == nil))
+                            .accessibilityIdentifier("closeout.confirm")
                     }
                 }
             }
@@ -180,32 +206,28 @@ struct AriaCloseoutSheet: View {
     @ViewBuilder
     private func form(_ proposal: AriaCloseoutProposal) -> some View {
         Section("Work order") {
-            TextField("Title", text: Binding(get: { request.title ?? "" }, set: { request.title = $0 }))
+            TextField("Title", text: text(\.title))
+                .accessibilityIdentifier("closeout.title")
             Picker("Priority", selection: Binding(get: { request.priority ?? "medium" }, set: { request.priority = $0 })) {
                 Text("High").tag("high")
                 Text("Medium").tag("medium")
                 Text("Low").tag("low")
             }
-            if let options = proposal.categoryOptions, !options.isEmpty {
-                Picker("Category", selection: Binding(get: { request.category ?? "" }, set: { request.category = $0 })) {
+            if let options = validChoices["category"] ?? proposal.categoryOptions, !options.isEmpty {
+                Picker("Category", selection: text(\.category)) {
                     Text(verbatim: "—").tag("")
                     ForEach(options, id: \.self) { Text($0).tag($0) }
                 }
             } else {
-                TextField("Category", text: Binding(get: { request.category ?? "" }, set: { request.category = $0 }))
+                TextField("Category", text: text(\.category))
             }
-            if let locations = proposal.locationOptions, !locations.isEmpty {
-                Picker("Location", selection: Binding(get: { request.location ?? "" }, set: { request.location = $0 })) {
+            if let locations = validChoices["location"] ?? proposal.locationOptions?.map(\.name), !locations.isEmpty {
+                Picker("Location", selection: text(\.location)) {
                     Text(verbatim: "—").tag("")
-                    ForEach(locations) { Text($0.name).tag($0.name) }
+                    ForEach(locations, id: \.self) { Text($0).tag($0) }
                 }
             }
-            if let candidates = proposal.assignee?.candidates, !candidates.isEmpty {
-                Picker("Assignee", selection: Binding(get: { request.assigneeId ?? "" }, set: { request.assigneeId = $0 })) {
-                    Text("Unassigned").tag("")
-                    ForEach(candidates) { Text($0.name).tag($0.id) }
-                }
-            }
+            assignee(proposal)
             if let targets = proposal.targets, !targets.isEmpty {
                 LabeledContent("Written to", value: targets.map { $0 == "aria" ? "ARIA" : $0 == "maintainx" ? "MaintainX" : $0 }.joined(separator: " + "))
             }
@@ -213,7 +235,7 @@ struct AriaCloseoutSheet: View {
         if let description = proposal.description, !description.isEmpty {
             Section("Description") { Text(description).font(.footnote) }
         }
-        TextField("Notes", text: Binding(get: { request.notes ?? "" }, set: { request.notes = $0 }), axis: .vertical)
+        TextField("Notes", text: text(\.notes), axis: .vertical)
             .lineLimit(2...5)
         if let unresolved = proposal.unresolved, !unresolved.isEmpty {
             Section("To fix") {
@@ -223,13 +245,39 @@ struct AriaCloseoutSheet: View {
                 }
             }
         }
-        if let conflicts = proposal.conflicts, !conflicts.isEmpty {
+        // Un operatore non vede gli ordini dei colleghi (la lista arriva vuota) e non può spostarli.
+        if !chat.isOperator, let conflicts = proposal.conflicts, !conflicts.isEmpty {
             Section("Already scheduled that day") {
                 ForEach(conflicts) { Text("\($0.system ?? "") · \($0.title)") }
                 Picker("What to do", selection: Binding(get: { request.conflictChoice ?? "file" }, set: { request.conflictChoice = $0 })) {
                     Text("Keep everything").tag("file")
                     Text("Move the others").tag("shift")
                 }
+                .accessibilityIdentifier("closeout.conflictChoice")
+            }
+        }
+    }
+
+    /// Un membro sceglie tra i candidati; l'operatore può solo prendere il lavoro per sé, altrimenti resta
+    /// la preselezione della proposta.
+    @ViewBuilder
+    private func assignee(_ proposal: AriaCloseoutProposal) -> some View {
+        let candidates = proposal.assignee?.candidates ?? []
+        if chat.isOperator {
+            if let me = chat.operatorId {
+                let preselected = proposal.assignee?.selected
+                if let preselected, preselected != me,
+                   let name = candidates.first(where: { $0.id == preselected })?.name {
+                    LabeledContent("Proposed assignee", value: name)
+                }
+                Toggle("Assign to me", isOn: Binding(get: { request.assigneeId == me },
+                                                     set: { request.assigneeId = $0 ? me : nil }))
+                    .accessibilityIdentifier("closeout.assignToMe")
+            }
+        } else if !candidates.isEmpty {
+            Picker("Assignee", selection: text(\.assigneeId)) {
+                Text("Unassigned").tag("")
+                ForEach(candidates) { Text($0.name ?? $0.id).tag($0.id) }
             }
         }
     }
@@ -239,6 +287,7 @@ struct AriaCloseoutSheet: View {
         Section(name) {
             if let outcome {
                 LabeledContent("Result", value: outcome.status)
+                    .accessibilityIdentifier("closeout.result.\(name)")
                 if let title = outcome.title { Text(title) }
                 if let url = outcome.url.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
                     Link("Open", destination: url)
@@ -250,6 +299,24 @@ struct AriaCloseoutSheet: View {
         }
     }
 
+    /// Il report archiviato. Il link scade presto: si apre adesso, non si salva.
+    private func reportSection(filename: String?, sizeBytes: Int?, downloadUrl: String?) -> some View {
+        Section("Report") {
+            Label(filename ?? String(localized: "Intervention report"), systemImage: "doc.richtext")
+                .accessibilityIdentifier("closeout.reportFile")
+            if let sizeBytes {
+                LabeledContent("Size", value: Int64(sizeBytes).formatted(.byteCount(style: .file)))
+            }
+            if let url = downloadUrl.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
+                Link("Open report", destination: url)
+            }
+        }
+    }
+
+    private func text(_ key: WritableKeyPath<AriaCloseoutRequest, String?>) -> Binding<String> {
+        Binding(get: { request[keyPath: key] ?? "" }, set: { request[keyPath: key] = $0 })
+    }
+
     private func base() -> AriaCloseoutRequest {
         var body = AriaCloseoutRequest(workOrder: choice.workOrder, report: choice.report)
         body.assigneeId = choice.assigneeId
@@ -259,7 +326,7 @@ struct AriaCloseoutSheet: View {
     }
 
     private func loadPreview() async {
-        // Solo il report non ha niente da approvare: si archivia subito alla conferma.
+        // Solo il report non ha niente da approvare: si archivia alla conferma.
         guard choice.workOrder else { request = base(); return }
         do {
             let preview = try await chat.closeout(base())
@@ -274,30 +341,50 @@ struct AriaCloseoutSheet: View {
             body.category = p.category
             body.dueDate = choice.dueDate ?? p.dueDate
             body.assigneeId = choice.assigneeId ?? p.assignee?.selected
+            if chat.isOperator, body.assigneeId != chat.operatorId { body.assigneeId = nil }
             body.startDate = p.startDate
             body.recurrenceType = p.recurrenceType
             body.recurrenceInterval = p.recurrenceInterval
             request = body
         } catch {
-            self.error = error.localizedDescription
+            show(error)
         }
     }
 
     private func confirm() async {
         busy = true
         defer { busy = false }
-        var body = request
-        body.confirm = true
-        for key in [\AriaCloseoutRequest.category, \.location, \.assigneeId, \.notes] where body[keyPath: key] == "" {
-            body[keyPath: key] = nil
-        }
         do {
-            let written = try await chat.closeout(body)
-            result = written
-            chat.appendCloseoutSummary(written)
+            if choice.workOrder {
+                var body = request
+                body.confirm = true
+                for key in [\AriaCloseoutRequest.category, \.location, \.assigneeId, \.notes] where body[keyPath: key] == "" {
+                    body[keyPath: key] = nil
+                }
+                // Riprovare dopo un errore a metà non crea un secondo ordine: il server rende quello già fatto.
+                let written = try await chat.closeout(body)
+                result = written
+                chat.appendCloseoutSummary(written)
+            } else {
+                archive = try await chat.archiveReport()
+            }
             error = nil
         } catch {
-            // 422 = categoria o location che non esiste in MaintainX: niente è stato scritto.
+            show(error)
+        }
+    }
+
+    private func show(_ error: any Error) {
+        switch error as? AriaError {
+        case .invalidChoice(let field, let valid, let message)?:
+            // Categoria o location che MaintainX non ha: niente è stato scritto, si sceglie dalla lista vera.
+            validChoices[field] = valid
+            if field == "category", let value = request.category, !valid.contains(value) { request.category = nil }
+            if field == "location", let value = request.location, !valid.contains(value) { request.location = nil }
+            self.error = message
+        case .http(404, _)?:
+            self.error = String(localized: "There's no procedure to close out in this chat.")
+        default:
             self.error = error.localizedDescription
         }
     }

@@ -5,13 +5,15 @@
 //  Created by Giovanni Michele on 25/09/26.
 //
 //  Endpoint REST usati dalla chat oltre allo stream: storico sessioni, turni, checklist,
-//  suggerimenti, feedback, memoria e closeout. Ogni rotta è un AriaEndpoint (vedi AriaEndpoint.swift).
+//  suggerimenti, contesto, feedback, memoria, closeout e report. Ogni rotta è un AriaEndpoint (vedi AriaEndpoint.swift).
 //
 //  Le rotte sono quelle condivise del backend (`/v1/mobile/*` non esiste più): storico, turni (riaggancio e
-//  Stop), checklist, rinomina ed elimina stanno sotto /v1/agent/sessions; feedback, review e learning sotto
-//  /v1/chat/sessions; il Real-time Learning sotto /v1/companies/{id}/memory-facts. Suggerimenti, conferma di
-//  un fatto e closeout non sono tra le operazioni dell'operatore: per lui non si chiamano, così non si riceve
-//  un 403 certo.
+//  Stop), checklist, rinomina ed elimina stanno sotto /v1/agent/sessions; feedback, review, learning e il
+//  contatore del contesto sotto /v1/chat/sessions; fatti imparati, closeout e report sotto /v1/companies/{id}.
+//  Dal 20/10/2026 l'operatore ha anche suggerimenti, contesto, conferma e traduzione dei fatti, closeout,
+//  report e .docx (guida "operator member parity"). Su un backend che non le ha ancora rispondono
+//  403 `operation_forbidden` → `AriaError.notOnPhone`: la funzione si nasconde, non si riprova.
+//  Closeout, report, .docx e contesto valgono solo per le sessioni dell'operatore: quelle degli altri sono 404.
 //
 
 import Foundation
@@ -80,13 +82,27 @@ nonisolated struct AriaChatAPI: Sendable {
         try await api.perform("PUT", "\(history)/\(sessionId)/checklist", body: AriaChecklist(checked: checked))
     }
 
-    // MARK: Suggerimenti
+    // MARK: Suggerimenti e contesto
 
-    func suggestions(plantId: String, locale: String) async -> [String] {
-        if isOperator { return [] }
-        let response: AriaSuggestionsResponse? = try? await api.call(.get("v1/chat/suggestions",
-                                                                          query: ["plant_id": plantId, "locale": locale]))
-        return response?.suggestions ?? []
+    /// I chip di una chat vuota, nella lingua di `Accept-Language` (la lingua dell'app). Una lista vuota è
+    /// una risposta valida (utente nuovo, generazione non disponibile): niente chip, nessun errore.
+    func suggestions() async throws -> [String] {
+        let response: AriaSuggestionsResponse = try await api.call(.get("v1/chat/suggestions"))
+        return response.suggestions.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+    }
+
+    /// Quanto della finestra di contesto usa la sessione. 404 = sessione che il server non conosce ancora
+    /// (chat nuova) o di un altro: nessun contatore.
+    func contextUsage(sessionId: String) async throws -> AriaContextUsage? {
+        do { return try await api.call(.get("\(feedback)/\(sessionId)/context")) }
+        catch AriaError.http(let status, _) where status == 404 { return nil }
+    }
+
+    /// "Fai spazio": riassume subito i turni più vecchi. Restituisce l'uso DOPO la compattazione; una sessione
+    /// senza niente da riassumere torna uguale, non è un errore. Lo storico salvato resta intero.
+    func compactContext(sessionId: String) async throws -> AriaContextUsage? {
+        do { return try await api.call(.post("\(feedback)/\(sessionId)/context/compact")) }
+        catch AriaError.http(let status, _) where status == 404 { return nil }
     }
 
     // MARK: Feedback
@@ -167,19 +183,131 @@ nonisolated struct AriaChatAPI: Sendable {
         return try await api.call(.post("v1/companies/\(companyId)/memory-facts/validation", body: body))
     }
 
-    /// Tieni / scarta un fatto che Aria propone di imparare.
-    func confirmMemory(companyId: String, factId: String, accept: Bool) async throws {
-        if isOperator { throw AriaError.notOnPhone }
-        try await api.perform("POST", "v1/companies/\(companyId)/memory-facts/\(factId)/confirm",
-                              body: ["decision": accept ? "accept" : "reject"])
+    /// La scelta sulla card di un fatto imparato. `accept` è una segnalazione, non un'approvazione: il fatto
+    /// resta in attesa e va agli owner e admin dell'azienda ("inviato per la revisione", non "salvato").
+    /// `content`: la formulazione corretta dall'operatore (non per un fatto in `conflict`: 422).
+    /// 404 = il fatto non c'è più (si toglie la card); 409 = già deciso o cambiato (si mostra `error.message`).
+    @discardableResult
+    func confirmMemory(companyId: String, factId: String, accept: Bool, content: String? = nil) async throws -> AriaMemoryFact {
+        let content = content?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = AriaMemoryDecision(decision: accept ? .accept : .reject,
+                                      content: accept && content?.isEmpty == false ? content : nil)
+        return try await api.call(.post("v1/companies/\(companyId)/memory-facts/\(factId)/confirm", body: body))
     }
 
-    // MARK: Closeout
+    /// I fatti nella lingua dell'operatore: chiave (scelta dall'app) → testo tradotto. Una chiave che manca
+    /// vuol dire "mostra l'originale". Il server traduce al massimo 60 testi per richiesta e il firewall
+    /// ferma i body da 8 KB: si manda a lotti. Un lotto che fallisce lascia i suoi testi in originale;
+    /// solo `notOnPhone` (backend senza la rotta) esce, per nascondere la funzione.
+    func translateFacts(companyId: String, locale: String, _ texts: [String: String]) async throws -> [String: String] {
+        let items = texts.sorted { $0.key < $1.key }.compactMap { key, text -> AriaFactTranslationRequest.Item? in
+            let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, text.count <= AriaFactTranslationRequest.maxTextLength else { return nil }
+            return .init(id: key, text: text)
+        }
+        var out: [String: String] = [:]
+        for batch in Self.translationBatches(items, locale: locale, maxBytes: api.config.maxBodyBytes) {
+            do {
+                let response: AriaFactTranslationResponse = try await api.call(.post(
+                    "v1/companies/\(companyId)/memory-facts/translations",
+                    body: AriaFactTranslationRequest(locale: locale, items: batch)))
+                for (key, value) in response.translations where !value.isEmpty { out[key] = value }
+            } catch AriaError.notOnPhone {
+                throw AriaError.notOnPhone
+            } catch {
+                continue
+            }
+        }
+        return out
+    }
 
-    /// Senza `confirm` restituisce solo la proposta; con `confirm: true` scrive in ARIA (e MaintainX).
-    func closeout(companyId: String, sessionId: String, _ request: AriaCloseoutRequest) async throws -> AriaCloseoutResult {
-        if isOperator { throw AriaError.notOnPhone }
-        return try await api.call(.post("v1/companies/\(companyId)/sessions/\(sessionId)/closeout", body: request))
+    /// Lotti di al massimo 60 testi il cui body JSON resta sotto `maxBytes`. Un testo che da solo non ci sta
+    /// resta fuori (si mostra l'originale).
+    static func translationBatches(_ items: [AriaFactTranslationRequest.Item], locale: String,
+                                   maxBytes: Int) -> [[AriaFactTranslationRequest.Item]] {
+        func size(_ batch: [AriaFactTranslationRequest.Item]) -> Int {
+            (try? JSONEncoder().encode(AriaFactTranslationRequest(locale: locale, items: batch)).count) ?? .max
+        }
+        var batches: [[AriaFactTranslationRequest.Item]] = []
+        var current: [AriaFactTranslationRequest.Item] = []
+        for item in items {
+            guard size([item]) <= maxBytes else { continue }
+            if current.count == AriaFactTranslationRequest.maxItems || size(current + [item]) > maxBytes {
+                batches.append(current)
+                current = []
+            }
+            current.append(item)
+        }
+        if !current.isEmpty { batches.append(current) }
+        return batches
+    }
+
+    // MARK: Closeout e report
+
+    private func sessionPath(_ companyId: String, _ sessionId: String) -> String {
+        "v1/companies/\(companyId)/sessions/\(sessionId)"
+    }
+
+    /// Senza `confirm` restituisce solo la proposta (niente scritto); con `confirm: true` scrive in ARIA
+    /// (e MaintainX). Riprovare `confirm: true` dopo un errore a metà è sicuro: l'ordine già creato torna, non
+    /// se ne crea un secondo. Per l'operatore il body passa da `limitedToOperator` (mai "shift", assegnatario
+    /// solo sé stesso): il server risponderebbe 422.
+    func closeout(companyId: String, sessionId: String, _ request: AriaCloseoutRequest,
+                  operatorId: String? = nil) async throws -> AriaCloseoutResult {
+        let body = isOperator ? request.limitedToOperator(operatorId) : request
+        return try await api.call(.post("\(sessionPath(companyId, sessionId))/closeout", body: body))
+    }
+
+    /// Archivia il report senza closeout. `workOrderId` deve essere un ordine assegnato all'operatore
+    /// (altrimenti 404 `work_order_not_found`); senza, il report va sulla sessione di chat.
+    func archiveReport(companyId: String, sessionId: String,
+                       _ request: AriaReportArchiveRequest = .init()) async throws -> AriaReportArchive {
+        try await api.call(.post("\(sessionPath(companyId, sessionId))/report", body: request))
+    }
+
+    static let docxType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    /// Il report come file Word, scritto in un file temporaneo da condividere. Niente si salva sul server.
+    /// `locale`: la lingua del report (la conversazione non si traduce); `episode`: una procedura precedente
+    /// della stessa chat (da 1); `workOrderId`: l'ordine stampato sul documento.
+    @concurrent
+    func reportDocument(companyId: String, sessionId: String, locale: String, episode: Int? = nil,
+                        title: String? = nil, workOrderId: String? = nil) async throws -> AriaReportFile {
+        var query = [URLQueryItem(name: "locale", value: locale)]
+        if let episode { query.append(URLQueryItem(name: "episode", value: "\(episode)")) }
+        if let title, !title.isEmpty { query.append(URLQueryItem(name: "title", value: title)) }
+        if let workOrderId { query.append(URLQueryItem(name: "work_order_id", value: workOrderId)) }
+        let (data, http) = try await api.response("GET", "\(sessionPath(companyId, sessionId))/report.docx",
+                                                  query: query, headers: ["Accept": Self.docxType])
+        let filename = Self.filename(fromContentDisposition: http.value(forHTTPHeaderField: "Content-Disposition"))
+            ?? "Aria report.docx"
+        let folder = FileManager.default.temporaryDirectory.appending(path: "aria-report-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let url = folder.appending(path: filename)
+        try data.write(to: url, options: .atomic)
+        return AriaReportFile(url: url, filename: filename)
+    }
+
+    /// Il nome da `Content-Disposition` (`filename*=UTF-8''…` vince su `filename="…"`), senza percorsi.
+    static func filename(fromContentDisposition header: String?) -> String? {
+        guard let header else { return nil }
+        var plain: String?
+        var extended: String?
+        for part in header.split(separator: ";") {
+            let pair = part.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            guard pair.count == 2 else { continue }
+            switch pair[0].lowercased() {
+            case "filename*":
+                let value = pair[1].split(separator: "'", maxSplits: 2, omittingEmptySubsequences: false).last.map(String.init)
+                extended = value?.removingPercentEncoding
+            case "filename":
+                plain = pair[1].trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            default: break
+            }
+        }
+        guard let name = (extended ?? plain)?.split(whereSeparator: { $0 == "/" || $0 == "\\" }).last.map(String.init),
+              !name.isEmpty, name != ".", name != ".." else { return nil }
+        return name
     }
 }
 

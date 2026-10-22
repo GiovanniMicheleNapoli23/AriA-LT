@@ -334,24 +334,6 @@ struct AriaStepRunnerView: View {
                     }
                 }
                 .frame(height: 4)
-
-                HStack(spacing: 5) {
-                    // Più di una quindicina di passi non ci stanno come pallini: restano solo la barra e il conteggio.
-                    if steps.count <= 15 {
-                        ForEach(Array(steps.enumerated()), id: \.element.id) { i, item in
-                            Circle()
-                                .fill(dotColor(item, isCurrent: i == index))
-                                .frame(width: i == index ? 9 : 6, height: i == index ? 9 : 6)
-                                .animation(.spring(duration: 0.3), value: i == index)
-                                .contentShape(Circle().inset(by: -6))
-                                .onTapGesture { go(to: item) }
-                        }
-                    }
-                    Spacer()
-                    Text("\(reportedCount)/\(steps.count) reported")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.liteText.opacity(0.4))
-                }
             }
             .padding(.top, 4)
         }
@@ -373,14 +355,6 @@ struct AriaStepRunnerView: View {
             Text(label).font(.system(size: 12, weight: .medium))
         }
         .foregroundStyle(color)
-    }
-
-    private func dotColor(_ step: AriaProcedureStep, isCurrent: Bool) -> Color {
-        switch step.report?.status {
-        case "done": Color.liteAccent
-        case "not_done": .red.opacity(0.7)
-        default: isCurrent ? Color.liteAccent.opacity(0.55) : Color.liteAccent.opacity(0.15)
-        }
     }
 
     // MARK: Note e foto

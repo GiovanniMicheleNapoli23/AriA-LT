@@ -207,6 +207,15 @@ actor AriaAuth {
         AriaKeychain.set(token, for: Keys.devAccess)
         useAccessToken(token, validFor: .seconds(exp.timeIntervalSinceNow))
     }
+
+    /// Solo UI test: la sessione di un operatore già emessa (`set-auth-token`), senza passare dal link via email.
+    /// Non protetta da Face ID: un test non può rispondere al prompt.
+    func useSessionToken(_ token: String) async throws {
+        clear()
+        AriaKeychain.set(token, for: Keys.session, protected: false)
+        sessionToken = token
+        _ = try await refresh()
+    }
     #endif
 
     /// Chiude la sessione di questo dispositivo (gli altri restano collegati).

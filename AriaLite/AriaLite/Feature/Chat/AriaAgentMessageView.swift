@@ -103,7 +103,14 @@ struct AriaAgentMessageView: View {
                 Label(String(localized: "Aria learned \(message.memoryLearned.count) new facts"), systemImage: "brain")
                     .font(.system(size: 12)).foregroundStyle(.secondary)
             }
-            ForEach(message.memoryProposals) { memoryProposal($0) }
+            if chat.canConfirmMemory {
+                ForEach(message.memoryProposals) { proposal in
+                    AriaMemoryProposalCard(proposal: proposal, chat: chat) { accept, content in
+                        taps += 1
+                        chat.confirmMemory(proposal, in: message.id, accept: accept, content: content)
+                    }
+                }
+            }
 
             // Il pannello in fondo la pone già per l'ultima risposta: il chip serve per riaprirla da qui.
             if !chat.isStreaming, chat.canAnswerLearning(message), chat.activeLearning?.messageId != message.id {
@@ -321,26 +328,6 @@ struct AriaAgentMessageView: View {
         }
     }
 
-    private func memoryProposal(_ proposal: AriaMemoryProposal) -> some View {
-        AriaCard(tint: .purple) {
-            Label("Should Aria remember this?", systemImage: "brain")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.purple)
-            Text(proposal.content).font(.system(size: 13))
-            if let reason = proposal.reason, !reason.isEmpty {
-                Text(reason).font(.system(size: 12)).foregroundStyle(.secondary)
-            }
-            HStack {
-                Button("Discard") { taps += 1; chat.confirmMemory(proposal, in: message.id, accept: false) }
-                    .buttonStyle(.bordered)
-                Spacer()
-                Button("Keep") { taps += 1; chat.confirmMemory(proposal, in: message.id, accept: true) }
-                    .buttonStyle(.borderedProminent)
-            }
-            .controlSize(.small)
-        }
-    }
-
     private var toolbar: some View {
         HStack(spacing: 2) {
             Button {
@@ -483,5 +470,82 @@ final class AriaSpeech {
         let utterance = AVSpeechUtterance(string: plain)
         utterance.voice = AVSpeechSynthesisVoice(language: Locale.current.language.languageCode?.identifier == "it" ? "it-IT" : "en-US")
         synthesizer.speak(utterance)
+    }
+}
+
+// MARK: - Fatto da imparare
+
+/// "Aria dovrebbe ricordarlo?": l'operatore lo scarta, oppure lo manda (anche riscritto) agli amministratori.
+/// "Invia" non salva niente: il fatto resta in attesa finché un admin non lo approva. Il testo si mostra
+/// nella lingua dell'operatore quando la traduzione è arrivata.
+private struct AriaMemoryProposalCard: View {
+    let proposal: AriaMemoryProposal
+    let chat: AriaAgentChat
+    let decide: (_ accept: Bool, _ content: String?) -> Void
+
+    @State private var isEditing = false
+    @State private var edited = ""
+    @FocusState private var editorFocused: Bool
+
+    /// Un fatto in conflitto con quello che Aria sa si può segnalare ma non riscrivere (422).
+    private var canReword: Bool { proposal.kind != "conflict" }
+    private var shown: String { chat.translated(proposal.content, id: proposal.factId) }
+    private var trimmedEdit: String { edited.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        AriaCard(tint: .purple) {
+            Label("Should Aria remember this?", systemImage: "brain")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.purple)
+            if isEditing {
+                TextField("What Aria should remember", text: $edited, axis: .vertical)
+                    .font(.system(size: 13))
+                    .lineLimit(2...6)
+                    .focused($editorFocused)
+                    .padding(8)
+                    .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityIdentifier("memory.editor")
+            } else {
+                Text(shown).font(.system(size: 13))
+                    .accessibilityIdentifier("memory.text")
+            }
+            if let reason = proposal.reason, !reason.isEmpty {
+                Text(reason).font(.system(size: 12)).foregroundStyle(.secondary)
+            }
+            Text("An admin reviews it before Aria uses it.")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            HStack {
+                if isEditing {
+                    Button("Cancel") { isEditing = false }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("memory.cancelEdit")
+                } else {
+                    Button("Discard") { decide(false, nil) }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("memory.discard")
+                    if canReword {
+                        Button("Edit", systemImage: "pencil") {
+                            edited = proposal.content
+                            isEditing = true
+                            editorFocused = true
+                        }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Edit before sending")
+                        .accessibilityIdentifier("memory.edit")
+                    }
+                }
+                Spacer()
+                Button("Send for review") { decide(true, isEditing ? trimmedEdit : nil) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isEditing && trimmedEdit.isEmpty)
+                    .accessibilityIdentifier("memory.send")
+            }
+            .controlSize(.small)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("memory.card")
+        .task(id: proposal.factId) { chat.requestTranslations([(proposal.factId, proposal.content)]) }
     }
 }
