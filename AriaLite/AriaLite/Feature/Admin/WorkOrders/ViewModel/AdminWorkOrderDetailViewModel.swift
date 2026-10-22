@@ -17,7 +17,7 @@ import Observation
 final class AdminWorkOrderDetailViewModel {
     private let list: AdminWorkOrdersViewModel
     private(set) var order: AdminWorkOrder
-    private(set) var reports: [AdminStepReport] = []
+    private(set) var reports: [AdminWorkOrderStepReport] = []
 
     private(set) var isLoading = false
     private(set) var hasLoaded = false
@@ -162,14 +162,14 @@ final class AdminWorkOrderDetailViewModel {
     }
 
     /// I passi della procedura con il resoconto; senza procedura, i soli resoconti arrivati.
-    var steps: [AdminStepRowItem] {
+    var steps: [AdminWorkOrderStepRowItem] {
         let byStep = Dictionary(reports.map { ($0.stepId, $0) }) { first, _ in first }
         if let procedure = order.procedure, !procedure.steps.isEmpty {
             return procedure.steps.map { step in
                 let report = byStep[step.id]
                 let status = report?.status ?? step.report?.status
                 let when = report?.statusAt ?? report?.reportedAt ?? step.report?.reportedAt
-                return AdminStepRowItem(
+                return AdminWorkOrderStepRowItem(
                     id: step.id, number: step.number, text: Self.stripStepPrefix(step.text),
                     status: status,
                     note: report?.note ?? step.report?.note,
@@ -178,15 +178,17 @@ final class AdminWorkOrderDetailViewModel {
                 )
             }
         }
-        return reports.enumerated().map { index, report in
-            AdminStepRowItem(id: report.stepId, number: index + 1, text: String(localized: "Step \(index + 1)"),
-                             status: report.status, note: report.note,
-                             byline: byline(report, at: report.statusAt ?? report.reportedAt),
-                             photoCount: report.photoCount)
+        // Un resoconto per passo (il primo), così gli id delle righe restano unici.
+        var seen = Set<String>()
+        return reports.filter { seen.insert($0.stepId).inserted }.enumerated().map { index, report in
+            AdminWorkOrderStepRowItem(id: report.stepId, number: index + 1, text: String(localized: "Step \(index + 1)"),
+                                      status: report.status, note: report.note,
+                                      byline: byline(report, at: report.statusAt ?? report.reportedAt),
+                                      photoCount: report.photoCount)
         }
     }
 
-    private func byline(_ report: AdminStepReport?, at date: Date?) -> String? {
+    private func byline(_ report: AdminWorkOrderStepReport?, at date: Date?) -> String? {
         let text = AdminWorkOrderFormat.joined([
             report?.statusByName ?? report?.reportedByName,
             date.map(AdminWorkOrderFormat.dateTime),

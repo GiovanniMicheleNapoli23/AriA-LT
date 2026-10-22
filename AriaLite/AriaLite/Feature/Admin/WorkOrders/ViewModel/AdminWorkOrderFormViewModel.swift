@@ -190,8 +190,8 @@ final class AdminWorkOrderFormViewModel: Identifiable {
             assignedToUserId: d.assignedUserId,
             estimatedDurationMin: minutes,
             notes: Self.nonEmpty(d.notes),
-            scheduledDate: d.hasScheduledDate ? AdminWireDate.string(d.scheduledDate) : nil,
-            dueDate: d.hasDueDate ? AdminWireDate.string(d.dueDate) : nil
+            scheduledDate: d.hasScheduledDate ? AdminWorkOrderWireDate.string(d.scheduledDate) : nil,
+            dueDate: d.hasDueDate ? AdminWorkOrderWireDate.string(d.dueDate) : nil
         )
     }
 
@@ -219,10 +219,10 @@ final class AdminWorkOrderFormViewModel: Identifiable {
         if d.teamId != o.teamId { body.assignedToTeamId = .some(d.teamId) }
         if d.estimatedMinutes != o.estimatedMinutes { body.estimatedDurationMin = .some(minutes) }
         if d.hasScheduledDate != o.hasScheduledDate || (d.hasScheduledDate && d.scheduledDate != o.scheduledDate) {
-            body.scheduledDate = .some(d.hasScheduledDate ? AdminWireDate.string(d.scheduledDate) : nil)
+            body.scheduledDate = .some(d.hasScheduledDate ? AdminWorkOrderWireDate.string(d.scheduledDate) : nil)
         }
         if d.hasDueDate != o.hasDueDate || (d.hasDueDate && d.dueDate != o.dueDate) {
-            body.dueDate = .some(d.hasDueDate ? AdminWireDate.string(d.dueDate) : nil)
+            body.dueDate = .some(d.hasDueDate ? AdminWorkOrderWireDate.string(d.dueDate) : nil)
         }
         return body
     }

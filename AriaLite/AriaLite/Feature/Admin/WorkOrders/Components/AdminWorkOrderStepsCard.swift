@@ -11,7 +11,7 @@
 import SwiftUI
 
 struct AdminWorkOrderStepsCard: View {
-    let steps: [AdminStepRowItem]
+    let steps: [AdminWorkOrderStepRowItem]
     let progress: (fraction: Double, text: String)?
 
     /// Il cerchio del numero cresce col testo (Dynamic Type).
@@ -41,7 +41,7 @@ struct AdminWorkOrderStepsCard: View {
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private func row(_ step: AdminStepRowItem) -> some View {
+    private func row(_ step: AdminWorkOrderStepRowItem) -> some View {
         HStack(alignment: .top, spacing: 12) {
             marker(step)
             VStack(alignment: .leading, spacing: 4) {
@@ -79,7 +79,7 @@ struct AdminWorkOrderStepsCard: View {
     }
 
     @ViewBuilder
-    private func marker(_ step: AdminStepRowItem) -> some View {
+    private func marker(_ step: AdminWorkOrderStepRowItem) -> some View {
         Group {
             switch step.status {
             case .done?:
@@ -98,7 +98,7 @@ struct AdminWorkOrderStepsCard: View {
         .frame(width: markerSize + 2, height: markerSize + 2)
     }
 
-    private func color(_ status: AdminStepStatus) -> Color {
+    private func color(_ status: AdminWorkOrderStepStatus) -> Color {
         switch status {
         case .done: .green
         case .notDone: .orange

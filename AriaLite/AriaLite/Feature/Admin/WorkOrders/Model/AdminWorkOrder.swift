@@ -30,7 +30,7 @@ nonisolated struct AdminWorkOrder: Decodable, Sendable, Identifiable, Hashable {
     var assignedTo: String?
     var assignedToTeamId: String?
     var assignedToUserId: String?
-    var assignmentSource: AdminAssignmentSource?
+    var assignmentSource: AdminWorkOrderAssignmentSource?
     var assignedAt: Date?
     var autoAssignNote: String?
     var requestedBy: String?
@@ -56,9 +56,9 @@ nonisolated struct AdminWorkOrder: Decodable, Sendable, Identifiable, Hashable {
     var updatedAt: Date?
 
     /// Passi con un risultato: nella lista come `step_progress`, nel dettaglio anche dentro la procedura.
-    var stepProgress: AdminStepProgress?
+    var stepProgress: AdminWorkOrderStepProgress?
     /// Solo con `?include=procedure`.
-    var procedure: AdminProcedure?
+    var procedure: AdminWorkOrderProcedure?
 
     private enum CodingKeys: String, CodingKey {
         case id, title, type, category, priority, status, assetTag, alarmCode, maintenancePlanId, plantId, zone
@@ -90,7 +90,7 @@ nonisolated struct AdminWorkOrder: Decodable, Sendable, Identifiable, Hashable {
         assignedTo = f.text(.assignedTo)
         assignedToTeamId = f.id(.assignedToTeamId)
         assignedToUserId = f.id(.assignedToUserId)
-        assignmentSource = f.value(AdminAssignmentSource.self, .assignmentSource)
+        assignmentSource = f.value(AdminWorkOrderAssignmentSource.self, .assignmentSource)
         assignedAt = f.date(.assignedAt)
         autoAssignNote = f.text(.autoAssignNote)
         requestedBy = f.text(.requestedBy)
@@ -110,8 +110,8 @@ nonisolated struct AdminWorkOrder: Decodable, Sendable, Identifiable, Hashable {
         completedDate = f.date(.completedDate)
         createdAt = f.date(.createdAt)
         updatedAt = f.date(.updatedAt)
-        procedure = f.value(AdminProcedure.self, .procedure)
-        stepProgress = f.value(AdminStepProgress.self, .stepProgress) ?? procedure?.progress
+        procedure = f.value(AdminWorkOrderProcedure.self, .procedure)
+        stepProgress = f.value(AdminWorkOrderStepProgress.self, .stepProgress) ?? procedure?.progress
     }
 
     var isClosed: Bool { status?.isClosed ?? false }
@@ -124,7 +124,7 @@ nonisolated struct AdminWorkOrder: Decodable, Sendable, Identifiable, Hashable {
 }
 
 /// Quanti passi hanno un risultato (fatti o non fatti) su quanti sono.
-nonisolated struct AdminStepProgress: Decodable, Sendable, Hashable {
+nonisolated struct AdminWorkOrderStepProgress: Decodable, Sendable, Hashable {
     var done: Int
     var notDone: Int
     var total: Int

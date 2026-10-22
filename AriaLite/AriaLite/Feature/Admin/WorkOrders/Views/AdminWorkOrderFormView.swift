@@ -63,7 +63,6 @@ struct AdminWorkOrderFormView: View {
         Section {
             TextField("Title", text: $viewModel.draft.title, axis: .vertical)
                 .focused($focused, equals: .title)
-                .submitLabel(.next)
             TextField("Description", text: $viewModel.draft.description, axis: .vertical)
                 .lineLimit(3...8)
                 .focused($focused, equals: .description)

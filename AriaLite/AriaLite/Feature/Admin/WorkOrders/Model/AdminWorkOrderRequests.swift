@@ -11,7 +11,7 @@
 import Foundation
 
 /// Data per il backend: ISO-8601 in UTC, senza frazioni di secondo.
-nonisolated enum AdminWireDate {
+nonisolated enum AdminWorkOrderWireDate {
     static func string(_ date: Date) -> String {
         date.formatted(.iso8601)
     }

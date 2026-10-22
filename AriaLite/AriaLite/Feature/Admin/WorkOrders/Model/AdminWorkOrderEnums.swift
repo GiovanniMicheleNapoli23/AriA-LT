@@ -73,7 +73,7 @@ nonisolated enum AdminWorkOrderType: String, AriaUnknownCaseDecodable, Hashable,
 }
 
 /// Chi ha assegnato l'ordine: l'assegnazione automatica o una persona.
-nonisolated enum AdminAssignmentSource: String, AriaUnknownCaseDecodable, Hashable {
+nonisolated enum AdminWorkOrderAssignmentSource: String, AriaUnknownCaseDecodable, Hashable {
     case auto, manual
     case unknown
 

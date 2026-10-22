@@ -27,8 +27,8 @@ nonisolated struct AdminWorkOrdersAPI: Sendable {
         try await api.call(.get("\(root)/\(id)", query: ["include": "procedure"]).snakeCased())
     }
 
-    func stepReports(_ id: String) async throws -> [AdminStepReport] {
-        let rows: AriaLossyArray<AdminStepReport> = try await api.call(.get("\(root)/\(id)/step-reports").snakeCased())
+    func stepReports(_ id: String) async throws -> [AdminWorkOrderStepReport] {
+        let rows: AriaLossyArray<AdminWorkOrderStepReport> = try await api.call(.get("\(root)/\(id)/step-reports").snakeCased())
         return rows.items
     }
 

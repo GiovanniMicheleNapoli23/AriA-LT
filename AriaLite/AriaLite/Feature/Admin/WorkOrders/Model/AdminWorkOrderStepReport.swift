@@ -1,5 +1,5 @@
 //
-//  AdminStepReport.swift
+//  AdminWorkOrderStepReport.swift
 //  AriaLite
 //
 //  Created by Giovanni Michele on 22/10/26.
@@ -10,7 +10,7 @@
 
 import Foundation
 
-nonisolated enum AdminStatusSource: String, AriaUnknownCaseDecodable, Hashable {
+nonisolated enum AdminWorkOrderStatusSource: String, AriaUnknownCaseDecodable, Hashable {
     case mobile, desktop
     case unknown
 
@@ -25,14 +25,14 @@ nonisolated enum AdminStatusSource: String, AriaUnknownCaseDecodable, Hashable {
     }
 }
 
-nonisolated struct AdminStepReport: Decodable, Sendable, Hashable, Identifiable {
+nonisolated struct AdminWorkOrderStepReport: Decodable, Sendable, Hashable, Identifiable {
     let stepId: String
-    var status: AdminStepStatus
+    var status: AdminWorkOrderStepStatus
     var note: String?
     var photoCount: Int
     var reportedByName: String?
     var reportedAt: Date?
-    var statusSource: AdminStatusSource?
+    var statusSource: AdminWorkOrderStatusSource?
     var statusByName: String?
     var statusAt: Date?
 
@@ -48,12 +48,12 @@ nonisolated struct AdminStepReport: Decodable, Sendable, Hashable, Identifiable 
             throw DecodingError.keyNotFound(CodingKeys.stepId, .init(codingPath: decoder.codingPath, debugDescription: "step_id"))
         }
         self.stepId = stepId
-        status = f.value(AdminStepStatus.self, .status) ?? .unknown
+        status = f.value(AdminWorkOrderStepStatus.self, .status) ?? .unknown
         note = f.text(.note)
         photoCount = f.value([AriaJSON].self, .photos)?.count ?? 0
         reportedByName = f.text(.reportedByName) ?? f.text(.reportedBy)
         reportedAt = f.date(.reportedAt)
-        statusSource = f.value(AdminStatusSource.self, .statusSource)
+        statusSource = f.value(AdminWorkOrderStatusSource.self, .statusSource)
         statusByName = f.text(.statusByName)
         statusAt = f.date(.statusAt)
     }

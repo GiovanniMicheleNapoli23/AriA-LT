@@ -39,12 +39,12 @@ nonisolated struct AdminWorkOrderTextBlock: Identifiable, Hashable, Sendable {
 }
 
 /// Un passo della procedura con il risultato, chi l'ha registrato e quando.
-nonisolated struct AdminStepRowItem: Identifiable, Hashable, Sendable {
+nonisolated struct AdminWorkOrderStepRowItem: Identifiable, Hashable, Sendable {
     let id: String
     let number: Int
     let text: String
     /// `nil`: ancora da fare.
-    let status: AdminStepStatus?
+    let status: AdminWorkOrderStepStatus?
     let note: String?
     /// "Mario Rossi · 22 ott, 10:30 · Phone".
     let byline: String?
