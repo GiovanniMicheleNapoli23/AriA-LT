@@ -329,7 +329,7 @@ extension BackendTests {
             #expect(backend.lastError == nil, "la schermata di sblocco è già davanti")
         }
 
-        @Test func suggestionsAreEmptyWithoutAPlant() async {
+        @Test func suggestionsAreEmptyWhenSignedOut() async {
             #expect(await AriaBackend().suggestions().isEmpty)
             #expect(server.calls.isEmpty)
         }

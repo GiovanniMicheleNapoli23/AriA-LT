@@ -73,6 +73,10 @@ nonisolated final class StubServer: @unchecked Sendable {
 
     /// `key` = "METODO /percorso" oppure "METODO /percorso?query". Le risposte escono in ordine; l'ultima si ripete.
     func route(_ key: String, _ replies: Reply...) {
+        route(key, replies)
+    }
+
+    func route(_ key: String, _ replies: [Reply]) {
         lock.withLock { routes[key] = replies }
     }
 
@@ -117,7 +121,9 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         let reply = (call.query.flatMap { StubServer.shared.next(for: "\(plain)?\($0)") })
             ?? StubServer.shared.next(for: plain)
             ?? Reply(status: 599, body: Data("unstubbed \(call.method) \(call.path)".utf8))
-        let deliver = { [self] in
+        // @Sendable: può partire da DispatchQueue.global (risposte con ritardo); self è @unchecked Sendable
+        // e `stopped` si legge sotto stopLock.
+        let deliver: @Sendable () -> Void = { [self] in
             stopLock.lock()
             let skip = stopped
             stopLock.unlock()
@@ -133,7 +139,7 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
             client?.urlProtocolDidFinishLoading(self)
         }
         if reply.delay > 0 {
-            DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay, execute: deliver)
+            DispatchQueue.global().asyncAfter(deadline: .now() + reply.delay) { deliver() }
         } else {
             deliver()
         }

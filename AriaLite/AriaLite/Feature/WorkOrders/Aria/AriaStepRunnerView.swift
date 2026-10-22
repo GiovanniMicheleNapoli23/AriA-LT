@@ -11,6 +11,8 @@
 //    "Undo" lo toglie, insieme alle foto.
 //  • La nota di un passo ancora senza risultato è una bozza: parte col risultato.
 //  • Le foto vogliono un risultato già messo: finché non c'è restano sul telefono e partono subito dopo.
+//  • Tutto si salva prima sul telefono (AriaWorkOrderStore, local-first): si lavora anche offline e
+//    il lotto parte quando si esce dall'esecuzione o si chiude il task.
 //  • Un ordine chiuso è in sola lettura.
 //
 
@@ -30,11 +32,16 @@ struct AriaStepRunnerView: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPhotoSource = false
     @State private var showCamera = false
+    @State private var previewPhoto: AriaPhotoPreviewItem?
     @State private var showAIHelp = false
+    /// La chat di "Ask AriA" vive qui, non nel foglio: chiuderlo la minimizza, e col passo nuovo si azzera.
+    @State private var help = AriaHelpChatSlot()
+    @State private var helpDetent: PresentationDetent = .large
     @State private var showComplete = false
     @State private var showSafety = false
     @Namespace private var glassNamespace
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppViewModel.self) private var viewModel
 
     private enum NoteMode: Identifiable {
         /// Aggiungere o cambiare la nota del passo.
@@ -45,6 +52,15 @@ struct AriaStepRunnerView: View {
     }
 
     private static let maxPhotos = 3
+    private static let askAriaSource = "ask-aria"
+
+    /// Chat nuova col contesto del passo corrente; quella vecchia smette di rispondere.
+    private func resetHelpChat() {
+        help.chat?.stop()
+        help.chat = current.map {
+            AriaAgentChat(backend: viewModel.backend, context: "[Work order context]\n\(order.chatContext(step: $0))")
+        }
+    }
 
     init(order: Binding<AriaWorkOrder>, store: AriaWorkOrderStore, startingAt stepId: String) {
         _order = order
@@ -73,7 +89,14 @@ struct AriaStepRunnerView: View {
     }
 
     private func photoCount(of step: AriaProcedureStep) -> Int {
-        (step.report?.photos.count ?? 0) + (draftPhotos[step.id]?.count ?? 0)
+        (step.report?.photos.count ?? 0) + queuedPhotos(of: step).count + (draftPhotos[step.id]?.count ?? 0)
+    }
+
+    /// Foto già in coda verso il server (scattate col passo segnato, anche offline).
+    private func queuedPhotos(of step: AriaProcedureStep) -> [(localId: String, jpeg: Data)] {
+        // Letto qui perché la coda non è osservabile: quando cambia, cambia il conteggio.
+        _ = store.pendingCount
+        return store.pendingPhotos(step: step.id, of: order.id)
     }
 
     // MARK: Corpo
@@ -92,6 +115,7 @@ struct AriaStepRunnerView: View {
                         VStack(spacing: 0) {
                             ScrollView {
                                 VStack(spacing: 14) {
+                                    AriaSyncStatusView(store: store)
                                     if !safetyWarnings.isEmpty { safetyCard }
                                     stepCard(step)
                                     if !isReadOnly || note(of: step) != nil || photoCount(of: step) > 0 {
@@ -143,10 +167,12 @@ struct AriaStepRunnerView: View {
             .onAppear { showSafety = reportedCount == 0 && !safetyWarnings.isEmpty }
             .sheet(item: $noteMode) { mode in noteSheet(mode) }
             .sheet(isPresented: $showAIHelp) {
-                if let step = current {
-                    AIHelpSheet(contextText: order.chatContext(step: step))
-                }
+                AIHelpSheet(slot: help, detent: $helpDetent)
+                    // Si richiude "dentro" il bottone Ask AriA da cui è uscito.
+                    .navigationTransition(.zoom(sourceID: Self.askAriaSource, in: glassNamespace))
             }
+            // Nuovo passo, nuova conversazione: il contesto è quello del passo (anche a foglio aperto).
+            .onChange(of: currentId) { _, _ in resetHelpChat() }
             .sheet(isPresented: $showComplete) {
                 AriaCompleteSheet(unreportedCount: steps.count - reportedCount) { notes in
                     switch await store.complete(order.id, resolutionNotes: notes) {
@@ -165,6 +191,7 @@ struct AriaStepRunnerView: View {
             .sheet(isPresented: $showPhotoSource) {
                 PhotoSourceSheet(selectedPhotoItems: $pickerItems) { showCamera = true }
             }
+            .fullScreenCover(item: $previewPhoto) { AriaPhotoPreview(item: $0) }
             .fullScreenCover(isPresented: $showCamera) {
                 CameraPicker { image in
                     if let jpeg = AriaPhoto.jpeg(from: image) { Task { await addPhoto(jpeg) } }
@@ -307,24 +334,6 @@ struct AriaStepRunnerView: View {
                     }
                 }
                 .frame(height: 4)
-
-                HStack(spacing: 5) {
-                    // Più di una quindicina di passi non ci stanno come pallini: restano solo la barra e il conteggio.
-                    if steps.count <= 15 {
-                        ForEach(Array(steps.enumerated()), id: \.element.id) { i, item in
-                            Circle()
-                                .fill(dotColor(item, isCurrent: i == index))
-                                .frame(width: i == index ? 9 : 6, height: i == index ? 9 : 6)
-                                .animation(.spring(duration: 0.3), value: i == index)
-                                .contentShape(Circle().inset(by: -6))
-                                .onTapGesture { go(to: item) }
-                        }
-                    }
-                    Spacer()
-                    Text("\(reportedCount)/\(steps.count) reported")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.liteText.opacity(0.4))
-                }
             }
             .padding(.top, 4)
         }
@@ -346,14 +355,6 @@ struct AriaStepRunnerView: View {
             Text(label).font(.system(size: 12, weight: .medium))
         }
         .foregroundStyle(color)
-    }
-
-    private func dotColor(_ step: AriaProcedureStep, isCurrent: Bool) -> Color {
-        switch step.report?.status {
-        case "done": Color.liteAccent
-        case "not_done": .red.opacity(0.7)
-        default: isCurrent ? Color.liteAccent.opacity(0.55) : Color.liteAccent.opacity(0.15)
-        }
     }
 
     // MARK: Note e foto
@@ -435,8 +436,9 @@ struct AriaStepRunnerView: View {
     @ViewBuilder
     private func photoStrip(_ step: AriaProcedureStep) -> some View {
         let uploaded = step.report?.photos ?? []
+        let queued = queuedPhotos(of: step)
         let drafts = draftPhotos[step.id] ?? []
-        if !uploaded.isEmpty || !drafts.isEmpty {
+        if !uploaded.isEmpty || !queued.isEmpty || !drafts.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
                     ForEach(uploaded) { photo in
@@ -451,29 +453,40 @@ struct AriaStepRunnerView: View {
                             } else {
                                 Image(systemName: "photo").foregroundStyle(.secondary)
                             }
+                        } open: {
+                            previewPhoto = .remote(id: photo.id, url: photo.url)
                         } remove: {
                             Task { await removeUploaded(photo, from: step) }
                         }
                     }
+                    ForEach(queued, id: \.localId) { photo in
+                        thumbnail {
+                            if let image = UIImage(data: photo.jpeg) { Image(uiImage: image).resizable().scaledToFill() }
+                        } open: {
+                            previewPhoto = .local(id: photo.localId, jpeg: photo.jpeg)
+                        } remove: {
+                            Task { await removeQueued(photo.localId, from: step) }
+                        }
+                        .overlay(alignment: .bottom) { uploadBadge }
+                    }
                     ForEach(Array(drafts.enumerated()), id: \.offset) { i, data in
                         thumbnail {
                             if let image = UIImage(data: data) { Image(uiImage: image).resizable().scaledToFill() }
+                        } open: {
+                            previewPhoto = .local(id: "draft-\(step.id)-\(i)", jpeg: data)
                         } remove: {
                             draftPhotos[step.id]?.remove(at: i)
                         }
-                        .overlay(alignment: .bottom) {
-                            Image(systemName: "icloud.and.arrow.up")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(4)
-                                .background(.black.opacity(0.45), in: Capsule())
-                                .padding(4)
-                        }
+                        .overlay(alignment: .bottom) { uploadBadge }
                     }
                     Spacer(minLength: 0)
                 }
                 if !drafts.isEmpty {
                     Text("Photos upload when you mark the step.")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                } else if !queued.isEmpty {
+                    Text("Photos upload with the next sync.")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -482,7 +495,17 @@ struct AriaStepRunnerView: View {
         }
     }
 
+    private var uploadBadge: some View {
+        Image(systemName: "icloud.and.arrow.up")
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(.white)
+            .padding(4)
+            .background(.black.opacity(0.45), in: Capsule())
+            .padding(4)
+    }
+
     private func thumbnail<Content: View>(@ViewBuilder _ content: () -> Content,
+                                          open: @escaping () -> Void,
                                           remove: @escaping () -> Void) -> some View {
         ZStack {
             Color(.tertiarySystemFill)
@@ -490,6 +513,10 @@ struct AriaStepRunnerView: View {
         }
         .frame(width: 84, height: 84)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .contentShape(RoundedRectangle(cornerRadius: 12))
+        .onTapGesture(perform: open)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityLabel(Text("Photo"))
         .overlay(alignment: .topTrailing) {
             if !isReadOnly {
                 Button(action: remove) {
@@ -526,7 +553,10 @@ struct AriaStepRunnerView: View {
 
     /// Pillola di vetro con la sfera di Aria: il bordo iridescente riprende i colori della sfera.
     private var askAriaButton: some View {
-        Button { showAIHelp = true } label: {
+        Button {
+            if help.chat == nil { resetHelpChat() }
+            showAIHelp = true
+        } label: {
             HStack(spacing: 12) {
                 AriaOrb(radius: 0.9)
                     .frame(width: 40, height: 40)
@@ -562,6 +592,7 @@ struct AriaStepRunnerView: View {
             }
         }
         .buttonStyle(AriaPressScaleStyle())
+        .matchedTransitionSource(id: Self.askAriaSource, in: glassNamespace)
         .accessibilityLabel(Text("Ask AriA"))
         .accessibilityHint(Text("Get help with this step"))
     }
@@ -730,6 +761,10 @@ struct AriaStepRunnerView: View {
             draftPhotos[stepId]?.removeFirst()
         }
         draftPhotos[stepId] = nil
+    }
+
+    private func removeQueued(_ localId: String, from step: AriaProcedureStep) async {
+        _ = apply(await store.removePhoto(localId, step: step.id, of: order.id))
     }
 
     private func removeUploaded(_ photo: AriaStepPhoto, from step: AriaProcedureStep) async {

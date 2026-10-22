@@ -19,7 +19,7 @@ nonisolated struct AriaConfig: Sendable {
     /// Host di accesso: la web app (aria-web), che serve `/api/auth/mobile/*`, `/api/aria/token` e `/m/sign-in`.
     static let productionSignIn = productionWeb
 
-    /// FastAPI aria-backend: tutti i dati, sotto /v1 (compresi `/v1/companies` e `/v1/mobile/*` dell'operatore).
+    /// FastAPI aria-backend: tutti i dati, sotto /v1. Le rotte `/v1/mobile/*` non esistono più: l'operatore usa quelle condivise.
     var apiBaseURL: URL
     /// Host di accesso: solo login, token di sessione e logout.
     var authBaseURL: URL
@@ -117,12 +117,17 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// Il server ha rifiutato un passo o un lavoro con un codice noto (`detail.code`).
     /// `missing`: gli id dei passi senza risultato (`steps_incomplete`).
     case workOrder(AriaServerCode, missing: [String] = [])
+    /// 409 di un turno della chat (POST /v1/responses, Stop): vedi AriaTurnConflict.
+    case turnConflict(AriaTurnConflict)
     case wafBlocked
     case bodyTooLarge(bytes: Int, limit: Int)
     case missingCompany
     case missingPlant
-    /// Azione della chat senza rotta sotto /v1/mobile: per un operatore il server risponderebbe 403.
+    /// Funzione non ancora aperta all'operatore: 403 `operation_forbidden` (backend senza la rotta).
+    /// L'app nasconde la funzione invece di riprovare.
     case notOnPhone
+    /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
+    case invalidChoice(field: String, valid: [String], message: String)
     case decoding(String)
     case stream(String)
 
@@ -142,18 +147,20 @@ nonisolated enum AriaError: LocalizedError, Sendable {
             String(localized: "This login is not a mobile user. Ask your company administrator for a mobile account.")
         case .http(let status, let detail): String(localized: "Error \(status): \(detail)")
         case .workOrder(let code, _): code.localized
+        case .turnConflict(let conflict): conflict.localized
         case .wafBlocked: String(localized: "Request blocked by the firewall (body over 8 KB).")
         case .bodyTooLarge(let bytes, let limit): String(localized: "Message too long (\(bytes) bytes, limit \(limit)).")
         case .missingCompany: String(localized: "No company selected.")
         case .missingPlant: String(localized: "Select a plant before using the chat.")
         case .notOnPhone: String(localized: "This isn't available on the phone yet.")
+        case .invalidChoice(_, _, let message): message
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
         }
     }
 }
 
-/// Codici di `detail.code` delle chiamate /v1/mobile sui passi e sul completamento.
+/// Codici di `detail.code` delle chiamate sui passi, sulle foto e sul completamento.
 nonisolated enum AriaServerCode: String, Sendable, CaseIterable {
     case stepNotFound = "step_not_found"
     case photoNotFound = "photo_not_found"
@@ -188,6 +195,47 @@ nonisolated enum AriaServerCode: String, Sendable, CaseIterable {
     }
 }
 
+/// 409 sui turni della chat (`detail.code`, con `detail.response_id` / `detail.status`).
+nonisolated struct AriaTurnConflict: Sendable, Equatable {
+    enum Code: String, Sendable {
+        /// Il messaggio è già stato accettato: ci si riaggancia al suo turno, non lo si rimanda.
+        case turnAlreadyStarted = "turn_already_started"
+        /// Nella sessione risponde ancora un altro messaggio: si aspetta che finisca, poi si manda.
+        case turnInProgress = "turn_in_progress"
+        /// L'id della risposta è già usato: si manda con una chiave nuova.
+        case responseIdTaken = "response_id_taken"
+        /// La stessa `Idempotency-Key` con un body o una sessione diversi: è un invio nuovo, con una chiave nuova.
+        case idempotencyConflict = "idempotency_conflict"
+        /// Stop su un turno già finito.
+        case turnNotRunning = "turn_not_running"
+    }
+
+    let code: Code
+    let responseId: String?
+    /// Con `turn_not_running`: come era finito il turno.
+    let status: String?
+
+    init(code: Code, responseId: String? = nil, status: String? = nil) {
+        self.code = code
+        self.responseId = responseId
+        self.status = status
+    }
+
+    init?(_ data: Data) {
+        guard let detail = (try? JSONDecoder().decode(AriaJSON.self, from: data))?["detail"],
+              let code = detail["code"]?.stringValue.flatMap(Code.init(rawValue:)) else { return nil }
+        self.init(code: code, responseId: detail["response_id"]?.stringValue, status: detail["status"]?.stringValue)
+    }
+
+    var localized: String {
+        switch code {
+        case .turnAlreadyStarted, .turnInProgress: String(localized: "Aria is still answering. Wait for the answer, then try again.")
+        case .responseIdTaken, .idempotencyConflict: String(localized: "The message could not be sent. Try again.")
+        case .turnNotRunning: String(localized: "The answer had already finished.")
+        }
+    }
+}
+
 nonisolated enum AriaHTTP {
     /// Solo per i test (AriaLiteTests): `URLProtocol` che risponde al posto della rete, inseriti in ogni sessione.
     /// Vuoto in produzione.
@@ -211,6 +259,17 @@ nonisolated enum AriaHTTP {
         }
         if http.statusCode == 403, code(from: data) == "not_a_mobile_user" {
             throw AriaError.notMobileUser
+        }
+        if http.statusCode == 403, code(from: data) == "operation_forbidden" {
+            throw AriaError.notOnPhone
+        }
+        if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
+            throw AriaError.turnConflict(conflict)
+        }
+        if http.statusCode == 422, let detail = (try? JSONDecoder().decode(AriaJSON.self, from: data))?["detail"],
+           let field = detail["field"]?.stringValue, let valid = detail["valid"]?.arrayValue {
+            throw AriaError.invalidChoice(field: field, valid: valid.compactMap(\.stringValue),
+                                          message: detail["message"]?.stringValue ?? AriaHTTP.detail(from: data))
         }
         if let code = code(from: data).flatMap(AriaServerCode.init(rawValue:)) {
             let missing = (try? JSONDecoder().decode(AriaJSON.self, from: data))?["detail"]?["missing"]?

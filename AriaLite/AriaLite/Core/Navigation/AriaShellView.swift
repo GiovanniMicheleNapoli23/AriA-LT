@@ -19,17 +19,34 @@ enum AriaDestination: Hashable {
     case calendar
 }
 
+/// Stato di apertura della sidebar: un modello osservabile al posto di una closure
+/// nell'ambiente, così le viste che leggono il controller non invalidano a ogni render.
+@MainActor
+@Observable
+final class AriaSidebarController {
+    private(set) var isOpen = false
+
+    func setOpen(_ open: Bool) {
+        if open {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        withAnimation(.snappy(duration: 0.3)) { isOpen = open }
+    }
+}
+
 extension EnvironmentValues {
     /// Apre la sidebar: il pulsante ☰ di ogni sezione lo legge da qui.
-    @Entry var openSidebar: () -> Void = {}
+    @Entry var sidebarController: AriaSidebarController?
 }
 
 /// Pulsante ☰ da mettere in alto a sinistra nella toolbar di ogni sezione.
 struct AriaSidebarButton: View {
-    @Environment(\.openSidebar) private var openSidebar
+    @Environment(\.sidebarController) private var sidebarController
 
     var body: some View {
-        Button("Menu", systemImage: "line.3.horizontal", action: openSidebar)
+        Button("Menu", systemImage: "line.3.horizontal") {
+            sidebarController?.setOpen(true)
+        }
     }
 }
 
@@ -39,7 +56,7 @@ struct AriaShellView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var destination: AriaDestination = .chat
-    @State private var isOpen = false
+    @State private var sidebar = AriaSidebarController()
     @GestureState(resetTransaction: Transaction(animation: .snappy(duration: 0.3)))
     private var dragX: CGFloat = 0
     /// Cambia a ogni "Nuova chat" dalla sidebar: la chat riparte da capo (fonte, bozza, scroll).
@@ -56,7 +73,7 @@ struct AriaShellView: View {
     var body: some View {
         GeometryReader { geo in
             let width = min(geo.size.width * 0.82, 360)
-            let offset = min(max((isOpen ? width : 0) + dragX, 0), width)
+            let offset = min(max((sidebar.isOpen ? width : 0) + dragX, 0), width)
             let progress = offset / width
 
             ZStack(alignment: .leading) {
@@ -79,8 +96,8 @@ struct AriaShellView: View {
             .simultaneousGesture(dragGesture(width: width))
         }
         .background(Color.liteSidebar.ignoresSafeArea())
-        .environment(\.openSidebar) { setOpen(true) }
-        .sensoryFeedback(.impact(weight: .light), trigger: isOpen)
+        .environment(\.sidebarController, sidebar)
+        .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .task(id: viewModel.backend.isReady) { await store.load() }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
         .task {
@@ -88,6 +105,11 @@ struct AriaShellView: View {
             await viewModel.ariaWorkOrders.sync()
         }
         .onChange(of: scenePhase) { _, phase in
+            // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
+            if phase == .background {
+                Task { await viewModel.ariaWorkOrders.flushForBackground() }
+                return
+            }
             guard phase == .active else { return }
             Task {
                 await viewModel.notifications.clearBadge()
@@ -108,7 +130,7 @@ struct AriaShellView: View {
             guard arrival != nil else { return }
             Task { await viewModel.ariaWorkOrders.refresh() }
         }
-        .onChange(of: isOpen) { _, open in
+        .onChange(of: sidebar.isOpen) { _, open in
             // Le recenti si aggiornano a ogni apertura: una chat appena iniziata prende il suo titolo.
             if open { Task { await store.load() } }
         }
@@ -141,11 +163,11 @@ struct AriaShellView: View {
             }
             .overlay {
                 // Aperta la sidebar, il pannello non si usa: un tocco lo richiude.
-                if isOpen {
+                if sidebar.isOpen {
                     Color.clear
                         .contentShape(Rectangle())
                         .ignoresSafeArea()
-                        .onTapGesture { setOpen(false) }
+                        .onTapGesture { sidebar.setOpen(false) }
                 }
             }
     }
@@ -177,34 +199,27 @@ struct AriaShellView: View {
             }
             .onEnded { value in
                 guard isSidebarDrag(value) else { return }
-                let landing = (isOpen ? width : 0) + value.predictedEndTranslation.width
-                setOpen(landing > width / 2)
+                let landing = (sidebar.isOpen ? width : 0) + value.predictedEndTranslation.width
+                sidebar.setOpen(landing > width / 2)
             }
     }
 
     /// Orizzontale, e — a sidebar chiusa — partito dal bordo sinistro (lo scroll resta dei contenuti).
     private func isSidebarDrag(_ value: DragGesture.Value) -> Bool {
         guard abs(value.translation.width) > abs(value.translation.height) else { return false }
-        return isOpen || value.startLocation.x < edgeWidth
+        return sidebar.isOpen || value.startLocation.x < edgeWidth
     }
 
     // MARK: - Azioni
 
-    private func setOpen(_ open: Bool) {
-        if open {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
-        withAnimation(.snappy(duration: 0.3)) { isOpen = open }
-    }
-
     private func select(_ target: AriaDestination) {
         destination = target
-        setOpen(false)
+        sidebar.setOpen(false)
     }
 
     private func openSession(_ session: AriaSessionSummary) {
         destination = .chat
-        setOpen(false)
+        sidebar.setOpen(false)
         guard session.sessionId != chat.sessionId || chat.messages.isEmpty else { return }
         Task { await chat.open(sessionId: session.sessionId) }
     }
@@ -213,7 +228,7 @@ struct AriaShellView: View {
         chat.newConversation()
         chatID = UUID()
         destination = .chat
-        setOpen(false)
+        sidebar.setOpen(false)
     }
 }
 

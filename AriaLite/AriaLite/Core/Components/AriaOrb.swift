@@ -164,3 +164,34 @@ private final class AriaOrbEngine {
     .padding()
     .background(Color(.systemGroupedBackground))
 }
+
+/// L'alone morbido dietro la sfera grande della chat vuota: lilla e rosa come il riflesso della sfera,
+/// "respira" lentamente (fermo con Riduci movimento). Va messo come `.background` della sfera.
+struct AriaOrbGlow: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breathing = false
+
+    var body: some View {
+        let strength = colorScheme == .dark ? 0.32 : 0.45
+        ZStack {
+            Circle()
+                .fill(RadialGradient(colors: [Color(red: 0.80, green: 0.66, blue: 0.86).opacity(strength), .clear],
+                                     center: .center, startRadius: 0, endRadius: 150))
+                .frame(width: 300, height: 300)
+            Circle()
+                .fill(RadialGradient(colors: [Color(red: 0.95, green: 0.72, blue: 0.82).opacity(strength * 0.7), .clear],
+                                     center: .center, startRadius: 0, endRadius: 90))
+                .frame(width: 180, height: 180)
+                .offset(x: breathing ? 14 : -10, y: breathing ? -8 : 10)
+        }
+        .scaleEffect(breathing ? 1.06 : 0.94)
+        .blur(radius: 12)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 4.5).repeatForever(autoreverses: true)) { breathing = true }
+        }
+    }
+}

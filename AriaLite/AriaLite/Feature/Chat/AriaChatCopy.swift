@@ -13,21 +13,6 @@ import Foundation
 
 enum AriaChatCopy {
 
-    // MARK: Suggerimenti generici (chatSuggestions)
-
-    static var genericSuggestions: [String] {
-        [
-            String(localized: "Help me clean the belt dryer"),
-            String(localized: "Walk me through the belt dryer start-up procedure"),
-            String(localized: "What maintenance is due this week?"),
-            String(localized: "Show open work orders by priority"),
-            String(localized: "Summarise today's downtime and its main causes"),
-            String(localized: "What's the next scheduled inspection?"),
-            String(localized: "Which spare parts are running low?"),
-            String(localized: "How do I safely isolate the fan before access?"),
-        ]
-    }
-
     // MARK: Etichette dei tool (agent.toolLabels)
 
     static func toolLabel(_ name: String) -> String {
@@ -101,6 +86,18 @@ enum AriaChatCopy {
         let pick = pool.filter { $0 != last }.randomElement() ?? pool[0]
         UserDefaults.standard.set(pick, forKey: "aria.chat.last_greeting")
         return pick
+    }
+
+    /// Il saluto sopra la domanda: fascia oraria e nome dell'operatore, se si conosce.
+    static func salutation(name: String?, at date: Date = .now) -> String {
+        let base = switch Calendar.current.component(.hour, from: date) {
+        case 5..<12: String(localized: "Good morning")
+        case 12..<18: String(localized: "Good afternoon")
+        case 18..<24: String(localized: "Good evening")
+        default: String(localized: "Hi")
+        }
+        guard let first = name?.split(separator: " ").first else { return base }
+        return "\(base), \(first)"
     }
 
     // MARK: Pulsanti delle azioni (ctaLabelKey della web)

@@ -46,7 +46,7 @@ extension BackendTests {
 
         @Test func tickedTasksComeBackWhenTheConversationIsReopened() async throws {
             let chat = try await signedInChat()
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json(rows(messageId: "m1")))
+            server.route("GET /v1/agent/sessions/S1/messages", .json(rows(messageId: "m1")))
             await chat.open(sessionId: "S1")
             var (id, task) = try firstTask(chat)
             chat.toggleTask(task, in: id)
@@ -54,7 +54,7 @@ extension BackendTests {
 
             // Un'altra conversazione e poi di nuovo questa: il server rende lo stesso step con un altro id di riga.
             chat.newConversation()
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json(rows(messageId: "m9")))
+            server.route("GET /v1/agent/sessions/S1/messages", .json(rows(messageId: "m9")))
             await chat.open(sessionId: "S1")
             (id, task) = try firstTask(chat)
             #expect(id == "db-m9")
@@ -63,7 +63,7 @@ extension BackendTests {
 
         @Test func tickedTasksSurviveARelaunch() async throws {
             let chat = try await signedInChat()
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json(rows(messageId: "m1")))
+            server.route("GET /v1/agent/sessions/S1/messages", .json(rows(messageId: "m1")))
             await chat.open(sessionId: "S1")
             let (id, task) = try firstTask(chat)
             chat.toggleTask(task, in: id)
@@ -97,9 +97,9 @@ extension BackendTests {
 
         @Test func streamedStepsComeBackWhenTheHistoryHasNone() async throws {
             let chat = try await signedInChat()
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json("[]"))
+            server.route("GET /v1/agent/sessions/S1/messages", .json("[]"))
             await chat.open(sessionId: "S1")
-            server.route("POST /v1/mobile/responses",
+            server.route("POST /v1/responses",
                          Reply(status: 200, headers: ["Content-Type": "text/event-stream"], body: Data(streamedStep.utf8)))
             chat.send("go")
             try await waitForTurn(chat)
@@ -109,7 +109,7 @@ extension BackendTests {
             // Uscita e ritorno: lo storico ha la risposta (con il suo responseId) ma non la checklist.
             chat.newConversation()
             #expect(chat.sessionTaskLists.isEmpty)
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json(
+            server.route("GET /v1/agent/sessions/S1/messages", .json(
                 #"[{"id":"u1","role":"user","text":"go"},{"id":"a1","role":"assistant","text":"Step 2","responseId":"resp_7"}]"#))
             await chat.open(sessionId: "S1")
 
@@ -130,7 +130,7 @@ extension BackendTests {
 
         @Test func aNewConversationStartsClean() async throws {
             let chat = try await signedInChat()
-            server.route("GET /v1/mobile/chat/sessions/S1/messages", .json(rows(messageId: "m1")))
+            server.route("GET /v1/agent/sessions/S1/messages", .json(rows(messageId: "m1")))
             await chat.open(sessionId: "S1")
             let (id, task) = try firstTask(chat)
             chat.toggleTask(task, in: id)

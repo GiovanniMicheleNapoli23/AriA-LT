@@ -82,6 +82,9 @@ nonisolated struct AriaResponsesRequest: Encodable, Sendable {
     var streamOptions = StreamOptions()
     /// Senza, niente tool call / artifact / interrupt.
     var includeMetadataEvents = true
+    /// `true`: la risposta continua sul server anche se lo stream si chiude (vuole l'`Idempotency-Key`).
+    /// Non vale per una chiamata diretta a un tool. `nil` = non si manda (turno legato alla richiesta).
+    var background: Bool? = nil
     /// I trace servono solo al Glass Box admin della web.
     var includeTrace = false
     var model: String? = nil
@@ -93,7 +96,7 @@ nonisolated struct AriaResponsesRequest: Encodable, Sendable {
     var resume: AriaResumePayload? = nil
 
     enum CodingKeys: String, CodingKey {
-        case input, stream, model, style, locale, instructions, resume
+        case input, stream, model, style, locale, instructions, resume, background
         case plantId = "plant_id"
         case sessionId = "session_id"
         case companyId = "company_id"
@@ -603,12 +606,15 @@ nonisolated struct AriaPersistedMessage: Decodable, Sendable {
     let usage: AriaUsage?
     let responseId: String?
     let episode: Int?
+    /// La checklist dello step che il turno ha mandato in streaming (`aria.task_list`); nil sulle righe vecchie.
+    let taskList: AriaTaskList?
 
     enum CodingKeys: String, CodingKey {
         case id, role, text, reasoning, sources, artifacts, pipeline, usage, responseId, episode
         case toolCalls = "tool_calls"
         case uiActions = "ui_actions"
         case imageReferences = "image_references"
+        case taskList = "task_list"
     }
 
     init(from decoder: any Decoder) throws {
@@ -626,6 +632,85 @@ nonisolated struct AriaPersistedMessage: Decodable, Sendable {
         usage = try? c.decodeIfPresent(AriaUsage.self, forKey: .usage)
         responseId = try? c.decodeIfPresent(String.self, forKey: .responseId)
         episode = try? c.decodeIfPresent(Int.self, forKey: .episode)
+        taskList = try? c.decodeIfPresent(AriaTaskList.self, forKey: .taskList)
+    }
+}
+
+// MARK: - Turni (operatore mobile)
+
+/// Un turno della chat in background: va avanti sul server anche se lo stream si chiude.
+/// GET /v1/agent/sessions/{id}/turns/{response_id}.
+nonisolated struct AriaTurn: Decodable, Sendable {
+    nonisolated enum Status: String, Decodable, Sendable {
+        case running, completed, paused, cancelled, failed
+        /// Il server si è riavviato a metà risposta.
+        case interrupted
+
+        /// Finito senza una risposta intera: per chiedere di nuovo serve una `Idempotency-Key` nuova.
+        var isOver: Bool { [.cancelled, .failed, .interrupted].contains(self) }
+    }
+
+    let responseId: String
+    let status: Status
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case responseId = "response_id"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        responseId = try c.decode(String.self, forKey: .responseId)
+        // Uno stato che l'app non conosce è comunque finito: non si resta ad aspettare.
+        status = (try? c.decode(Status.self, forKey: .status)) ?? .failed
+    }
+}
+
+/// GET /v1/agent/sessions/{id}: le spunte salvate e il turno ancora aperto (servono solo questi).
+nonisolated struct AriaChatSessionState: Decodable, Sendable {
+    nonisolated struct ActiveTurn: Decodable, Sendable {
+        let responseId: String
+        let status: AriaTurn.Status
+
+        enum CodingKeys: String, CodingKey {
+            case status
+            case responseId = "response_id"
+        }
+    }
+
+    let checklist: AriaChecklist?
+    let activeTurn: ActiveTurn?
+
+    enum CodingKeys: String, CodingKey {
+        case checklist
+        case activeTurn = "active_turn"
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        checklist = try? c.decodeIfPresent(AriaChecklist.self, forKey: .checklist)
+        activeTurn = try? c.decodeIfPresent(ActiveTurn.self, forKey: .activeTurn)
+    }
+}
+
+/// Le spunte di una sessione sul server: chiave `{response_id}:{task id}`, solo quelle spuntate.
+/// Body di PUT …/checklist (sostituisce tutta la mappa) e campo `checklist` della sessione.
+nonisolated struct AriaChecklist: Codable, Sendable {
+    /// Al massimo 500 chiavi, e un body sotto gli 8 KB del firewall.
+    static let maxKeys = 500
+
+    let checks: [String: Bool]
+
+    init(checked keys: some Sequence<String>) {
+        checks = Dictionary(uniqueKeysWithValues: Set(keys).map { ($0, true) })
+    }
+
+    var checked: Set<String> { Set(checks.filter(\.value).keys) }
+
+    /// La forma che il server accetta (`{response_id}:task_<intero positivo>`, al massimo 256 caratteri):
+    /// le altre chiavi restano sul telefono.
+    static func isServerKey(_ key: String) -> Bool {
+        key.count <= 256 && key.wholeMatch(of: /[\x21-\x7e]+:task_[1-9][0-9]*/) != nil
     }
 }
 
@@ -651,12 +736,89 @@ nonisolated struct AriaPlant: Decodable, Sendable, Identifiable, Hashable {
     let id: String
     let name: String
     let code: String?
-    /// Dove si trova (solo GET /v1/mobile/plants).
+    /// Dove si trova (se il server lo manda).
     let location: String?
 }
 
 nonisolated struct AriaSuggestionsResponse: Decodable, Sendable {
     let suggestions: [String]
+}
+
+// MARK: - Contesto della sessione (camelCase lato API)
+
+/// GET /v1/chat/sessions/{id}/context e la risposta di …/context/compact (l'uso dopo la compattazione).
+/// `percentUsed` e `autoCompactAt` sono percentuali (0–100), non rapporti.
+nonisolated struct AriaContextUsage: Decodable, Sendable, Equatable {
+    let usedTokens: Int
+    let limitTokens: Int
+    let messageTokens: Int?
+    /// Contesto recuperato e istruzioni: compattare non li riduce.
+    let overheadTokens: Int?
+    let percentUsed: Double
+    let autoCompactAt: Double?
+    let compactions: Int?
+    let compactableMessages: Int?
+    let canCompact: Bool
+}
+
+// MARK: - Fatti imparati (camelCase lato API)
+
+/// Body di POST …/memory-facts/{id}/confirm. `content` solo se l'operatore ha riscritto il fatto.
+nonisolated struct AriaMemoryDecision: Encodable, Sendable {
+    enum Decision: String, Encodable, Sendable { case accept, reject }
+    let decision: Decision
+    let content: String?
+}
+
+/// Il fatto dopo la decisione: la card si ridisegna da `status` (accept lo lascia in attesa di un admin).
+nonisolated struct AriaMemoryFact: Decodable, Sendable, Equatable {
+    let id: String
+    let content: String
+    let status: String?
+}
+
+/// Body di POST …/memory-facts/translations: `id` è una chiave scelta dall'app, torna come chiave della mappa.
+nonisolated struct AriaFactTranslationRequest: Encodable, Sendable {
+    nonisolated struct Item: Encodable, Sendable, Equatable {
+        let id: String
+        let text: String
+    }
+    /// Il server traduce solo i primi 60 elementi di una richiesta.
+    static let maxItems = 60
+    /// Ogni testo: 1–2000 caratteri.
+    static let maxTextLength = 2000
+
+    let locale: String
+    let items: [Item]
+}
+
+nonisolated struct AriaFactTranslationResponse: Decodable, Sendable {
+    /// Una chiave mancante vuol dire "mostra l'originale".
+    let translations: [String: String]
+}
+
+// MARK: - Report della sessione (camelCase lato API)
+
+/// Body di POST …/sessions/{id}/report. Senza `workOrderId` il report va sulla sessione di chat.
+nonisolated struct AriaReportArchiveRequest: Encodable, Sendable {
+    var workOrderId: String? = nil
+    var title: String? = nil
+}
+
+/// Il report archiviato. `downloadUrl` dura poco: si richiede, non si tiene.
+nonisolated struct AriaReportArchive: Decodable, Sendable {
+    let attachmentId: String?
+    let filename: String?
+    let entityType: String?
+    let entityId: String?
+    let sizeBytes: Int?
+    let downloadUrl: String?
+}
+
+/// Il .docx di GET …/sessions/{id}/report.docx, già scritto in un file temporaneo da condividere.
+nonisolated struct AriaReportFile: Sendable, Equatable {
+    let url: URL
+    let filename: String
 }
 
 // MARK: - Closeout (camelCase lato API)
@@ -675,12 +837,21 @@ nonisolated struct AriaCloseoutRequest: Encodable, Sendable {
     var startDate: String? = nil
     var recurrenceType: String? = nil
     var recurrenceInterval: Int? = nil
-    /// "file" = lascia i lavori già previsti quel giorno; "shift" = spostali.
+    /// "file" = lascia i lavori già previsti quel giorno; "shift" = spostali (vietato all'operatore: 422).
     var conflictChoice: String? = nil
+
+    /// I limiti dell'operatore (guida, sezione 6): mai "shift", e come assegnatario solo sé stesso.
+    /// Lasciare `assigneeId` vuoto tiene la preselezione della proposta.
+    func limitedToOperator(_ ownId: String?) -> Self {
+        var body = self
+        if body.conflictChoice == "shift" { body.conflictChoice = nil }
+        if let assignee = body.assigneeId, assignee != ownId { body.assigneeId = nil }
+        return body
+    }
 }
 
 nonisolated struct AriaCloseoutProposal: Decodable, Sendable {
-    nonisolated struct Candidate: Decodable, Sendable, Identifiable, Hashable { let id: String; let name: String; let reason: String? }
+    nonisolated struct Candidate: Decodable, Sendable, Identifiable, Hashable { let id: String; let name: String?; let reason: String? }
     nonisolated struct Assignee: Decodable, Sendable { let selected: String?; let candidates: [Candidate]? }
     nonisolated struct Location: Decodable, Sendable, Identifiable, Hashable { let id: Int; let name: String }
     nonisolated struct Unresolved: Decodable, Sendable { let value: String?; let valid: [String]? }
@@ -705,6 +876,7 @@ nonisolated struct AriaCloseoutProposal: Decodable, Sendable {
     let recurrenceType: String?
     let recurrenceInterval: Int?
     let unresolved: [String: Unresolved]?
+    /// Per l'operatore sempre vuoto: non vede gli ordini dei colleghi.
     let conflicts: [Conflict]?
 }
 
@@ -724,6 +896,11 @@ nonisolated struct AriaCloseoutResult: Decodable, Sendable {
     let aria: AriaExternalWriteOutcome?
     let maintainx: AriaExternalWriteOutcome?
     let proposal: AriaCloseoutProposal?
+    /// Il report archiviato insieme all'ordine (`report: true`).
+    let reportArchived: Bool?
+    let filename: String?
+    let sizeBytes: Int?
+    let downloadUrl: String?
 }
 
 // MARK: - Utilità
@@ -756,11 +933,10 @@ nonisolated enum AriaDate {
         return formatter
     }()
     private nonisolated(unsafe) static let plain = ISO8601DateFormatter()
-    private static let zoneSuffix = /[+-]\d\d:?\d\d$/
 
     static func parse(_ raw: String?) -> Date? {
         guard let raw, !raw.isEmpty else { return nil }
-        let withZone = raw.hasSuffix("Z") || raw.contains(zoneSuffix) ? raw : raw + "Z"
+        let withZone = raw.hasSuffix("Z") || raw.contains(/[+-]\d\d:?\d\d$/) ? raw : raw + "Z"
         if let date = fractional.date(from: withZone) { return date }
         return plain.date(from: withZone)
     }

@@ -47,10 +47,18 @@ class AppViewModel {
     init() {
         let backend = AriaBackend()
         self.backend = backend
+        #if DEBUG
+        // UI test: si riparte senza la sessione rimasta nel Keychain, che chiederebbe Face ID.
+        if Self.uiTestSession != nil { backend.discardSavedSessionForUITests() }
+        #endif
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
-        notifications.attach(backend)
+        #if DEBUG
+        // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
+        // aperta al posto della barra di scrittura).
+        if Self.uiTestSession != nil { mainChat.newConversation() }
+        #endif
         // La sessione resta salvata: il link via email non si richiede a ogni avvio.
         if backend.isSignedIn, let account = backend.mobileAccount {
             loggedInUser = User(account)
@@ -147,6 +155,29 @@ class AppViewModel {
               let link = backend.magicLink(in: raw) else { return }
         openedLinkResult = await signIn(with: link)
     }
+
+    /// Solo UI test: la sessione di un operatore (`set-auth-token`) arriva come variabile d'ambiente di avvio
+    /// (`ARIA_UITEST_SESSION`), perché il link via email vale una volta sola e arriva in una casella di posta.
+    private static var uiTestSession: String? {
+        let raw = ProcessInfo.processInfo.environment["ARIA_UITEST_SESSION"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw?.isEmpty == false ? raw : nil
+    }
+
+    func signInForUITests() async {
+        guard loggedInUser == nil, let token = Self.uiTestSession else { return }
+        do {
+            try await backend.useSessionToken(token)
+        } catch {
+            AriaAuthTrace.failure("uitest.session.failed", error)
+            openedLinkResult = .failure(error.localizedDescription)
+            return
+        }
+        guard backend.isSignedIn, let account = backend.mobileAccount else {
+            openedLinkResult = .failure(backend.lastError ?? AriaError.signedOut.localizedDescription)
+            return
+        }
+        loggedInUser = User(account)
+    }
     #endif
 
     private func signIn(with link: AriaSignInLink) async -> LoginResult {
@@ -169,10 +200,14 @@ class AppViewModel {
     /// l'operatore torna al login.
     func ariaSessionEnded() {
         guard loggedInUser != nil, !backend.isSignedIn else { return }
-        logout()
+        // Le modifiche ai lavori non ancora partite restano: rientrando, lo stesso operatore le manda.
+        logout(keepOfflineWork: true)
     }
 
-    func logout() {
+    /// Modifiche ai lavori fatte sul telefono e non ancora arrivate al server: uscendo si perdono.
+    var unsyncedChanges: Int { ariaWorkOrders.pendingCount }
+
+    func logout(keepOfflineWork: Bool = false) {
         loggedInUser = nil
         lock = .none
         unlockError = nil
@@ -180,7 +215,7 @@ class AppViewModel {
         mainChat.newConversation()
         AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
-        ariaWorkOrders.reset()
+        ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

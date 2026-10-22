@@ -6,22 +6,16 @@
 //
 //  Notifiche push dei lavori assegnati all'operatore (APNs).
 //
-//  • Il permesso si chiede quando l'operatore entra con l'account Aria; il token si registra a ogni
-//    apertura e a ogni ritorno in primo piano (APNs lo può cambiare) e si manda al backend.
+//  • Il permesso si chiede quando l'operatore entra con l'account Aria; il telefono si registra ad APNs a
+//    ogni apertura e a ogni ritorno in primo piano (APNs può cambiare il token).
 //  • Tocco sulla notifica → si apre il lavoro (`pendingWorkOrderId`, lo legge AriaShellView).
 //    Notifica con l'app aperta → banner e la lista si ricarica (`lastArrival`).
-//  • All'uscita il token si toglie dal server, prima che la sessione si chiuda: un altro operatore
-//    sullo stesso telefono non riceve i lavori del precedente.
+//  • All'uscita le notifiche ricevute e il numero sull'icona si cancellano: un altro operatore sullo
+//    stesso telefono non vede i lavori del precedente.
 //
-//  Contratto col backend (proposto: aria-backend non ha ancora le push, è un follow-up delle spec
-//  2026-10-07). Finché le route non esistono il 404 si ignora in silenzio.
-//
-//      PUT    /v1/mobile/me/push-tokens/{token}   {platform, environment, bundleId, locale, appVersion}  → 204
-//      DELETE /v1/mobile/me/push-tokens/{token}                                                          → 204
-//
-//  `token` è il device token APNs in esadecimale. Il PUT è un upsert sul token: se lo stesso telefono
-//  entra con un altro account, il token passa al nuovo operatore. `environment` è "sandbox" (build da
-//  Xcode) o "production" (TestFlight / App Store) e dice al server su quale host APNs mandarla.
+//  Il token NON si manda al backend: la guida "operator member parity" (20/10/2026) dice che nessuna rotta
+//  per i token esiste ancora e di non registrarlo su un percorso indovinato (quello proposto prima,
+//  /v1/mobile/me/push-tokens, non esiste più). Il contratto arriverà con un documento suo.
 //
 //  Payload che l'app si aspetta:
 //
@@ -63,15 +57,6 @@ nonisolated struct AriaPushPayload: Equatable, Sendable {
     }
 }
 
-/// Body di PUT /v1/mobile/me/push-tokens/{token}.
-private nonisolated struct AriaPushRegistration: Encodable, Sendable {
-    let platform = "ios"
-    let environment: String
-    let bundleId: String
-    let locale: String
-    let appVersion: String
-}
-
 @Observable
 final class AriaPushNotifications: NSObject {
     /// Unica: il delegate di UNUserNotificationCenter va messo all'avvio (AriaAppDelegate),
@@ -84,10 +69,8 @@ final class AriaPushNotifications: NSObject {
     /// Ultima notifica arrivata con l'app in primo piano: la lista si ricarica.
     private(set) var lastArrival: Date?
 
-    @ObservationIgnored private weak var backend: AriaBackend?
-    @ObservationIgnored private var deviceToken: String?
-    /// Token già mandato al server in questa esecuzione: non si rimanda a ogni ritorno in primo piano.
-    @ObservationIgnored private var uploadedToken: String?
+    /// Il device token APNs in esadecimale: pronto per quando il backend avrà la rotta per registrarlo.
+    @ObservationIgnored private(set) var deviceToken: String?
 
     #if DEBUG
     @ObservationIgnored private let log = Logger(subsystem: "com.giovanniMichele.AriaLite", category: "push")
@@ -95,10 +78,6 @@ final class AriaPushNotifications: NSObject {
 
     private override init() {
         super.init()
-    }
-
-    func attach(_ backend: AriaBackend) {
-        self.backend = backend
     }
 
     // MARK: Permesso e registrazione
@@ -118,13 +97,10 @@ final class AriaPushNotifications: NSObject {
         UIApplication.shared.registerForRemoteNotifications()
     }
 
-    /// Da AriaAppDelegate: APNs ha dato il token.
+    /// Da AriaAppDelegate: APNs ha dato il token. Resta sul telefono (vedi l'intestazione).
     func didRegister(_ token: Data) {
-        let hex = Self.hex(token)
-        trace("token \(hex.count) caratteri")
-        if hex != deviceToken { uploadedToken = nil }
-        deviceToken = hex
-        Task { await upload() }
+        deviceToken = Self.hex(token)
+        trace("token \(deviceToken?.count ?? 0) caratteri")
     }
 
     func didFailToRegister(_ error: any Error) {
@@ -132,44 +108,13 @@ final class AriaPushNotifications: NSObject {
         trace("registrazione fallita: \(error.localizedDescription)")
     }
 
-    private func upload() async {
-        guard let token = deviceToken, token != uploadedToken, let backend, backend.isSignedIn else { return }
-        // Ogni chiamata /v1/mobile vuole il Company-Id.
-        await backend.bootstrapIfNeeded()
-        guard backend.isSignedIn, backend.activeCompanyId != nil else { return }
-        let body = AriaPushRegistration(
-            environment: AriaAPNsEnvironment.current.rawValue,
-            bundleId: Bundle.main.bundleIdentifier ?? "",
-            locale: backend.api.context.locale,
-            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "")
-        do {
-            try await backend.api.perform("PUT", "v1/mobile/me/push-tokens/\(token)", body: body)
-            uploadedToken = token
-            trace("token registrato (\(body.environment))")
-        } catch AriaError.http(let status, _) where status == 404 || status == 405 {
-            trace("il backend non ha ancora la route dei token (\(status))")
-        } catch {
-            trace("token non registrato: \(error.localizedDescription)")
-        }
-    }
-
-    /// Uscita dall'account: il server smette di mandare a questo telefono. Al massimo qualche secondo,
-    /// poi la sessione si chiude comunque (senza rete il server la scarterà al primo invio fallito).
+    /// Uscita dall'account: le notifiche già ricevute portano i titoli dei lavori, non restano al prossimo operatore.
     func unregister() async {
         let center = UNUserNotificationCenter.current()
-        // Le notifiche già ricevute portano i titoli dei lavori: non restano al prossimo operatore.
         center.removeAllDeliveredNotifications()
         try? await center.setBadgeCount(0)
         pendingWorkOrderId = nil
         lastArrival = nil
-        guard let token = deviceToken, let api = backend?.api else { return }
-        uploadedToken = nil
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { try? await api.perform("DELETE", "v1/mobile/me/push-tokens/\(token)") }
-            group.addTask { try? await Task.sleep(for: .seconds(4)) }
-            await group.next()
-            group.cancelAll()
-        }
     }
 
     /// App in primo piano: il numero sull'icona si azzera, la lista è già lì.
@@ -218,28 +163,4 @@ extension AriaPushNotifications: UNUserNotificationCenterDelegate {
               let payload = AriaPushPayload(userInfo: response.notification.request.content.userInfo) else { return }
         await opened(payload)
     }
-}
-
-/// Host APNs a cui il server deve mandare per questo build.
-nonisolated enum AriaAPNsEnvironment: String, Sendable {
-    case sandbox, production
-
-    /// Build da Xcode (e ad hoc firmati in development) hanno il profilo incluso con `aps-environment`;
-    /// TestFlight e App Store non lo includono e sono sempre production.
-    static let current: AriaAPNsEnvironment = {
-        #if targetEnvironment(simulator)
-        return .sandbox
-        #else
-        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
-              let data = try? Data(contentsOf: url),
-              let start = data.range(of: Data("<?xml".utf8)),
-              let end = data.range(of: Data("</plist>".utf8), in: start.lowerBound..<data.endIndex),
-              let plist = try? PropertyListSerialization.propertyList(
-                from: data[start.lowerBound..<end.upperBound], format: nil) as? [String: Any],
-              let entitlements = plist["Entitlements"] as? [String: Any],
-              let value = entitlements["aps-environment"] as? String
-        else { return .production }
-        return value == "development" ? .sandbox : .production
-        #endif
-    }()
 }

@@ -25,14 +25,16 @@ extension BackendTests {
 
         @Test func mobileCallsGoToTheAPIHostWithAllCommonHeaders() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(me()))
+            server.route("GET /v1/me", .json(me()))
 
-            let profile: AriaMobileProfile = try await client.get("v1/mobile/me")
+            let profile: AriaMobileProfile = try await client.get("v1/me")
 
             #expect(profile.email == "m@a.b")
-            let call = try #require(server.calls("GET /v1/mobile/me").first)
+            let call = try #require(server.calls("GET /v1/me").first)
             #expect(call.host == TestEnv.apiHost)
-            #expect(call.header("authorization") == "Bearer \(TestEnv.jwt(tag: "a"))")
+            let authorization = try #require(call.header("authorization"))
+            #expect(authorization.hasPrefix("Bearer "))
+            #expect(TestEnv.jwtTag(String(authorization.dropFirst("Bearer ".count))) == "a")
             #expect(call.header("company-id") == "c1")
             #expect(call.header("ngrok-skip-browser-warning") == nil)
             #expect(call.header("user-agent")?.hasPrefix("AriaPLT-Mobile/") == true)
@@ -60,11 +62,11 @@ extension BackendTests {
 
         @Test func queryItemsAreAppendedInOrder() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/work-orders", .json("[]"))
+            server.route("GET /v1/work-orders", .json("[]"))
             let _: AriaWorkOrderList = try await client.get(
-                "v1/mobile/work-orders",
+                "v1/work-orders",
                 query: [URLQueryItem(name: "status", value: "open"), URLQueryItem(name: "limit", value: "50")])
-            #expect(server.calls("GET /v1/mobile/work-orders").first?.query == "status=open&limit=50")
+            #expect(server.calls("GET /v1/work-orders").first?.query == "status=open&limit=50")
         }
 
         // MARK: 401
@@ -72,31 +74,31 @@ extension BackendTests {
         @Test func a401MintsANewJWTAndRetriesOnce() async throws {
             let client = try await TestEnv.signedInClient()
             server.route("GET /api/aria/token", TestEnv.tokenReply(tag: "second"))
-            server.route("GET /v1/mobile/me", .json(#"{"error":"expired"}"#, status: 401), .json(me()))
+            server.route("GET /v1/me", .json(#"{"error":"expired"}"#, status: 401), .json(me()))
 
-            let profile: AriaMobileProfile = try await client.get("v1/mobile/me")
+            let profile: AriaMobileProfile = try await client.get("v1/me")
 
             #expect(profile.name == "M")
-            let calls = server.calls("GET /v1/mobile/me")
+            let calls = server.calls("GET /v1/me")
             #expect(calls.count == 2)
             #expect(calls[0].header("authorization") != calls[1].header("authorization"), "il retry usa un JWT nuovo")
         }
 
         @Test func aSecond401IsReturnedInsteadOfLooping() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"detail":"nope"}"#, status: 401))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"detail":"nope"}"#, status: 401))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.http(401, _) = error { true } else { false }
             }
-            #expect(server.calls("GET /v1/mobile/me").count == 2, "un solo retry")
+            #expect(server.calls("GET /v1/me").count == 2, "un solo retry")
         }
 
         // MARK: 403
 
         @Test func notAMemberSignsTheOperatorOut() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"detail":"Not a member of this company"}"#, status: 403))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.signedOut = error { true } else { false }
             }
             #expect(!client.auth.hasStoredLogin, "stato locale azzerato")
@@ -104,8 +106,8 @@ extension BackendTests {
 
         @Test func otherForbiddenResponsesRejectOnlyThatAction() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"detail":"Forbidden"}"#, status: 403))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"detail":"Forbidden"}"#, status: 403))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.http(403, _) = error { true } else { false }
             }
             #expect(client.auth.hasStoredLogin)
@@ -113,8 +115,8 @@ extension BackendTests {
 
         @Test func notAMobileUserIsReported() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"code":"not_a_mobile_user"}"#, status: 403))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"code":"not_a_mobile_user"}"#, status: 403))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.notMobileUser = error { true } else { false }
             }
             #expect(client.auth.hasStoredLogin)
@@ -124,32 +126,32 @@ extension BackendTests {
 
         @Test func gatewayErrorIsOfflineNotAnAPIError() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .hostDown())
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .hostDown())
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.signInHostOffline = error { true } else { false }
             }
         }
 
         @Test func networkErrorsPropagateAsURLError() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .failing(.notConnectedToInternet))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .failing(.notConnectedToInternet))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 AriaHTTP.isOffline(error)
             }
         }
 
         @Test func malformedBodyBecomesADecodingErrorNamingTheType() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"unexpected":true}"#))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"unexpected":true}"#))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.decoding(let message) = error { message.contains("AriaMobileProfile") } else { false }
             }
         }
 
         @Test func missingCompanyIdFromTheServerIsAClearHTTPError() async throws {
             let client = try await TestEnv.signedInClient()
-            server.route("GET /v1/mobile/me", .json(#"{"detail":"Missing Company-Id header"}"#, status: 400))
-            await #expect { let _: AriaMobileProfile = try await client.get("v1/mobile/me") } throws: { error in
+            server.route("GET /v1/me", .json(#"{"detail":"Missing Company-Id header"}"#, status: 400))
+            await #expect { let _: AriaMobileProfile = try await client.get("v1/me") } throws: { error in
                 if case AriaError.http(400, let detail) = error { detail.contains("Company-Id") } else { false }
             }
         }
@@ -169,14 +171,21 @@ extension BackendTests {
 
         @Test func cookiesAreNeverSentOrStored() async throws {
             let client = try await TestEnv.signedInClient()
-            HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [
-                .domain: TestEnv.authHost, .path: "/", .name: "sid", .value: "leak"])!)
-            server.route("GET /v1/mobile/me", .json(me(), headers: ["Set-Cookie": "tracking=1; Path=/"]))
+            // HTTPCookieStorage's IPC to cfprefsd runs on an unqualified-QoS thread; calling it
+            // synchronously from the test's user-interactive context trips the thread performance
+            // checker's priority-inversion detector, so we drop to .utility while we touch it.
+            await Task.detached(priority: .utility) {
+                await HTTPCookieStorage.shared.setCookie(HTTPCookie(properties: [
+                    .domain: TestEnv.authHost, .path: "/", .name: "sid", .value: "leak"])!)
+            }.value
+            server.route("GET /v1/me", .json(me(), headers: ["Set-Cookie": "tracking=1; Path=/"]))
 
-            let _: AriaMobileProfile = try await client.get("v1/mobile/me")
+            let _: AriaMobileProfile = try await client.get("v1/me")
 
-            #expect(server.calls("GET /v1/mobile/me").first?.header("cookie") == nil)
-            let stored = HTTPCookieStorage.shared.cookies(for: URL(string: "https://\(TestEnv.authHost)/")!) ?? []
+            #expect(server.calls("GET /v1/me").first?.header("cookie") == nil)
+            let stored = await Task.detached(priority: .utility) {
+                HTTPCookieStorage.shared.cookies(for: URL(string: "https://\(await TestEnv.authHost)/")!) ?? []
+            }.value
             #expect(!stored.contains { $0.name == "tracking" })
         }
 
@@ -185,10 +194,10 @@ extension BackendTests {
             let auth = AriaAuth(config: TestEnv.config)
             try await auth.useDeveloperToken(TestEnv.jwt())
             let client = AriaAPIClient(config: TestEnv.config, auth: auth, context: AriaContext())
-            server.route("GET /v1/mobile/me", .json(me()))
-            let _: AriaMobileProfile = try await client.get("v1/mobile/me")
-            #expect(server.calls("GET /v1/mobile/me").first?.host == TestEnv.apiHost)
-            #expect(server.calls("GET /v1/mobile/me").first?.header("ngrok-skip-browser-warning") == nil)
+            server.route("GET /v1/me", .json(me()))
+            let _: AriaMobileProfile = try await client.get("v1/me")
+            #expect(server.calls("GET /v1/me").first?.host == TestEnv.apiHost)
+            #expect(server.calls("GET /v1/me").first?.header("ngrok-skip-browser-warning") == nil)
         }
     }
 }

@@ -12,7 +12,8 @@
 
 import Foundation
 
-enum AriaPanelDedup {
+/// Solo testo, nessuno stato: si può usare da qualunque isolamento.
+nonisolated enum AriaPanelDedup {
     /// - options: etichette (e descrizioni) delle opzioni della domanda guidata.
     /// - tasks: testi dei task della checklist.
     /// - headings: titoli che, subito prima di un elenco tolto, restano orfani (es. il titolo dello step).

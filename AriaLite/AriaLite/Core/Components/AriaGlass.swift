@@ -58,10 +58,22 @@ extension View {
         }
     }
 
+    /// Barra flottante in fondo (un pulsante, senza fondo suo): da iOS 26 è una `safeAreaBar`, sotto cui il
+    /// contenuto sfuma con un bordo morbido invece di finire contro una striscia piena; prima, un `safeAreaInset`.
+    @ViewBuilder
+    func ariaBottomBar<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
+        if #available(iOS 26.0, *) {
+            safeAreaBar(edge: .bottom, spacing: 0, content: bar)
+                .scrollEdgeEffectStyle(.soft, for: .bottom)
+        } else {
+            safeAreaInset(edge: .bottom, spacing: 0, content: bar)
+        }
+    }
+
     /// Per il morphing tra più forme di vetro nello stesso `AriaGlassEffectContainer` (solo iOS 26: senza
     /// vetro non c'è niente da far scorrere insieme, quindi sulle versioni precedenti non fa nulla).
     @ViewBuilder
-    func ariaGlassEffectID(_ id: some Hashable, in namespace: Namespace.ID) -> some View {
+    func ariaGlassEffectID(_ id: some Hashable & Sendable, in namespace: Namespace.ID) -> some View {
         if #available(iOS 26.0, *) {
             glassEffectID(id, in: namespace)
         } else {

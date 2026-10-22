@@ -25,7 +25,7 @@ enum TestEnv {
 
     static let defaultsKeys = ["aria.company_id", "aria.plant_id", "aria.operator_account", "aria.mobile_account",
                                "aria.install_marker",
-                               "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference",
+                               "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference", "aria.availability_pending",
                                "aria.api_base_url", "aria.auth_base_url",
                                "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session"]
     static let keychainAccounts = ["aria.mobile_session", "aria.dev_access_token", "aria.operator_account",
@@ -51,6 +51,17 @@ enum TestEnv {
         return "\(header).\(payload).sig"
     }
 
+    /// Il `tag` di un JWT di `jwt(tag:)`. Si confronta questo, non il token intero: `exp` dipende dal secondo
+    /// in cui è stato creato, e due token fatti a cavallo di un secondo sono diversi.
+    static func jwtTag(_ token: String?) -> String? {
+        guard let payload = token?.split(separator: ".").dropFirst().first else { return nil }
+        var base64 = payload.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        base64 += String(repeating: "=", count: (4 - base64.count % 4) % 4)
+        guard let data = Data(base64Encoded: base64),
+              let claims = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        return claims["tag"] as? String
+    }
+
     static func tokenReply(tag: String = "a", headers: [String: String] = [:], delay: TimeInterval = 0) -> Reply {
         .json(#"{"token":"\#(jwt(tag: tag))"}"#, headers: headers, delay: delay)
     }
@@ -68,7 +79,7 @@ enum TestEnv {
         server.route("POST /api/auth/mobile/verify", verifyReply())
         server.route("GET /api/aria/token", tokenReply())
         server.route("GET /v1/companies", .json(companies))
-        server.route("GET /v1/mobile/plants", plants)
+        server.route("GET /v1/plants", plants)
     }
 
     /// Lo stesso install di prima: il Keychain rimasto è di chi usa l'app, non di una disinstallazione.
@@ -82,9 +93,9 @@ enum TestEnv {
         try await backend.sendSignInLink(email: email)
     }
 
-    /// Un ordine nel formato di GET /v1/mobile/work-orders.
+    /// Un ordine nel formato di GET /v1/work-orders.
     static func orderJSON(id: String = "o1", status: String = "assigned", title: String = "Fix", withProcedure: Bool = false,
-                          reported: Int = 0, total: Int = 2) -> String {
+                          reported: Int = 0, total: Int = 2, updatedAt: String? = nil) -> String {
         let steps = (1...max(total, 1)).map { n in
             let report = n <= reported
                 ? #"{"status":"done","note":null,"photos":[],"reportedAt":"2026-10-09T09:12:00.120000Z"}"# : "null"
@@ -93,12 +104,20 @@ enum TestEnv {
         let procedure = withProcedure
             ? #","procedure":{"steps":[\#(steps)],"safetyWarnings":["LOTO"],"toolsNeeded":[],"partsNeeded":[],"progress":{"done":\#(reported),"notDone":0,"total":\#(total)}}"#
             : ""
-        return #"{"id":"\#(id)","title":"\#(title)","status":"\#(status)","priority":"high","progress":{"done":\#(reported),"notDone":0,"total":\#(total)}\#(procedure)}"#
+        let stamp = updatedAt.map { #","updatedAt":"\#($0)""# } ?? ""
+        return #"{"id":"\#(id)","title":"\#(title)","status":"\#(status)","priority":"high","progress":{"done":\#(reported),"notDone":0,"total":\#(total)}\#(stamp)\#(procedure)}"#
     }
 
+    /// Un passo della procedura (nel formato del filo: snake_case).
     static func stepJSON(id: String = "s1", status: String? = "done") -> String {
-        let report = status.map { #"{"status":"\#($0)","note":null,"photos":[],"reportedAt":"2026-10-09T09:12:00Z"}"# } ?? "null"
+        let report = status.map { #"{"status":"\#($0)","note":null,"photos":[],"reported_at":"2026-10-09T09:12:00Z"}"# } ?? "null"
         return #"{"id":"\#(id)","number":1,"text":"Step 1","report":\#(report)}"#
+    }
+
+    /// La risposta di PUT …/steps/{id}: il risultato al livello più alto, non dentro un passo.
+    static func stepReportJSON(id: String = "s1", status: String = "done", note: String? = nil) -> String {
+        let note = note.map { #""\#($0)""# } ?? "null"
+        return #"{"step_id":"\#(id)","status":"\#(status)","note":\#(note),"photos":[],"reported_at":"2026-10-09T09:12:00Z","reported_by":"u1"}"#
     }
 
     /// Un AriaAuth già con una sessione aperta (verify + JWT passati dalla rete finta).
@@ -118,12 +137,29 @@ enum TestEnv {
     }
 
     /// Backend e store collegati (verify, aziende e stabilimenti stubbati), con la rete finta ripulita dalle chiamate di accesso.
-    static func signedInStore() async throws -> (backend: AriaBackend, store: AriaWorkOrderStore) {
+    /// Database locale in memoria; la rete del telefono è quella di `network` (di partenza: c'è).
+    /// `nil` = rete finta (di partenza: c'è) / database in memoria. I default sono nil perché un valore di
+    /// default si valuta fuori dal MainActor, dove gli init di monitor e store non si possono chiamare.
+    static func signedInStore(network: AriaNetworkMonitor? = nil, offline: AriaOfflineStore? = nil)
+        async throws -> (backend: AriaBackend, store: AriaWorkOrderStore) {
+        let network = network ?? AriaNetworkMonitor(monitoring: false)
+        let offline = offline ?? AriaOfflineStore(inMemory: true)
         stubSignIn()
         let backend = AriaBackend()
         try await requestLink(backend)
         try await backend.completeSignIn(with: AriaSignInLink(token: "t"))
-        return (backend, AriaWorkOrderStore(backend: backend))
+        return (backend, AriaWorkOrderStore(backend: backend, network: network, offline: offline))
+    }
+
+    /// Aspetta che una condizione diventi vera (lavoro partito da solo, es. al ritorno della rete).
+    static func waitUntil(_ timeout: Duration = .seconds(3), _ condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        while !condition() {
+            if clock.now > deadline { return false }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return true
     }
 }
 

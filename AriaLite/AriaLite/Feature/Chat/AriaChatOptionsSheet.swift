@@ -7,7 +7,8 @@
 //  Il menu "···" della chat: la procedura della sessione (il "Task & Event Rail" della web).
 //  Lo step corrente è la scheda in evidenza, con i suoi task sempre visibili e il prossimo da fare
 //  evidenziato; gli step precedenti sono righe compatte con il loro esito, da aprire al bisogno.
-//  In fondo la lingua di dettatura e le azioni sulla sessione (chiusura intervento, fine procedura).
+//  In fondo la lingua di dettatura (anche dal tocco lungo sul microfono della barra), il report in Word e le
+//  azioni sulla sessione (chiusura intervento, fine procedura). La memoria della conversazione sta nella barra.
 //
 
 import SwiftUI
@@ -20,6 +21,9 @@ struct AriaChatOptionsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AriaDictation.languageKey) private var dictationLanguage = AriaDictation.automatic
     @State private var confirmingEnd = false
+    @State private var report: AriaReportFile?
+    @State private var preparingReport = false
+    @State private var reportError: String?
 
     var body: some View {
         let steps = chat.sessionTaskLists
@@ -29,6 +33,8 @@ struct AriaChatOptionsSheet: View {
                     Section("Current step") {
                         AriaCurrentStepCard(list: current.list, messageId: current.messageId, chat: chat)
                             .listRowInsets(EdgeInsets(top: 14, leading: 14, bottom: 8, trailing: 14))
+                            .accessibilityElement(children: .contain)
+                            .accessibilityIdentifier("options.currentStep")
                     }
                     if steps.count > 1 {
                         Section("Previous steps") {
@@ -41,6 +47,7 @@ struct AriaChatOptionsSheet: View {
                     Section {
                         ContentUnavailableView("No procedure yet", systemImage: "list.bullet.clipboard",
                                                description: Text("The steps Aria gives you in this chat will appear here."))
+                            .accessibilityIdentifier("options.noProcedure")
                     }
                 }
 
@@ -56,14 +63,42 @@ struct AriaChatOptionsSheet: View {
                     .pickerStyle(.navigationLink)
                 }
 
-                if onCloseOut != nil || !steps.isEmpty {
+                if chat.canDownloadReport {
                     Section {
-                        if let onCloseOut {
+                        if let report {
+                            ShareLink(item: report.url) {
+                                Label("Share report", systemImage: "square.and.arrow.up")
+                            }
+                            .accessibilityIdentifier("options.reportShare")
+                        } else {
+                            Button {
+                                Task { await prepareReport() }
+                            } label: {
+                                HStack {
+                                    Label("Intervention report (Word)", systemImage: "doc.richtext")
+                                    Spacer()
+                                    if preparingReport { ProgressView() }
+                                }
+                            }
+                            .disabled(preparingReport || chat.isStreaming)
+                            .accessibilityIdentifier("options.report")
+                        }
+                    } footer: {
+                        if let reportError {
+                            Text(reportError).foregroundStyle(.red).accessibilityIdentifier("options.reportError")
+                        }
+                    }
+                }
+
+                if (onCloseOut != nil && chat.canCloseOut) || !steps.isEmpty {
+                    Section {
+                        if let onCloseOut, chat.canCloseOut {
                             Button("Close out intervention", systemImage: "checkmark.seal") {
                                 dismiss()
                                 onCloseOut()
                             }
                             .disabled(chat.messages.isEmpty || chat.isStreaming)
+                            .accessibilityIdentifier("options.closeOut")
                         }
                         if !steps.isEmpty {
                             Button("End procedure", systemImage: "door.left.hand.closed", role: .destructive) {
@@ -93,6 +128,19 @@ struct AriaChatOptionsSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    private func prepareReport() async {
+        preparingReport = true
+        defer { preparingReport = false }
+        reportError = nil
+        do {
+            report = try await chat.reportDocument()
+        } catch AriaError.http(404, _) {
+            // La chat non ha una procedura da riportare: la riga sparisce (`canDownloadReport`).
+        } catch {
+            reportError = error.localizedDescription
+        }
     }
 }
 

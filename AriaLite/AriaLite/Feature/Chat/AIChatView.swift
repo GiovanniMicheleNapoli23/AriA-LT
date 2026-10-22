@@ -51,6 +51,7 @@ struct AIChatView: View {
                     // il microfono e la chiusura intervento.
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("More", systemImage: "ellipsis") { showingOptions = true }
+                            .accessibilityIdentifier("chat.more")
                     }
                 }
                 .sheet(isPresented: $showingOptions, onDismiss: {

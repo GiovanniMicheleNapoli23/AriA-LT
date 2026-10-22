@@ -18,7 +18,6 @@ final class AriaAgentChat {
     private(set) var messages: [AriaAgentMessage] = []
     private(set) var isStreaming = false
     private(set) var isLoadingHistory = false
-    private(set) var suggestions: [String] = []
     var lastError: String? {
         didSet { lastErrorIsOffline = false }
     }
@@ -36,7 +35,11 @@ final class AriaAgentChat {
 
     /// Task spuntati, per step e task (vedi `taskKey`): sopravvivono a chiusura e riapertura della chat.
     private(set) var checkedTasks: Set<String> = [] {
-        didSet { if checkedTasks != oldValue { saveTaskProgress() } }
+        didSet {
+            guard checkedTasks != oldValue else { return }
+            saveTaskProgress()
+            scheduleChecklistSync()
+        }
     }
     /// Segnalazioni sui task (unclear / modify / failed), per step e task.
     private(set) var taskMarks: [String: String] = [:] {
@@ -54,6 +57,15 @@ final class AriaAgentChat {
     private(set) var declinedLearning: Set<String> = []
     /// Cresce a ogni tocco sul chip: la vista riapre il pannello anche se era ridotto a pillola.
     private(set) var learningReveal = 0
+    /// Quanto della finestra di contesto usa la sessione (nil finché non si è chiesto, o se il server non lo dice).
+    private(set) var contextUsage: AriaContextUsage?
+    /// La sessione che si sta compattando: un'altra conversazione aperta nel frattempo non la vede.
+    private var compactingSession: String?
+    var isCompacting: Bool { compactingSession == sessionId }
+    /// Il server non ha una procedura da chiudere per questa chat (404): niente closeout né report.
+    private(set) var closeoutUnavailable = false
+    /// Fatti imparati nella lingua dell'operatore, per chiave (`factTranslationKey`). Manca = l'originale.
+    private(set) var factTranslations: [String: String] = [:]
 
     @ObservationIgnored private var streamTask: Task<Void, Never>?
     @ObservationIgnored private let backend: AriaBackend
@@ -66,6 +78,24 @@ final class AriaAgentChat {
     @ObservationIgnored private let progressStore: AriaTaskProgressStore
     /// Durante lo svuotamento/caricamento delle spunte non si riscrive il salvataggio.
     @ObservationIgnored private var isRestoringProgress = false
+    /// Il turno in corso sul server: serve allo Stop e per riagganciarsi. L'id della risposta lo dà il server
+    /// (`X-Response-ID` o `response.created`), quindi manca finché il messaggio non è stato accettato.
+    @ObservationIgnored private var liveTurn: (responseId: String?, messageId: String)?
+    /// Le spunte partono per il server poco dopo l'ultimo tocco, tutte insieme.
+    @ObservationIgnored private var checklistSync: Task<Void, Never>?
+    /// Testi da tradurre raccolti per un attimo e mandati insieme (una card alla volta farebbe una richiesta ciascuna).
+    @ObservationIgnored private var pendingTranslations: [String: String] = [:]
+    @ObservationIgnored private var requestedTranslations: Set<String> = []
+    @ObservationIgnored private var translationFlush: Task<Void, Never>?
+    /// L'`Idempotency-Key` di un invio nuovo (seam per i test).
+    @ObservationIgnored var makeRequestID: () -> String = { UUID().uuidString.lowercased() }
+
+    /// Ogni quanto si chiede lo stato di un turno che va avanti senza stream (seam per i test).
+    static var turnPollInterval: Duration = .seconds(2)
+    /// Tentativi senza rete prima di dire che Aria non si raggiunge (~1 minuto con l'intervallo normale).
+    static var turnPollPatience = 30
+    static var checklistDebounce: Duration = .milliseconds(600)
+    static var translationDebounce: Duration = .milliseconds(250)
 
     private static let styleKey = "aria.chat.style"
     private static let currentSessionKey = "aria.chat.current_session"
@@ -82,6 +112,8 @@ final class AriaAgentChat {
     }
 
     private var api: AriaChatAPI { AriaChatAPI(api: backend.api) }
+    /// Le risposte dell'operatore vanno avanti sul server anche senza stream: Stop, riaggancio, spunte salvate.
+    private var hasServerTurns: Bool { api.isOperator }
 
     /// Riprende la conversazione salvata all'avvio (se c'era).
     var hasRememberedSession: Bool {
@@ -154,19 +186,19 @@ final class AriaAgentChat {
     // MARK: - Invio
 
     /// Nuovo turno. `label` è il testo mostrato quando si chiama un tool diretto.
-    func send(_ text: String, toolCall: AriaToolCallRequest? = nil) {
+    /// `requestId`: la chiave di un messaggio che non era partito, per rimandarlo uguale (vedi `regenerate`).
+    func send(_ text: String, toolCall: AriaToolCallRequest? = nil, requestId reused: String? = nil) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !isStreaming, pendingInterrupt == nil, !trimmed.isEmpty || toolCall != nil else { return }
         // Un turno nuovo chiude la card "Aria ha imparato": la prossima risposta può avere la sua domanda.
         dismissLearningOutcome()
         openedLearningId = nil
 
-        var input = trimmed
-        if let context, !didSendContext, toolCall == nil {
-            input = "\(context)\n---\n\(trimmed)"
-        }
+        let input = if let context, !didSendContext, toolCall == nil { "\(context)\n---\n\(trimmed)" } else { trimmed }
         messages.append(.user(trimmed))
-        let reply = AriaAgentMessage.pendingAssistant()
+        var reply = AriaAgentMessage.pendingAssistant()
+        let requestId = reused ?? makeRequestID()
+        reply.requestId = requestId
         messages.append(reply)
         rememberSession()
 
@@ -177,10 +209,13 @@ final class AriaAgentChat {
         let instructions = toolCall == nil
             ? AriaInstructions.build(webSearch: webSearch, taskContext: taskContextSummary())
             : nil
-        run(into: reply.id, onSent: { [weak self] in
+        // Una chiamata diretta a un tool non può andare in background: resta legata alla richiesta.
+        let background: Bool? = hasServerTurns && toolCall == nil ? true : nil
+        run(into: reply.id, requestId: requestId, onSent: { [weak self] in
             if toolCall == nil { self?.didSendContext = true }
         }) { plantId, ctx in
             AriaResponsesRequest(input: input, plantId: plantId, sessionId: sessionId, companyId: ctx.companyId,
+                                 background: background,
                                  model: toolCall == nil ? model : nil, style: style, locale: ctx.locale,
                                  instructions: instructions, toolCall: toolCall)
         }
@@ -201,28 +236,61 @@ final class AriaAgentChat {
         let messageId = messages[index].id
         let payload = decision.payload(for: interrupt)
         let sessionId = self.sessionId
-        run(into: messageId, restoreOnFailure: interrupt, onSent: {}) { plantId, ctx in
+        // Una ripresa è un turno nuovo: chiave nuova, e in background come l'invio.
+        let background: Bool? = hasServerTurns ? true : nil
+        run(into: messageId, requestId: makeRequestID(), restoreOnFailure: interrupt, onSent: {}) { plantId, ctx in
             AriaResponsesRequest(input: "", plantId: plantId, sessionId: sessionId, companyId: ctx.companyId,
-                                 resume: payload)
+                                 background: background, resume: payload)
         }
     }
 
     /// Ferma la risposta. Non è un errore: il messaggio resta com'è, finito.
+    /// Per l'operatore chiudere lo stream non basta (la risposta va avanti sul server): si chiede lo Stop e si
+    /// segue il turno finché non è più `running`. Di solito finisce `cancelled`; se aveva già finito si mostra com'è finito.
     func stop() {
+        let turn = liveTurn
         streamTask?.cancel()
+        guard hasServerTurns, let turn else { return }
+        let api = self.api
+        let sessionId = self.sessionId
+        let known = turn.responseId
+        Task {
+            // Stop prima che il server abbia detto l'id: il turno, se è partito, lo dice la sessione.
+            var found = known
+            if found == nil { found = await runningTurnId() }
+            guard let responseId = found else { return }
+            try? await api.cancelTurn(responseId, sessionId: sessionId)
+            // Nel frattempo si è cambiata conversazione o è partito un altro messaggio: quello che si vede resta.
+            if case .ended(let status) = await follow(responseId), status != .cancelled,
+               sessionId == self.sessionId, !isStreaming {
+                await refreshTranscript(endedAs: status)
+            }
+        }
+    }
+
+    /// Si lascia la conversazione: lo stream si chiude qui, la risposta sul server no (finisce e resta salvata).
+    /// Il turno vecchio smette subito di toccare lo stato della chat.
+    private func detach() {
+        streamTask?.cancel()
+        streamTask = nil
+        turnToken = nil
+        liveTurn = nil
+        isStreaming = false
     }
 
     /// Rigenera: rimanda la domanda precedente come nuovo turno (come la web).
+    /// Una risposta che non è partita per la rete si rimanda con la stessa Idempotency-Key: se il server l'aveva
+    /// accettata risponde `turn_already_started` e ci si riaggancia, invece di farla rispondere due volte.
     func regenerate(_ messageId: String) {
         guard let index = messages.firstIndex(where: { $0.id == messageId }),
               let question = messages[..<index].last(where: { $0.role == .user })?.text else { return }
-        send(question)
+        send(question, requestId: messages[index].errorIsOffline ? messages[index].requestId : nil)
     }
 
     // MARK: - Nuova conversazione / storico
 
     func newConversation() {
-        stop()
+        detach()
         sessionId = AriaNanoID.make()
         messages = []
         contextItems = []
@@ -233,16 +301,24 @@ final class AriaAgentChat {
         declinedLearning = []
         didSendContext = false
         lastError = nil
+        resetSessionTools()
         if remembersSession { UserDefaults.standard.removeObject(forKey: Self.currentSessionKey) }
+    }
+
+    /// Contatore del contesto e closeout valgono per una sessione: con un'altra si richiedono.
+    private func resetSessionTools() {
+        contextUsage = nil
+        closeoutUnavailable = false
     }
 
     /// Apre una conversazione salvata: messaggi e, se c'è, la pausa in attesa.
     /// `forgetIfMissing`: una sessione che il server non conosce più (404) si dimentica senza errore.
     func open(sessionId: String, forgetIfMissing: Bool = false) async {
-        stop()
+        detach()
         self.sessionId = sessionId
         messages = []
         contextItems = []
+        resetSessionTools()
         resetTaskProgress()
         loadTaskProgress()
         answeredElicitations = []
@@ -254,28 +330,55 @@ final class AriaAgentChat {
         isLoadingHistory = true
         defer { isLoadingHistory = false }
         do {
-            var restored = try await api.messages(sessionId: sessionId).map(AriaAgentMessage.init(persisted:))
-            // Le domande già superate da un turno successivo non vanno riproposte.
-            for (i, message) in restored.enumerated() where i < restored.count - 1 {
-                if let id = message.elicitation?.id { answeredElicitations.insert(id) }
-            }
-            if let pause = await api.pendingInterrupt(sessionId: sessionId) {
-                if let i = restored.lastIndex(where: { $0.role == .assistant }) {
-                    restored[i].interrupt = pause
-                    restored[i].finished = true
-                } else {
-                    var synthetic = AriaAgentMessage(id: "pending-\(pause.interruptId)", role: .assistant)
-                    synthetic.interrupt = pause
-                    restored.append(synthetic)
-                }
-            }
-            messages = restored
-            restoreTaskLists()
+            try await loadTranscript()
             rememberSession()
         } catch AriaError.http(status: 404, _) where forgetIfMissing {
             newConversation()
+            return
         } catch {
             handle(error)
+            return
+        }
+        await loadSessionState()
+    }
+
+    /// Messaggi della sessione e, se c'è, la pausa in attesa.
+    private func loadTranscript() async throws {
+        var restored = try await api.messages(sessionId: sessionId).map(AriaAgentMessage.init(persisted:))
+        // Le domande già superate da un turno successivo non vanno riproposte.
+        for (i, message) in restored.enumerated() where i < restored.count - 1 {
+            if let id = message.elicitation?.id { answeredElicitations.insert(id) }
+        }
+        if let pause = await api.pendingInterrupt(sessionId: sessionId) {
+            if let i = restored.lastIndex(where: { $0.role == .assistant }) {
+                restored[i].interrupt = pause
+                restored[i].finished = true
+            } else {
+                var synthetic = AriaAgentMessage(id: "pending-\(pause.interruptId)", role: .assistant)
+                synthetic.interrupt = pause
+                restored.append(synthetic)
+            }
+        }
+        messages = restored
+        restoreTaskLists()
+    }
+
+    /// Spunte salvate sul server e turno ancora aperto: l'app chiusa a metà risposta la ritrova, e la sessione
+    /// aperta su un altro telefono ha le stesse spunte. Una sessione mai partita (404) non ha niente da dire.
+    private func loadSessionState() async {
+        guard hasServerTurns, let state = try? await api.sessionState(sessionId: sessionId) else { return }
+        if let checked = state.checklist?.checked { applyServerChecklist(checked) }
+        // `paused` lo ha già mostrato la pausa in attesa del transcript.
+        guard let active = state.activeTurn, active.status == .running, !isStreaming else { return }
+        let reply = AriaAgentMessage.pendingAssistant()
+        messages.append(reply)
+        isStreaming = true
+        liveTurn = (active.responseId, reply.id)
+        let token = UUID()
+        turnToken = token
+        streamTask = Task(name: "aria.chat.reattach") {
+            await settle(await follow(active.responseId), messageId: reply.id, fallback: AriaError.serverOffline)
+            endTurn(reply.id, token: token)
         }
     }
 
@@ -288,18 +391,6 @@ final class AriaAgentChat {
     private func rememberSession() {
         guard remembersSession else { return }
         UserDefaults.standard.set(sessionId, forKey: Self.currentSessionKey)
-    }
-
-    // MARK: - Suggerimenti
-
-    /// Server + generici, mescolati, senza doppioni, al massimo 6 (composeSuggestions della web).
-    func loadSuggestions() async {
-        let generic = AriaChatCopy.genericSuggestions.shuffled()
-        suggestions = Array(generic.prefix(6))
-        guard let plantId = backend.activePlantId else { return }
-        let server = await api.suggestions(plantId: plantId, locale: backend.api.context.locale).shuffled()
-        var seen = Set<String>()
-        suggestions = Array((server + generic).filter { seen.insert($0.lowercased()).inserted }.prefix(6))
     }
 
     // MARK: - Feedback
@@ -325,17 +416,97 @@ final class AriaAgentChat {
         }
     }
 
-    func confirmMemory(_ proposal: AriaMemoryProposal, in messageId: String, accept: Bool) {
+    /// La scelta sulla card "Aria dovrebbe ricordarlo?". `accept` non salva: manda il fatto (con l'eventuale
+    /// `content` riscritto) agli amministratori, e resta in attesa. `reject` lo scarta.
+    func confirmMemory(_ proposal: AriaMemoryProposal, in messageId: String, accept: Bool, content: String? = nil) {
         guard let companyId = backend.activeCompanyId else { return }
         update(messageId) { $0.memoryProposals.removeAll { $0.factId == proposal.factId } }
+        let content = content == proposal.content ? nil : content
         Task {
             do {
-                try await api.confirmMemory(companyId: companyId, factId: proposal.factId, accept: accept)
-                if accept { notice = String(localized: "Saved to Aria's knowledge.") }
+                try await api.confirmMemory(companyId: companyId, factId: proposal.factId, accept: accept, content: content)
+                // `accept` lascia il fatto in attesa di un amministratore: "inviato", mai "salvato".
+                notice = accept ? String(localized: "Sent for review — an admin will check it.") : nil
+            } catch AriaError.http(let status, _) where status == 404 {
+                // Il fatto non c'è più: la card resta tolta.
+            } catch AriaError.http(let status, let message) where status == 409 {
+                // Già deciso, cambiato nel frattempo o in contrasto con quello che Aria sa per certo.
+                lastError = message
             } catch {
+                if backend.markUnavailable(.memoryConfirm, ifRefused: error) { return }
                 update(messageId) { $0.memoryProposals.append(proposal) }
                 handle(error)
             }
+        }
+    }
+
+    // MARK: - Fatti nella lingua dell'operatore
+
+    /// La chiave di un fatto mostrato: il suo id, altrimenti il testo.
+    static func factTranslationKey(id: String?, text: String) -> String { id ?? "text:\(text)" }
+
+    /// Il testo da mostrare: la traduzione se c'è, altrimenti l'originale.
+    func translated(_ text: String, id: String?) -> String {
+        factTranslations[Self.factTranslationKey(id: id, text: text)] ?? text
+    }
+
+    /// Le card chiedono la traduzione quando compaiono (`.task`): si raccolgono per un attimo e partono
+    /// in un solo lotto. Ogni testo si chiede una volta.
+    func requestTranslations(_ facts: [(id: String?, text: String)]) {
+        guard backend.isAvailable(.factTranslation), let companyId = backend.activeCompanyId else { return }
+        for fact in facts {
+            let key = Self.factTranslationKey(id: fact.id, text: fact.text)
+            guard requestedTranslations.insert(key).inserted else { continue }
+            pendingTranslations[key] = fact.text
+        }
+        guard !pendingTranslations.isEmpty, translationFlush == nil else { return }
+        let api = self.api
+        let locale = backend.api.context.locale
+        translationFlush = Task {
+            try? await Task.sleep(for: Self.translationDebounce)
+            let batch = pendingTranslations
+            pendingTranslations = [:]
+            translationFlush = nil
+            do {
+                let translations = try await api.translateFacts(companyId: companyId, locale: locale, batch)
+                factTranslations.merge(translations) { _, new in new }
+            } catch {
+                backend.markUnavailable(.factTranslation, ifRefused: error)
+            }
+        }
+    }
+
+    // MARK: - Contesto della sessione
+
+    /// Il contatore del menu "···". Una chat ancora vuota non ha niente da contare.
+    func loadContextUsage() async {
+        guard backend.isAvailable(.contextMeter), !messages.isEmpty else { return }
+        let sessionId = self.sessionId
+        do {
+            let usage = try await api.contextUsage(sessionId: sessionId)
+            if sessionId == self.sessionId { contextUsage = usage }
+        } catch {
+            if backend.markUnavailable(.contextMeter, ifRefused: error), sessionId == self.sessionId { contextUsage = nil }
+        }
+    }
+
+    /// "Fai spazio": i turni più vecchi diventano un riassunto per il modello; la conversazione resta intera.
+    func compactContext() async {
+        guard contextUsage?.canCompact == true, compactingSession == nil else { return }
+        let sessionId = self.sessionId
+        compactingSession = sessionId
+        defer { compactingSession = nil }
+        do {
+            let usage = try await api.compactContext(sessionId: sessionId)
+            guard sessionId == self.sessionId else { return }
+            contextUsage = usage
+            // 404: la sessione non è (più) dell'operatore, niente è stato compattato.
+            if usage != nil { notice = String(localized: "Made room — older messages are now summarized for Aria.") }
+        } catch {
+            // L'esito di un'altra conversazione non si mostra in questa.
+            guard sessionId == self.sessionId else { return }
+            if backend.markUnavailable(.contextMeter, ifRefused: error) { contextUsage = nil; return }
+            handle(error)
         }
     }
 
@@ -355,9 +526,13 @@ final class AriaAgentChat {
     }
 
     /// Chiave del task che non dipende dall'id del messaggio: in streaming è un UUID, ricaricato dal
-    /// server diventa "db-…", e la spunta deve ritrovarsi. Ogni revisione di uno step ha le sue spunte.
+    /// server diventa "db-…", e la spunta deve ritrovarsi. È quella del server, `{response_id}:{task id}`,
+    /// quando si sa quale risposta ha portato la checklist; altrimenti step e revisione (solo sul telefono).
     private func taskKey(_ task: AriaTaskList.Task, in messageId: String) -> String {
-        guard let list = messages.last(where: { $0.id == messageId })?.taskList else { return "\(messageId):\(task.id)" }
+        guard let message = messages.last(where: { $0.id == messageId }), let list = message.taskList else {
+            return "\(messageId):\(task.id)"
+        }
+        if let responseId = message.taskListResponseId { return "\(responseId):\(task.id)" }
         return "\(list.agent ?? ""):\(list.stepNumber):r\(list.revision ?? 0):\(task.id)"
     }
 
@@ -384,6 +559,28 @@ final class AriaAgentChat {
         progressStore.save(.init(checked: checkedTasks, marks: taskMarks), sessionId: sessionId)
     }
 
+    /// Le spunte della sessione sul server (PUT …/checklist sostituisce tutta la mappa): solo quelle spuntate
+    /// e nella forma del server. Se non parte (rete) restano sul telefono e ripartono alla prossima spunta.
+    private func scheduleChecklistSync() {
+        guard hasServerTurns, !isRestoringProgress else { return }
+        checklistSync?.cancel()
+        let keys = checkedTasks.filter(AriaChecklist.isServerKey).sorted().prefix(AriaChecklist.maxKeys)
+        let api = self.api
+        let sessionId = self.sessionId
+        checklistSync = Task {
+            do { try await Task.sleep(for: Self.checklistDebounce) } catch { return }
+            try? await api.saveChecklist(keys, sessionId: sessionId)
+        }
+    }
+
+    /// Le spunte del server vincono; quelle che il server non tiene (chiavi del solo telefono) restano.
+    private func applyServerChecklist(_ checked: Set<String>) {
+        isRestoringProgress = true
+        checkedTasks = checked.union(checkedTasks.filter { !AriaChecklist.isServerKey($0) })
+        isRestoringProgress = false
+        saveTaskProgress()
+    }
+
     // MARK: Checklist salvate
 
     /// La checklist arrivata in un turno si tiene sul dispositivo: lo storico del server non la riporta.
@@ -407,6 +604,7 @@ final class AriaAgentChat {
             let positional = byPosition.flatMap { entry.responseId == nil || messages[$0].responseId == nil ? $0 : nil }
             guard let i = byResponse ?? positional, messages[i].taskList == nil else { continue }
             messages[i].taskList = entry.list
+            messages[i].taskListResponseId = messages[i].responseId
         }
     }
 
@@ -462,9 +660,6 @@ final class AriaAgentChat {
         let api = self.api
 
         if elicitation.submit == "review" {
-            // Un operatore non ha rotte per la review né per il closeout (sotto /v1/mobile non ci sono):
-            // niente foglio che dice "non disponibile", la risposta della chiusura è già partita nella chat.
-            if backend.api.auth.isMobileSession { return }
             Task {
                 if let review = AriaReviewPayload(details) {
                     do {
@@ -474,7 +669,7 @@ final class AriaAgentChat {
                         lastError = String(localized: "Could not save the review.")
                     }
                 }
-                if let choice = AriaCloseoutChoice(details) { pendingCloseout = choice }
+                if canCloseOut, let choice = AriaCloseoutChoice(details) { pendingCloseout = choice }
             }
             return
         }
@@ -535,11 +730,6 @@ final class AriaAgentChat {
         }
     }
 
-    /// "Non ora" sulla domanda riaperta dal chip: torna quella automatica (se c'è).
-    func closeOpenedLearning() {
-        openedLearningId = nil
-    }
-
     func dismissLearningOutcome() {
         guard learningOutcome?.isSaving != true else { return }
         learningOutcome = nil
@@ -555,17 +745,69 @@ final class AriaAgentChat {
             }
             notice = String(localized: "Sent for validation — an admin will review it.")
             return true
+        } catch AriaError.http(let status, let message) where status == 409 {
+            // Già deciso o cambiato nel frattempo: lo dice il server.
+            lastError = message
+            return false
         } catch {
+            // Backend senza la rotta per l'operatore: "Notify" sparisce, riprovare non servirebbe.
+            if backend.markUnavailable(.memoryConfirm, ifRefused: error) { return false }
             lastError = String(localized: "Could not send it for validation.")
             return false
         }
     }
 
-    // MARK: - Closeout
+    // MARK: - Closeout e report
+
+    /// Closeout, report e .docx si offrono solo se il server li ha e questa chat ha una procedura da chiudere.
+    var canCloseOut: Bool { backend.isAvailable(.closeout) && !closeoutUnavailable }
+    var canDownloadReport: Bool { backend.isAvailable(.report) && !closeoutUnavailable && !messages.isEmpty }
+
+    /// Le card dei fatti da imparare si mostrano finché il server accetta la decisione.
+    var canConfirmMemory: Bool { backend.isAvailable(.memoryConfirm) }
+    /// Accesso col link: closeout con i limiti dell'operatore.
+    var isOperator: Bool { api.isOperator }
+    /// L'operatore collegato: l'unico assegnatario che può scegliere nel closeout.
+    var operatorId: String? { backend.mobileAccount?.id }
 
     func closeout(_ request: AriaCloseoutRequest) async throws -> AriaCloseoutResult {
         guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
-        return try await api.closeout(companyId: companyId, sessionId: sessionId, request)
+        do {
+            return try await api.closeout(companyId: companyId, sessionId: sessionId, request, operatorId: operatorId)
+        } catch {
+            noteSessionToolFailure(error, feature: .closeout)
+            throw error
+        }
+    }
+
+    /// Solo il report, senza ordine: va sulla sessione di chat.
+    func archiveReport() async throws -> AriaReportArchive {
+        guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
+        do {
+            return try await api.archiveReport(companyId: companyId, sessionId: sessionId)
+        } catch {
+            noteSessionToolFailure(error, feature: .report)
+            throw error
+        }
+    }
+
+    /// Il report in Word, nella lingua dell'app, pronto da condividere.
+    func reportDocument() async throws -> AriaReportFile {
+        guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
+        do {
+            return try await api.reportDocument(companyId: companyId, sessionId: sessionId,
+                                                locale: backend.api.context.locale)
+        } catch {
+            noteSessionToolFailure(error, feature: .report)
+            throw error
+        }
+    }
+
+    /// 404 = la chat non ha una procedura da chiudere (`No session record`) o non è dell'operatore
+    /// (`Session not found`): l'azione sparisce per questa chat. 403 `operation_forbidden`: per tutte.
+    private func noteSessionToolFailure(_ error: any Error, feature: AriaServerFeature) {
+        if backend.markUnavailable(feature, ifRefused: error) { return }
+        if case AriaError.http(404, _)? = error as? AriaError { closeoutUnavailable = true }
     }
 
     /// Dopo l'archiviazione, un messaggio locale con l'esito (come la web).
@@ -589,13 +831,41 @@ final class AriaAgentChat {
 
     // MARK: - Stream
 
-    private func run(into messageId: String, restoreOnFailure interrupt: AriaInterrupt? = nil,
+    private func run(into messageId: String, requestId: String, restoreOnFailure interrupt: AriaInterrupt? = nil,
                      onSent: @escaping () -> Void,
                      makeRequest: @escaping @Sendable (_ plantId: String, _ ctx: AriaContext.Snapshot) -> AriaResponsesRequest) {
         isStreaming = true
         lastError = nil
-        let api = backend.api
+        let token = UUID()
+        turnToken = token
         streamTask = Task(name: "aria.chat.turn") {
+            await turn(into: messageId, requestId: requestId, restoreOnFailure: interrupt, onSent: onSent, makeRequest: makeRequest)
+            endTurn(messageId, token: token)
+        }
+    }
+
+    /// Il turno di prima, chiuso da una conversazione cambiata nel frattempo, non tocca quello nuovo.
+    @ObservationIgnored private var turnToken: UUID?
+
+    private func endTurn(_ messageId: String, token: UUID) {
+        guard turnToken == token else { return }
+        isStreaming = false
+        streamTask = nil
+        liveTurn = nil
+        turnToken = nil
+        saveTaskList(of: messageId)
+    }
+
+    /// Lo stream di un turno. Per l'operatore anche quello che serve quando non basta: lo stream che cade
+    /// (la risposta va avanti sul server e la si segue) e i 409 del server sui turni.
+    /// `requestId` è l'`Idempotency-Key` dell'invio; l'id della risposta lo dice il server (`.created`).
+    private func turn(into messageId: String, requestId first: String, restoreOnFailure interrupt: AriaInterrupt?,
+                      onSent: @escaping () -> Void,
+                      makeRequest: @escaping @Sendable (_ plantId: String, _ ctx: AriaContext.Snapshot) -> AriaResponsesRequest) async {
+        let api = backend.api
+        var requestId = first
+        for attempt in 0..<3 {
+            if hasServerTurns { liveTurn = (nil, messageId) }
             let playback = StreamPlayback()
             let player = Task {
                 while !Task.isCancelled {
@@ -604,11 +874,19 @@ final class AriaAgentChat {
                 }
             }
             defer { player.cancel() }
+            // Il turno ha un'Idempotency-Key e va avanti sul server: solo allora c'è qualcosa da seguire.
+            var background = false
             do {
                 let ctx = await api.context.snapshot()
                 guard let plantId = ctx.plantId, !plantId.isEmpty else { throw AriaError.missingPlant }
                 onSent()
-                for try await event in api.stream(makeRequest(plantId, ctx)) {
+                var ended = false
+                let request = makeRequest(plantId, ctx)
+                background = request.background == true
+                for try await event in api.stream(request, idempotencyKey: background ? requestId : nil) {
+                    if event.endsTurn { ended = true }
+                    // Il turno è accettato: da qui lo si può seguire o fermare anche se lo stream cade.
+                    if background, case .created(let id) = event, !id.isEmpty { liveTurn = (id, messageId) }
                     show(playback.push(event), in: messageId)
                 }
                 // La rete ha finito, ma un pezzo lungo può essere ancora a metà: esce fino in fondo.
@@ -617,28 +895,179 @@ final class AriaAgentChat {
                     show(playback.tick(), in: messageId)
                     if !playback.isEmpty { try await Task.sleep(for: StreamPlayback.tick) }
                 }
-                update(messageId) { $0.finished = true }
+                if background, !ended {
+                    // Lo stream si è chiuso prima della fine (un proxy, la rete): la risposta va avanti sul server.
+                    await settle(await followAccepted(liveTurn?.responseId), messageId: messageId,
+                                 fallback: AriaError.serverOffline)
+                } else {
+                    update(messageId) { $0.finished = true }
+                }
+                return
+            } catch AriaError.turnConflict(let conflict) where hasServerTurns && attempt < 2 {
+                switch conflict.code {
+                case .responseIdTaken, .idempotencyConflict:
+                    requestId = makeRequestID()
+                case .turnAlreadyStarted:
+                    // Già accettato (rimandato dopo una caduta di rete): ci si riaggancia, non lo si rimanda.
+                    if let responseId = conflict.responseId { liveTurn = (responseId, messageId) }
+                    let outcome = await followAccepted(conflict.responseId)
+                    // Finito senza una risposta intera: si chiede di nuovo, con una Idempotency-Key nuova.
+                    guard case .ended(let status) = outcome, status.isOver else {
+                        await settle(outcome, messageId: messageId, fallback: AriaError.turnConflict(conflict))
+                        return
+                    }
+                    requestId = makeRequestID()
+                case .turnInProgress:
+                    // Risponde ancora un altro messaggio (un altro telefono, o l'app chiusa a metà): si aspetta che
+                    // finisca e lo si mostra, poi si manda questo con lo stesso id (il server non l'aveva accettato).
+                    if let other = conflict.responseId, case .cancelled = await follow(other) {
+                        update(messageId) { $0.finished = true }
+                        return
+                    }
+                    await refreshTranscript(keepingTail: messageId)
+                case .turnNotRunning:
+                    fail(messageId, error: AriaError.turnConflict(conflict), restoring: interrupt)
+                    return
+                }
+                update(messageId) { $0.requestId = requestId; $0.responseId = nil }
             } catch {
                 // Fermata o errore: quello che è già arrivato si mostra subito, tutto.
                 show(playback.drain(), in: messageId)
-                let cancelled = Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled
-                update(messageId) { m in
-                    m.finished = true
-                    if cancelled { return }
-                    m.errorIsOffline = AriaHTTP.isOffline(error)
-                    m.error = m.errorIsOffline ? AriaError.serverOffline.localizedDescription : error.localizedDescription
-                    // Errore di rete durante una ripresa: la pausa torna, così si può riprovare.
-                    if let interrupt {
-                        m.interrupt = interrupt
-                        m.interruptOutcome = nil
-                    }
+                if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
+                    update(messageId) { $0.finished = true }
+                } else if background, Self.isConnectionDrop(error), let live = liveTurn {
+                    // Lo stream è caduto (rete, app in background): la risposta va avanti sul server e la si segue.
+                    // Se il server non aveva detto l'id, lo dice la sessione (`active_turn`); se non c'è, il messaggio
+                    // non era arrivato (o era già finito): l'errore resta e "riprova" rimanda con la stessa chiave.
+                    await settle(await followAccepted(live.responseId), messageId: messageId, fallback: error,
+                                 restoring: interrupt)
+                } else {
+                    fail(messageId, error: error, restoring: interrupt)
                 }
-                if !cancelled { handle(error) }
+                return
             }
-            isStreaming = false
-            streamTask = nil
-            saveTaskList(of: messageId)
         }
+    }
+
+    /// La risposta finisce con un errore (la pausa di una ripresa fallita torna, così si può riprovare).
+    private func fail(_ messageId: String, error: any Error, restoring interrupt: AriaInterrupt?) {
+        update(messageId) { m in
+            m.finished = true
+            m.errorIsOffline = AriaHTTP.isOffline(error)
+            m.error = m.errorIsOffline ? AriaError.serverOffline.localizedDescription : error.localizedDescription
+            if let interrupt {
+                m.interrupt = interrupt
+                m.interruptOutcome = nil
+            }
+        }
+        handle(error)
+    }
+
+    // MARK: - Turni sul server (operatore)
+
+    private enum TurnOutcome {
+        case ended(AriaTurn.Status)
+        /// Il server non conosce il turno: il messaggio non era arrivato.
+        case notFound
+        case unreachable(any Error)
+        /// Fermato qui (Stop, conversazione cambiata).
+        case cancelled
+    }
+
+    /// Il turno che sta rispondendo nella sessione (`active_turn`), se c'è: lo si cerca quando il server non ha
+    /// fatto in tempo a dire l'id della risposta.
+    private func runningTurnId() async -> String? {
+        guard let state = try? await api.sessionState(sessionId: sessionId),
+              let active = state.activeTurn, active.status == .running else { return nil }
+        return active.responseId
+    }
+
+    /// Come `follow`, per un turno di cui si può non sapere ancora l'id.
+    private func followAccepted(_ responseId: String?) async -> TurnOutcome {
+        if let responseId { return await follow(responseId) }
+        do {
+            let state = try await api.sessionState(sessionId: sessionId)
+            guard let active = state.activeTurn, active.status == .running else { return .notFound }
+            if let live = liveTurn { liveTurn = (active.responseId, live.messageId) }
+            return await follow(active.responseId)
+        } catch AriaError.http(status: 404, _) {
+            return .notFound
+        } catch {
+            // Stop (o conversazione cambiata) a metà lettura: non è un errore.
+            if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled { return .cancelled }
+            return .unreachable(error)
+        }
+    }
+
+    /// Segue un turno che va avanti senza stream: ne chiede lo stato finché resta `running`.
+    /// Senza rete riprova per un po' (`turnPollPatience`) prima di arrendersi.
+    private func follow(_ responseId: String) async -> TurnOutcome {
+        let api = self.api
+        let sessionId = self.sessionId
+        var failures = 0
+        while !Task.isCancelled {
+            do {
+                let turn = try await api.turn(responseId, sessionId: sessionId)
+                guard turn.status == .running else { return .ended(turn.status) }
+                failures = 0
+            } catch AriaError.http(status: 404, _) {
+                return .notFound
+            } catch {
+                if Task.isCancelled { break }
+                failures += 1
+                guard Self.isConnectionDrop(error), failures < Self.turnPollPatience else { return .unreachable(error) }
+            }
+            do { try await Task.sleep(for: Self.turnPollInterval) } catch { break }
+        }
+        return .cancelled
+    }
+
+    /// Mostra com'è finito un turno seguito senza stream: il transcript del server ha la risposta salvata
+    /// (o la pausa da decidere). `fallback`: l'errore da mostrare se il messaggio non era arrivato.
+    private func settle(_ outcome: TurnOutcome, messageId: String, fallback: any Error,
+                        restoring interrupt: AriaInterrupt? = nil) async {
+        switch outcome {
+        case .ended(.cancelled), .cancelled:
+            update(messageId) { $0.finished = true }
+        case .ended(let status):
+            update(messageId) { $0.finished = true }
+            await refreshTranscript(endedAs: status)
+        case .notFound:
+            fail(messageId, error: fallback, restoring: interrupt)
+        case .unreachable(let error):
+            fail(messageId, error: error, restoring: interrupt)
+        }
+    }
+
+    /// Ricarica il transcript dal server. `endedAs`: com'è finito l'ultimo turno (failed / interrupted: si dice
+    /// sulla risposta, così si può chiedere di nuovo). `keepingTail`: la risposta in attesa, con la domanda prima
+    /// di lei, resta in fondo (il server non l'ha ancora: si rimanda dopo un `turn_in_progress`).
+    private func refreshTranscript(endedAs status: AriaTurn.Status? = nil, keepingTail messageId: String? = nil) async {
+        let tail = messageId.flatMap { id in messages.firstIndex { $0.id == id } }.map { Array(messages[max(0, $0 - 1)...]) } ?? []
+        do {
+            try await loadTranscript()
+        } catch {
+            handle(error)
+            return
+        }
+        messages += tail
+        guard let status, status == .failed || status == .interrupted else { return }
+        let text = status == .interrupted ? String(localized: "The answer was interrupted. Ask again.")
+                                          : String(localized: "The response failed.")
+        if let i = messages.indices.last, messages[i].role == .assistant {
+            messages[i].error = text
+        } else {
+            var failed = AriaAgentMessage(id: UUID().uuidString, role: .assistant)
+            failed.error = text
+            messages.append(failed)
+        }
+    }
+
+    /// La rete è caduta o il server non si raggiunge: la risposta può essere ancora viva sul server.
+    private static func isConnectionDrop(_ error: any Error) -> Bool {
+        if AriaHTTP.isOffline(error) { return true }
+        guard let urlError = error as? URLError else { return false }
+        return urlError.code != .cancelled
     }
 
     /// Quello che esce in un tick si applica insieme: un solo ridisegno.
@@ -772,6 +1201,16 @@ private final class StreamPlayback {
         }
         if hidden < text.endIndex {
             queue.append(.ready(.textDelta(String(text[hidden...]))))
+        }
+    }
+}
+
+private extension AriaStreamEvent {
+    /// L'ultimo evento di un turno: dopo, lo stream può chiudersi senza che manchi niente.
+    var endsTurn: Bool {
+        switch self {
+        case .completed, .failed, .interrupt: true
+        default: false
         }
     }
 }

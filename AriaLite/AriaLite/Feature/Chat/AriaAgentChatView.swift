@@ -22,6 +22,10 @@ struct AriaAgentChatView: View {
     @State private var draft = ""
     @Namespace private var orbNamespace
     @State private var greeting = AriaChatCopy.greeting()
+    /// Entrata del saluto.
+    @State private var emptyAppeared = false
+    /// I chip di partenza (GET /v1/chat/suggestions): vuoti = nessun chip.
+    @State private var suggestions: [String] = []
     @FocusState private var inputFocused: Bool
     /// La domanda guidata è stata ridotta a pillola (si legge o si scrive liberamente).
     @State private var questionCollapsed = false
@@ -41,6 +45,8 @@ struct AriaAgentChatView: View {
     /// servono a tenere la domanda in cima mentre la risposta cresce sotto (come Claude).
     @State private var visibleHeight: CGFloat = 600
     @State private var turnQuestionHeight: CGFloat = 0
+    /// La chat con Aria non funziona offline (lavori e calendario sì): lo si dice prima che fallisca un invio.
+    private var network: AriaNetworkMonitor { .shared }
 
     private var lotoInterrupt: AriaInterrupt? {
         guard let pause = chat.pendingInterrupt, pause.kind == .loto, !chat.isStreaming else { return nil }
@@ -94,6 +100,7 @@ struct AriaAgentChatView: View {
         .animation(.snappy(duration: 0.3), value: questionCollapsed)
         .animation(.snappy(duration: 0.25), value: chat.notice)
         .animation(.snappy(duration: 0.25), value: chat.lastError)
+        .animation(.snappy(duration: 0.25), value: network.isOnline)
         .animation(.snappy(duration: 0.3), value: chat.blockingTaskList == nil)
         .onChange(of: chat.activeElicitation?.elicitation.id) { questionCollapsed = false }
         .animation(.snappy(duration: 0.3), value: learningCollapsed)
@@ -220,19 +227,74 @@ struct AriaAgentChatView: View {
     /// La sfera e il saluto: mentre l'operatore scrive la sfera "pensa", e all'invio vola al posto
     /// della sfera piccola sotto la risposta (stesso `matchedGeometryEffect`) mentre il saluto sparisce.
     private var emptyState: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 0) {
+            Spacer(minLength: 24)
+
             AriaOrb(mood: isComposing ? .thinking : .idle, radius: 0.8)
                 .ariaOrbHero(orbNamespace)
-                .frame(width: 64, height: 64)
-                .shadow(color: Color.accentColor.opacity(0.22), radius: 12, x: 0, y: 6)
+                .frame(width: 88, height: 88)
+                .shadow(color: Color.accentColor.opacity(0.22), radius: 16, x: 0, y: 8)
+                .background { AriaOrbGlow() }
 
-            Text(greeting)
-                .font(.system(size: 22, weight: .regular))
-                .foregroundStyle(.primary.opacity(0.85))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .transition(.opacity)
+            VStack(spacing: 8) {
+                Text(AriaChatCopy.salutation(name: backend.mobileAccount?.name))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Text(greeting)
+                    .font(.system(size: 27, weight: .semibold))
+                    .tracking(-0.4)
+                    .foregroundStyle(.primary.opacity(0.9))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 26)
+            .opacity(emptyAppeared ? 1 : 0)
+            .offset(y: emptyAppeared ? 0 : 8)
+            .transition(.opacity)
+
+            if !suggestions.isEmpty {
+                starterChips
+                    .padding(.top, 28)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+
+            Spacer(minLength: 24)
         }
+        .animation(.smooth(duration: 0.4), value: suggestions)
+        .task { withAnimation(.smooth(duration: 0.6).delay(0.05)) { emptyAppeared = true } }
+        // Nella lingua dell'app; si richiedono quando la chat diventa pronta (accesso, stabilimento).
+        .task(id: backend.isReady) {
+            guard backend.isReady else { suggestions = []; return }
+            suggestions = Array(await backend.suggestions().prefix(4))
+        }
+    }
+
+    /// Un tocco manda il suggerimento come primo messaggio.
+    private var starterChips: some View {
+        VStack(spacing: 8) {
+            ForEach(suggestions, id: \.self) { suggestion in
+                Button {
+                    inputFocused = false
+                    chat.send(suggestion)
+                } label: {
+                    Text(suggestion)
+                        .font(.system(size: 14, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.accentColor.opacity(0.18), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .disabled(chat.isStreaming || chat.pendingInterrupt != nil)
+                .accessibilityIdentifier("chat.suggestion")
+            }
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: 520)
     }
 
     private var isComposing: Bool {
@@ -245,6 +307,10 @@ struct AriaAgentChatView: View {
     private func dock(_ proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 8) {
             VStack(spacing: 8) {
+                if !network.isOnline, !(chat.lastError != nil && chat.lastErrorIsOffline) {
+                    AriaOfflineNotice(detail: "The AI chat needs a connection. Tasks and the calendar keep working offline.")
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
                 if backend.activePlantId == nil { plantGuard }
                 if let notice = chat.notice { noticeBanner(notice) }
                 if let error = chat.lastError {

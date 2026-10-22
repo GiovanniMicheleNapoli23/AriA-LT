@@ -14,10 +14,18 @@
 			remoteGlobalIDString = 7DF6F2FD2F6C1953009EF56A;
 			remoteInfo = AriaLite;
 		};
+		7DB0A1072F9A000100C0FFEE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7DF6F2F62F6C1953009EF56A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7DF6F2FD2F6C1953009EF56A;
+			remoteInfo = AriaLite;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		7DB0A0032F9A000100C0FFEE /* AriaLiteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AriaLiteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DB0A1032F9A000100C0FFEE /* AriaLiteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AriaLiteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DC0F1A12F9B000100C0FFEE /* AriaLite.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = AriaLite.xcconfig; sourceTree = "<group>"; };
 		7DC0F1A22F9B000100C0FFEE /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
 		7DF6F2FE2F6C1953009EF56A /* AriaLite.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AriaLite.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,6 +47,11 @@
 			path = AriaLiteTests;
 			sourceTree = "<group>";
 		};
+		7DB0A1022F9A000100C0FFEE /* AriaLiteUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AriaLiteUITests;
+			sourceTree = "<group>";
+		};
 		7DF6F3002F6C1953009EF56A /* AriaLite */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -51,6 +64,13 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		7DB0A0052F9A000100C0FFEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DB0A1052F9A000100C0FFEE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -82,6 +102,7 @@
 				7DC0F1A02F9B000100C0FFEE /* Config */,
 				7DF6F3002F6C1953009EF56A /* AriaLite */,
 				7DB0A0022F9A000100C0FFEE /* AriaLiteTests */,
+				7DB0A1022F9A000100C0FFEE /* AriaLiteUITests */,
 				7DF6F2FF2F6C1953009EF56A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -91,6 +112,7 @@
 			children = (
 				7DF6F2FE2F6C1953009EF56A /* AriaLite.app */,
 				7DB0A0032F9A000100C0FFEE /* AriaLiteTests.xctest */,
+				7DB0A1032F9A000100C0FFEE /* AriaLiteUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -120,6 +142,29 @@
 			productName = AriaLiteTests;
 			productReference = 7DB0A0032F9A000100C0FFEE /* AriaLiteTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		7DB0A1012F9A000100C0FFEE /* AriaLiteUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7DB0A1092F9A000100C0FFEE /* Build configuration list for PBXNativeTarget "AriaLiteUITests" */;
+			buildPhases = (
+				7DB0A1042F9A000100C0FFEE /* Sources */,
+				7DB0A1052F9A000100C0FFEE /* Frameworks */,
+				7DB0A1062F9A000100C0FFEE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7DB0A1082F9A000100C0FFEE /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				7DB0A1022F9A000100C0FFEE /* AriaLiteUITests */,
+			);
+			name = AriaLiteUITests;
+			packageProductDependencies = (
+			);
+			productName = AriaLiteUITests;
+			productReference = 7DB0A1032F9A000100C0FFEE /* AriaLiteUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		7DF6F2FD2F6C1953009EF56A /* AriaLite */ = {
 			isa = PBXNativeTarget;
@@ -157,6 +202,10 @@
 						CreatedOnToolsVersion = 26.3;
 						TestTargetID = 7DF6F2FD2F6C1953009EF56A;
 					};
+					7DB0A1012F9A000100C0FFEE = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 7DF6F2FD2F6C1953009EF56A;
+					};
 					7DF6F2FD2F6C1953009EF56A = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -179,12 +228,20 @@
 			targets = (
 				7DF6F2FD2F6C1953009EF56A /* AriaLite */,
 				7DB0A0012F9A000100C0FFEE /* AriaLiteTests */,
+				7DB0A1012F9A000100C0FFEE /* AriaLiteUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		7DB0A0062F9A000100C0FFEE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7DB0A1062F9A000100C0FFEE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -208,6 +265,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7DB0A1042F9A000100C0FFEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7DF6F2FA2F6C1953009EF56A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -222,6 +286,11 @@
 			isa = PBXTargetDependency;
 			target = 7DF6F2FD2F6C1953009EF56A /* AriaLite */;
 			targetProxy = 7DB0A0072F9A000100C0FFEE /* PBXContainerItemProxy */;
+		};
+		7DB0A1082F9A000100C0FFEE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7DF6F2FD2F6C1953009EF56A /* AriaLite */;
+			targetProxy = 7DB0A1072F9A000100C0FFEE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -265,6 +334,46 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AriaLite.app/AriaLite";
+			};
+			name = Release;
+		};
+		7DB0A10A2F9A000100C0FFEE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4TP9VJ2S7B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.giovanniMichele.AriaLiteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AriaLite;
+			};
+			name = Debug;
+		};
+		7DB0A10B2F9A000100C0FFEE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4TP9VJ2S7B;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.giovanniMichele.AriaLiteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = AriaLite;
 			};
 			name = Release;
 		};
@@ -483,6 +592,15 @@
 			buildConfigurations = (
 				7DB0A00A2F9A000100C0FFEE /* Debug */,
 				7DB0A00B2F9A000100C0FFEE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7DB0A1092F9A000100C0FFEE /* Build configuration list for PBXNativeTarget "AriaLiteUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7DB0A10A2F9A000100C0FFEE /* Debug */,
+				7DB0A10B2F9A000100C0FFEE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

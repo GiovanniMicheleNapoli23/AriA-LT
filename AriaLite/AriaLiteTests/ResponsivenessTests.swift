@@ -18,8 +18,8 @@ extension BackendTests {
     @Suite("Responsiveness")
     struct Responsiveness {
         private let server = StubServer.shared
-        private let openKey = "GET /v1/mobile/work-orders?status=open&limit=50"
-        private let closedKey = "GET /v1/mobile/work-orders?status=closed&limit=200"
+        private let openKey = "GET /v1/work-orders?status_group=open&limit=50&offset=0"
+        private let closedKey = "GET /v1/work-orders?status_group=closed&limit=200&offset=0"
 
         init() { TestEnv.reset() }
 
@@ -28,8 +28,8 @@ extension BackendTests {
         }
 
         private func stubHome(listDelay: TimeInterval = 0) {
-            server.route("PUT /v1/mobile/me/availability", .json(me()))
-            server.route("GET /v1/mobile/me", .json(me()))
+            server.route("PUT /v1/me/availability", .json(me()))
+            server.route("GET /v1/me", .json(me()))
             server.route(openKey, .json("[\(TestEnv.orderJSON())]", delay: listDelay))
             server.route(closedKey, .json("[]"))
         }
@@ -64,7 +64,7 @@ extension BackendTests {
 
         @Test func concurrentSyncsSendOnlyOneRenewal() async throws {
             let (_, store) = try await TestEnv.signedInStore()
-            server.route("PUT /v1/mobile/me/availability", .json(me(), delay: 0.3))
+            server.route("PUT /v1/me/availability", .json(me(), delay: 0.3))
             server.route(openKey, .json("[]"))
             server.route(closedKey, .json("[]"))
 
@@ -73,12 +73,12 @@ extension BackendTests {
             async let third: Void = store.sync()
             _ = await (first, second, third)
 
-            #expect(server.calls("PUT /v1/mobile/me/availability").count == 1, "apertura e ritorno in primo piano insieme non raddoppiano le chiamate")
+            #expect(server.calls("PUT /v1/me/availability").count == 1, "apertura e ritorno in primo piano insieme non raddoppiano le chiamate")
         }
 
         @Test func aStaleListResponseNeverOverwritesANewerOne() async throws {
             let (_, store) = try await TestEnv.signedInStore()
-            server.route("GET /v1/mobile/me", .json(me()))
+            server.route("GET /v1/me", .json(me()))
             server.route(closedKey, .json("[]"))
             // La prima richiesta della lista è lenta e vecchia; la seconda è veloce e nuova.
             server.route(openKey,
@@ -107,13 +107,13 @@ extension BackendTests {
         @Test func aSlowTokenRenewalIsSharedByParallelRequests() async throws {
             let client = try await TestEnv.signedInClient()
             server.route("GET /api/aria/token", TestEnv.tokenReply(tag: "slow", delay: 0.3))
-            server.route("GET /v1/mobile/me", .json(me()))
+            server.route("GET /v1/me", .json(me()))
             await client.auth.invalidate()
 
             let started = ContinuousClock.now
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for _ in 0..<6 {
-                    group.addTask { let _: AriaMobileProfile = try await client.get("v1/mobile/me") }
+                    group.addTask { let _: AriaMobileProfile = try await client.get("v1/me") }
                 }
                 try await group.waitForAll()
             }
