@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 26/09/26.
 //
 //  La sidebar di AriaPLT Mobile: sezioni in alto, conversazioni fissate e recenti,
-//  profilo e "Nuova chat" in fondo.
+//  profilo e "Nuova chat" in fondo. L'operatore ha Task e Calendario; un account della piattaforma
+//  le sezioni della web, raggruppate come nella sidebar della web.
 //
 
 import SwiftUI
@@ -37,8 +38,17 @@ struct AriaSidebar: View {
                     .padding(.bottom, 22)
 
                 navRow("Chats", icon: "bubble.left.and.bubble.right", target: .chats)
-                navRow("Tasks", icon: "checklist", target: .tasks)
-                navRow("Calendar", icon: "calendar", target: .calendar)
+                switch viewModel.accountKind {
+                case .operator:
+                    navRow("Tasks", icon: "checklist", target: .tasks)
+                    navRow("Calendar", icon: "calendar", target: .calendar)
+                case .admin:
+                    sectionTitle("Operations")
+                    navRow("Work Orders", icon: "wrench.and.screwdriver", target: .adminWorkOrders)
+                    sectionTitle("Resources")
+                    navRow("Assets", icon: "gearshape.2", target: .assets)
+                    navRow("Spare Parts", icon: "shippingbox", target: .spareParts)
+                }
 
                 if !store.pinned.isEmpty {
                     sectionTitle("Pinned")

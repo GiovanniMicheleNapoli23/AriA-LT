@@ -7,6 +7,7 @@
 //  Navigazione come Claude mobile: la chat è la schermata principale e tutte le
 //  sezioni (Chat, Task, Calendario, conversazioni fissate e recenti)
 //  stanno in una sidebar che si apre dal pulsante ☰ o trascinando dal bordo sinistro.
+//  Un account della piattaforma (admin) vede le sezioni della web al posto di Task e Calendario.
 //  Il pannello principale scivola a destra con gli angoli arrotondati.
 //
 
@@ -15,8 +16,13 @@ import SwiftUI
 enum AriaDestination: Hashable {
     case chat
     case chats
+    // Operatore
     case tasks
     case calendar
+    // Admin
+    case adminWorkOrders
+    case assets
+    case spareParts
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -69,6 +75,8 @@ struct AriaShellView: View {
 
     private var chat: AriaAgentChat { viewModel.mainChat }
     private var store: AriaSessionStore { viewModel.sessions }
+    /// Task assegnati, disponibilità e notifiche dei lavori sono solo dell'operatore.
+    private var isOperator: Bool { viewModel.accountKind == .operator }
 
     var body: some View {
         GeometryReader { geo in
@@ -103,11 +111,13 @@ struct AriaShellView: View {
         .task(id: viewModel.backend.isReady) { await store.load() }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
         .task {
+            guard isOperator else { return }
             await viewModel.notifications.enable()
             await viewModel.ariaWorkOrders.sync()
         }
         .onChange(of: scenePhase) { _, phase in
             // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
+            guard isOperator else { return }
             if phase == .background {
                 Task { await viewModel.ariaWorkOrders.flushForBackground() }
                 return
@@ -188,6 +198,12 @@ struct AriaShellView: View {
             AriaCalendarView(store: viewModel.ariaWorkOrders)
         case .tasks:
             AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
+        case .adminWorkOrders:
+            AdminWorkOrdersView(viewModel: viewModel.adminWorkOrders)
+        case .assets:
+            AdminAssetsView(viewModel: viewModel.adminAssets)
+        case .spareParts:
+            AdminSparePartsView(viewModel: viewModel.adminSpareParts)
         }
     }
 

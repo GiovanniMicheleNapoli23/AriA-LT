@@ -37,11 +37,33 @@
 import Foundation
 import LocalAuthentication
 
-/// L'operatore mobile restituito dalla verifica del link (`user` della risposta).
+/// L'account collegato: l'operatore restituito dalla verifica del link (`user` della risposta),
+/// o l'account della web riconosciuto da GET /v1/me.
 nonisolated struct AriaMobileAccount: Codable, Sendable, Equatable {
     let id: String
     let name: String
     let email: String
+    /// Assente nei profili salvati prima dell'accesso admin: erano tutti operatori.
+    var kind: AriaAccountKind = .operator
+
+    init(id: String, name: String, email: String, kind: AriaAccountKind = .operator) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.kind = kind
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, kind
+    }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        email = try c.decode(String.self, forKey: .email)
+        kind = try c.decodeIfPresent(AriaAccountKind.self, forKey: .kind) ?? .operator
+    }
 }
 
 /// Un link di accesso riconosciuto, toccato nell'email o incollato.

@@ -23,6 +23,14 @@ class AppViewModel {
     /// Notifiche push dei lavori assegnati.
     let notifications = AriaPushNotifications.shared
 
+    /// Sezioni della web, per gli account della piattaforma (non operatori).
+    let adminWorkOrders: AdminWorkOrdersViewModel
+    let adminAssets: AdminAssetsViewModel
+    let adminSpareParts: AdminSparePartsViewModel
+
+    /// Operatore o account della piattaforma: decide le sezioni della sidebar.
+    var accountKind: AriaAccountKind { backend.accountKind }
+
     /// L'app chiusa a chiave con Face ID.
     enum SessionLock: Equatable {
         case none
@@ -54,6 +62,9 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        adminWorkOrders = AdminWorkOrdersViewModel(backend: backend)
+        adminAssets = AdminAssetsViewModel(backend: backend)
+        adminSpareParts = AdminSparePartsViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -216,6 +227,9 @@ class AppViewModel {
         AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
         ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
+        adminWorkOrders.reset()
+        adminAssets.reset()
+        adminSpareParts.reset()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

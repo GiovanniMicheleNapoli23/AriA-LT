@@ -110,6 +110,15 @@ final class AriaBackend {
     /// La chat può parlare col backend: serve una sessione e uno stabilimento (`plant_id` è obbligatorio).
     var isReady: Bool { isSignedIn && activePlantId != nil }
 
+    /// Operatore (task e calendario) o account della piattaforma (le sezioni della web).
+    var accountKind: AriaAccountKind { mobileAccount?.kind ?? .operator }
+    var isAdmin: Bool { accountKind == .admin }
+
+    /// Chi ha fatto l'accesso, secondo il backend (GET /v1/me, aperta a tutti gli account).
+    func me() async throws -> AriaMe {
+        try await api.get("v1/me", companyScoped: false)
+    }
+
     /// Host dei dati (/v1).
     var serverURL: URL { api.config.apiBaseURL }
     /// Host di accesso: solo login, token e logout.
@@ -201,7 +210,8 @@ final class AriaBackend {
     /// Solo sviluppo: token copiato dall'host di accesso (GET /api/aria/token).
     func useDeveloperToken(_ token: String) async throws {
         try await api.auth.useDeveloperToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
-        setMobileAccount(nil)
+        // Il token è di un account qualsiasi: chi è (operatore o admin) lo dice GET /v1/me.
+        setMobileAccount(try await me().account)
         isSignedIn = true
         await bootstrap()
     }
@@ -218,10 +228,9 @@ final class AriaBackend {
     /// Solo UI test: entra come operatore con una sessione già emessa; il profilo è `operatorProfile` di GET /v1/me.
     func useSessionToken(_ token: String) async throws {
         try await api.auth.useSessionToken(token.trimmingCharacters(in: .whitespacesAndNewlines))
-        let raw = try await api.data("GET", "v1/me", companyScoped: false)
-        guard let profile = AriaOperatorProfileJSON(inMe: raw) else { throw AriaError.signedOut }
-        let me = try JSONDecoder().decode(AriaMobileProfile.self, from: profile)
-        setMobileAccount(AriaMobileAccount(id: me.id, name: me.name, email: me.email))
+        let account = try await me().account
+        guard account.kind == .operator else { throw AriaError.signedOut }
+        setMobileAccount(account)
         isSignedIn = true
         await bootstrap()
     }

@@ -20,6 +20,16 @@ nonisolated struct AriaEndpoint<Response: Decodable & Sendable>: Sendable {
     var headers: [String: String] = [:]
     /// `false` solo per GET /v1/companies: l'azienda è quello che la chiamata serve a scoprire.
     var companyScoped = true
+    /// Rotte con il body in snake_case (assets, ricambi, ordini di lavoro della web): il body si scrive
+    /// e la risposta si legge in snake_case, i modelli restano in camelCase (`assetTag` ↔ `asset_tag`).
+    var snakeCase = false
+
+    /// La stessa chiamata con body e risposta in snake_case.
+    func snakeCased() -> Self {
+        var copy = self
+        copy.snakeCase = true
+        return copy
+    }
 
     static func get(_ path: String, query: KeyValuePairs<String, String> = [:]) -> Self {
         Self(method: "GET", path: path, query: query.map { URLQueryItem(name: $0.key, value: $0.value) })
@@ -51,11 +61,17 @@ nonisolated struct AriaNoContent: Decodable, Sendable {
 extension AriaAPIClient {
     @concurrent
     func call<Response>(_ endpoint: AriaEndpoint<Response>) async throws -> Response {
-        let body = try endpoint.body.map { try JSONEncoder().encode($0) }
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        if endpoint.snakeCase {
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+        }
+        let body = try endpoint.body.map { try encoder.encode($0) }
         let raw = try await data(endpoint.method, endpoint.path, query: endpoint.query, body: body,
                                  headers: endpoint.headers, companyScoped: endpoint.companyScoped)
         if let none = AriaNoContent() as? Response { return none }
-        do { return try JSONDecoder().decode(Response.self, from: raw) }
+        do { return try decoder.decode(Response.self, from: raw) }
         catch { throw AriaError.decoding("\(Response.self): \(error)") }
     }
 }
