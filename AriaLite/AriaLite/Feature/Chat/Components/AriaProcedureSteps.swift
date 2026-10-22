@@ -32,14 +32,14 @@ private struct AriaCurrentStepCardContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            AriaTaskStepHeader(list: model.list, titleSize: 17) {
+            AriaTaskStepHeader(list: model.list, titleStyle: .body) {
                 // "In corso" è lo stato normale, non serve dirlo: si segnala solo l'eccezione o il traguardo.
                 if model.outcome != .inProgress { AriaBadge(text: model.outcome.text, tint: model.outcome.tint) }
             }
             VStack(alignment: .leading, spacing: 6) {
                 AriaTaskSegments(model: model)
                 Text("\(model.doneCount) of \(model.tasks.count) tasks done")
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .font(.caption.weight(.medium).monospacedDigit())
                     .foregroundStyle(.secondary)
                     .contentTransition(.numericText())
             }
@@ -70,6 +70,8 @@ struct AriaPastStepRow: View {
 
 private struct AriaPastStepRowContent: View {
     @State private var model: AriaTaskStepViewModel
+    /// La colonna dell'icona d'esito cresce con il testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .title2) private var markerWidth: CGFloat = 28
 
     init(model: @autoclosure () -> AriaTaskStepViewModel) {
         _model = State(wrappedValue: model())
@@ -80,25 +82,25 @@ private struct AriaPastStepRowContent: View {
             Button { model.toggleExpanded() } label: {
                 HStack(spacing: 12) {
                     Image(systemName: model.outcome.symbol)
-                        .font(.system(size: 22))
+                        .font(.title2)
                         .foregroundStyle(model.outcome.tint)
-                        .frame(width: 28)
+                        .frame(width: markerWidth)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(model.list.label)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.caption.weight(.semibold))
                             .foregroundStyle(model.list.stepTint)
                         Text(model.list.stepTitle)
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.subheadline.weight(.medium))
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     Text(verbatim: "\(model.doneCount)/\(model.tasks.count)")
-                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                        .font(.footnote.weight(.medium).monospacedDigit())
                         .foregroundStyle(.secondary)
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(model.isExpanded ? 90 : 0))
                 }
@@ -130,6 +132,8 @@ private struct AriaProcedureTaskRow: View {
     let task: AriaTaskList.Task
     /// Il prossimo task da fare: lo sfondo lo distingue dagli altri.
     let isNext: Bool
+    /// La colonna del cerchio cresce con il testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .title2) private var markerWidth: CGFloat = 28
 
     var body: some View {
         let checked = model.isChecked(task)
@@ -137,13 +141,13 @@ private struct AriaProcedureTaskRow: View {
         Button { model.toggle(task) } label: {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: checked ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22))
+                    .font(.title2)
                     .foregroundStyle(checked ? Color.green : (isNext ? tint : Color.secondary.opacity(0.6)))
                     .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 28)
+                    .frame(width: markerWidth)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(AriaMarkdown.inline(task.text))
-                        .font(.system(size: 15))
+                        .font(.subheadline)
                         .foregroundStyle(checked ? .secondary : .primary)
                         .strikethrough(checked, color: .secondary)
                         .multilineTextAlignment(.leading)

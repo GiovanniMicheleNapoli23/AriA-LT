@@ -37,27 +37,27 @@ private struct AriaTaskChecklistCardContent: View {
         AriaCard(tint: model.isSafety ? .orange : .liteAccent) {
             HStack {
                 Label(model.list.label, systemImage: model.isSafety ? "exclamationmark.shield.fill" : "list.bullet.clipboard")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(model.isSafety ? .orange : Color.liteAccent)
                 Spacer()
                 Text(verbatim: "\(model.doneCount)/\(model.tasks.count)")
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .font(.caption.weight(.medium).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
-            Text(model.list.stepTitle).font(.system(size: 15, weight: .semibold))
+            Text(model.list.stepTitle).font(.subheadline.weight(.semibold))
 
             ForEach(model.tasks) { task in
                 HStack(alignment: .top, spacing: 10) {
                     Button { model.toggle(task) } label: {
                         Image(systemName: model.isChecked(task) ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 18))
+                            .font(.body)
                             .foregroundStyle(model.isChecked(task) ? .green : Color.liteAccent.opacity(0.5))
                     }
                     .buttonStyle(.plain)
                     .disabled(!isLatest)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(AriaMarkdown.inline(task.text)).font(.system(size: 14))
+                        Text(AriaMarkdown.inline(task.text)).font(.subheadline)
                         if let mark = model.mark(task) { AriaTaskMarkBadge(mark: mark) }
                     }
                     Spacer(minLength: 0)
@@ -78,7 +78,7 @@ private struct AriaTaskChecklistCardContent: View {
 
             if isLatest {
                 Button("End procedure", systemImage: "door.left.hand.closed") { model.endProcedure() }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .buttonStyle(.borderless)
                     .disabled(model.isStreaming)
             }

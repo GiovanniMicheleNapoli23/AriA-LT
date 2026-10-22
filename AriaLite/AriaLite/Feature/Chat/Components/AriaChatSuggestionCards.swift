@@ -4,43 +4,43 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  I suggerimenti iniziali della chat vuota come card di vetro (al massimo 4).
+//  I suggerimenti iniziali della chat vuota come card di vetro (al massimo 4), in una griglia adattiva.
 //
 
 import SwiftUI
 
-/// Griglia 2×2 quando c'è spazio, riga scorrevole quando è poco (tastiera aperta, schermi bassi).
+/// Griglia adattiva: due colonne su iPhone, di più dove c'è larghezza (iPad, orizzontale). Mai una riga
+/// scorrevole: se lo spazio in altezza è poco (tastiera aperta, schermi bassi) si mostrano i primi due.
 /// Un tocco manda il suggerimento come primo messaggio.
 struct AriaChatSuggestionCards: View {
     let suggestions: [String]
-    let isScrollingRow: Bool
+    /// Poco spazio: card più basse (due righe) e, se serve, solo i primi due suggerimenti.
+    let isCompact: Bool
     let isEnabled: Bool
     var onSelect: (String) -> Void
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: sizeClass == .regular ? 220 : 150), spacing: 10)]
+    }
+
     var body: some View {
-        if isScrollingRow {
-            ScrollView(.horizontal) {
-                AriaGlassEffectContainer(spacing: 10) {
-                    HStack(spacing: 10) {
-                        ForEach(suggestions, id: \.self) { suggestion in
-                            card(suggestion).frame(width: 210)
-                        }
-                    }
+        ViewThatFits(in: .vertical) {
+            grid(suggestions)
+            grid(Array(suggestions.prefix(2)))
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: 760)
+    }
+
+    private func grid(_ items: [String]) -> some View {
+        AriaGlassEffectContainer(spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(items, id: \.self) { suggestion in
+                    card(suggestion)
                 }
             }
-            .scrollIndicators(.hidden)
-            .scrollClipDisabled()
-            .contentMargins(.horizontal, 24, for: .scrollContent)
-        } else {
-            AriaGlassEffectContainer(spacing: 10) {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
-                    ForEach(suggestions, id: \.self) { suggestion in
-                        card(suggestion)
-                    }
-                }
-            }
-            .padding(.horizontal, 24)
-            .frame(maxWidth: 560)
         }
     }
 
@@ -49,19 +49,19 @@ struct AriaChatSuggestionCards: View {
             onSelect(suggestion)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 11, weight: .semibold))
+                Image(systemName: "text.bubble")
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color.accentColor)
-                // Tre righe sempre riservate: le card hanno tutte la stessa altezza.
+                // Righe sempre riservate: le card della stessa riga hanno la stessa altezza.
                 Text(suggestion)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
-                    .lineLimit(3, reservesSpace: true)
+                    .lineLimit(isCompact ? 2 : 3, reservesSpace: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.vertical, isCompact ? 10 : 12)
             .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .ariaGlass(in: RoundedRectangle(cornerRadius: 18, style: .continuous), interactive: true)
         }

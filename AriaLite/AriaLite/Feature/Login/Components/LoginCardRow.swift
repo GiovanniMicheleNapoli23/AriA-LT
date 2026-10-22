@@ -12,18 +12,21 @@ import SwiftUI
 struct LoginCardRow<Content: View>: View {
     let icon: String
     @ViewBuilder let content: Content
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 20
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.callout)
                 .foregroundStyle(.secondary)
-                .frame(width: 20)
+                .frame(width: iconWidth)
             content
-                .font(.system(size: 17))
+                .font(.body)
                 .foregroundStyle(Color.liteText)
         }
         .padding(.horizontal, 16)
-        .frame(height: 54)
+        // 54pt a testo "Large"; coi testi grandi la riga cresce quanto il campo.
+        .padding(.vertical, 8)
+        .frame(minHeight: 54)
     }
 }

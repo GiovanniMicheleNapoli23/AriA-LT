@@ -37,6 +37,19 @@ nonisolated enum AdminWorkOrderStatus: String, AriaUnknownCaseDecodable, Hashabl
         case .unknown: String(localized: "Unknown")
         }
     }
+
+    var systemImage: String {
+        switch self {
+        case .proposed: "lightbulb"
+        case .planned: "calendar"
+        case .assigned: "person.crop.circle.badge.checkmark"
+        case .inProgress: "play.circle"
+        case .completed: "checkmark.circle"
+        case .verified: "checkmark.seal"
+        case .cancelled: "xmark.circle"
+        case .unknown: "questionmark.circle"
+        }
+    }
 }
 
 nonisolated enum AdminWorkOrderPriority: String, AriaUnknownCaseDecodable, Hashable, CaseIterable {
@@ -54,6 +67,15 @@ nonisolated enum AdminWorkOrderPriority: String, AriaUnknownCaseDecodable, Hasha
         case .unknown: String(localized: "Unknown")
         }
     }
+
+    var systemImage: String {
+        switch self {
+        case .high: "chevron.up.2"
+        case .medium: "equal"
+        case .low: "chevron.down.2"
+        case .unknown: "questionmark"
+        }
+    }
 }
 
 nonisolated enum AdminWorkOrderType: String, AriaUnknownCaseDecodable, Hashable, CaseIterable {
@@ -68,6 +90,14 @@ nonisolated enum AdminWorkOrderType: String, AriaUnknownCaseDecodable, Hashable,
         case .reactive: String(localized: "Reactive")
         case .preventive: String(localized: "Preventive")
         case .unknown: String(localized: "Unknown")
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .reactive: "bolt.fill"
+        case .preventive: "calendar.badge.clock"
+        case .unknown: "questionmark"
         }
     }
 }

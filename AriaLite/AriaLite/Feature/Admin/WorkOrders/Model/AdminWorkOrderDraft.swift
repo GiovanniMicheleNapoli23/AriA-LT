@@ -30,6 +30,10 @@ nonisolated struct AdminWorkOrderDraft: Equatable, Sendable {
     var teamId: String?
     var notes = ""
     var resolutionNotes = ""
+    /// Chi ha chiesto il lavoro (testo libero, `requested_by`).
+    var requestedBy = ""
+    /// Il codice allarme da cui nasce l'ordine: si scrive solo creando (WorkOrderUpdate non lo accetta).
+    var alarmCode = ""
 
     /// Un ordine nuovo nello stabilimento dato; le date, se si accendono, partono da domani alle 9.
     init(plantId: String?, now: Date = .now) {
@@ -64,6 +68,28 @@ nonisolated struct AdminWorkOrderDraft: Equatable, Sendable {
         teamId = order.assignedToTeamId
         notes = order.notes ?? ""
         resolutionNotes = order.resolutionNotes ?? ""
+        requestedBy = order.requestedBy ?? ""
+        alarmCode = order.alarmCode ?? ""
+    }
+}
+
+/// Una persona o un operatore sul campo da assegnare. Per gli operatori anche disponibilità e carico.
+nonisolated struct AdminWorkOrderFormAssignee: Identifiable, Hashable, Sendable {
+    let id: String
+    let title: String
+    let subtitle: String?
+    /// Solo per gli operatori; `nil` per le persone o se il server manda un valore sconosciuto.
+    let availability: AriaAvailability?
+    /// "3 open · 2 h" per gli operatori.
+    let workload: String?
+
+    /// Le voci che contengono il testo cercato, nel nome o nel sottotitolo.
+    static func matching(_ query: String, in items: [Self]) -> [Self] {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return items }
+        return items.filter {
+            $0.title.localizedStandardContains(query) || $0.subtitle?.localizedStandardContains(query) == true
+        }
     }
 }
 

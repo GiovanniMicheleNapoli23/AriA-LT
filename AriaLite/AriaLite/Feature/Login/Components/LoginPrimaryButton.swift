@@ -22,12 +22,14 @@ struct LoginPrimaryButton: View {
                     ProgressView().tint(.white)
                 } else {
                     Text(title)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.headline)
                 }
             }
             .foregroundStyle(.white)
+            // 54pt a testo "Large"; coi testi grandi cresce quanto il titolo, non di più.
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(minHeight: 54)
             .background(Color.liteAccent.opacity(isEnabled || isBusy ? 1 : 0.3),
                         in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .shadow(color: Color.liteAccent.opacity(isEnabled ? 0.25 : 0), radius: 12, x: 0, y: 6)

@@ -17,6 +17,10 @@ struct AriaCalendarView: View {
     @State private var month = Calendar.current.startOfMonth(for: .now)
     @State private var selected = Calendar.current.startOfDay(for: .now)
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @ScaledMetric(relativeTo: .footnote) private var monthButtonSide: CGFloat = 36
+    /// Il cerchio del giorno cresce col testo, ma non oltre 44pt: sette colonne devono stare in un iPhone.
+    @ScaledMetric(relativeTo: .callout) private var scaledDaySide: CGFloat = 34
+    private var daySide: CGFloat { min(scaledDaySide, 44) }
 
     private var calendar: Calendar { .current }
 
@@ -128,9 +132,9 @@ struct AriaCalendarView: View {
     private func monthButton(_ icon: String, by delta: Int) -> some View {
         Button { shiftMonth(delta) } label: {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(Color.liteAccent)
-                .frame(width: 36, height: 36)
+                .frame(width: monthButtonSide, height: monthButtonSide)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -149,7 +153,7 @@ struct AriaCalendarView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                     .foregroundStyle(isSelected ? Color.white : isToday ? Color.liteAccent : Color.primary)
-                    .frame(width: 34, height: 34)
+                    .frame(width: daySide, height: daySide)
                     .background {
                         if isSelected {
                             Circle().fill(Color.liteAccent)

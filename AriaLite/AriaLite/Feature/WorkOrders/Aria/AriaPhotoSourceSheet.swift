@@ -18,14 +18,20 @@ struct PhotoSourceSheet: View {
     @Environment(\.dismiss) private var dismiss
     /// Altezza misurata del contenuto: il foglio è alto quanto serve, né tagliato né vuoto.
     @State private var sheetHeight: CGFloat = 214
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Coi testi di accessibilità le due caselle affiancate non ci stanno: una sotto l'altra.
+    private var tilesLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 16)) : AnyLayout(HStackLayout(spacing: 16))
+    }
 
     var body: some View {
         VStack(spacing: 16) {
             Text("Add Photo")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline)
                 .foregroundStyle(.primary)
 
-            HStack(spacing: 16) {
+            tilesLayout {
                 // Galleria
                 PhotosPicker(selection: $selectedPhotoItems, matching: .images) {
                     PhotoSourceTile(
@@ -69,19 +75,20 @@ struct PhotoSourceSheet: View {
 private struct PhotoSourceTile: View {
     let icon: String
     let label: String
+    @ScaledMetric(relativeTo: .title) private var circleSide: CGFloat = 64
 
     var body: some View {
         VStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(Color(.systemGray5))
-                    .frame(width: 64, height: 64)
+                    .frame(width: circleSide, height: circleSide)
                 Image(systemName: icon)
-                    .font(.system(size: 26, weight: .medium))
+                    .font(.title.weight(.medium))
                     .foregroundStyle(Color.liteAccent)
             }
             Text(label)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
         }
         .frame(maxWidth: .infinity)

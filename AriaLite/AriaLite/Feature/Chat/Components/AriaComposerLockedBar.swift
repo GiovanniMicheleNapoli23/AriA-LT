@@ -16,26 +16,36 @@ struct AriaComposerLockedBar: View {
     let isLoto: Bool
     var onReview: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .callout) private var iconBox: CGFloat = 34
+
+    /// Col testo molto grande "Rivedi" va sotto il messaggio, che altrimenti andrebbe a capo a ogni parola.
+    private var layout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(spacing: 12))
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
+        layout {
             Image(systemName: isLoto ? "lock.shield.fill" : "hand.raised.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(.orange)
-                .frame(width: 34, height: 34)
+                .frame(width: iconBox, height: iconBox)
                 .background(Color.orange.opacity(0.16), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Aria is waiting for your decision")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text("Approve or reject the action to continue.")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Button(action: onReview) {
                 Text("Review")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 6)
                     .frame(minHeight: 30)
             }

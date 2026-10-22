@@ -41,7 +41,7 @@ struct AriaArtifactView: View {
             AriaListArtifact(kind: artifact.kind, data: d, actions: actions)
         default:
             Text("Artifact \(artifact.kind)")
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
@@ -72,11 +72,23 @@ struct AriaBadge: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(tint.opacity(0.12), in: Capsule())
+    }
+}
+
+/// Badge affiancati; se a testo grande non stanno sulla riga, uno sotto l'altro.
+private struct AriaBadgeRow<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { content }
+            VStack(alignment: .leading, spacing: 6) { content }
+        }
     }
 }
 
@@ -103,13 +115,22 @@ enum AriaTone {
 private struct AriaFactRow: View {
     let label: LocalizedStringKey
     let value: String?
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         if let value, !value.isEmpty {
-            HStack(alignment: .firstTextBaseline) {
-                Text(label).font(.system(size: 12)).foregroundStyle(.secondary)
-                Spacer(minLength: 8)
-                Text(value).font(.system(size: 13, weight: .medium)).multilineTextAlignment(.trailing)
+            // A testo molto grande etichetta e valore affiancati non stanno: il valore va sotto.
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label).font(.caption).foregroundStyle(.secondary)
+                    Text(value).font(.footnote.weight(.medium))
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(label).font(.caption).foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Text(value).font(.footnote.weight(.medium)).multilineTextAlignment(.trailing)
+                }
             }
         }
     }
@@ -120,19 +141,21 @@ private struct AriaBulletSection: View {
     let items: [String]
     var icon = "circle.fill"
     var tint: Color = .secondary
+    /// Il pallino resta piccolo ma cresce con il testo.
+    @ScaledMetric(relativeTo: .footnote) private var dotSize: CGFloat = 4
 
     var body: some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     Label {
-                        Text(AriaMarkdown.inline(item)).font(.system(size: 13))
+                        Text(AriaMarkdown.inline(item)).font(.footnote)
                     } icon: {
-                        Image(systemName: icon).font(.system(size: icon == "circle.fill" ? 4 : 11)).foregroundStyle(tint)
+                        Image(systemName: icon).font(icon == "circle.fill" ? .system(size: dotSize) : .caption2).foregroundStyle(tint)
                     }
                 }
             }
@@ -157,15 +180,15 @@ struct AriaWOCardView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("WO \(data["id"]?.stringValue ?? "—")")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                     Text(data["title"]?.stringValue ?? "")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                 }
                 Spacer()
                 Image(systemName: "wrench.and.screwdriver.fill").foregroundStyle(Color.liteAccent)
             }
-            HStack(spacing: 6) {
+            AriaBadgeRow {
                 if let status = data["status"]?.nonEmptyString { AriaBadge(text: status.replacingOccurrences(of: "_", with: " ")) }
                 if let priority = data["priority"]?.nonEmptyString { AriaBadge(text: priority, tint: AriaTone.priority(priority)) }
                 if data["source_system"]?.stringValue == "maintainx" { AriaBadge(text: "MaintainX", tint: .blue) }
@@ -177,7 +200,7 @@ struct AriaWOCardView: View {
 
             if let description = data["description"]?.nonEmptyString {
                 Text(AriaMarkdown.inline(description))
-                    .font(.system(size: 13))
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(expanded ? nil : 3)
             }
@@ -191,19 +214,31 @@ struct AriaWOCardView: View {
                 Button(expanded ? "Show less" : "Show checklist") {
                     withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(.footnote.weight(.medium))
             }
-            HStack {
-                if let id = data["id"]?.stringValue {
-                    Button("Open work order") { actions.open("/work-orders/\(id)") }
+            // A testo grande i due pulsanti non stanno affiancati: vanno uno sotto l'altro.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    openButtons(spaced: true)
                 }
-                Spacer()
-                if let url = data["external_url"]?.nonEmptyString.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
-                    Button("Open in MaintainX") { openURL(url) }
+                VStack(alignment: .leading, spacing: 8) {
+                    openButtons(spaced: false)
                 }
             }
-            .font(.system(size: 13, weight: .semibold))
+            .font(.footnote.weight(.semibold))
             .buttonStyle(.borderless)
+        }
+    }
+
+    /// "Apri work order" e "Apri in MaintainX"; `spaced` li spinge ai due lati della riga.
+    @ViewBuilder
+    private func openButtons(spaced: Bool) -> some View {
+        if let id = data["id"]?.stringValue {
+            Button("Open work order") { actions.open("/work-orders/\(id)") }
+        }
+        if spaced { Spacer() }
+        if let url = data["external_url"]?.nonEmptyString.flatMap(URL.init(string:)).flatMap(AriaURLPolicy.external) {
+            Button("Open in MaintainX") { openURL(url) }
         }
     }
 }
@@ -216,30 +251,32 @@ struct AriaTableArtifact: View {
 
     private var columns: [AriaArtifactContent.TableColumn] { AriaArtifactContent.tableColumns(data) }
     private var rows: [[String: AriaJSON]] { AriaArtifactContent.tableRows(data) }
+    /// Le celle si allargano con il testo, così a testo grande le due righe bastano ancora.
+    @ScaledMetric(relativeTo: .footnote) private var cellMaxWidth: CGFloat = 220
 
     var body: some View {
         AriaCard {
             if let title = data["title"]?.nonEmptyString {
-                Text(title).font(.system(size: 15, weight: .semibold))
+                Text(title).font(.subheadline.weight(.semibold))
             }
             if rows.isEmpty {
                 Text(data["empty_hint"]?.nonEmptyString ?? String(localized: "No results."))
-                    .font(.system(size: 13)).foregroundStyle(.secondary)
+                    .font(.footnote).foregroundStyle(.secondary)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 9) {
                         GridRow {
                             ForEach(columns, id: \.key) { column in
-                                Text(column.label).font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+                                Text(column.label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                             }
                         }
                         Divider()
                         ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                             GridRow {
                                 ForEach(columns, id: \.key) { column in
-                                    AriaCappedWidth(max: 220) {
+                                    AriaCappedWidth(max: cellMaxWidth) {
                                         Text(row[column.key]?.stringValue ?? "—")
-                                            .font(.system(size: 13))
+                                            .font(.footnote)
                                             .lineLimit(2)
                                     }
                                 }
@@ -279,28 +316,34 @@ private struct AriaCappedWidth: Layout {
 struct AriaKPIGrid: View {
     let data: [String: AriaJSON]
     var actions = AriaArtifactActions()
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    /// Due colonne; a testo molto grande una sola, così i valori non vanno a capo.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : 2)
+    }
 
     var body: some View {
         AriaCard {
             if let title = data["title"]?.nonEmptyString {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 15, weight: .semibold))
+                    Text(title).font(.subheadline.weight(.semibold))
                     if let subtitle = data["subtitle"]?.nonEmptyString {
-                        Text(subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(subtitle).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(Array((data["kpis"]?.arrayValue ?? []).enumerated()), id: \.offset) { _, kpi in
                     let tone = AriaTone.named(kpi["tone"]?.stringValue)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(kpi["label"]?.stringValue ?? "")
-                            .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+                            .font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                         Text(kpi["value"]?.stringValue ?? "—")
-                            .font(.system(size: 22, weight: .bold, design: .rounded))
+                            .font(.system(.title2, design: .rounded, weight: .bold))
                             .foregroundStyle(tone == .secondary ? Color.primary : tone)
                         if let sub = kpi["sub"]?.nonEmptyString {
-                            Text(sub).font(.system(size: 11)).foregroundStyle(.secondary)
+                            Text(sub).font(.caption2).foregroundStyle(.secondary)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -312,13 +355,13 @@ struct AriaKPIGrid: View {
             ForEach(Array((data["insights"]?.arrayValue ?? []).enumerated()), id: \.offset) { _, insight in
                 VStack(alignment: .leading, spacing: 4) {
                     Label(insight["title"]?.stringValue ?? "", systemImage: "lightbulb.fill")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(AriaTone.named(insight["tone"]?.stringValue ?? "warn"))
-                    Text(AriaMarkdown.inline(insight["body"]?.stringValue ?? "")).font(.system(size: 13))
+                    Text(AriaMarkdown.inline(insight["body"]?.stringValue ?? "")).font(.footnote)
                     if let action = insight["action"], let label = action["label"]?.nonEmptyString,
                        let prompt = action["prompt"]?.nonEmptyString {
                         Button(label) { actions.ask(prompt) }
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                             .buttonStyle(.borderless)
                     }
                 }
@@ -346,11 +389,11 @@ struct AriaChartArtifact: View {
     @ViewBuilder
     private var content: some View {
         if let title = data["title"]?.nonEmptyString {
-            Text(title).font(.system(size: 15, weight: .semibold))
+            Text(title).font(.subheadline.weight(.semibold))
         }
         if points.isEmpty {
             Text(data["empty_hint"]?.nonEmptyString ?? String(localized: "No data for this period."))
-                .font(.system(size: 13)).foregroundStyle(.secondary)
+                .font(.footnote).foregroundStyle(.secondary)
         } else {
             switch data["type"]?.stringValue {
             case "line":
@@ -384,18 +427,18 @@ struct AriaAssetCard: View {
         AriaCard {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(data["tag"]?.stringValue ?? "").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    Text(data["name"]?.stringValue ?? data["tag"]?.stringValue ?? "").font(.system(size: 15, weight: .semibold))
+                    Text(data["tag"]?.stringValue ?? "").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    Text(data["name"]?.stringValue ?? data["tag"]?.stringValue ?? "").font(.subheadline.weight(.semibold))
                 }
                 Spacer()
                 Image(systemName: "gearshape.2.fill").foregroundStyle(Color.liteAccent)
             }
-            HStack(spacing: 6) {
+            AriaBadgeRow {
                 if let status = data["operational_status"]?.nonEmptyString { AriaBadge(text: status) }
                 if let criticality = data["criticality"]?.nonEmptyString { AriaBadge(text: criticality, tint: AriaTone.priority(criticality)) }
             }
             if let description = data["description"]?.nonEmptyString {
-                Text(description).font(.system(size: 13)).foregroundStyle(.secondary)
+                Text(description).font(.footnote).foregroundStyle(.secondary)
             }
             AriaFactRow(label: "Category", value: data["category"]?.nonEmptyString)
             AriaFactRow(label: "Zone", value: data["zone"]?.nonEmptyString)
@@ -413,18 +456,18 @@ struct AriaPlanCard: View {
         AriaCard {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Maintenance plan").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
-                    Text(data["name"]?.stringValue ?? "").font(.system(size: 15, weight: .semibold))
+                    Text("Maintenance plan").font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    Text(data["name"]?.stringValue ?? "").font(.subheadline.weight(.semibold))
                 }
                 Spacer()
                 Image(systemName: "calendar.badge.clock").foregroundStyle(Color.liteAccent)
             }
-            HStack(spacing: 6) {
+            AriaBadgeRow {
                 if let frequency = data["frequency"]?.nonEmptyString { AriaBadge(text: frequency) }
                 if let status = data["status"]?.nonEmptyString { AriaBadge(text: status) }
             }
             if let description = data["description"]?.nonEmptyString {
-                Text(description).font(.system(size: 13)).foregroundStyle(.secondary)
+                Text(description).font(.footnote).foregroundStyle(.secondary)
             }
             AriaFactRow(label: "Asset", value: data["asset_tag"]?.nonEmptyString)
             AriaFactRow(label: "Category", value: data["category"]?.nonEmptyString)
@@ -445,9 +488,9 @@ struct AriaDiagnosticCard: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Diagnostic · \(data["alarm_code"]?.stringValue ?? "")")
-                        .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                        .font(.caption2.weight(.medium)).foregroundStyle(.secondary)
                     if let description = data["alarm_description"]?.nonEmptyString {
-                        Text(description).font(.system(size: 15, weight: .semibold))
+                        Text(description).font(.subheadline.weight(.semibold))
                     }
                 }
                 Spacer()
@@ -455,14 +498,14 @@ struct AriaDiagnosticCard: View {
                     AriaBadge(text: "\(Int((confidence <= 1 ? confidence * 100 : confidence).rounded()))%", tint: .liteAccent)
                 }
             }
-            HStack(spacing: 6) {
+            AriaBadgeRow {
                 if let severity = data["severity"]?.nonEmptyString { AriaBadge(text: severity, tint: AriaTone.priority(severity)) }
                 if let asset = data["asset_tag"]?.nonEmptyString { AriaBadge(text: asset) }
             }
             if let cause = data["root_cause"]?.nonEmptyString {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Probable root cause").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary).textCase(.uppercase)
-                    Text(AriaMarkdown.inline(cause)).font(.system(size: 13))
+                    Text("Probable root cause").font(.caption2.weight(.semibold)).foregroundStyle(.secondary).textCase(.uppercase)
+                    Text(AriaMarkdown.inline(cause)).font(.footnote)
                 }
             }
             AriaBulletSection(title: "Failure modes", items: strings(data["failure_modes"]))
@@ -477,7 +520,7 @@ struct AriaDiagnosticCard: View {
                     actions.quick("/diag \(code) --force", "diagnose_alarm",
                                   ["code": .string(code), "include_rag": .bool(true), "force_refresh": .bool(true)])
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(.footnote.weight(.medium))
                 .buttonStyle(.borderless)
             }
         }
@@ -493,11 +536,11 @@ struct AriaAlarmCard: View {
         AriaCard(tint: critical ? .red : .orange) {
             Label {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(data["alarm_code"]?.stringValue ?? "").font(.system(size: 15, weight: .semibold))
-                    Text(data["alarm_description"]?.stringValue ?? "").font(.system(size: 13))
+                    Text(data["alarm_code"]?.stringValue ?? "").font(.subheadline.weight(.semibold))
+                    Text(data["alarm_description"]?.stringValue ?? "").font(.footnote)
                     Text([data["source"]?.stringValue, AriaDate.parse(data["timestamp"]?.stringValue)?.formatted(date: .abbreviated, time: .shortened)]
                         .compactMap { $0 }.joined(separator: " · "))
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .font(.caption2).foregroundStyle(.secondary)
                 }
             } icon: {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(critical ? .red : .orange)
@@ -516,9 +559,9 @@ struct AriaDashboardArtifact: View {
         VStack(alignment: .leading, spacing: 10) {
             if let title = data["title"]?.nonEmptyString {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.system(size: 17, weight: .bold))
+                    Text(title).font(.headline.weight(.bold))
                     if let subtitle = data["subtitle"]?.nonEmptyString {
-                        Text(subtitle).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(subtitle).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -530,8 +573,8 @@ struct AriaDashboardArtifact: View {
                 default:
                     AriaCard(tint: .red) {
                         Text(panel["title"]?.stringValue ?? panel["type"]?.stringValue ?? "")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text(panel["error"]?.stringValue ?? "").font(.system(size: 12)).foregroundStyle(.secondary)
+                            .font(.footnote.weight(.semibold))
+                        Text(panel["error"]?.stringValue ?? "").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -553,16 +596,16 @@ struct AriaListArtifact: View {
 
     var body: some View {
         AriaCard {
-            Text(AriaMarkdown.inline(headline)).font(.system(size: 15, weight: .semibold))
+            Text(AriaMarkdown.inline(headline)).font(.subheadline.weight(.semibold))
             let all = items
             ForEach(Array(all.prefix(expanded ? all.count : 4).enumerated()), id: \.offset) { _, item in
                 Button {
                     if let path = item.path { actions.open(path) }
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(item.title).font(.system(size: 13, weight: .medium)).foregroundStyle(.primary)
+                        Text(item.title).font(.footnote.weight(.medium)).foregroundStyle(.primary)
                         if !item.detail.isEmpty {
-                            Text(item.detail).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
+                            Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -574,12 +617,12 @@ struct AriaListArtifact: View {
                 Button(expanded ? "Show less" : "Show all (\(all.count))") {
                     withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
                 }
-                .font(.system(size: 13, weight: .medium))
+                .font(.footnote.weight(.medium))
                 .buttonStyle(.borderless)
             }
             if kind == "team-kanban", let url = data["board_url"]?.nonEmptyString {
                 Button(data["open_board_label"]?.nonEmptyString ?? String(localized: "Open board")) { actions.open(url) }
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .buttonStyle(.borderless)
             }
         }

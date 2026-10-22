@@ -20,7 +20,10 @@ nonisolated struct AdminWorkOrderRowItem: Identifiable, Hashable, Sendable {
     let isOverdue: Bool
     /// `nil` senza procedura.
     let progress: Double?
+    /// "3/5".
     let progressText: String?
+    /// Un cambio di stato in volo.
+    var isBusy = false
 
     var id: String { order.id }
 }

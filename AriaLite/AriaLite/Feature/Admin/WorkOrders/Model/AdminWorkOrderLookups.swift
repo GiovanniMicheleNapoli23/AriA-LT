@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Le anagrafiche che servono agli ordini: persone (GET /v1/users), squadre (GET /v1/teams) e asset
-//  (GET /v1/assets). Servono per scegliere nel form e per mostrare un nome al posto di un id.
+//  Le anagrafiche che servono agli ordini: persone (GET /v1/users), squadre (GET /v1/teams), asset
+//  (GET /v1/assets) e operatori sul campo (GET /v1/mobile-operators). Servono per scegliere nel form e per
+//  mostrare un nome al posto di un id.
 //
 
 import Foundation
@@ -74,5 +75,38 @@ nonisolated struct AdminWorkOrderAsset: Decodable, Sendable, Hashable, Identifia
         name = f.text(.name) ?? tag
         zone = f.text(.zone)
         plantId = f.id(.plantId)
+    }
+}
+
+/// Un operatore dell'app (MobileOperatorResponse): disponibilità e carico di lavoro aperto.
+/// Le chiavi arrivano già in camelCase (`openCount`, `availabilityAt`).
+nonisolated struct AdminWorkOrderFormOperator: Decodable, Sendable, Hashable, Identifiable {
+    let id: String
+    var name: String
+    var email: String
+    var specialties: [String]
+    /// `nil` se il server manda un valore che l'app non conosce.
+    var availability: AriaAvailability?
+    var availabilityAt: Date?
+    var openCount: Int
+    var openMinutes: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, specialties, availability, availabilityAt, openCount, openMinutes
+    }
+
+    init(from decoder: any Decoder) throws {
+        let f = try AdminWorkOrderFields(decoder, keyedBy: CodingKeys.self)
+        guard let id = f.id(.id) else {
+            throw DecodingError.keyNotFound(CodingKeys.id, .init(codingPath: decoder.codingPath, debugDescription: "id"))
+        }
+        self.id = id
+        email = f.text(.email) ?? ""
+        name = f.text(.name) ?? (email.isEmpty ? id : email)
+        specialties = f.array(String.self, .specialties)
+        availability = f.text(.availability).flatMap(AriaAvailability.init(rawValue:))
+        availabilityAt = f.date(.availabilityAt)
+        openCount = f.int(.openCount) ?? 0
+        openMinutes = f.int(.openMinutes) ?? 0
     }
 }

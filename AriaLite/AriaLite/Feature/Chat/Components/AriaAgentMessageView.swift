@@ -44,7 +44,7 @@ struct AriaAgentMessageView: View {
         HStack {
             Spacer(minLength: 55)
             Text(message.text)
-                .font(.system(size: 16))
+                .font(.callout)
                 .foregroundStyle(.white)
                 .padding(.horizontal, 15)
                 .padding(.vertical, 11)
@@ -95,7 +95,7 @@ struct AriaAgentMessageView: View {
 
             if message.finished, !message.memoryLearned.isEmpty {
                 Label(String(localized: "Aria learned \(message.memoryLearned.count) new facts"), systemImage: "brain")
-                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.secondary)
             }
             if model.canConfirmMemory {
                 ForEach(message.memoryProposals) { proposal in
@@ -120,7 +120,7 @@ struct AriaAgentMessageView: View {
                     AriaOfflineNotice(style: .compact)
                 } else {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(.red)
                 }
             }

@@ -22,6 +22,8 @@ struct AriaSidebar: View {
 
     @Environment(AppViewModel.self) private var viewModel
     @State private var renaming: AriaSessionSummary?
+    /// L'avatar (52pt a testo "Large") cresce con l'iniziale.
+    @ScaledMetric(relativeTo: .title3) private var avatarSide: CGFloat = 52
 
     private var store: AriaSessionStore { viewModel.sessions }
     private var chat: AriaAgentChat { viewModel.mainChat }
@@ -78,7 +80,7 @@ struct AriaSidebar: View {
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {
         Text(title)
-            .font(.system(size: 15, weight: .medium))
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 16)
             .padding(.top, 22)
@@ -109,7 +111,7 @@ struct AriaSidebar: View {
             if store.recents.count > Self.recentsLimit {
                 Button { select(.chats) } label: {
                     Text("All chats")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.liteAccent)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
@@ -135,9 +137,9 @@ struct AriaSidebar: View {
         HStack(spacing: 12) {
             Button(action: showSettings) {
                 Text(user.name.prefix(1))
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    .font(.system(.title3, design: .rounded, weight: .semibold))
                     .foregroundStyle(Color.liteAccent)
-                    .frame(width: 52, height: 52)
+                    .frame(width: avatarSide, height: avatarSide)
                     .ariaGlass(in: Circle(), interactive: true)
             }
             .buttonStyle(.plain)
@@ -146,12 +148,17 @@ struct AriaSidebar: View {
             Spacer()
 
             Button(action: newChat) {
-                Label("New chat", systemImage: "plus")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 22)
-                    .frame(height: 52)
-                    .background(Color.liteAccent, in: Capsule())
+                // Coi testi grandi la sidebar non ha posto per l'etichetta: resta il "+".
+                ViewThatFits(in: .horizontal) {
+                    Label("New chat", systemImage: "plus")
+                    Label("New chat", systemImage: "plus").labelStyle(.iconOnly)
+                }
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 8)
+                .frame(minHeight: 52)
+                .background(Color.liteAccent, in: Capsule())
             }
             .buttonStyle(.plain)
         }
@@ -175,14 +182,15 @@ private struct SidebarRowLabel: View {
     var isSelected = false
     var prominent = false
     var showsActivity = false
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 28
 
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: prominent ? 20 : 18))
-                .frame(width: 28)
+                .font(prominent ? .title3 : .body)
+                .frame(width: iconWidth)
             title
-                .font(.system(size: 17))
+                .font(.body)
                 .lineLimit(1)
             Spacer(minLength: 8)
             if showsActivity {
@@ -191,7 +199,9 @@ private struct SidebarRowLabel: View {
         }
         .foregroundStyle(Color.liteText)
         .padding(.horizontal, 16)
-        .frame(height: prominent ? 54 : 48)
+        // 54/48pt a testo "Large"; coi testi grandi la riga cresce quanto il titolo.
+        .padding(.vertical, 8)
+        .frame(minHeight: prominent ? 54 : 48)
         .background {
             if isSelected {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

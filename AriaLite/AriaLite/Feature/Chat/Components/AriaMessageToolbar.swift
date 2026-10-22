@@ -39,13 +39,15 @@ struct AriaMessageToolbar: View {
             Spacer()
             if let usage = model.usageText(message) {
                 Text(verbatim: usage)
-                    .font(.system(size: 10).monospacedDigit())
+                    .font(.caption2.monospacedDigit())
                     .foregroundStyle(.tertiary)
             }
         }
-        .font(.system(size: 14))
+        .font(.footnote)
         .foregroundStyle(.secondary)
         .buttonStyle(AriaIconButtonStyle())
+        // Cinque pulsanti e i token in riga: oltre xxxLarge smettono di crescere per non uscire dalla bolla.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .padding(.leading, -8)
     }
 }
@@ -62,8 +64,8 @@ struct AriaMessageFollowUps: View {
                 ForEach(chips, id: \.self) { chip in
                     Button { onSend(chip) } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "arrow.turn.down.right").font(.system(size: 10, weight: .semibold))
-                            Text(chip.label).font(.system(size: 13, weight: .medium))
+                            Image(systemName: "arrow.turn.down.right").font(.caption2.weight(.semibold))
+                            Text(chip.label).font(.footnote.weight(.medium))
                         }
                         .foregroundStyle(Color.accentColor)
                         .padding(.horizontal, 12)
@@ -79,11 +81,13 @@ struct AriaMessageFollowUps: View {
     }
 }
 
-/// Icona piccola ma con un'area di tocco da 36 pt (si usa anche con i guanti).
+/// Icona piccola ma con un'area di tocco da 36 pt (si usa anche con i guanti); cresce con l'icona.
 struct AriaIconButtonStyle: ButtonStyle {
+    @ScaledMetric(relativeTo: .footnote) private var side: CGFloat = 36
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .frame(width: 36, height: 36)
+            .frame(width: side, height: side)
             .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.5 : 1)
     }

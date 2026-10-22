@@ -11,16 +11,17 @@ import SwiftUI
 
 struct LoginFooter: View {
     let version: String
+    @ScaledMetric(relativeTo: .caption) private var iconSide: CGFloat = 16
 
     var body: some View {
         HStack(spacing: 8) {
             Image("AriaLite")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 16, height: 16)
+                .frame(width: iconSide, height: iconSide)
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             Text(verbatim: "Sinaura · v\(version)")
-                .font(.system(size: 12))
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .padding(.bottom, 12)

@@ -287,8 +287,10 @@ private struct AriaIslandView: View {
                 ZStack {
                     Circle().fill(alert.tint.gradient)
                     Image(systemName: alert.systemImage)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.white)
+                        // Il cerchio resta da 28pt accanto alla fotocamera: il glifo segue il testo fin dove ci sta.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 }
                 .frame(width: Self.badge, height: Self.badge)
                 Spacer(minLength: 0)
@@ -300,11 +302,11 @@ private struct AriaIslandView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(alert.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Text(alert.message)
-                    .font(.system(size: 14))
+                    .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -328,7 +330,7 @@ private struct AriaIslandView: View {
                             .background(alert.tint, in: Capsule())
                     }
                 }
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .buttonStyle(.plain)
                 .padding(.horizontal, 14)
                 .padding(.bottom, 14)

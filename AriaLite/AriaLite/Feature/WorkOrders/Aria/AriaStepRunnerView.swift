@@ -43,6 +43,10 @@ struct AriaStepRunnerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(AppViewModel.self) private var viewModel
+    /// Misure pensate per il testo "Large": crescono col Dynamic Type così le icone non tagliano il testo.
+    @ScaledMetric(relativeTo: .callout) private var iconBadgeSide: CGFloat = 38
+    @ScaledMetric(relativeTo: .body) private var orbSide: CGFloat = 40
+    @ScaledMetric(relativeTo: .footnote) private var sparkleSide: CGFloat = 32
 
     private enum NoteMode: Identifiable {
         /// Aggiungere o cambiare la nota del passo.
@@ -232,10 +236,10 @@ struct AriaStepRunnerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.shield.fill")
                     Text("Safety warnings")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .rotationEffect(.degrees(showSafety ? 180 : 0))
                 }
                 .foregroundStyle(.orange)
@@ -245,7 +249,7 @@ struct AriaStepRunnerView: View {
             if showSafety {
                 ForEach(Array(safetyWarnings.enumerated()), id: \.offset) { _, warning in
                     Label {
-                        Text(warning).font(.system(size: 14)).foregroundStyle(Color.liteText.opacity(0.8))
+                        Text(warning).font(.subheadline).foregroundStyle(Color.liteText.opacity(0.8))
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                     }
@@ -266,7 +270,7 @@ struct AriaStepRunnerView: View {
         VStack(alignment: .leading, spacing: 10) {
             if let tag = text.tag {
                 Label(tag.capitalized, systemImage: text.isSafetyTag ? "exclamationmark.shield.fill" : "info.circle.fill")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(text.isSafetyTag ? Color.orange : Color.liteAccent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -274,7 +278,7 @@ struct AriaStepRunnerView: View {
             }
 
             Text(text.headline)
-                .font(.system(size: 19, weight: .semibold))
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.liteText)
                 .lineSpacing(2)
 
@@ -291,14 +295,14 @@ struct AriaStepRunnerView: View {
                         }
                     }
                 }
-                .font(.system(size: 16))
+                .font(.callout)
                 .foregroundStyle(Color.liteText.opacity(0.85))
                 .padding(.leading, 2)
             }
 
             ForEach(Array(text.notes.enumerated()), id: \.offset) { _, note in
                 Text(note)
-                    .font(.system(size: 16))
+                    .font(.callout)
                     .foregroundStyle(Color.liteText.opacity(0.8))
                     .lineSpacing(2)
             }
@@ -311,7 +315,7 @@ struct AriaStepRunnerView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Step \(index + 1) of \(steps.count)")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.liteAccent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -324,7 +328,7 @@ struct AriaStepRunnerView: View {
 
             if let report = step.report, report.reportedAt == nil, report.note == nil, report.photos.isEmpty {
                 Label("Marked done from the desktop", systemImage: "desktopcomputer")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
@@ -355,8 +359,8 @@ struct AriaStepRunnerView: View {
         default: ("circle", String(localized: "To do"), Color.liteText.opacity(0.4))
         }
         return HStack(spacing: 5) {
-            Image(systemName: icon).font(.system(size: 14)).contentTransition(.symbolEffect(.replace))
-            Text(label).font(.system(size: 12, weight: .medium))
+            Image(systemName: icon).font(.footnote).contentTransition(.symbolEffect(.replace))
+            Text(label).font(.caption.weight(.medium))
         }
         .foregroundStyle(color)
     }
@@ -373,17 +377,17 @@ struct AriaStepRunnerView: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text(text == nil ? "Add Notes" : "Technical Notes")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.liteText)
                     if let text {
                         Text(text)
-                            .font(.system(size: 12))
+                            .font(.caption)
                             .foregroundStyle(Color.liteText.opacity(0.6))
                             .lineLimit(3)
                             .multilineTextAlignment(.leading)
                     } else {
                         Text("No notes")
-                            .font(.system(size: 12))
+                            .font(.caption)
                             .foregroundStyle(Color.liteText.opacity(0.35))
                     }
                 }
@@ -408,12 +412,12 @@ struct AriaStepRunnerView: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Photos")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.liteText)
                     Text(count == 0 ? String(localized: "No photos")
                          : isFull ? String(localized: "\(count) attached · maximum")
                          : String(localized: "\(count) attached"))
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(Color.liteText.opacity(count == 0 ? 0.35 : 0.6))
                 }
             }
@@ -428,9 +432,9 @@ struct AriaStepRunnerView: View {
 
     private func iconBadge(_ symbol: String) -> some View {
         ZStack {
-            Circle().fill(Color.liteAccent.opacity(0.1)).frame(width: 38, height: 38)
+            Circle().fill(Color.liteAccent.opacity(0.1)).frame(width: iconBadgeSide, height: iconBadgeSide)
             Image(systemName: symbol)
-                .font(.system(size: 16))
+                .font(.callout)
                 .foregroundStyle(Color.liteAccent)
                 .contentTransition(.symbolEffect(.replace))
         }
@@ -487,11 +491,11 @@ struct AriaStepRunnerView: View {
                 }
                 if !drafts.isEmpty {
                     Text("Photos upload when you mark the step.")
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 } else if !queued.isEmpty {
                     Text("Photos upload with the next sync.")
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -501,7 +505,7 @@ struct AriaStepRunnerView: View {
 
     private var uploadBadge: some View {
         Image(systemName: "icloud.and.arrow.up")
-            .font(.system(size: 11, weight: .semibold))
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(.white)
             .padding(4)
             .background(.black.opacity(0.45), in: Capsule())
@@ -525,7 +529,7 @@ struct AriaStepRunnerView: View {
             if !isReadOnly {
                 Button(action: remove) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.title3)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.white, .black.opacity(0.55))
                 }
@@ -591,21 +595,21 @@ struct AriaStepRunnerView: View {
     private var askAriaPill: some View {
         HStack(spacing: 12) {
             AriaOrb(radius: 0.9)
-                .frame(width: 40, height: 40)
+                .frame(width: orbSide, height: orbSide)
                 .shadow(color: Color(red: 0.89, green: 0.55, blue: 1).opacity(0.55), radius: 8)
             VStack(alignment: .leading, spacing: 1) {
                 Text("Ask AriA")
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                    .font(.system(.body, design: .rounded, weight: .semibold))
                     .foregroundStyle(Color.liteAccent)
                 Text("Get help with this step")
-                    .font(.system(size: 12.5))
+                    .font(.caption)
                     .foregroundStyle(Color.liteAccent.opacity(0.6))
             }
             Spacer(minLength: 8)
             Image(systemName: "sparkles")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(Color.liteAccent)
-                .frame(width: 32, height: 32)
+                .frame(width: sparkleSide, height: sparkleSide)
                 .background(Color.liteAccent.opacity(0.08), in: Circle())
         }
         .padding(.leading, 10)
@@ -630,8 +634,9 @@ struct AriaStepRunnerView: View {
                 if index > 0 { go(to: steps[index - 1]) }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(width: 46, height: 46)
+                    .font(.subheadline.weight(.semibold))
+                    // 46pt a testo "Large"; coi testi grandi cresce quanto il glifo.
+                    .frame(minWidth: 46, minHeight: 46)
             }
             .ariaGlassButtonStyle()
             .disabled(index == 0 || isBusy)
@@ -692,14 +697,14 @@ struct AriaStepRunnerView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
         }
-        .font(.system(size: 15, weight: .semibold))
+        .font(.subheadline.weight(.semibold))
     }
 
     private func nextButton(_ target: AriaProcedureStep) -> some View {
         Button { go(to: target) } label: {
             HStack(spacing: 6) {
-                Text("Next").font(.system(size: 15, weight: .semibold))
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold))
+                Text("Next").font(.subheadline.weight(.semibold))
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold))
             }
             .frame(maxWidth: .infinity, minHeight: 46)
         }

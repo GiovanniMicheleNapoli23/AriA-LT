@@ -36,7 +36,7 @@ struct AriaPhotoPreview: View {
         .overlay(alignment: .topTrailing) {
             Button { dismiss() } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 30))
+                    .font(.title)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, .white.opacity(0.3))
             }

@@ -12,6 +12,7 @@ struct SettingsSheet: View {
     @State private var showConnection = false
     @State private var confirmingLogout = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var avatarSide: CGFloat = 72
 
     var body: some View {
         ZStack {
@@ -32,10 +33,10 @@ struct SettingsSheet: View {
                         VStack(spacing: 10) {
                             ZStack {
                                 Text(user.name.prefix(1))
-                                    .font(.system(size: 32, weight: .semibold, design: .rounded))
+                                    .font(.system(.largeTitle, design: .rounded, weight: .semibold))
                                     .foregroundStyle(Color.liteAccent)
                             }
-                            .frame(width: 72, height: 72)
+                            .frame(width: avatarSide, height: avatarSide)
                             .ariaGlass(in: Circle())
 
                             VStack(spacing: 3) {

@@ -22,7 +22,7 @@ struct AriaThinkingText: View {
             let x = reduceMotion ? 0.5 : -0.4 + phase * 1.8
 
             Text(label)
-                .font(.system(size: 16, weight: .medium))
+                .font(.callout.weight(.medium))
                 .foregroundStyle(shine(at: x, base: Color(.systemGray3), light: Color(.systemGray)))
         }
         .padding(.vertical, 6)

@@ -13,6 +13,8 @@ import SwiftUI
 struct VoiceSessionOverlay: View {
 
     @Bindable var voice: AriaVoiceViewModel
+    /// Il cerchio del microfono cresce insieme al glifo (Dynamic Type).
+    @ScaledMetric(relativeTo: .subheadline) private var muteSide: CGFloat = 34
 
     var body: some View {
         HStack(spacing: 12) {
@@ -67,10 +69,10 @@ struct VoiceSessionOverlay: View {
                     voice.isMuted.toggle()
                 } label: {
                     Image(systemName: voice.isMuted ? "mic.slash.fill" : "mic.fill")
-                        // Glifo fisso come i pulsanti del composer: con il Dynamic Type uscirebbe dal cerchio da 34 pt.
-                        .font(.system(size: 15, weight: .bold))
+                        // Il glifo segue il Dynamic Type e il cerchio (34 pt a "Large") cresce con lui.
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(voice.isMuted ? .red : Color.liteAccent)
-                        .frame(width: 34, height: 34)
+                        .frame(width: muteSide, height: muteSide)
                         .ariaGlass(in: Circle(), tint: voice.isMuted ? .red.opacity(0.15) : Color.liteAccent.opacity(0.1))
                         .contentTransition(.symbolEffect(.replace))
                 }

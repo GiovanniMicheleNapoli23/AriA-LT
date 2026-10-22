@@ -32,7 +32,7 @@ struct AriaMessageActivityStrip: View {
                         Text(error).foregroundStyle(.red).lineLimit(1)
                     }
                 }
-                .font(.system(size: 12, weight: .medium))
+                .font(.caption.weight(.medium))
             }
         }
     }
@@ -53,10 +53,10 @@ struct AriaMessageSources: View {
                     }
                 }
             }
-            .font(.system(size: 12))
+            .font(.caption)
             .padding(.top, 4)
         } label: {
-            Text("\(sources.count) sources").font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+            Text("\(sources.count) sources").font(.caption.weight(.medium)).foregroundStyle(.secondary)
         }
     }
 }
@@ -68,12 +68,12 @@ struct AriaMessageReasoning: View {
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             Text(text)
-                .font(.system(size: 12))
+                .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
         } label: {
             Label("Reasoning", systemImage: "brain.head.profile")
-                .font(.system(size: 12, weight: .medium))
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -88,11 +88,11 @@ struct AriaMessageFactsUsed: View {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(facts, id: \.self) { Text("• \($0)") }
             }
-            .font(.system(size: 12))
+            .font(.caption)
             .foregroundStyle(.secondary)
         } label: {
             Label("Learned knowledge used · \(facts.count)", systemImage: "books.vertical")
-                .font(.system(size: 12, weight: .medium))
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -119,7 +119,7 @@ struct AriaMessageImages: View {
                                 .frame(width: 150, height: 110)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                 if let caption = image.caption {
-                                    Text(caption).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+                                    Text(caption).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                                 }
                             }
                             .frame(width: 150)
@@ -145,32 +145,32 @@ struct AriaMessageCMMSNotices: View {
                     // Su 375-390 pt in italiano etichetta e badge non stanno su una riga: il badge va sotto.
                     ViewThatFits(in: .horizontal) {
                         HStack {
-                            Label("Work order suggested", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
+                            Label("Work order suggested", systemImage: "wand.and.stars").font(.footnote.weight(.semibold))
                             Spacer()
                             AriaBadge(text: String(localized: "auto-detected"), tint: .blue).fixedSize()
                         }
                         VStack(alignment: .leading, spacing: 6) {
-                            Label("Work order suggested", systemImage: "wand.and.stars").font(.system(size: 13, weight: .semibold))
+                            Label("Work order suggested", systemImage: "wand.and.stars").font(.footnote.weight(.semibold))
                             AriaBadge(text: String(localized: "auto-detected"), tint: .blue)
                         }
                     }
-                    if let title = entry.data["title"]?.nonEmptyString { Text(title).font(.system(size: 14, weight: .medium)) }
+                    if let title = entry.data["title"]?.nonEmptyString { Text(title).font(.subheadline.weight(.medium)) }
                     if let suggestion = entry.data["suggestion"]?.nonEmptyString {
-                        Text(suggestion).font(.system(size: 12)).foregroundStyle(.secondary)
+                        Text(suggestion).font(.caption).foregroundStyle(.secondary)
                     }
                 }
             case "aria.external_action":
                 let ok = entry.data["status"]?.stringValue == "ok"
                 Label("\(entry.data["system"]?.stringValue ?? "CMMS"): \(entry.data["summary"]?.stringValue ?? entry.data["tool"]?.stringValue ?? "")",
                       systemImage: ok ? "arrow.up.forward.app.fill" : "exclamationmark.triangle")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(ok ? .green : .orange)
             case "aria.cmms_entity_referenced":
                 if let type = entry.data["entity_type"]?.stringValue, let id = entry.data["entity_id"]?.stringValue {
                     Button(entry.data["entity_label"]?.stringValue ?? "\(type) \(id)", systemImage: "link") {
                         onOpenEntity(type, id)
                     }
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .buttonStyle(.borderless)
                 }
             default:

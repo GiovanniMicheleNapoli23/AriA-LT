@@ -29,6 +29,7 @@ struct AriaApprovalCard: View {
 private struct AriaApprovalCardContent: View {
     @State private var model: AriaApprovalViewModel
     @FocusState private var focusedKey: String?
+    @ScaledMetric(relativeTo: .callout) private var iconBox: CGFloat = 34
 
     init(model: @autoclosure () -> AriaApprovalViewModel) {
         _model = State(wrappedValue: model())
@@ -39,7 +40,7 @@ private struct AriaApprovalCardContent: View {
             header
             if let warning = model.warning {
                 Label {
-                    Text(AriaMarkdown.inline(warning)).font(.system(size: 13))
+                    Text(AriaMarkdown.inline(warning)).font(.footnote)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                 }
@@ -65,13 +66,13 @@ private struct AriaApprovalCardContent: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "hand.raised.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(.orange)
-                .frame(width: 34, height: 34)
+                .frame(width: iconBox, height: iconBox)
                 .background(Color.orange.opacity(0.16), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 6) {
                 Text(model.toolLabel)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                 AriaBadge(text: String(localized: "awaiting approval"), tint: .orange)
             }
@@ -79,34 +80,48 @@ private struct AriaApprovalCardContent: View {
     }
 
     /// Approvare è l'azione principale e prende lo spazio; rifiutare è accanto, in vetro con il rosso del testo.
+    /// Se col testo grande non stanno in riga, vanno uno sopra l'altro a tutta larghezza.
     private var actions: some View {
-        HStack(spacing: 10) {
-            Button(role: .destructive) { model.reject() } label: {
-                Text("Reject")
-                    .font(.system(size: 16, weight: .semibold))
-                    .padding(.horizontal, 10)
-                    .frame(minHeight: 46)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                rejectButton(fill: false)
+                approveButton
             }
-            .ariaGlassButtonStyle()
-            .buttonBorderShape(.capsule)
-            .tint(.red)
-
-            Button { model.approve() } label: {
-                Text(model.isEdited ? "Approve with changes" : "Approve")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(maxWidth: .infinity, minHeight: 46)
+            VStack(spacing: 10) {
+                rejectButton(fill: true)
+                approveButton
             }
-            .ariaProminentGlassButtonStyle(tint: .accentColor)
-            .buttonBorderShape(.capsule)
         }
         .animation(.snappy(duration: 0.2), value: model.isEdited)
+    }
+
+    private func rejectButton(fill: Bool) -> some View {
+        Button(role: .destructive) { model.reject() } label: {
+            Text("Reject")
+                .font(.callout.weight(.semibold))
+                .padding(.horizontal, 10)
+                .frame(maxWidth: fill ? .infinity : nil, minHeight: 46)
+        }
+        .ariaGlassButtonStyle()
+        .buttonBorderShape(.capsule)
+        .tint(.red)
+    }
+
+    private var approveButton: some View {
+        Button { model.approve() } label: {
+            Text(model.isEdited ? "Approve with changes" : "Approve")
+                .font(.callout.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 46)
+        }
+        .ariaProminentGlassButtonStyle(tint: .accentColor)
+        .buttonBorderShape(.capsule)
     }
 
     /// Etichetta piccola sopra e valore in un campo pieno e discreto (niente bordo bianco su fondo bianco).
     private func field<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             content()
         }
@@ -126,13 +141,13 @@ private struct AriaApprovalCardContent: View {
         switch model.value(key) {
         case .bool(let value):
             Toggle(label, isOn: Binding(get: { value }, set: { model.set(key, .bool($0)) }))
-                .font(.system(size: 15))
+                .font(.subheadline)
         case .number(let value):
             field(label) {
                 fieldBox {
                     TextField(label, value: Binding(get: { value }, set: { model.set(key, .number($0)) }), format: .number)
                         .keyboardType(.decimalPad)
-                        .font(.system(size: 16))
+                        .font(.callout)
                         .focused($focusedKey, equals: key)
                 }
             }
@@ -141,7 +156,7 @@ private struct AriaApprovalCardContent: View {
                 fieldBox {
                     TextField(label, text: Binding(get: { value }, set: { model.set(key, .string($0)) }), axis: .vertical)
                         .lineLimit(1...5)
-                        .font(.system(size: 16))
+                        .font(.callout)
                         .focused($focusedKey, equals: key)
                 }
             }
@@ -152,7 +167,7 @@ private struct AriaApprovalCardContent: View {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(Array(items.enumerated()), id: \.offset) { _, move in
                             Text(verbatim: model.moveDescription(move))
-                                .font(.system(size: 13))
+                                .font(.footnote)
                         }
                     }
                 }
@@ -163,7 +178,7 @@ private struct AriaApprovalCardContent: View {
             // Valore che non si modifica (liste, oggetti): in sola lettura, senza l'aspetto di un campo.
             field(label) {
                 Text(verbatim: other.compactDescription)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.system(.footnote, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineLimit(6)
             }
@@ -184,7 +199,7 @@ struct AriaInterruptOutcomeLine: View {
         case .lotoDeclined: ("LOTO not confirmed", "lock.open.fill", .orange)
         }
         Label(text, systemImage: icon)
-            .font(.system(size: 12, weight: .medium))
+            .font(.caption.weight(.medium))
             .foregroundStyle(tint)
     }
 }

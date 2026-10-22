@@ -13,6 +13,8 @@ import SwiftUI
 /// Strumenti attivi e contesto aggiunto, in una riga che scorre sopra il campo.
 struct AriaComposerTray: View {
     let model: AriaChatComposerViewModel
+    @ScaledMetric(relativeTo: .footnote) private var pillHeight: CGFloat = 32
+    @ScaledMetric(relativeTo: .caption2) private var removeSide: CGFloat = 18
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -36,12 +38,12 @@ struct AriaComposerTray: View {
 
     private func toolPill(_ title: String, icon: String, remove: @escaping () -> Void) -> some View {
         HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 12, weight: .semibold))
-            Text(title).font(.system(size: 13, weight: .medium))
+            Image(systemName: icon).font(.caption.weight(.semibold))
+            Text(title).font(.footnote.weight(.medium))
             Button(action: remove) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .frame(width: 18, height: 18)
+                    .font(.caption2.weight(.bold))
+                    .frame(width: removeSide, height: removeSide)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -50,7 +52,7 @@ struct AriaComposerTray: View {
         .foregroundStyle(Color.accentColor)
         .padding(.leading, 11)
         .padding(.trailing, 6)
-        .frame(height: 32)
+        .frame(minHeight: pillHeight)
         .background(Color.accentColor.opacity(0.12), in: Capsule())
     }
 }
@@ -59,6 +61,10 @@ struct AriaComposerTray: View {
 private struct AriaContextTile: View {
     let item: AriaContextItem
     var onRemove: () -> Void
+    /// Foto e file alti uguali: crescono insieme col testo del nome.
+    @ScaledMetric(relativeTo: .footnote) private var tileSide: CGFloat = 56
+    @ScaledMetric(relativeTo: .caption2) private var removeSide: CGFloat = 20
+    @ScaledMetric(relativeTo: .footnote) private var nameWidth: CGFloat = 140
 
     var body: some View {
         Group {
@@ -66,36 +72,36 @@ private struct AriaContextTile: View {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 56, height: 56)
+                    .frame(width: tileSide, height: tileSide)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "doc.fill")
-                        .font(.system(size: 18))
+                        .font(.body)
                         .foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item.name)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.footnote.weight(.medium))
                             .lineLimit(1)
                         if let size = item.size {
                             Text(Int64(size), format: .byteCount(style: .file))
-                                .font(.system(size: 11))
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .frame(maxWidth: 140, alignment: .leading)
+                    .frame(maxWidth: nameWidth, alignment: .leading)
                 }
                 .padding(.horizontal, 10)
-                .frame(height: 56)
+                .frame(minHeight: tileSide)
                 .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .overlay(alignment: .topTrailing) {
             Button(action: onRemove) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(.white)
-                    .frame(width: 20, height: 20)
+                    .frame(width: removeSide, height: removeSide)
                     .background(Color.black.opacity(0.6), in: Circle())
             }
             .buttonStyle(.plain)
@@ -124,17 +130,9 @@ struct AriaContextRing: View {
 
     var body: some View {
         Button { model.showContext = true } label: {
-            ZStack {
-                Circle().stroke(Color.primary.opacity(0.12), lineWidth: 2.5)
-                Circle()
-                    .trim(from: 0, to: fraction)
-                    .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .animation(.smooth(duration: 0.5), value: fraction)
-            }
-            .frame(width: 18, height: 18)
-            .frame(width: 36, height: 44)
-            .contentShape(Rectangle())
+            // Il limite sta sull'etichetta: il popover dei dettagli segue il testo di sistema.
+            AriaContextRingGlyph(fraction: fraction, tint: tint)
+                .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Conversation memory")
@@ -146,6 +144,29 @@ struct AriaContextRing: View {
             }
             .presentationCompactAdaptation(.popover)
         }
+    }
+}
+
+/// L'anello cresce col testo come gli altri cerchi della barra (stesso limite).
+private struct AriaContextRingGlyph: View {
+    let fraction: Double
+    let tint: Color
+    @ScaledMetric(relativeTo: .body) private var ring: CGFloat = 18
+    @ScaledMetric(relativeTo: .body) private var width: CGFloat = 36
+    @ScaledMetric(relativeTo: .body) private var height: CGFloat = 44
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Color.primary.opacity(0.12), lineWidth: 2.5)
+            Circle()
+                .trim(from: 0, to: fraction)
+                .stroke(tint, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .animation(.smooth(duration: 0.5), value: fraction)
+        }
+        .frame(width: ring, height: ring)
+        .frame(width: width, height: height)
+        .contentShape(Rectangle())
     }
 }
 
@@ -162,10 +183,10 @@ private struct AriaContextPopover: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Conversation memory")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                 Spacer(minLength: 16)
                 Text(fraction, format: .percent.precision(.fractionLength(0)))
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(tint)
             }
@@ -174,16 +195,16 @@ private struct AriaContextPopover: View {
                 .tint(tint)
                 .accessibilityHidden(true)
             Text("\(usage.usedTokens.formatted(.number.notation(.compactName))) of \(usage.limitTokens.formatted(.number.notation(.compactName))) tokens")
-                .font(.system(size: 12))
+                .font(.caption)
                 .foregroundStyle(.secondary)
             if usage.isMostlyOverhead {
                 Text("Most of it is manuals and instructions Aria reads, which making room can't reduce.")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Text("When it fills up, Aria summarizes the oldest messages. The conversation itself is kept.")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

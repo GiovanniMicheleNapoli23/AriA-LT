@@ -27,6 +27,36 @@
         }
       }
     },
+    "“%@”" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”"
+          }
+        }
+      }
+    },
+    "\"%@\" will be closed as cancelled." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" verrà chiuso come annullato."
+          }
+        }
+      }
+    },
+    "“%@” will be removed for everyone. Work orders already created from it stay." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” verrà rimosso per tutti. Gli ordini già creati da questo modello restano."
+          }
+        }
+      }
+    },
     "/ %lld kWh" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -128,6 +158,16 @@
         }
       }
     },
+    "%@ · %@ will be removed from this work order." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@ verrà rimosso da questo ordine."
+          }
+        }
+      }
+    },
     "%@ but in the last 7 days" : {
       "localizations" : {
         "en" : {
@@ -204,6 +244,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@: %@"
+          }
+        }
+      }
+    },
+    "%@/h" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@/h"
           }
         }
       }
@@ -502,6 +552,26 @@
         }
       }
     },
+    "%lld open" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld aperti"
+          }
+        }
+      }
+    },
+    "%lld parts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ricambi"
+          }
+        }
+      }
+    },
     "%lld pcs" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -578,6 +648,16 @@
         }
       }
     },
+    "%lld steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld passi"
+          }
+        }
+      }
+    },
     "%lld steps done" : {
       "localizations" : {
         "en" : {
@@ -590,6 +670,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld passi fatti"
+          }
+        }
+      }
+    },
+    "%lld." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld."
           }
         }
       }
@@ -646,6 +736,7 @@
       }
     },
     "%lld/%lld steps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -730,7 +821,6 @@
       }
     },
     "•" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -762,6 +852,36 @@
         }
       }
     },
+    "× %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "× %@"
+          }
+        }
+      }
+    },
+    "A new work order will be created from “%@”." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verrà creato un nuovo ordine di lavoro da “%@”."
+          }
+        }
+      }
+    },
+    "A note is required when a step was not done." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La nota è obbligatoria se il passo non è stato fatto."
+          }
+        }
+      }
+    },
     "A part is low on stock when its quantity drops to the minimum." : {
       "localizations" : {
         "it" : {
@@ -784,6 +904,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un passo può avere al massimo 3 foto."
+          }
+        }
+      }
+    },
+    "A step-by-step procedure" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una procedura passo per passo"
+          }
+        }
+      }
+    },
+    "a technician" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "un tecnico"
           }
         }
       }
@@ -823,6 +963,7 @@
       }
     },
     "Access token (JWT)" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -874,6 +1015,36 @@
         }
       }
     },
+    "Actions the server accepts:" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni accettate dal server:"
+          }
+        }
+      }
+    },
+    "Actions the server accepts: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni accettate dal server: %@"
+          }
+        }
+      }
+    },
+    "Activity" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attività"
+          }
+        }
+      }
+    },
     "Actual duration" : {
       "localizations" : {
         "it" : {
@@ -900,6 +1071,26 @@
         }
       }
     },
+    "Add %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi %@"
+          }
+        }
+      }
+    },
+    "Add a description." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi una descrizione."
+          }
+        }
+      }
+    },
     "Add a note to explain why the step was not done." : {
       "localizations" : {
         "en" : {
@@ -912,6 +1103,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi una nota per spiegare perché il passo non è stato fatto."
+          }
+        }
+      }
+    },
+    "Add a step" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi un passo"
           }
         }
       }
@@ -952,6 +1153,16 @@
         }
       }
     },
+    "Add Part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi ricambio"
+          }
+        }
+      }
+    },
     "Add Photo" : {
       "localizations" : {
         "en" : {
@@ -978,6 +1189,36 @@
         }
       }
     },
+    "Add Step" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi passo"
+          }
+        }
+      }
+    },
+    "Add to notes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi alle note"
+          }
+        }
+      }
+    },
+    "Add who did the work." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indica chi ha svolto il lavoro."
+          }
+        }
+      }
+    },
     "Added to the company's learned knowledge." : {
       "localizations" : {
         "en" : {
@@ -990,6 +1231,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiunto a ciò che l'azienda ha imparato."
+          }
+        }
+      }
+    },
+    "Additional cost" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo aggiuntivo"
+          }
+        }
+      }
+    },
+    "Additional Cost" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo aggiuntivo"
+          }
+        }
+      }
+    },
+    "Additional costs" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costi aggiuntivi"
+          }
+        }
+      }
+    },
+    "AI assistant" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assistente AI"
           }
         }
       }
@@ -1226,6 +1507,16 @@
         }
       }
     },
+    "Amount" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importo"
+          }
+        }
+      }
+    },
     "An admin reviews it before Aria uses it." : {
       "localizations" : {
         "en" : {
@@ -1258,6 +1549,16 @@
         }
       }
     },
+    "Anonymous" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anonimo"
+          }
+        }
+      }
+    },
     "Another reason — I'll describe it" : {
       "localizations" : {
         "en" : {
@@ -1280,6 +1581,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rispondi"
+          }
+        }
+      }
+    },
+    "Any priority" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualsiasi priorità"
+          }
+        }
+      }
+    },
+    "Any status" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualsiasi stato"
+          }
+        }
+      }
+    },
+    "Any type" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualsiasi tipo"
+          }
+        }
+      }
+    },
+    "Anyone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiunque"
+          }
+        }
+      }
+    },
+    "Anything else the technician should know" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altro che il tecnico deve sapere"
           }
         }
       }
@@ -1329,6 +1680,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Manuale APC Smart-UPS 3000"
+          }
+        }
+      }
+    },
+    "Applied" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applicato"
+          }
+        }
+      }
+    },
+    "Apply" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applica"
           }
         }
       }
@@ -1403,6 +1774,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approvato con modifiche"
+          }
+        }
+      }
+    },
+    "Archived" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archiviato"
           }
         }
       }
@@ -1736,6 +2117,26 @@
         }
       }
     },
+    "Ask anything" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi qualsiasi cosa"
+          }
+        }
+      }
+    },
+    "Ask anything about this work order…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi qualsiasi cosa su questo ordine…"
+          }
+        }
+      }
+    },
     "Ask Aria" : {
       "localizations" : {
         "en" : {
@@ -1764,6 +2165,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiedi ad AriA"
+          }
+        }
+      }
+    },
+    "Ask Aria about this work order" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi ad Aria su questo ordine"
           }
         }
       }
@@ -1853,6 +2265,26 @@
         }
       }
     },
+    "Assigned to %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegnato a %@."
+          }
+        }
+      }
+    },
+    "Assigned to me" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegnati a me"
+          }
+        }
+      }
+    },
     "Assignee" : {
       "localizations" : {
         "en" : {
@@ -1918,12 +2350,32 @@
         }
       }
     },
+    "Auto-assign" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegna automaticamente"
+          }
+        }
+      }
+    },
     "Auto-assign note" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nota assegnazione automatica"
+          }
+        }
+      }
+    },
+    "Auto-assigned" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegnato automaticamente"
           }
         }
       }
@@ -2285,6 +2737,16 @@
         }
       }
     },
+    "Can't load templates" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare i modelli"
+          }
+        }
+      }
+    },
     "Can't load work orders" : {
       "localizations" : {
         "it" : {
@@ -2311,6 +2773,26 @@
         }
       }
     },
+    "Cancel this work order?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullare questo ordine di lavoro?"
+          }
+        }
+      }
+    },
+    "Cancel work order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla ordine"
+          }
+        }
+      }
+    },
     "Cancelled" : {
       "localizations" : {
         "en" : {
@@ -2323,6 +2805,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Annullato"
+          }
+        }
+      }
+    },
+    "category" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "categoria"
           }
         }
       }
@@ -2359,6 +2851,36 @@
         }
       }
     },
+    "Change status" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia stato"
+          }
+        }
+      }
+    },
+    "Changed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modificato"
+          }
+        }
+      }
+    },
+    "Changes the status" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambia lo stato"
+          }
+        }
+      }
+    },
     "Chats" : {
       "localizations" : {
         "en" : {
@@ -2371,6 +2893,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chat"
+          }
+        }
+      }
+    },
+    "Check all steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spunta tutti i passi"
           }
         }
       }
@@ -2388,6 +2920,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla la tensione della cinghia: la flessione ammessa è 10–15 mm sotto pressione manuale. Verifica l’assenza di crepe o usura sui lati."
+          }
+        }
+      }
+    },
+    "Check everything, then create the order." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla tutto, poi crea l'ordine."
           }
         }
       }
@@ -2456,6 +2998,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla i differenziali"
+          }
+        }
+      }
+    },
+    "Check step %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spunta il passo %lld"
           }
         }
       }
@@ -2576,6 +3128,26 @@
         }
       }
     },
+    "Choose a part or enter its code." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un ricambio o inseriscine il codice."
+          }
+        }
+      }
+    },
+    "Choose a plant first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli prima uno stabilimento."
+          }
+        }
+      }
+    },
     "Choose a plant to see its spare parts." : {
       "localizations" : {
         "it" : {
@@ -2606,6 +3178,36 @@
         }
       }
     },
+    "Choose File" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli file"
+          }
+        }
+      }
+    },
+    "Choose person" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli persona"
+          }
+        }
+      }
+    },
+    "Choosing an asset fills in its zone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegliendo un asset, la zona si compila da sola."
+          }
+        }
+      }
+    },
     "Classification" : {
       "localizations" : {
         "it" : {
@@ -2632,6 +3234,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Azzera filtri"
+          }
+        }
+      }
+    },
+    "Clear result" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancella esito"
+          }
+        }
+      }
+    },
+    "Clear this step's result?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancellare l'esito di questo passo?"
+          }
+        }
+      }
+    },
+    "Clearer, more complete text" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un testo più chiaro e completo"
           }
         }
       }
@@ -2870,6 +3502,26 @@
         }
       }
     },
+    "Complete" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa"
+          }
+        }
+      }
+    },
+    "Complete draft" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa bozza"
+          }
+        }
+      }
+    },
     "Complete step" : {
       "localizations" : {
         "en" : {
@@ -2942,6 +3594,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Completa la task per inviarla alla verifica."
+          }
+        }
+      }
+    },
+    "Complete work order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa ordine di lavoro"
+          }
+        }
+      }
+    },
+    "Complete…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa…"
           }
         }
       }
@@ -3174,6 +3846,16 @@
         }
       }
     },
+    "Consumables" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Materiali di consumo"
+          }
+        }
+      }
+    },
     "Context" : {
       "localizations" : {
         "en" : {
@@ -3272,6 +3954,7 @@
       }
     },
     "Copy the sign-in link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 15 minutes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3283,6 +3966,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copia il link di accesso dall'email e incollalo qui. Con gli appunti universali puoi copiarlo sul Mac. Non aprirlo nel browser: funziona una volta sola e scade dopo 15 minuti."
+          }
+        }
+      }
+    },
+    "Cost: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo: %@"
           }
         }
       }
@@ -3361,6 +4054,26 @@
         }
       }
     },
+    "Couldn't auto-assign" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile assegnare automaticamente"
+          }
+        }
+      }
+    },
+    "Couldn't change the status" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile cambiare lo stato"
+          }
+        }
+      }
+    },
     "Couldn't load conversations" : {
       "localizations" : {
         "en" : {
@@ -3373,6 +4086,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile caricare le conversazioni"
+          }
+        }
+      }
+    },
+    "Couldn't open the file: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aprire il file: %@"
+          }
+        }
+      }
+    },
+    "Couldn't read %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile leggere %@."
+          }
+        }
+      }
+    },
+    "Couldn't read that photo." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile leggere la foto."
           }
         }
       }
@@ -3455,6 +4198,16 @@
         }
       }
     },
+    "Create a work order?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creare un ordine di lavoro?"
+          }
+        }
+      }
+    },
     "Create the suggested WO" : {
       "localizations" : {
         "en" : {
@@ -3483,6 +4236,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crea WO"
+          }
+        }
+      }
+    },
+    "Create Work Order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea ordine di lavoro"
           }
         }
       }
@@ -3555,6 +4318,16 @@
         }
       }
     },
+    "Custom question" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domanda libera"
+          }
+        }
+      }
+    },
     "Defect rate" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3605,6 +4378,16 @@
         }
       }
     },
+    "Delete this cost?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo costo?"
+          }
+        }
+      }
+    },
     "Delete this downtime?" : {
       "localizations" : {
         "it" : {
@@ -3615,12 +4398,42 @@
         }
       }
     },
+    "Delete this file?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo file?"
+          }
+        }
+      }
+    },
+    "Delete this template?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo modello?"
+          }
+        }
+      }
+    },
     "Delete this work order?" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eliminare questo ordine di lavoro?"
+          }
+        }
+      }
+    },
+    "Deleted" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminato"
           }
         }
       }
@@ -3687,6 +4500,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descrivi cosa è stato fatto. La task verrà chiusa e inviata alla verifica."
+          }
+        }
+      }
+    },
+    "description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "descrizione"
           }
         }
       }
@@ -4008,6 +4831,26 @@
         }
       }
     },
+    "Done…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fatto…"
+          }
+        }
+      }
+    },
+    "Download failed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download non riuscito"
+          }
+        }
+      }
+    },
     "Downtime" : {
       "localizations" : {
         "it" : {
@@ -4034,6 +4877,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bozza"
+          }
+        }
+      }
+    },
+    "Draft with AI" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bozza con l'AI"
           }
         }
       }
@@ -4117,12 +4970,42 @@
         }
       }
     },
+    "duration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "durata"
+          }
+        }
+      }
+    },
+    "Duration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durata"
+          }
+        }
+      }
+    },
     "e.g. M-101" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "es. M-101"
+          }
+        }
+      }
+    },
+    "e.g. Pump P-101 is leaking" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "es. Perdita dalla pompa P-101"
           }
         }
       }
@@ -4179,12 +5062,32 @@
         }
       }
     },
+    "Edit Part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica ricambio"
+          }
+        }
+      }
+    },
     "Edit spare part" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifica ricambio"
+          }
+        }
+      }
+    },
+    "Edit Template" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica modello"
           }
         }
       }
@@ -4315,6 +5218,16 @@
         }
       }
     },
+    "Enter the minutes worked." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci i minuti lavorati."
+          }
+        }
+      }
+    },
     "Error %lld: %@" : {
       "localizations" : {
         "en" : {
@@ -4327,6 +5240,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Errore %lld: %@"
+          }
+        }
+      }
+    },
+    "Estimate duration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stima durata"
           }
         }
       }
@@ -4357,6 +5280,16 @@
         }
       }
     },
+    "Every step goes back to unchecked." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti i passi tornano senza spunta."
+          }
+        }
+      }
+    },
     "Every step needs a result before the task can be completed." : {
       "localizations" : {
         "en" : {
@@ -4369,6 +5302,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ogni passo deve avere un risultato prima di completare la task."
+          }
+        }
+      }
+    },
+    "Every step needs a result before the work order can be completed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni passo deve avere un esito prima di completare l'ordine di lavoro."
           }
         }
       }
@@ -4402,6 +5345,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Spiega con parole tue cosa ti ha bloccato…"
+          }
+        }
+      }
+    },
+    "External service" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Servizio esterno"
+          }
+        }
+      }
+    },
+    "Extra" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra"
           }
         }
       }
@@ -4461,6 +5424,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Feedback"
+          }
+        }
+      }
+    },
+    "Field operators" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operatori sul campo"
           }
         }
       }
@@ -4531,12 +5504,52 @@
         }
       }
     },
+    "Fill in the missing fields" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa i campi mancanti"
+          }
+        }
+      }
+    },
+    "Filled by AI: %@. Review before saving." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compilato dall'AI: %@. Controlla prima di salvare."
+          }
+        }
+      }
+    },
     "Filter" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filtro"
+          }
+        }
+      }
+    },
+    "Filters" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtri"
+          }
+        }
+      }
+    },
+    "Filters · %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtri · %lld"
           }
         }
       }
@@ -4620,6 +5633,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Buon primo caffè"
+          }
+        }
+      }
+    },
+    "From the title, Aria can suggest category, priority, type, duration and steps." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dal titolo, Aria può suggerire categoria, priorità, tipo, durata e passi."
           }
         }
       }
@@ -4709,6 +5732,16 @@
         }
       }
     },
+    "Generate steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genera passi"
+          }
+        }
+      }
+    },
     "Generator Maintenance" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4787,6 +5820,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dammi i dettagli del WO %@"
+          }
+        }
+      }
+    },
+    "Go to steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vai ai passi"
           }
         }
       }
@@ -5109,6 +6152,16 @@
         }
       }
     },
+    "History" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronologia"
+          }
+        }
+      }
+    },
     "History of %@" : {
       "localizations" : {
         "en" : {
@@ -5121,6 +6174,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Storia di %@"
+          }
+        }
+      }
+    },
+    "Hold" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi"
           }
         }
       }
@@ -5172,6 +6235,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Produzione oraria (pz)"
+          }
+        }
+      }
+    },
+    "Hourly rate" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tariffa oraria"
           }
         }
       }
@@ -5253,6 +6326,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Come si presenta l'impianto stamattina?"
+          }
+        }
+      }
+    },
+    "How long the job takes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quanto dura il lavoro"
+          }
+        }
+      }
+    },
+    "How urgent is it, and what kind of work?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quanto è urgente, e che tipo di lavoro è?"
           }
         }
       }
@@ -5447,6 +6540,16 @@
         }
       }
     },
+    "Improve description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Migliora descrizione"
+          }
+        }
+      }
+    },
     "In order of priority" : {
       "localizations" : {
         "en" : {
@@ -5475,6 +6578,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In corso"
+          }
+        }
+      }
+    },
+    "In stock: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibili: %@"
           }
         }
       }
@@ -5663,6 +6776,16 @@
         }
       }
     },
+    "It will be removed from this work order for everyone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verrà rimosso da questo ordine per tutti."
+          }
+        }
+      }
+    },
     "Keep" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5696,6 +6819,16 @@
         }
       }
     },
+    "Keep it" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantieni"
+          }
+        }
+      }
+    },
     "Keep the text as it is" : {
       "localizations" : {
         "en" : {
@@ -5708,6 +6841,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tieni il testo così com'è"
+          }
+        }
+      }
+    },
+    "Labor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manodopera"
           }
         }
       }
@@ -5775,6 +6918,16 @@
         }
       }
     },
+    "Last updated" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultima modifica"
+          }
+        }
+      }
+    },
     "Last week" : {
       "localizations" : {
         "en" : {
@@ -5829,6 +6982,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conoscenza appresa usata · %lld"
+          }
+        }
+      }
+    },
+    "Line total: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Totale riga: %@"
           }
         }
       }
@@ -6110,6 +7273,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Registra fermo"
+          }
+        }
+      }
+    },
+    "Log Labor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra manodopera"
           }
         }
       }
@@ -6530,6 +7703,16 @@
         }
       }
     },
+    "Me" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Io"
+          }
+        }
+      }
+    },
     "Medium" : {
       "localizations" : {
         "en" : {
@@ -6578,6 +7761,16 @@
         }
       }
     },
+    "Messages" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Messaggi"
+          }
+        }
+      }
+    },
     "Microphone" : {
       "localizations" : {
         "en" : {
@@ -6610,6 +7803,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "min %lld"
+          }
+        }
+      }
+    },
+    "Mine" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Miei"
           }
         }
       }
@@ -6876,6 +8079,16 @@
         }
       }
     },
+    "New Template" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo modello"
+          }
+        }
+      }
+    },
     "New week — where do we start?" : {
       "localizations" : {
         "en" : {
@@ -6898,6 +8111,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuovo ordine di lavoro"
+          }
+        }
+      }
+    },
+    "Newest" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più recenti"
           }
         }
       }
@@ -6934,6 +8157,16 @@
         }
       }
     },
+    "No" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        }
+      }
+    },
     "No access" : {
       "localizations" : {
         "it" : {
@@ -6944,12 +8177,32 @@
         }
       }
     },
+    "No access to templates" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun accesso ai modelli"
+          }
+        }
+      }
+    },
     "No access to work orders" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun accesso agli ordini di lavoro"
+          }
+        }
+      }
+    },
+    "No additional costs yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun costo aggiuntivo."
           }
         }
       }
@@ -6970,6 +8223,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun asset corrisponde a questi filtri in questo stabilimento."
+          }
+        }
+      }
+    },
+    "No changes recorded yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna modifica registrata."
           }
         }
       }
@@ -7083,12 +8346,42 @@
         }
       }
     },
+    "No files yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessun file."
+          }
+        }
+      }
+    },
+    "No labor logged yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna manodopera registrata."
+          }
+        }
+      }
+    },
     "No matching spare parts" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun ricambio corrispondente"
+          }
+        }
+      }
+    },
+    "No messages yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessun messaggio."
           }
         }
       }
@@ -7188,6 +8481,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun task aperto"
+          }
+        }
+      }
+    },
+    "No open work" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun lavoro aperto"
+          }
+        }
+      }
+    },
+    "No parts used yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ricambio usato."
           }
         }
       }
@@ -7380,6 +8693,26 @@
         }
       }
     },
+    "No technician could be picked. The current assignee stays." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non è stato possibile scegliere un tecnico. L'assegnatario attuale resta."
+          }
+        }
+      }
+    },
+    "No templates" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun modello"
+          }
+        }
+      }
+    },
     "No work orders" : {
       "localizations" : {
         "it" : {
@@ -7396,6 +8729,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun ordine di lavoro per questo asset."
+          }
+        }
+      }
+    },
+    "Nobody available" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno disponibile"
           }
         }
       }
@@ -7511,6 +8854,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non fatto"
+          }
+        }
+      }
+    },
+    "Not done…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non fatto…"
           }
         }
       }
@@ -7638,6 +8991,16 @@
         }
       }
     },
+    "notes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "note"
+          }
+        }
+      }
+    },
     "Notes" : {
       "localizations" : {
         "en" : {
@@ -7660,6 +9023,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun risultato con questi filtri."
+          }
+        }
+      }
+    },
+    "Nothing set" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niente di impostato"
           }
         }
       }
@@ -7825,6 +9198,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Online"
+          }
+        }
+      }
+    },
+    "Only %@ in stock." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo %@ disponibili."
           }
         }
       }
@@ -8120,6 +9503,16 @@
         }
       }
     },
+    "Opens a preview" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apre un'anteprima"
+          }
+        }
+      }
+    },
     "Operations" : {
       "localizations" : {
         "it" : {
@@ -8350,7 +9743,6 @@
       }
     },
     "Overview" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8362,6 +9754,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Panoramica"
+          }
+        }
+      }
+    },
+    "Part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambio"
+          }
+        }
+      }
+    },
+    "Part code" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice ricambio"
           }
         }
       }
@@ -8409,6 +9821,16 @@
         }
       }
     },
+    "Parts & tools" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambi e attrezzi"
+          }
+        }
+      }
+    },
     "Parts cost" : {
       "localizations" : {
         "it" : {
@@ -8447,6 +9869,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricambi serve?"
+          }
+        }
+      }
+    },
+    "Parts used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambi usati"
+          }
+        }
+      }
+    },
+    "Parts:" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambi:"
           }
         }
       }
@@ -8611,6 +10053,16 @@
         }
       }
     },
+    "Photo Library" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libreria foto"
+          }
+        }
+      }
+    },
     "Photo of the spare part" : {
       "localizations" : {
         "it" : {
@@ -8697,6 +10149,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le foto partono con il prossimo invio."
+          }
+        }
+      }
+    },
+    "Pick a shortcut or ask a question. Suggested changes are only saved when you tap Apply." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli una scorciatoia o fai una domanda. Le modifiche proposte si salvano solo toccando Applica."
           }
         }
       }
@@ -8990,6 +10453,16 @@
         }
       }
     },
+    "priority" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "priorità"
+          }
+        }
+      }
+    },
     "Priority" : {
       "localizations" : {
         "en" : {
@@ -9130,6 +10603,26 @@
         }
       }
     },
+    "Proposed description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descrizione proposta"
+          }
+        }
+      }
+    },
+    "Proposed notes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note proposte"
+          }
+        }
+      }
+    },
     "Pump" : {
       "localizations" : {
         "it" : {
@@ -9217,6 +10710,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quantità"
+          }
+        }
+      }
+    },
+    "Quantity to add" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantità da aggiungere"
           }
         }
       }
@@ -9489,7 +10992,6 @@
       }
     },
     "Refresh" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9710,6 +11212,26 @@
         }
       }
     },
+    "Rental" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noleggio"
+          }
+        }
+      }
+    },
+    "Reorder" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riordina"
+          }
+        }
+      }
+    },
     "Report" : {
       "localizations" : {
         "en" : {
@@ -9785,6 +11307,26 @@
         }
       }
     },
+    "Reset all checks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzera tutte le spunte"
+          }
+        }
+      }
+    },
+    "Reset all checks?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzerare tutte le spunte?"
+          }
+        }
+      }
+    },
     "Resolution notes" : {
       "localizations" : {
         "it" : {
@@ -9834,6 +11376,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stile di risposta: %@"
+          }
+        }
+      }
+    },
+    "Restored" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristinato"
           }
         }
       }
@@ -9922,6 +11474,16 @@
         }
       }
     },
+    "Risks and precautions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rischi e precauzioni"
+          }
+        }
+      }
+    },
     "Robotic Welder" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9988,6 +11550,16 @@
         }
       }
     },
+    "Safety check" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica sicurezza"
+          }
+        }
+      }
+    },
     "Safety confirmation required" : {
       "localizations" : {
         "en" : {
@@ -10020,6 +11592,16 @@
         }
       }
     },
+    "Safety:" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sicurezza:"
+          }
+        }
+      }
+    },
     "Save" : {
       "localizations" : {
         "en" : {
@@ -10032,6 +11614,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salva"
+          }
+        }
+      }
+    },
+    "Save a work order you repeat often as a template." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva come modello un ordine che ripeti spesso."
           }
         }
       }
@@ -10112,6 +11704,7 @@
       }
     },
     "Scheduled date" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10179,6 +11772,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca titolo, asset o zona"
+          }
+        }
+      }
+    },
+    "Search title, category, asset or zone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca titolo, categoria, asset o zona"
           }
         }
       }
@@ -10275,6 +11878,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerco work order"
+          }
+        }
+      }
+    },
+    "Section" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sezione"
           }
         }
       }
@@ -10623,6 +12236,16 @@
         }
       }
     },
+    "Shortcuts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scorciatoie"
+          }
+        }
+      }
+    },
     "Should Aria remember this?" : {
       "localizations" : {
         "en" : {
@@ -10640,7 +12263,6 @@
       }
     },
     "Show" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10782,6 +12404,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra gli ordini di lavoro aperti per priorità"
+          }
+        }
+      }
+    },
+    "Show original" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra originale"
           }
         }
       }
@@ -11002,6 +12634,26 @@
         }
       }
     },
+    "Sort by" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordina per"
+          }
+        }
+      }
+    },
+    "Sort by %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordina per %@"
+          }
+        }
+      }
+    },
     "Spare parts" : {
       "localizations" : {
         "en" : {
@@ -11024,6 +12676,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricambi"
+          }
+        }
+      }
+    },
+    "Spare parts aren't available for your role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I ricambi non sono disponibili per il tuo ruolo."
           }
         }
       }
@@ -11123,12 +12785,42 @@
         }
       }
     },
+    "Status: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stato: %@"
+          }
+        }
+      }
+    },
+    "Step" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo"
+          }
+        }
+      }
+    },
     "Step %lld" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passo %lld"
+          }
+        }
+      }
+    },
+    "Step %lld actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni del passo %lld"
           }
         }
       }
@@ -11145,6 +12837,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passo %lld di %lld"
+          }
+        }
+      }
+    },
+    "Step actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni sui passi"
           }
         }
       }
@@ -11213,6 +12915,26 @@
         }
       }
     },
+    "Steps (%lld)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passi (%lld)"
+          }
+        }
+      }
+    },
+    "Steps %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passi %@"
+          }
+        }
+      }
+    },
     "Steps without a result: %lld" : {
       "localizations" : {
         "en" : {
@@ -11225,6 +12947,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passi senza risultato: %lld"
+          }
+        }
+      }
+    },
+    "Steps:" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passi:"
           }
         }
       }
@@ -11429,6 +13161,16 @@
         }
       }
     },
+    "Suggested changes are saved only when you tap Apply." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le modifiche proposte si salvano solo toccando Applica."
+          }
+        }
+      }
+    },
     "Suggesting assignment" : {
       "localizations" : {
         "en" : {
@@ -11458,6 +13200,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riassumi i fermi di oggi e le loro cause principali"
+          }
+        }
+      }
+    },
+    "Summarize" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riassumi"
           }
         }
       }
@@ -11561,6 +13313,16 @@
         }
       }
     },
+    "System" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema"
+          }
+        }
+      }
+    },
     "Tag" : {
       "localizations" : {
         "it" : {
@@ -11577,6 +13339,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tag, nome, costruttore, modello"
+          }
+        }
+      }
+    },
+    "Take Photo" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scatta foto"
+          }
+        }
+      }
+    },
+    "Tap a template to edit it. Use the button on the right to create a work order from it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocca un modello per modificarlo. Usa il pulsante a destra per creare un ordine dal modello."
           }
         }
       }
@@ -11774,6 +13556,16 @@
         }
       }
     },
+    "Templates" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modelli"
+          }
+        }
+      }
+    },
     "Thanks — Aria learned from your feedback." : {
       "localizations" : {
         "en" : {
@@ -11806,6 +13598,16 @@
         }
       }
     },
+    "The AI had nothing to add." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'AI non ha nulla da aggiungere."
+          }
+        }
+      }
+    },
     "The alarm was false — it cleared on its own" : {
       "localizations" : {
         "en" : {
@@ -11818,6 +13620,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'allarme era falso — è rientrato da solo"
+          }
+        }
+      }
+    },
+    "The amount must be greater than zero." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'importo deve essere maggiore di zero."
           }
         }
       }
@@ -11854,6 +13666,16 @@
         }
       }
     },
+    "The assistant returned an empty answer." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente ha restituito una risposta vuota."
+          }
+        }
+      }
+    },
     "The documentation does not match this machine" : {
       "localizations" : {
         "en" : {
@@ -11886,6 +13708,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La durata stimata deve essere un numero intero di minuti."
+          }
+        }
+      }
+    },
+    "The hourly rate must be a number of zero or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tariffa oraria deve essere un numero pari o superiore a zero."
           }
         }
       }
@@ -11932,6 +13764,16 @@
         }
       }
     },
+    "The note and photos of this step are removed too." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vengono rimosse anche la nota e le foto del passo."
+          }
+        }
+      }
+    },
     "The note is too long (2000 characters at most)." : {
       "localizations" : {
         "en" : {
@@ -11944,6 +13786,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La nota è troppo lunga (al massimo 2000 caratteri)."
+          }
+        }
+      }
+    },
+    "The notes are too long (2000 characters at most)." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le note sono troppo lunghe (massimo 2000 caratteri)."
           }
         }
       }
@@ -11996,6 +13848,16 @@
         }
       }
     },
+    "The quantity must be greater than zero." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La quantità deve essere maggiore di zero."
+          }
+        }
+      }
+    },
     "The response failed." : {
       "localizations" : {
         "en" : {
@@ -12035,6 +13897,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il controllo di sicurezza per gli account web non era pronto. Se non arriva nessuna email, rimanda il link."
+          }
+        }
+      }
+    },
+    "The server didn't accept the action “%@”: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il server non ha accettato l'azione “%@”: %@"
           }
         }
       }
@@ -12195,6 +14067,7 @@
       }
     },
     "The token is not a valid JWT or has expired." : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -12210,12 +14083,32 @@
         }
       }
     },
+    "The unit cost must be a number of zero or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il costo unitario deve essere un numero pari o superiore a zero."
+          }
+        }
+      }
+    },
     "The uptime statistics of this asset will be recalculated." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le statistiche di disponibilità di questo asset verranno ricalcolate."
+          }
+        }
+      }
+    },
+    "The work order in brief" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'ordine in breve"
           }
         }
       }
@@ -12232,6 +14125,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In questa chat non c'è una procedura da chiudere."
+          }
+        }
+      }
+    },
+    "There's nothing to translate in this work order." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In questo ordine di lavoro non c'è niente da tradurre."
           }
         }
       }
@@ -12608,6 +14511,16 @@
         }
       }
     },
+    "title" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "titolo"
+          }
+        }
+      }
+    },
     "Title" : {
       "localizations" : {
         "en" : {
@@ -12850,6 +14763,26 @@
         }
       }
     },
+    "Tools:" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attrezzi:"
+          }
+        }
+      }
+    },
+    "Total" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Totale"
+          }
+        }
+      }
+    },
     "Touch and hold for the dictation language" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12927,6 +14860,46 @@
         }
       }
     },
+    "Translate" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduci"
+          }
+        }
+      }
+    },
+    "Translating…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduzione in corso…"
+          }
+        }
+      }
+    },
+    "Translation · %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduzione · %@"
+          }
+        }
+      }
+    },
+    "Transport" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trasporto"
+          }
+        }
+      }
+    },
     "Triaging alarms and creating WOs" : {
       "localizations" : {
         "en" : {
@@ -12977,6 +14950,16 @@
         }
       }
     },
+    "type" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tipo"
+          }
+        }
+      }
+    },
     "Type" : {
       "localizations" : {
         "en" : {
@@ -13019,6 +15002,16 @@
         }
       }
     },
+    "Uncheck step %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togli la spunta al passo %lld"
+          }
+        }
+      }
+    },
     "Undo" : {
       "localizations" : {
         "en" : {
@@ -13051,6 +15044,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unità (es. pz, m, kg)"
+          }
+        }
+      }
+    },
+    "Unit cost" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo unitario"
           }
         }
       }
@@ -13098,6 +15101,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Errore sconosciuto"
+          }
+        }
+      }
+    },
+    "Unknown worker" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operatore sconosciuto"
           }
         }
       }
@@ -13230,6 +15243,26 @@
         }
       }
     },
+    "Untitled file" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File senza nome"
+          }
+        }
+      }
+    },
+    "Untitled template" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modello senza titolo"
+          }
+        }
+      }
+    },
     "Untitled work order" : {
       "localizations" : {
         "it" : {
@@ -13294,6 +15327,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiornato alle %@"
+          }
+        }
+      }
+    },
+    "Upload failed: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamento non riuscito: %@"
+          }
+        }
+      }
+    },
+    "Uploading…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamento…"
           }
         }
       }
@@ -13390,6 +15443,16 @@
         }
       }
     },
+    "Use as description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa come descrizione"
+          }
+        }
+      }
+    },
     "Use Passcode" : {
       "localizations" : {
         "en" : {
@@ -13424,6 +15487,7 @@
       }
     },
     "Use these servers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13457,6 +15521,7 @@
       }
     },
     "Use token" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13485,6 +15550,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome utente"
+          }
+        }
+      }
+    },
+    "Users" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utenti"
           }
         }
       }
@@ -13812,6 +15887,16 @@
         }
       }
     },
+    "What happened, what to check, anything useful" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa è successo, cosa controllare, qualsiasi cosa utile"
+          }
+        }
+      }
+    },
     "What happened?" : {
       "localizations" : {
         "it" : {
@@ -13855,6 +15940,26 @@
         }
       }
     },
+    "What needs to be done?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa c'è da fare?"
+          }
+        }
+      }
+    },
+    "What to bring on site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa portare sul posto"
+          }
+        }
+      }
+    },
     "What to do" : {
       "localizations" : {
         "en" : {
@@ -13867,6 +15972,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cosa faccio"
+          }
+        }
+      }
+    },
+    "What was done?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa è stato fatto?"
           }
         }
       }
@@ -13953,6 +16068,16 @@
         }
       }
     },
+    "When" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando"
+          }
+        }
+      }
+    },
     "When it fills up, Aria summarizes the oldest messages. The conversation itself is kept." : {
       "localizations" : {
         "en" : {
@@ -13965,6 +16090,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quando si riempie, Aria riassume i messaggi più vecchi. La conversazione resta intera."
+          }
+        }
+      }
+    },
+    "Where does the work happen?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dove si svolge il lavoro?"
           }
         }
       }
@@ -14034,6 +16169,16 @@
         }
       }
     },
+    "Who" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi"
+          }
+        }
+      }
+    },
     "Who and when" : {
       "localizations" : {
         "en" : {
@@ -14050,6 +16195,16 @@
         }
       }
     },
+    "Who does it, and when?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi lo fa, e quando?"
+          }
+        }
+      }
+    },
     "Why couldn't this step be done? The planner will see your note." : {
       "localizations" : {
         "en" : {
@@ -14062,6 +16217,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Perché non è stato possibile fare questo passo? Il planner vedrà la tua nota."
+          }
+        }
+      }
+    },
+    "Why wasn't it done?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perché non è stato fatto?"
           }
         }
       }
@@ -14150,6 +16315,16 @@
         }
       }
     },
+    "Work order created from “%@”." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro creato da “%@”."
+          }
+        }
+      }
+    },
     "Work order suggested" : {
       "localizations" : {
         "en" : {
@@ -14220,6 +16395,26 @@
         }
       }
     },
+    "Worker" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operatore"
+          }
+        }
+      }
+    },
+    "Worker name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome operatore"
+          }
+        }
+      }
+    },
     "Workers" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -14233,6 +16428,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Operai"
+          }
+        }
+      }
+    },
+    "Working on" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stai lavorando su"
           }
         }
       }
@@ -14265,6 +16470,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudiamo il turno?"
+          }
+        }
+      }
+    },
+    "Write a message…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi un messaggio…"
+          }
+        }
+      }
+    },
+    "Write a title first" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi prima un titolo"
           }
         }
       }
@@ -14378,6 +16603,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "y"
+          }
+        }
+      }
+    },
+    "Yes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sì"
           }
         }
       }

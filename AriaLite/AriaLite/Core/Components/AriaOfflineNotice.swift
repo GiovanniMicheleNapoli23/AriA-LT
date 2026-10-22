@@ -19,6 +19,9 @@ struct AriaOfflineNotice: View {
     var onDismiss: (() -> Void)? = nil
 
     private let tint = Color.orange
+    /// Cerchio dell'icona e area della X crescono col Dynamic Type.
+    @ScaledMetric(relativeTo: .subheadline) private var iconSide: CGFloat = 34
+    @ScaledMetric(relativeTo: .caption2) private var closeSide: CGFloat = 26
 
     var body: some View {
         switch style {
@@ -30,21 +33,21 @@ struct AriaOfflineNotice: View {
     private var card: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "wifi.slash")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
+                .frame(width: iconSide, height: iconSide)
                 .background(tint.opacity(0.14), in: Circle())
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Aria is offline")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
                 Text(detail)
-                    .font(.system(size: 13))
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let onRetry {
                     Button("Retry", action: onRetry)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .buttonStyle(.bordered)
                         .buttonBorderShape(.capsule)
                         .controlSize(.small)
@@ -57,9 +60,9 @@ struct AriaOfflineNotice: View {
             if let onDismiss {
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 26, height: 26)
+                        .frame(width: closeSide, height: closeSide)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Dismiss")
@@ -76,7 +79,7 @@ struct AriaOfflineNotice: View {
 
     private var compact: some View {
         Label("Aria is offline. Try again in a moment.", systemImage: "wifi.slash")
-            .font(.system(size: 12, weight: .medium))
+            .font(.caption.weight(.medium))
             .foregroundStyle(tint)
     }
 }

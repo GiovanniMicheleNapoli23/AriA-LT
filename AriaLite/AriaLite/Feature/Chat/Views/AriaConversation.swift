@@ -59,9 +59,9 @@ private struct AriaConversationContent: View {
 
             VStack(spacing: 8) {
                 Text("Hi, I'm Aria")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                 Text("Connect to the Aria server to start chatting.")
-                    .font(.system(size: 15))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -69,7 +69,7 @@ private struct AriaConversationContent: View {
 
             Button { model.connect() } label: {
                 Label("Connect to the Aria server", systemImage: "bolt.horizontal.circle")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.subheadline.weight(.semibold))
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)

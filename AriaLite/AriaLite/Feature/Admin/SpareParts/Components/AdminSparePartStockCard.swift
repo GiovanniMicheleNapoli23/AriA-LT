@@ -13,6 +13,10 @@ import SwiftUI
 struct AdminSparePartStockCard: View {
     let viewModel: AdminSparePartDetailViewModel
 
+    /// La giacenza è un numero "eroe" (40pt a testo "Large"): oltre `.largeTitle`, quindi scalata a mano.
+    @ScaledMetric(relativeTo: .largeTitle) private var stockFontSize: CGFloat = 40
+    @ScaledMetric(relativeTo: .title3) private var stepButtonSide: CGFloat = 52
+
     private var tint: Color { viewModel.isDisplayedStockLow ? .red : Color.liteAccent }
 
     var body: some View {
@@ -50,8 +54,10 @@ struct AdminSparePartStockCard: View {
             stepButton("Remove one", systemImage: "minus", enabled: viewModel.canDecrement) { viewModel.decrement() }
             VStack(spacing: 2) {
                 Text(verbatim: "\(viewModel.displayedStock)")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .font(.system(size: stockFontSize, weight: .bold, design: .rounded))
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(tint)
                     .contentTransition(.numericText(value: Double(viewModel.displayedStock)))
                     .animation(.snappy, value: viewModel.displayedStock)
@@ -73,7 +79,7 @@ struct AdminSparePartStockCard: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title3.weight(.semibold))
-                .frame(width: 52, height: 52)
+                .frame(width: stepButtonSide, height: stepButtonSide)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

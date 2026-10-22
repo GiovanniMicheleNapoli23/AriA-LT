@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il form di un ordine: creazione (POST /v1/work-orders) e modifica (PATCH, solo i campi cambiati).
-//  Controlla i campi, offre asset, persone e squadre dello stabilimento scelto e salva.
-//  La zona si sceglie solo creando: WorkOrderUpdate non la accetta.
+//  Controlla i campi, offre asset, persone, operatori sul campo e squadre dello stabilimento scelto e salva.
+//  Creando, "Draft with AI" (POST /v1/work-orders/ai-draft) riempie i campi: l'utente li rivede prima di
+//  salvare e può annullare. Zona e codice allarme si scelgono solo creando: WorkOrderUpdate non li accetta.
 //
 
 import Foundation
@@ -29,6 +30,20 @@ final class AdminWorkOrderFormViewModel: Identifiable {
 
     private(set) var isSaving = false
     private(set) var errorMessage: String?
+
+    /// Creando, la pagina aperta (vedi AdminWorkOrderFormViewModel+Steps).
+    var step: AdminWorkOrderFormStep = .details
+
+    // Bozza con l'AI
+    /// L'azione di ai-draft in corso.
+    private(set) var draftingAction: AdminWorkOrderAIAction?
+    /// Il form com'era prima dell'ultimo riempimento dell'AI: "Undo" lo rimette.
+    private(set) var draftBeforeAI: AdminWorkOrderDraft?
+    /// Cosa ha riempito l'AI, da rivedere.
+    private(set) var aiFilledFields: [String] = []
+    /// Il testo della risposta che non è finito in un campo (spiegazioni, stime motivate…).
+    private(set) var aiNote: String?
+    private(set) var aiFailure: AdminWorkOrderAssistantFailure?
 
     init(mode: Mode, backend: AriaBackend, directory: AdminWorkOrderDirectory,
          onSaved: @escaping (AdminWorkOrder) -> Void) {
@@ -57,15 +72,15 @@ final class AdminWorkOrderFormViewModel: Identifiable {
 
     // MARK: Controlli
 
-    private var trimmedTitle: String { draft.title.trimmingCharacters(in: .whitespacesAndNewlines) }
+    var trimmedTitle: String { draft.title.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     private var minutesText: String { draft.estimatedMinutes.trimmingCharacters(in: .whitespaces) }
 
     /// I minuti scritti; `nil` se il campo è vuoto (o non valido, vedi `minutesAreValid`).
-    private var minutes: Int? { Int(minutesText).flatMap { $0 > 0 ? $0 : nil } }
+    var minutes: Int? { Int(minutesText).flatMap { $0 > 0 ? $0 : nil } }
 
     /// Vuoto o un numero intero positivo.
-    private var minutesAreValid: Bool { minutesText.isEmpty || minutes != nil }
+    var minutesAreValid: Bool { minutesText.isEmpty || minutes != nil }
 
     /// Il primo problema che impedisce di salvare.
     var validationMessage: String? {
@@ -99,6 +114,32 @@ final class AdminWorkOrderFormViewModel: Identifiable {
         }
     }
 
+    /// Persone dell'azienda, senza chi compare già fra gli operatori.
+    var assigneeUsers: [AdminWorkOrderFormAssignee] {
+        directory.activeUsers.filter { directory.fieldOperator($0.id) == nil }.map {
+            AdminWorkOrderFormAssignee(id: $0.id, title: $0.displayName, subtitle: $0.fullName == nil ? $0.role : $0.email,
+                                       availability: nil, workload: nil)
+        }
+    }
+
+    /// Operatori sul campo: prima i disponibili e i meno carichi.
+    var assigneeOperators: [AdminWorkOrderFormAssignee] {
+        directory.sortedOperators.map { op in
+            AdminWorkOrderFormAssignee(
+                id: op.id, title: op.name,
+                subtitle: op.specialties.isEmpty ? nil : op.specialties.joined(separator: ", "),
+                availability: op.availability,
+                workload: Self.workload(count: op.openCount, minutes: op.openMinutes))
+        }
+    }
+
+    /// "3 open · 2 h 30 min"; niente se non ha lavori aperti.
+    private static func workload(count: Int, minutes: Int) -> String {
+        guard count > 0 else { return String(localized: "No open work") }
+        let open = String(localized: "\(count) open")
+        return minutes > 0 ? AdminWorkOrderFormat.joined([open, AdminWorkOrderFormat.duration(minutes: minutes)]) : open
+    }
+
     var teamChoices: [AdminWorkOrderChoice] {
         directory.teams(in: draft.plantId).map {
             AdminWorkOrderChoice(id: $0.id, title: $0.name,
@@ -113,8 +154,11 @@ final class AdminWorkOrderFormViewModel: Identifiable {
 
     var userLabel: String {
         guard let id = draft.assignedUserId else { return String(localized: "None") }
-        return directory.user(id)?.displayName ?? currentAssigneeName ?? id
+        return directory.personName(id) ?? currentAssigneeName ?? id
     }
+
+    /// Disponibilità dell'operatore scelto, per il pallino accanto al nome.
+    var assigneeAvailability: AriaAvailability? { directory.fieldOperator(draft.assignedUserId)?.availability }
 
     var teamLabel: String {
         guard let id = draft.teamId else { return String(localized: "None") }
@@ -127,7 +171,8 @@ final class AdminWorkOrderFormViewModel: Identifiable {
         return nil
     }
 
-    var usersUnavailable: Bool { directory.unavailable.contains(.users) }
+    /// Né persone né operatori leggibili: l'assegnatario resta in sola lettura.
+    var usersUnavailable: Bool { directory.unavailable.contains(.users) && directory.unavailable.contains(.operators) }
     var teamsUnavailable: Bool { directory.unavailable.contains(.teams) }
     var assetsUnavailable: Bool { directory.unavailable.contains(.assets) }
 
@@ -144,6 +189,112 @@ final class AdminWorkOrderFormViewModel: Identifiable {
     }
 
     func selectUser(_ id: String?) { draft.assignedUserId = id }
+
+    // MARK: Durata
+
+    /// La durata scritta in ore e minuti ("1 h 30 min"), quando è di almeno un'ora.
+    var durationHint: String? { minutes.flatMap { $0 >= 60 ? AdminWorkOrderFormat.duration(minutes: $0) : nil } }
+
+    // MARK: Bozza con l'AI
+
+    var draftActions: [AdminWorkOrderAIAction] { AdminWorkOrderAIAction.draftActions }
+
+    var canDraftWithAI: Bool { !trimmedTitle.isEmpty && draftingAction == nil && !isSaving }
+
+    var isDrafting: Bool { draftingAction != nil }
+
+    /// Senza titolo l'AI non parte: il form lo dice accanto al pulsante.
+    var needsTitleForAI: Bool { trimmedTitle.isEmpty }
+
+    var aiNotice: String? {
+        guard !aiFilledFields.isEmpty else { return nil }
+        return String(localized: "Filled by AI: \(aiFilledFields.joined(separator: ", ")). Review before saving.")
+    }
+
+    func draftWithAI(_ action: AdminWorkOrderAIAction) async {
+        guard canDraftWithAI else { return }
+        draftingAction = action
+        aiFailure = nil
+        defer { draftingAction = nil }
+        let d = draft
+        let request = AdminWorkOrderAIDraftRequest(
+            action: action.rawValue, title: trimmedTitle, description: Self.nonEmpty(d.description),
+            type: d.type.rawValue, category: Self.nonEmpty(d.category), priority: d.priority.rawValue,
+            assetTag: d.assetTag, alarmCode: Self.nonEmpty(d.alarmCode), zone: Self.nonEmpty(d.zone),
+            notes: Self.nonEmpty(d.notes))
+        do {
+            let json = try await AdminWorkOrdersAPI(api: backend.api).aiDraft(request)
+            fill(from: AdminWorkOrderAIAnswer(json: json), action: action)
+        } catch {
+            aiFailure = AdminWorkOrderAIFailure.failure(for: error, action: action.rawValue, backend: backend)
+        }
+    }
+
+    /// Riempie il form con la risposta. I passi (e sicurezza, attrezzi, ricambi) vanno in fondo alla
+    /// descrizione: creando non c'è un campo per la procedura.
+    private func fill(from answer: AdminWorkOrderAIAnswer, action: AdminWorkOrderAIAction) {
+        let before = draft
+        var d = draft
+        var filled: [String] = []
+        let s = answer.suggestion
+        var text = answer.text
+
+        if let title = s.title, title != d.title { d.title = title; filled.append(String(localized: "title")) }
+        var description = s.description
+        // Una risposta solo testo a "Complete draft" o "Improve description" è la descrizione.
+        if description == nil, let answerText = text, [.completeDraft, .improveDescription].contains(action) {
+            description = answerText
+            text = nil
+        }
+        // Anche i passi chiesti a "Generate steps" possono arrivare come testo semplice.
+        var lists = s.listsText
+        if lists == nil, action == .generateSteps, let answerText = text {
+            lists = answerText
+            text = nil
+        }
+        if let lists {
+            let base = (description ?? d.description).trimmingCharacters(in: .whitespacesAndNewlines)
+            description = base.isEmpty ? lists : base + "\n\n" + lists
+        }
+        if let description, description != d.description {
+            d.description = description
+            filled.append(String(localized: "description"))
+        }
+        if let category = s.category, category != d.category { d.category = category; filled.append(String(localized: "category")) }
+        if let priority = s.priority, priority != d.priority { d.priority = priority; filled.append(String(localized: "priority")) }
+        if let type = s.type, type != d.type { d.type = type; filled.append(String(localized: "type")) }
+        if let minutes = s.estimatedMinutes, String(minutes) != d.estimatedMinutes {
+            d.estimatedMinutes = String(minutes)
+            filled.append(String(localized: "duration"))
+        }
+        if let notes = s.notes, notes != d.notes {
+            let current = d.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            d.notes = current.isEmpty ? notes : current + "\n\n" + notes
+            filled.append(String(localized: "notes"))
+        }
+
+        aiNote = text ?? answer.raw
+        if filled.isEmpty {
+            if aiNote == nil { aiNote = String(localized: "The AI had nothing to add.") }
+            return
+        }
+        draftBeforeAI = before
+        draft = d
+        aiFilledFields = filled
+    }
+
+    func undoAIDraft() {
+        guard let before = draftBeforeAI else { return }
+        draft = before
+        draftBeforeAI = nil
+        aiFilledFields = []
+        aiNote = nil
+    }
+
+    func dismissAINote() {
+        aiNote = nil
+        aiFailure = nil
+    }
     func selectTeam(_ id: String?) { draft.teamId = id }
 
     // MARK: Salvataggio
@@ -161,7 +312,7 @@ final class AdminWorkOrderFormViewModel: Identifiable {
             case .create:
                 saved = try await api.create(createBody())
             case .edit(let order):
-                let body = updateBody()
+                let body = patchBody()
                 guard !body.isEmpty else { return true }
                 saved = try await api.update(order.id, body)
             }
@@ -173,9 +324,9 @@ final class AdminWorkOrderFormViewModel: Identifiable {
         }
     }
 
-    private func createBody() -> AdminWorkOrderCreate {
+    private func createBody() -> AdminWorkOrderFormCreate {
         let d = draft
-        return AdminWorkOrderCreate(
+        let base = AdminWorkOrderCreate(
             title: trimmedTitle,
             plantId: d.plantId ?? "",
             type: d.type.rawValue,
@@ -185,7 +336,7 @@ final class AdminWorkOrderFormViewModel: Identifiable {
             assetTag: d.assetTag,
             zone: Self.nonEmpty(d.zone),
             description: Self.nonEmpty(d.description),
-            assignedTo: directory.user(d.assignedUserId)?.displayName,
+            assignedTo: directory.personName(d.assignedUserId),
             assignedToTeamId: d.teamId,
             assignedToUserId: d.assignedUserId,
             estimatedDurationMin: minutes,
@@ -193,6 +344,17 @@ final class AdminWorkOrderFormViewModel: Identifiable {
             scheduledDate: d.hasScheduledDate ? AdminWorkOrderWireDate.string(d.scheduledDate) : nil,
             dueDate: d.hasDueDate ? AdminWorkOrderWireDate.string(d.dueDate) : nil
         )
+        return AdminWorkOrderFormCreate(base: base, requestedBy: Self.nonEmpty(d.requestedBy),
+                                        alarmCode: Self.nonEmpty(d.alarmCode))
+    }
+
+    /// Il body comune più `requested_by`, se è cambiato.
+    private func patchBody() -> AdminWorkOrderFormPatch {
+        var body = AdminWorkOrderFormPatch(base: updateBody())
+        if Self.nonEmpty(draft.requestedBy) != Self.nonEmpty(original.requestedBy) {
+            body.requestedBy = .some(Self.nonEmpty(draft.requestedBy))
+        }
+        return body
     }
 
     /// Solo quello che è cambiato rispetto all'apertura del form; un campo svuotato diventa `null`.
@@ -214,7 +376,7 @@ final class AdminWorkOrderFormViewModel: Identifiable {
         if d.assignedUserId != o.assignedUserId {
             body.assignedToUserId = .some(d.assignedUserId)
             // Il nome libero segue la persona, così la web non mostra quello vecchio.
-            body.assignedTo = .some(directory.user(d.assignedUserId)?.displayName)
+            body.assignedTo = .some(directory.personName(d.assignedUserId))
         }
         if d.teamId != o.teamId { body.assignedToTeamId = .some(d.teamId) }
         if d.estimatedMinutes != o.estimatedMinutes { body.estimatedDurationMin = .some(minutes) }

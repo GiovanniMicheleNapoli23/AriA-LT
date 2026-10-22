@@ -166,7 +166,7 @@ struct AriaCompleteSheet: View {
                     ZStack {
                         if isSending { ProgressView().tint(.white) } else {
                             Label("Complete task", systemImage: "checkmark.seal.fill")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.headline)
                         }
                     }
                     .frame(maxWidth: .infinity, minHeight: 50)

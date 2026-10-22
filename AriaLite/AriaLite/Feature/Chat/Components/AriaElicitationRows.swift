@@ -15,6 +15,8 @@ struct AriaElicitationOptionRow: View {
     let model: AriaElicitationViewModel
     let option: AriaElicitationOption
     var onPick: () -> Void
+    /// Cerchio, quadratino o numero della classifica: crescono col simbolo che contengono.
+    @ScaledMetric(relativeTo: .title3) private var indicatorSide: CGFloat = 22
 
     var body: some View {
         let rank = model.rank(of: option)
@@ -25,11 +27,11 @@ struct AriaElicitationOptionRow: View {
                     indicator(isOn: isOn, rank: rank)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(option.label)
-                            .font(.system(size: 15, weight: isOn ? .semibold : .medium))
+                            .font(.subheadline.weight(isOn ? .semibold : .medium))
                             .foregroundStyle(.primary)
                         if let description = option.description, !description.isEmpty {
                             Text(description)
-                                .font(.system(size: 13))
+                                .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -37,7 +39,7 @@ struct AriaElicitationOptionRow: View {
                     Spacer(minLength: 0)
                     if model.isSingle, option.followUp != nil {
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.caption.weight(.semibold))
                             .foregroundStyle(.tertiary)
                     }
                 }
@@ -73,21 +75,21 @@ struct AriaElicitationOptionRow: View {
                 if let rank {
                     Circle().fill(Color.accentColor)
                     Text(verbatim: "\(rank + 1)")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(.white)
                 }
             }
-            .frame(width: 22, height: 22)
+            .frame(width: indicatorSide, height: indicatorSide)
         case "multi":
             Image(systemName: isOn ? "checkmark.square.fill" : "square")
-                .font(.system(size: 20))
+                .font(.title3)
                 .foregroundStyle(isOn ? Color.accentColor : .secondary)
-                .frame(width: 22, height: 22)
+                .frame(width: indicatorSide, height: indicatorSide)
         default:
             Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
+                .font(.title3)
                 .foregroundStyle(isOn ? Color.accentColor : Color.secondary.opacity(0.6))
-                .frame(width: 22, height: 22)
+                .frame(width: indicatorSide, height: indicatorSide)
         }
     }
 }
@@ -96,12 +98,15 @@ struct AriaElicitationOptionRow: View {
 struct AriaElicitationCustomRow: View {
     @Bindable var model: AriaElicitationViewModel
     let fieldFocused: FocusState<Bool>.Binding
+    /// Allineata al cerchio delle opzioni sopra.
+    @ScaledMetric(relativeTo: .title3) private var iconSide: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var arrowSide: CGFloat = 34
 
     var body: some View {
         if model.writingCustom {
             HStack(alignment: .bottom, spacing: 8) {
                 TextField(model.isSingle ? "Type your answer…" : "Add something (optional)…", text: $model.custom, axis: .vertical)
-                    .font(.system(size: 15))
+                    .font(.subheadline)
                     .lineLimit(1...4)
                     .focused(fieldFocused)
                     .submitLabel(.send)
@@ -125,17 +130,17 @@ struct AriaElicitationCustomRow: View {
                 // e la freccia spenta a destra dice che qui si scrive e si invia.
                 HStack(spacing: 12) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
-                        .frame(width: 22, height: 22)
+                        .frame(width: iconSide, height: iconSide)
                     Text("Other answer…")
-                        .font(.system(size: 15))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundStyle(.white)
-                        .frame(width: 34, height: 34)
+                        .frame(width: arrowSide, height: arrowSide)
                         .background(Color.secondary.opacity(0.3), in: Circle())
                 }
                 .padding(.leading, 14)
@@ -159,7 +164,7 @@ struct AriaClosureReasonForm: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("What is stopping you from continuing?")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
             Menu {
                 ForEach(AriaClosureReason.allCases) { reason in
                     Button {
@@ -175,12 +180,12 @@ struct AriaClosureReasonForm: View {
             } label: {
                 HStack(spacing: 8) {
                     Text(model.closureReason?.label ?? String(localized: "Select…"))
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(model.closureReason == nil ? Color.secondary : Color.primary)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 0)
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 14)
@@ -194,9 +199,9 @@ struct AriaClosureReasonForm: View {
             .accessibilityLabel(Text("What is stopping you from continuing?"))
 
             Text("Give details (optional)")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
             TextField("Explain in your own words what got in the way…", text: $model.closureDetails, axis: .vertical)
-                .font(.system(size: 15))
+                .font(.subheadline)
                 .lineLimit(2...5)
                 .focused(fieldFocused)
                 .padding(.horizontal, 14)
@@ -218,17 +223,17 @@ struct AriaElicitationFollowUpForm: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Label(option.label, systemImage: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(Color.accentColor.opacity(0.1), in: Capsule())
             Text(AriaMarkdown.inline(option.followUp ?? ""))
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(alignment: .bottom, spacing: 8) {
                 TextField("Type your answer…", text: $model.followUpValue, axis: .vertical)
-                    .font(.system(size: 15))
+                    .font(.subheadline)
                     .lineLimit(1...4)
                     .focused(fieldFocused)
                     .submitLabel(.send)
@@ -253,13 +258,14 @@ struct AriaElicitationSendButton: View {
     let isLast: Bool
     let enabled: Bool
     var action: () -> Void
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 34
 
     var body: some View {
         Button(action: action) {
             Image(systemName: isLast ? "arrow.up" : "arrow.right")
-                .font(.system(size: 14, weight: .bold))
+                .font(.footnote.weight(.bold))
                 .foregroundStyle(.white)
-                .frame(width: 34, height: 34)
+                .frame(width: side, height: side)
                 .background(enabled ? Color.accentColor : Color.secondary.opacity(0.35), in: Circle())
         }
         .buttonStyle(.plain)

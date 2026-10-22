@@ -102,22 +102,24 @@ private struct AriaChatHistoryRow: View {
     let model: AriaChatHistoryViewModel
     let session: AriaSessionSummary
     var onOpen: () -> Void
+    /// La colonna dell'icona cresce con il testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .callout) private var iconWidth: CGFloat = 22
 
     var body: some View {
         Button(action: onOpen) {
             HStack(alignment: .firstTextBaseline, spacing: 14) {
                 Image(systemName: model.isPinned(session) ? "pin" : "bubble.left")
-                    .font(.system(size: 16))
+                    .font(.callout)
                     .foregroundStyle(.secondary)
-                    .frame(width: 22)
+                    .frame(width: iconWidth)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(session.displayTitle)
-                        .font(.system(size: 16, weight: model.isCurrent(session) ? .semibold : .regular))
+                        .font(.callout.weight(model.isCurrent(session) ? .semibold : .regular))
                         .foregroundStyle(.primary)
                         .lineLimit(2)
                     if let date = session.lastActivity {
                         Text(date, format: .relative(presentation: .named))
-                            .font(.system(size: 13))
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }

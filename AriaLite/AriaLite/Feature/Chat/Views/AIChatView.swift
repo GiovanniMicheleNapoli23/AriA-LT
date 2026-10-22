@@ -37,7 +37,7 @@ private struct AIChatScreen: View {
                     // Solo il titolo: server e stabilimento si gestiscono nel profilo (Impostazioni).
                     ToolbarItem(placement: .principal) {
                         Text(model.title)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.callout.weight(.semibold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                             .frame(maxWidth: 240)

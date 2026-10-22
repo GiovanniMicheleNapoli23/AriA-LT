@@ -47,7 +47,7 @@ struct AriaChatEmptyState: View {
 
             if !model.suggestions.isEmpty && layout.showsSuggestions {
                 AriaChatSuggestionCards(suggestions: model.suggestions,
-                                        isScrollingRow: layout.isCompact,
+                                        isCompact: layout.isCompact,
                                         isEnabled: model.canSendSuggestion,
                                         onSelect: onSelectSuggestion)
                     .padding(.top, layout.showsOrb ? (layout.isCompact ? 18 : 28) : 0)
@@ -66,11 +66,11 @@ struct AriaChatEmptyState: View {
         VStack(spacing: 8) {
             if !layout.isCompact {
                 Text(model.salutation)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
             }
             Text(model.greeting)
-                .font(.system(size: layout.isCompact ? 21 : 27, weight: .semibold))
+                .font((layout.isCompact ? Font.title2 : Font.title).weight(.semibold))
                 .tracking(-0.4)
                 .foregroundStyle(.primary.opacity(0.9))
                 .multilineTextAlignment(.center)

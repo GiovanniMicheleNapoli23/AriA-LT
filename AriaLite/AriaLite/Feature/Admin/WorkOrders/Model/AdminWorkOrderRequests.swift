@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  I body di POST e PATCH /v1/work-orders (WorkOrderCreate, WorkOrderUpdate). Si codificano in snake_case
-//  dalla chiamata; le date sono già stringhe ISO-8601 perché l'encoder comune scriverebbe un numero.
+//  I body di POST e PATCH /v1/work-orders (WorkOrderCreate, WorkOrderUpdate), del completamento e dei passi.
+//  Si codificano in snake_case dalla chiamata (tranne CompleteBody); le date sono già stringhe ISO-8601
+//  perché l'encoder comune scriverebbe un numero.
 //
 
 import Foundation
@@ -95,6 +96,35 @@ nonisolated struct AdminWorkOrderUpdate: Encodable, Sendable {
         try c.encodeChange(scheduledDate, .scheduledDate)
         try c.encodeChange(dueDate, .dueDate)
     }
+}
+
+/// POST /v1/work-orders/{id}/complete. La chiamata non è `.snakeCased()`: la chiave si scrive qui.
+/// L'OpenAPI dice `resolutionNotes`, ma la stessa rotta dall'app dell'operatore (provata dal vivo) vuole
+/// `resolution_notes`, come AriaCompleteBody.
+nonisolated struct AdminWorkOrderCompleteBody: Encodable, Sendable {
+    var resolutionNotes: String
+
+    private enum CodingKeys: String, CodingKey { case resolutionNotes = "resolution_notes" }
+}
+
+/// PUT /v1/work-orders/{id}/steps/{step_id}: il risultato di un passo (`StepReportBody`).
+nonisolated struct AdminWorkOrderStepReportBody: Encodable, Sendable {
+    var status: String
+    /// `nil` si manda come `null`: il server lo vuole per "fatto" senza nota.
+    var note: String?
+
+    private enum CodingKeys: String, CodingKey { case status, note }
+
+    func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(status, forKey: .status)
+        try c.encode(note, forKey: .note)
+    }
+}
+
+/// PUT .../steps/{step_id} e PUT .../steps: la spunta del planner (`StepCheckBody`).
+nonisolated struct AdminWorkOrderStepCheckBody: Encodable, Sendable {
+    var checked: Bool
 }
 
 private nonisolated extension KeyedEncodingContainer {

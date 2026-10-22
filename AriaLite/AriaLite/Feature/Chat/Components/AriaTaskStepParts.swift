@@ -53,24 +53,26 @@ struct AriaTaskSegments: View {
 /// Lo step è il contesto del task: etichetta colorata sopra, titolo sotto (va a capo, non si taglia mai).
 struct AriaTaskStepHeader<Accessory: View>: View {
     let list: AriaTaskList
-    var titleSize: CGFloat = 15
+    var titleStyle: Font.TextStyle = .subheadline
     var titleOpacity: Double = 1
     @ViewBuilder var accessory: Accessory
+    /// Il riquadro dell'icona cresce con il testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .callout) private var iconBox: CGFloat = 34
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: list.isSafety ? "exclamationmark.shield.fill" : "list.bullet.clipboard.fill")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.callout.weight(.semibold))
                 .foregroundStyle(list.stepTint)
-                .frame(width: 34, height: 34)
+                .frame(width: iconBox, height: iconBox)
                 .background(list.stepTint.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(list.label.uppercased())
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.caption2.weight(.bold))
                     .tracking(0.6)
                     .foregroundStyle(list.stepTint)
                 Text(list.stepTitle)
-                    .font(.system(size: titleSize, weight: .semibold))
+                    .font(.system(titleStyle, weight: .semibold))
                     .foregroundStyle(.primary.opacity(titleOpacity))
                     .fixedSize(horizontal: false, vertical: true)
             }

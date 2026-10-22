@@ -222,7 +222,8 @@ final class AriaChatComposerViewModel {
             dictatedDraft = draft
             draftBeforeDictation = draft
         }
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             await dictation.toggle(context: prefix, server: server) { [weak self] transcript, final in
                 guard let self else { return }
                 // Il testo di Whisper arriva dopo lo stop: se intanto il campo è stato modificato, vince l'operatore.

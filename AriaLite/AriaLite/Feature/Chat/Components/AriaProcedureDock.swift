@@ -28,6 +28,19 @@ private struct AriaProcedureDockContent: View {
     @State private var model: AriaTaskStepViewModel
     /// In orizzontale su iPhone lo schermo è basso: il pannello non deve coprire tutta la chat.
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Una riga del task: i limiti d'altezza crescono con il testo, così almeno una riga si legge sempre.
+    @ScaledMetric(relativeTo: .body) private var taskLine: CGFloat = 24
+    @ScaledMetric(relativeTo: .callout) private var backSize: CGFloat = 50
+    @ScaledMetric(relativeTo: .subheadline) private var menuSize: CGFloat = 34
+
+    /// Testo grande o telefono in orizzontale: il pannello resta compatto sopra il composer.
+    private var isTight: Bool { verticalSizeClass == .compact || dynamicTypeSize.isAccessibilitySize }
+
+    /// Alto quanto il testo; scorre solo se il task è lunghissimo (in orizzontale oltre due righe).
+    private var taskMaxHeight: CGFloat {
+        verticalSizeClass == .compact ? max(48, taskLine) : max(220, taskLine * 3)
+    }
 
     init(model: @autoclosure () -> AriaTaskStepViewModel) {
         _model = State(wrappedValue: model())
@@ -46,18 +59,17 @@ private struct AriaProcedureDockContent: View {
                 // Il task è l'azione da fare adesso: è il testo più in evidenza del pannello.
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Task \(task.index) of \(model.tasks.count)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
                     ScrollView {
                         Text(AriaMarkdown.inline(task.text))
-                            .font(.system(size: 17))
+                            .font(.body)
                             .lineSpacing(3)
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    // Alto quanto il testo; scorre solo se il task è lunghissimo (in orizzontale oltre due righe).
-                    .frame(maxHeight: verticalSizeClass == .compact ? 48 : 220)
+                    .frame(maxHeight: taskMaxHeight)
                     .fixedSize(horizontal: false, vertical: true)
                     .scrollBounceBehavior(.basedOnSize)
                     if let mark = model.mark(task) { AriaTaskMarkBadge(mark: mark) }
@@ -69,9 +81,9 @@ private struct AriaProcedureDockContent: View {
                 actions(task)
             }
 
-            if verticalSizeClass != .compact {
+            if !isTight {
                 Label("Complete the steps to answer Aria's question", systemImage: "lock.fill")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity)
             }
@@ -94,9 +106,9 @@ private struct AriaProcedureDockContent: View {
             if model.previous != nil {
                 Button { model.goBack() } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.callout.weight(.semibold))
                         .foregroundStyle(.primary)
-                        .frame(width: 50, height: 50)
+                        .frame(width: backSize, height: backSize)
                         .background(Color(.tertiarySystemFill), in: Circle())
                 }
                 .buttonStyle(.plain)
@@ -106,7 +118,7 @@ private struct AriaProcedureDockContent: View {
 
             Button { model.complete(task) } label: {
                 Label(model.isLastRemaining(task) ? LocalizedStringKey("Complete step") : "Done", systemImage: "checkmark")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.borderedProminent)
@@ -126,9 +138,9 @@ private struct AriaProcedureDockContent: View {
             Button("End procedure", systemImage: "door.left.hand.closed") { model.endProcedure() }
         } label: {
             Image(systemName: "exclamationmark.bubble")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
-                .frame(width: 34, height: 34)
+                .frame(width: menuSize, height: menuSize)
                 .background(Color(.tertiarySystemFill), in: Circle())
                 .contentShape(Circle())
         }

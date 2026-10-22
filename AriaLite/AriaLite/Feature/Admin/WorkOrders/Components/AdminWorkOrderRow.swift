@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La scheda di un ordine nella lista admin: titolo, stato e priorità, asset e zona, chi lo esegue,
-//  scadenza e avanzamento dei passi. Stesso vetro delle task dell'operatore.
+//  La card di un ordine nella lista admin: titolo (fino a due righe) e priorità; stato con il suo colore,
+//  chi lo esegue e l'asset; in fondo l'avanzamento dei passi e la scadenza. Le righe di dettagli vanno a
+//  capo se non ci stanno (iPhone stretto, testo grande).
 //
 
 import SwiftUI
@@ -16,68 +17,77 @@ struct AdminWorkOrderRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        // Testo molto grande: i badge vanno sotto il titolo invece di schiacciarlo.
-        let isAX = dynamicTypeSize.isAccessibilitySize
-        let header = isAX
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: 8))
-        VStack(alignment: .leading, spacing: 8) {
-            header {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
                 Text(item.order.title)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.liteText)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 4 : 2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 6) {
-                    if let priority = item.priority { AdminWorkOrderPriorityBadge(priority: priority) }
-                    if let status = item.status { AdminWorkOrderStatusBadge(status: status) }
+                if item.isBusy {
+                    ProgressView().controlSize(.small)
+                } else if let priority = item.priority {
+                    AdminWorkOrderPriorityBadge(priority: priority, large: true)
                 }
             }
-            if !item.place.isEmpty || item.assignee != nil {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 12) { placeLabel; assigneeLabel; Spacer(minLength: 0) }
-                    VStack(alignment: .leading, spacing: 4) { placeLabel; assigneeLabel }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-            if item.due != nil || item.progressText != nil {
-                HStack(spacing: 8) {
-                    if let due = item.due {
-                        Label(due, systemImage: item.isOverdue ? "exclamationmark.clock.fill" : "clock")
-                            .foregroundStyle(item.isOverdue ? Color.red : Color.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    if let progress = item.progressText {
-                        Text(progress).foregroundStyle(.secondary)
-                    }
-                }
-                .font(.caption2.weight(.medium))
-                .lineLimit(1)
-            }
-            if let fraction = item.progress {
-                AdminWorkOrderProgressBar(fraction: fraction)
-            }
+            details
+            if item.progress != nil || item.due != nil { footer }
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .opacity(item.order.isClosed ? 0.7 : 1)
-        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    /// Stato, assegnatario e asset: in riga se ci stanno, altrimenti uno sotto l'altro.
+    private var details: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { detailItems }
+            VStack(alignment: .leading, spacing: 6) { detailItems }
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
     }
 
     @ViewBuilder
-    private var placeLabel: some View {
+    private var detailItems: some View {
+        if let status = item.status {
+            HStack(spacing: 6) {
+                AdminWorkOrderStatusDot(status: status)
+                Text(status.localized).fontWeight(.semibold)
+            }
+            .foregroundStyle(status.tint)
+            .fixedSize()
+        }
+        if let assignee = item.assignee {
+            Label(assignee, systemImage: "person")
+        }
         if !item.place.isEmpty {
-            Label(item.place, systemImage: "gearshape.2").lineLimit(1)
+            Label(item.place, systemImage: "gearshape.2")
         }
     }
 
-    @ViewBuilder
-    private var assigneeLabel: some View {
-        if let assignee = item.assignee {
-            Label(assignee, systemImage: "person").lineLimit(1)
+    /// Avanzamento dei passi (barra e "3/10") e scadenza, rossa se in ritardo.
+    private var footer: some View {
+        HStack(spacing: 12) {
+            if let progress = item.progress, let text = item.progressText {
+                AdminWorkOrderProgressBar(fraction: progress, height: 6)
+                    .frame(maxWidth: 140)
+                Text(text)
+                    .font(.footnote.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(progress >= 1 ? Color.green : Color.secondary)
+                    .accessibilityLabel(Text("Steps \(text)"))
+            }
+            Spacer(minLength: 0)
+            if let due = item.due {
+                Label(due, systemImage: item.isOverdue ? "exclamationmark.clock.fill" : "calendar")
+                    .font(.footnote.weight(item.isOverdue ? .semibold : .regular))
+                    .foregroundStyle(item.isOverdue ? Color.red : Color.secondary)
+                    .lineLimit(1)
+            }
         }
     }
 }

@@ -49,6 +49,8 @@ private struct AriaElicitationPanelContent: View {
 
     @State private var model: AriaElicitationViewModel
     @FocusState private var fieldFocused: Bool
+    @ScaledMetric(relativeTo: .footnote) private var headerButtonSide: CGFloat = 30
+    @ScaledMetric(relativeTo: .footnote) private var orbSide: CGFloat = 20
 
     init(elicitation: AriaElicitation, kind: AriaElicitationPanel.Kind, maxOptionsHeight: CGFloat,
          onSubmit: @escaping (_ text: String, _ details: [AriaElicitationAnswer]) -> Void, onMinimize: @escaping () -> Void) {
@@ -70,17 +72,17 @@ private struct AriaElicitationPanelContent: View {
                         scrolling {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text(AriaMarkdown.inline(model.step.question))
-                                    .font(.system(size: 17, weight: .semibold))
+                                    .font(.headline)
                                     .fixedSize(horizontal: false, vertical: true)
                                 if case .learning(let reason?) = kind {
                                     Text(AriaMarkdown.inline(reason))
-                                        .font(.system(size: 13))
+                                        .font(.footnote)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                                 if !model.isSingle {
                                     Text(model.isRank ? "Tap in order of priority" : "Choose all that apply")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.caption.weight(.medium))
                                         .foregroundStyle(.secondary)
                                 }
                                 optionList
@@ -118,8 +120,8 @@ private struct AriaElicitationPanelContent: View {
             if model.canGoBack {
                 Button { model.goBack() } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 30, height: 30)
+                        .font(.footnote.weight(.semibold))
+                        .frame(width: headerButtonSide, height: headerButtonSide)
                         .background(Color(.tertiarySystemFill), in: Circle())
                 }
                 .buttonStyle(.plain)
@@ -131,9 +133,9 @@ private struct AriaElicitationPanelContent: View {
                 AriaLearningBadge()
             } else {
                 AriaOrb()
-                    .frame(width: 20, height: 20)
+                    .frame(width: orbSide, height: orbSide)
                 Text("Aria is asking")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
 
@@ -143,9 +145,9 @@ private struct AriaElicitationPanelContent: View {
 
             Button(action: onMinimize) {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 30, height: 30)
+                    .frame(width: headerButtonSide, height: headerButtonSide)
                     .background(Color(.tertiarySystemFill), in: Circle())
             }
             .buttonStyle(.plain)
@@ -164,7 +166,7 @@ private struct AriaElicitationPanelContent: View {
                 }
             }
             Text(verbatim: "\(model.stepIndex + 1)/\(model.steps.count)")
-                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(.secondary)
         }
         .animation(.snappy, value: model.stepIndex)
@@ -205,7 +207,7 @@ private struct AriaElicitationPanelContent: View {
         HStack(spacing: 10) {
             if !model.selected.isEmpty {
                 Button("Clear") { model.clearSelection() }
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.subheadline.weight(.medium))
                     .buttonStyle(.borderless)
             }
             Spacer()
@@ -214,15 +216,15 @@ private struct AriaElicitationPanelContent: View {
                     Text(model.isLast ? "Send" : "Next")
                     if !model.selected.isEmpty {
                         Text(verbatim: "\(model.selected.count)")
-                            .font(.system(size: 12, weight: .bold).monospacedDigit())
+                            .font(.caption.weight(.bold).monospacedDigit())
                             .padding(.horizontal, 6)
                             .padding(.vertical, 1)
                             .background(.white.opacity(0.25), in: Capsule())
                     }
                     Image(systemName: model.isLast ? "arrow.up" : "arrow.right")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.footnote.weight(.bold))
                 }
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 4)
             }

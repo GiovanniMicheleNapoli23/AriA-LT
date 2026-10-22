@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il form di un ordine in uno sheet: creazione e modifica. Controlli, scelte e salvataggio stanno in
-//  AdminWorkOrderFormViewModel; qui solo i campi, il fuoco e la chiusura.
+//  La modifica di un ordine in uno sheet, in sezioni strette: tutti i campi insieme. La creazione è a passi
+//  (AdminWorkOrderCreateView). Controlli, scelte e salvataggio stanno in AdminWorkOrderFormViewModel; qui solo
+//  i campi, il fuoco e la chiusura.
 //
 
 import SwiftUI
@@ -15,7 +16,7 @@ struct AdminWorkOrderFormView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focused: Field?
 
-    private enum Field: Hashable { case title, description, category, zone, minutes, notes, resolution }
+    private enum Field: Hashable { case title, description, category, minutes, requester, notes, resolution }
 
     var body: some View {
         NavigationStack {
@@ -33,6 +34,8 @@ struct AdminWorkOrderFormView: View {
                 scheduleSection
                 notesSection
             }
+            .listSectionSpacing(.compact)
+            .environment(\.defaultMinListRowHeight, 38)
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(viewModel.title)
             .navigationBarTitleDisplayMode(.inline)
@@ -62,9 +65,10 @@ struct AdminWorkOrderFormView: View {
     private var generalSection: some View {
         Section {
             TextField("Title", text: $viewModel.draft.title, axis: .vertical)
+                .font(.body.weight(.semibold))
                 .focused($focused, equals: .title)
             TextField("Description", text: $viewModel.draft.description, axis: .vertical)
-                .lineLimit(3...8)
+                .lineLimit(2...8)
                 .focused($focused, equals: .description)
         } footer: {
             if let message = viewModel.validationMessage {
@@ -75,14 +79,10 @@ struct AdminWorkOrderFormView: View {
 
     private var classificationSection: some View {
         Section {
+            segmentedRow("Priority", selection: $viewModel.draft.priority, options: AdminWorkOrderPriority.known) { $0.localized }
+            segmentedRow("Type", selection: $viewModel.draft.type, options: AdminWorkOrderType.known) { $0.localized }
             Picker("Status", selection: $viewModel.draft.status) {
                 ForEach(AdminWorkOrderStatus.known, id: \.self) { Text($0.localized).tag($0) }
-            }
-            Picker("Priority", selection: $viewModel.draft.priority) {
-                ForEach(AdminWorkOrderPriority.known, id: \.self) { Text($0.localized).tag($0) }
-            }
-            Picker("Type", selection: $viewModel.draft.type) {
-                ForEach(AdminWorkOrderType.known, id: \.self) { Text($0.localized).tag($0) }
             }
             TextField("Category", text: $viewModel.draft.category)
                 .focused($focused, equals: .category)
@@ -99,82 +99,65 @@ struct AdminWorkOrderFormView: View {
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }
             }
-            choiceLink("Asset", value: viewModel.assetLabel, unavailable: viewModel.assetsUnavailable) {
+            AdminWorkOrderFormChoiceLink(title: "Asset", value: viewModel.assetLabel,
+                                         unavailable: viewModel.assetsUnavailable) {
                 AdminWorkOrderChoiceList(title: String(localized: "Asset"), choices: viewModel.assetChoices,
                                          selection: viewModel.draft.assetTag, onSelect: viewModel.selectAsset)
-            }
-            if viewModel.isCreating {
-                TextField("Zone", text: $viewModel.draft.zone)
-                    .focused($focused, equals: .zone)
             }
         }
     }
 
     private var assignmentSection: some View {
-        Section("Assignment") {
-            choiceLink("Assignee", value: viewModel.userLabel, unavailable: viewModel.usersUnavailable) {
-                AdminWorkOrderChoiceList(title: String(localized: "Assignee"), choices: viewModel.userChoices,
-                                         selection: viewModel.draft.assignedUserId, onSelect: viewModel.selectUser)
+        Section {
+            AdminWorkOrderFormChoiceLink(title: "Assignee", value: viewModel.userLabel,
+                                         unavailable: viewModel.usersUnavailable,
+                                         availability: viewModel.assigneeAvailability) {
+                AdminWorkOrderFormAssigneeList(operators: viewModel.assigneeOperators, users: viewModel.assigneeUsers,
+                                               selection: viewModel.draft.assignedUserId, onSelect: viewModel.selectUser)
             }
-            choiceLink("Team", value: viewModel.teamLabel, unavailable: viewModel.teamsUnavailable) {
+            AdminWorkOrderFormChoiceLink(title: "Team", value: viewModel.teamLabel,
+                                         unavailable: viewModel.teamsUnavailable) {
                 AdminWorkOrderChoiceList(title: String(localized: "Team"), choices: viewModel.teamChoices,
                                          selection: viewModel.draft.teamId, onSelect: viewModel.selectTeam)
             }
+            AdminWorkOrderFormTextRow(title: "Requested by", text: $viewModel.draft.requestedBy,
+                                      focus: $focused, field: .requester)
         }
     }
 
     private var scheduleSection: some View {
-        Section("Schedule") {
-            Toggle("Scheduled date", isOn: $viewModel.draft.hasScheduledDate.animation())
-            if viewModel.draft.hasScheduledDate {
-                DatePicker("Scheduled", selection: $viewModel.draft.scheduledDate)
-            }
-            Toggle("Due date", isOn: $viewModel.draft.hasDueDate.animation())
-            if viewModel.draft.hasDueDate {
-                DatePicker("Due", selection: $viewModel.draft.dueDate)
-            }
-            LabeledContent("Estimated duration") {
-                HStack(spacing: 4) {
-                    TextField("Minutes", text: $viewModel.draft.estimatedMinutes)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .focused($focused, equals: .minutes)
-                    Text("min").foregroundStyle(.secondary)
-                }
-            }
+        Section {
+            AdminWorkOrderFormDateRow(title: "Scheduled", isOn: $viewModel.draft.hasScheduledDate,
+                                      date: $viewModel.draft.scheduledDate)
+            AdminWorkOrderFormDateRow(title: "Due", isOn: $viewModel.draft.hasDueDate, date: $viewModel.draft.dueDate)
+            AdminWorkOrderFormDurationRow(minutes: $viewModel.draft.estimatedMinutes, hint: viewModel.durationHint,
+                                          focus: $focused, field: .minutes)
         }
     }
 
     private var notesSection: some View {
-        Section("Notes") {
+        Section {
             TextField("Notes", text: $viewModel.draft.notes, axis: .vertical)
-                .lineLimit(2...6)
+                .lineLimit(1...6)
                 .focused($focused, equals: .notes)
-            if !viewModel.isCreating {
-                TextField("Resolution notes", text: $viewModel.draft.resolutionNotes, axis: .vertical)
-                    .lineLimit(2...6)
-                    .focused($focused, equals: .resolution)
-            }
+            TextField("Resolution notes", text: $viewModel.draft.resolutionNotes, axis: .vertical)
+                .lineLimit(1...6)
+                .focused($focused, equals: .resolution)
         }
     }
 
-    // MARK: Scelte da elenco
+    // MARK: Righe
 
-    /// Una riga che apre l'elenco; se il ruolo non può leggerlo, il valore resta in sola lettura.
-    @ViewBuilder
-    private func choiceLink<Destination: View>(_ title: LocalizedStringKey, value: String, unavailable: Bool,
-                                               @ViewBuilder destination: @escaping () -> Destination) -> some View {
-        if unavailable {
-            LabeledContent(title) {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(value)
-                    Text("Not available for your role").font(.caption2).foregroundStyle(.tertiary)
-                }
+    /// Etichetta a sinistra e scelta segmentata: una riga per priorità e tipo.
+    private func segmentedRow<Value: Hashable>(_ title: LocalizedStringKey, selection: Binding<Value>, options: [Value],
+                                               label: @escaping (Value) -> String) -> some View {
+        HStack(spacing: 12) {
+            Text(title)
+            Picker(title, selection: selection) {
+                ForEach(options, id: \.self) { Text(label($0)).tag($0) }
             }
-        } else {
-            NavigationLink(destination: destination) {
-                LabeledContent(title, value: value)
-            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
         }
     }
 }

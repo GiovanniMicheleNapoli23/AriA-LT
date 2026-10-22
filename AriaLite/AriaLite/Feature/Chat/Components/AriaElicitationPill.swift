@@ -14,6 +14,7 @@ struct AriaElicitationPill: View {
     let elicitation: AriaElicitation
     var isLearning = false
     var onExpand: () -> Void
+    @ScaledMetric(relativeTo: .footnote) private var orbSide: CGFloat = 22
 
     var body: some View {
         Button(action: onExpand) {
@@ -22,20 +23,20 @@ struct AriaElicitationPill: View {
                     AriaLearningIcon(size: 22)
                 } else {
                     AriaOrb()
-                        .frame(width: 22, height: 22)
+                        .frame(width: orbSide, height: orbSide)
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(isLearning ? LocalizedStringKey("Real-time Learning") : "Aria is asking")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.caption2.weight(.semibold))
                         .foregroundStyle(isLearning ? AriaLearningStyle.tint : .secondary)
                     Text(AriaMarkdown.inline(elicitation.allSteps.first?.question ?? elicitation.question))
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 8)
                 Text("Answer")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.footnote.weight(.semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)

@@ -21,10 +21,10 @@ struct AriaLotoSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 10) {
                         Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 26))
+                            .font(.title)
                             .foregroundStyle(.red)
                         Text("Safety confirmation required")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.title3.weight(.bold))
                     }
                     if let alarm = interrupt.alarmCode, !alarm.isEmpty {
                         AriaBadge(text: "\(String(localized: "Alarm")): \(alarm)", tint: .red)

@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un ordine per l'admin: tutti i campi, l'assegnazione, la procedura in sola lettura con i
-//  resoconti dei passi (GET /v1/work-orders/{id}?include=procedure e /step-reports), modifica ed eliminazione.
+//  Il dettaglio di un ordine per l'admin: tutti i campi, l'assegnazione, la procedura con i resoconti dei passi
+//  (GET /v1/work-orders/{id}?include=procedure e /step-reports), cambio di stato, assegnazione automatica,
+//  traduzione dei testi, modifica ed eliminazione. I passi si spuntano e si refertano (AdminWorkOrderStepActions).
 //  Parte dall'ordine della lista, così la schermata non è mai vuota mentre arriva quello completo.
 //
 
@@ -27,12 +28,43 @@ final class AdminWorkOrderDetailViewModel {
     private(set) var isDeleted = false
 
     var isConfirmingDelete = false
+    /// La scheda aperta; le schede tengono i loro dati finché il dettaglio resta aperto.
+    var tab: AdminWorkOrderTab = .overview
+    let activity: AdminWorkOrderActivityViewModel
+    let costs: AdminWorkOrderCostsViewModel
+    let files: AdminWorkOrderFilesViewModel
+    /// L'assistente AI aperto (sheet).
+    var assistant: AdminWorkOrderAssistantViewModel?
     /// Il form di modifica aperto (sheet).
     var editForm: AdminWorkOrderFormViewModel?
+    /// Cambio di stato, completamento e assegnazione automatica.
+    let actions: AdminWorkOrderQuickActions
+    /// Spunte e risultati dei passi.
+    let stepActions: AdminWorkOrderStepActions
+
+    /// I testi dell'ordine in un'altra lingua, mostrati nella panoramica al posto degli originali.
+    private(set) var translation: AdminWorkOrderTranslation?
+    private(set) var translatingLocale: String?
+    private(set) var translationError: String?
 
     init(order: AdminWorkOrder, list: AdminWorkOrdersViewModel) {
         self.order = order
         self.list = list
+        activity = AdminWorkOrderActivityViewModel(orderId: order.id, backend: list.backend)
+        costs = AdminWorkOrderCostsViewModel(orderId: order.id, backend: list.backend)
+        files = AdminWorkOrderFilesViewModel(orderId: order.id, backend: list.backend)
+        actions = AdminWorkOrderQuickActions(backend: list.backend)
+        stepActions = AdminWorkOrderStepActions(orderId: order.id, backend: list.backend)
+        actions.onUpdated = { [weak self] updated in self?.didSave(updated) }
+        actions.onReload = { [weak self] _ in await self?.load() }
+        actions.showSteps = { [weak self] in self?.tab = .steps }
+        stepActions.reload = { [weak self] in await self?.load() }
+    }
+
+    func openAssistant() {
+        assistant = AdminWorkOrderAssistantViewModel(order: order, backend: backend) { [weak self] updated in
+            self?.didSave(updated)
+        }
     }
 
     private var backend: AriaBackend { list.backend }
@@ -61,6 +93,17 @@ final class AdminWorkOrderDetailViewModel {
         await directory.loadIfNeeded()
     }
 
+    /// Pull-to-refresh: l'ordine e, se aperta, la scheda di attività, costi o file.
+    func refresh() async {
+        await load()
+        switch tab {
+        case .activity: await activity.load()
+        case .files: await files.load()
+        case .costs: await costs.load()
+        case .overview, .steps: break
+        }
+    }
+
     // MARK: Intestazione
 
     var statusLabel: String? { order.status.map(\.localized) }
@@ -77,6 +120,61 @@ final class AdminWorkOrderDetailViewModel {
     }
 
     var isOverdue: Bool { order.isOverdue() }
+
+    var assigneeName: String? { directory.assigneeName(for: order) }
+
+    /// "3/5" accanto alla scadenza; `nil` senza passi.
+    var progressShort: String? {
+        let items = steps
+        guard !items.isEmpty else { return nil }
+        return "\(items.filter { $0.status != nil }.count)/\(items.count)"
+    }
+
+    // MARK: Stato
+
+    var statusChoices: [AdminWorkOrderStatus] { actions.statusChoices(for: order) }
+    var isChangingStatus: Bool { actions.isBusy(order) }
+
+    func changeStatus(to status: AdminWorkOrderStatus) { actions.change(order, to: status) }
+
+    func autoAssign() async { await actions.autoAssign(order) }
+
+    // MARK: Traduzione
+
+    /// Le lingue offerte, col nome nella lingua dell'app; quella dell'app per prima.
+    var translationLanguages: [(code: String, name: String)] {
+        let codes = ["it", "en", "es", "fr", "de", "pt", "pl", "ro"]
+        let current = Locale.current.language.languageCode?.identifier
+        let ordered = codes.filter { $0 == current } + codes.filter { $0 != current }
+        return ordered.map { code in
+            (code, Locale.current.localizedString(forLanguageCode: code)?.localizedCapitalized ?? code)
+        }
+    }
+
+    var translationLanguageName: String? {
+        translation.map { Locale.current.localizedString(forLanguageCode: $0.locale)?.localizedCapitalized ?? $0.locale }
+    }
+
+    var isTranslating: Bool { translatingLocale != nil }
+
+    func translate(to locale: String) async {
+        translatingLocale = locale
+        translationError = nil
+        tab = .overview
+        defer { translatingLocale = nil }
+        do {
+            let result = try await api.translation(order.id, locale: locale)
+            translation = result
+            if result.isEmpty { translationError = String(localized: "There's nothing to translate in this work order.") }
+        } catch {
+            translationError = AdminWorkOrderFailure.message(for: error, backend: backend)
+        }
+    }
+
+    func clearTranslation() {
+        translation = nil
+        translationError = nil
+    }
 
     // MARK: Campi
 
@@ -125,7 +223,8 @@ final class AdminWorkOrderDetailViewModel {
             field(String(localized: "Category"), order.category),
             field(String(localized: "Asset"), order.assetTag),
             field(String(localized: "Zone"), order.zone),
-            field(String(localized: "Plant"), directory.plantName(order.plantId) ?? order.plantId),
+            // Senza il nome (stabilimento di un'altra azienda o non caricato) l'id non dice niente: si omette.
+            field(String(localized: "Plant"), directory.plantName(order.plantId)),
             field(String(localized: "Alarm code"), order.alarmCode),
             field(String(localized: "Created"), order.createdAt.map(AdminWorkOrderFormat.dateTime)),
             field(String(localized: "Updated"), order.updatedAt.map(AdminWorkOrderFormat.dateTime)),
@@ -213,6 +312,12 @@ final class AdminWorkOrderDetailViewModel {
 
     /// Ordine aperto con la procedura non ancora caricata: si aspetta invece di dire "nessun passo".
     var isLoadingSteps: Bool { !hasLoaded && order.procedure == nil }
+
+    /// Chiuso: il server rifiuta ogni modifica ai passi (`work_order_closed`).
+    var canEditSteps: Bool { !order.isClosed }
+
+    /// Passi con un risultato da togliere: "Reset all checks" ha senso.
+    var hasReportedSteps: Bool { steps.contains { $0.status != nil } }
 
     // MARK: Modifica ed eliminazione
 

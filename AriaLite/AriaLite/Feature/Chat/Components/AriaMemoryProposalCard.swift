@@ -26,51 +26,37 @@ struct AriaMemoryProposalCard: View {
     var body: some View {
         AriaCard(tint: .purple) {
             Label("Should Aria remember this?", systemImage: "brain")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(.purple)
             if model.isEditing {
                 TextField("What Aria should remember", text: $model.edited, axis: .vertical)
-                    .font(.system(size: 13))
+                    .font(.footnote)
                     .lineLimit(2...6)
                     .focused($editorFocused)
                     .padding(8)
                     .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityIdentifier("memory.editor")
             } else {
-                Text(model.shown).font(.system(size: 13))
+                Text(model.shown).font(.footnote)
                     .accessibilityIdentifier("memory.text")
             }
             if let reason = model.proposal.reason, !reason.isEmpty {
-                Text(reason).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(reason).font(.caption).foregroundStyle(.secondary)
             }
             Text("An admin reviews it before Aria uses it.")
-                .font(.system(size: 11))
+                .font(.caption2)
                 .foregroundStyle(.secondary)
-            HStack {
-                if model.isEditing {
-                    Button("Cancel") { model.cancelEditing() }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("memory.cancelEdit")
-                } else {
-                    Button("Discard") { decide(false, nil) }
-                        .buttonStyle(.bordered)
-                        .accessibilityIdentifier("memory.discard")
-                    if model.canReword {
-                        Button("Edit", systemImage: "pencil") {
-                            model.startEditing()
-                            editorFocused = true
-                        }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.bordered)
-                        .accessibilityLabel("Edit before sending")
-                        .accessibilityIdentifier("memory.edit")
-                    }
+            // Con il testo molto grande i pulsanti non stanno su una riga: "Invia" va sotto.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    secondaryButtons
+                    Spacer()
+                    sendButton
                 }
-                Spacer()
-                Button("Send for review") { decide(true, model.sentContent) }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!model.canSend)
-                    .accessibilityIdentifier("memory.send")
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack { secondaryButtons }
+                    sendButton
+                }
             }
             .controlSize(.small)
         }
@@ -78,5 +64,34 @@ struct AriaMemoryProposalCard: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("memory.card")
         .task(id: model.proposal.factId) { model.requestTranslation() }
+    }
+
+    @ViewBuilder private var secondaryButtons: some View {
+        if model.isEditing {
+            Button("Cancel") { model.cancelEditing() }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("memory.cancelEdit")
+        } else {
+            Button("Discard") { decide(false, nil) }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("memory.discard")
+            if model.canReword {
+                Button("Edit", systemImage: "pencil") {
+                    model.startEditing()
+                    editorFocused = true
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Edit before sending")
+                .accessibilityIdentifier("memory.edit")
+            }
+        }
+    }
+
+    private var sendButton: some View {
+        Button("Send for review") { decide(true, model.sentContent) }
+            .buttonStyle(.borderedProminent)
+            .disabled(!model.canSend)
+            .accessibilityIdentifier("memory.send")
     }
 }

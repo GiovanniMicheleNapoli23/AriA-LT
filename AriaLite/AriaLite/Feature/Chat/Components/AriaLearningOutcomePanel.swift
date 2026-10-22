@@ -17,6 +17,8 @@ struct AriaLearningOutcomePanel: View {
     @State private var model: AriaLearningOutcomeViewModel
     /// In orizzontale su iPhone lo schermo è basso: intestazione e azioni devono restare nella chat.
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    /// Il pulsante di chiusura cresce con il testo (Dynamic Type).
+    @ScaledMetric(relativeTo: .caption) private var closeSize: CGFloat = 30
 
     init(outcome: AriaLearningOutcome, chat: AriaAgentChat) {
         self.outcome = outcome
@@ -35,9 +37,9 @@ struct AriaLearningOutcomePanel: View {
                 AriaLearningIcon(size: 30)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.callout.weight(.semibold))
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
                 .fixedSize(horizontal: false, vertical: true)
@@ -48,9 +50,9 @@ struct AriaLearningOutcomePanel: View {
                 } else {
                     Button { model.dismiss() } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.caption.weight(.bold))
                             .foregroundStyle(.secondary)
-                            .frame(width: 30, height: 30)
+                            .frame(width: closeSize, height: closeSize)
                             .background(Color(.tertiarySystemFill), in: Circle())
                     }
                     .buttonStyle(.plain)
@@ -106,17 +108,17 @@ struct AriaLearningOutcomePanel: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(AriaLearningStyle.tint)
                 Text(item.isProposed ? LocalizedStringKey("To review") : "Learned")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(item.isProposed ? .orange : .green)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 2)
                     .background((item.isProposed ? Color.orange : Color.green).opacity(0.12), in: Capsule())
             }
             Text(model.text(item))
-                .font(.system(size: 14))
+                .font(.subheadline)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)
@@ -127,18 +129,18 @@ struct AriaLearningOutcomePanel: View {
     private var context: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Question")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
             Text(AriaMarkdown.inline(outcome.question))
-                .font(.system(size: 13))
+                .font(.footnote)
             Text(outcome.response?.context == nil ? LocalizedStringKey("Validated answer") : "Context")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
                 .padding(.top, 4)
             Text(AriaMarkdown.inline(outcome.response?.context ?? outcome.answer))
-                .font(.system(size: 13))
+                .font(.footnote)
                 .foregroundStyle(.secondary)
                 .lineLimit(8)
         }
@@ -149,42 +151,55 @@ struct AriaLearningOutcomePanel: View {
         .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
+    /// Con il testo molto grande i due pulsanti non stanno su una riga: vanno uno sotto l'altro.
     private var actions: some View {
-        HStack(spacing: 8) {
-            Button { model.toggleContext() } label: {
-                Label(model.showContext ? LocalizedStringKey("Hide context") : "Review context", systemImage: "book")
-                    .font(.system(size: 14, weight: .medium))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                contextButton
+                Spacer(minLength: 0)
+                primaryButton
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-
-            Spacer(minLength: 0)
-
-            if model.canNotify(outcome) {
-                Button { model.notify(outcome) } label: {
-                    HStack(spacing: 6) {
-                        if model.notifying { ProgressView().controlSize(.small).tint(.white) }
-                        else { Image(systemName: "bell.fill") }
-                        Text("Notify")
-                    }
-                    .font(.system(size: 14, weight: .semibold))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .tint(AriaLearningStyle.tint)
-                .disabled(model.notifying)
-            } else {
-                Button("Done") { model.dismiss() }
-                    .font(.system(size: 14, weight: .semibold))
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.capsule)
-                    .tint(AriaLearningStyle.tint)
+            VStack(alignment: .leading, spacing: 8) {
+                contextButton
+                primaryButton
             }
         }
         .padding(.bottom, 4)
+    }
+
+    private var contextButton: some View {
+        Button { model.toggleContext() } label: {
+            Label(model.showContext ? LocalizedStringKey("Hide context") : "Review context", systemImage: "book")
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, 4)
+                .padding(.vertical, 2)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+    }
+
+    @ViewBuilder private var primaryButton: some View {
+        if model.canNotify(outcome) {
+            Button { model.notify(outcome) } label: {
+                HStack(spacing: 6) {
+                    if model.notifying { ProgressView().controlSize(.small).tint(.white) }
+                    else { Image(systemName: "bell.fill") }
+                    Text("Notify")
+                }
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 4)
+                .padding(.vertical, 2)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .tint(AriaLearningStyle.tint)
+            .disabled(model.notifying)
+        } else {
+            Button("Done") { model.dismiss() }
+                .font(.subheadline.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(AriaLearningStyle.tint)
+        }
     }
 }

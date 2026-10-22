@@ -18,7 +18,12 @@ enum AriaLearningStyle {
 }
 
 struct AriaLearningIcon: View {
-    var size: CGFloat = 20
+    /// Il cerchio cresce con il testo (Dynamic Type).
+    @ScaledMetric private var size: CGFloat
+
+    init(size: CGFloat = 20) {
+        _size = ScaledMetric(wrappedValue: size, relativeTo: .footnote)
+    }
 
     var body: some View {
         Image(systemName: AriaLearningStyle.symbol)
@@ -36,7 +41,7 @@ struct AriaLearningBadge: View {
         HStack(spacing: 8) {
             AriaLearningIcon()
             Text("Real-time Learning")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(AriaLearningStyle.tint)
         }
     }
@@ -53,10 +58,10 @@ struct AriaLearningChip: View {
             HStack(spacing: 8) {
                 AriaLearningIcon(size: 20)
                 Text("Aria isn't sure — help it learn")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.footnote.weight(.medium))
                     .foregroundStyle(AriaLearningStyle.tint)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(AriaLearningStyle.tint.opacity(0.7))
             }
             .padding(.leading, 6)

@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Gli ordini di lavoro dell'azienda, come la pagina /work-orders della web: lista, dettaglio, creazione e modifica.
-//  Qui solo la lista: chip dei filtri, ricerca, pull-to-refresh e altre pagine scorrendo. Tutta la logica è
-//  in AdminWorkOrdersViewModel.
+//  Qui solo la lista, compatta: chip dei filtri e ordinamento, ricerca, pull-to-refresh, altre pagine scorrendo.
+//  È una List per gli swipe (iOS 18): da sinistra "Start"/"Hold", da destra "Complete"; il menu contestuale
+//  cambia lo stato o assegna in automatico. Tutta la logica è in AdminWorkOrdersViewModel.
 //
 
 import SwiftUI
@@ -20,17 +21,17 @@ struct AdminWorkOrdersView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    AdminWorkOrderFilterBar(statusGroup: viewModel.statusGroup, priority: viewModel.priority,
-                                            onSelectGroup: viewModel.select, onTogglePriority: viewModel.toggle)
-                        .padding(.top, 4)
-                        .padding(.bottom, 8)
-                    errorPill
-                    content
-                }
-                .ariaReadableWidth()
+            List {
+                AdminWorkOrderFilterBar(viewModel: viewModel)
+                    .ariaReadableWidth()
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 10, trailing: 0))
+                    .plainListRow()
+                errorPill
+                content
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 0)
             .refreshable { await viewModel.refresh() }
             .liteBackground()
             .navigationTitle("Work Orders")
@@ -40,14 +41,22 @@ struct AdminWorkOrdersView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button("Templates", systemImage: "doc.on.doc") { viewModel.isShowingTemplates = true }
+                        .disabled(viewModel.isForbidden)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("New Work Order", systemImage: "plus") { viewModel.startCreating() }
                         .disabled(viewModel.isForbidden)
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Search title, asset or zone"))
             .sheet(item: $viewModel.createForm) { form in
-                AdminWorkOrderFormView(viewModel: form)
+                AdminWorkOrderCreateView(viewModel: form)
             }
+            .navigationDestination(isPresented: $viewModel.isShowingTemplates) {
+                AdminWorkOrderTemplatesView(viewModel: viewModel.templates)
+            }
+            .adminWorkOrderQuickActions(viewModel.actions)
         }
         .task(id: viewModel.backend.activePlantId) { await viewModel.loadIfNeeded() }
     }
@@ -57,51 +66,94 @@ struct AdminWorkOrdersView: View {
     @ViewBuilder
     private var content: some View {
         if !viewModel.hasLoaded {
-            if let message = viewModel.errorMessage {
-                failure(message)
-            } else {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 60)
+            Group {
+                if let message = viewModel.errorMessage {
+                    failure(message)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                }
             }
+            .plainListRow()
         } else if viewModel.rows.isEmpty {
-            if viewModel.isSearching {
-                ContentUnavailableView.search(text: viewModel.searchText)
-            } else {
-                ContentUnavailableView("No work orders", systemImage: "wrench.and.screwdriver",
-                                       description: Text("Nothing matches these filters."))
-                    .padding(.top, 40)
+            Group {
+                if viewModel.isSearching {
+                    ContentUnavailableView.search(text: viewModel.searchText)
+                } else {
+                    ContentUnavailableView("No work orders", systemImage: "wrench.and.screwdriver",
+                                           description: Text("Nothing matches these filters."))
+                        .padding(.top, 40)
+                }
             }
+            .plainListRow()
         } else {
-            rows
+            ForEach(viewModel.rows) { item in
+                row(item)
+            }
+            footer.plainListRow()
         }
     }
 
-    private var rows: some View {
-        LazyVStack(spacing: 8) {
-            ForEach(viewModel.rows) { item in
-                NavigationLink(value: AdminWorkOrderRoute(order: item.order)) {
-                    AdminWorkOrderRow(item: item)
-                }
-                .buttonStyle(.plain)
-                .onAppear { viewModel.loadMoreIfNeeded(after: item) }
+    private func row(_ item: AdminWorkOrderRowItem) -> some View {
+        // Il link nascosto dietro la riga: niente freccia della List, la riga resta tutta toccabile.
+        AdminWorkOrderRow(item: item)
+            .background {
+                NavigationLink(value: AdminWorkOrderRoute(order: item.order)) { EmptyView() }.opacity(0)
             }
-            footer
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 24)
+            .ariaReadableWidth()
+            .listRowInsets(EdgeInsets(top: 5, leading: 16, bottom: 5, trailing: 16))
+            .plainListRow()
+            .onAppear { viewModel.loadMoreIfNeeded(after: item) }
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if let status = viewModel.leadingSwipe(for: item) {
+                    Button {
+                        viewModel.changeStatus(item, to: status)
+                    } label: {
+                        if status == .inProgress {
+                            Label("Start", systemImage: "play.fill")
+                        } else {
+                            Label("Hold", systemImage: "pause.fill")
+                        }
+                    }
+                    .tint(status == .inProgress ? .orange : .gray)
+                }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if viewModel.canComplete(item) {
+                    Button { viewModel.changeStatus(item, to: .completed) } label: {
+                        Label("Complete", systemImage: "checkmark")
+                    }
+                    .tint(.green)
+                }
+            }
+            .contextMenu {
+                Menu {
+                    AdminWorkOrderStatusMenuItems(choices: viewModel.statusChoices(for: item)) { status in
+                        viewModel.changeStatus(item, to: status)
+                    }
+                } label: {
+                    Label("Change status", systemImage: "arrow.triangle.2.circlepath")
+                }
+                if !item.order.isClosed {
+                    Button("Auto-assign", systemImage: "person.crop.circle.badge.checkmark") { viewModel.autoAssign(item) }
+                }
+            }
+            .disabled(item.isBusy)
     }
 
     /// Altre pagine: si caricano scorrendo; il pulsante serve quando la ricerca nasconde l'ultima riga.
     @ViewBuilder
     private var footer: some View {
         if viewModel.isLoadingMore {
-            ProgressView().frame(maxWidth: .infinity).padding(.vertical, 16)
+            ProgressView().frame(maxWidth: .infinity).padding(.vertical, 12)
         } else if viewModel.canLoadMore {
             Button("Load more") { viewModel.loadMore() }
                 .ariaGlassButtonStyle()
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, 8)
+        } else {
+            Color.clear.frame(height: 12)
         }
     }
 
@@ -137,15 +189,25 @@ struct AdminWorkOrdersView: View {
                 if !viewModel.isForbidden {
                     Button("Retry") { Task { await viewModel.load() } }
                         .font(.footnote.weight(.semibold))
+                        .buttonStyle(.borderless)
                         .disabled(viewModel.isLoading)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
             .ariaGlass(in: Capsule())
-            .padding(.horizontal, 20)
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 4)
+            .plainListRow()
         }
+    }
+}
+
+private extension View {
+    /// Riga della List senza sfondo né separatore: la lista resta a schede di vetro.
+    func plainListRow() -> some View {
+        listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
     }
 }

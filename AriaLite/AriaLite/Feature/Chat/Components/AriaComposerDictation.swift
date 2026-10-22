@@ -35,7 +35,9 @@ struct AriaDictationMicButton: View {
                 Text(model.dictationSourceTitle)
             }
         } label: {
+            // Il limite sta sull'etichetta, non sul Menu: le voci del menu seguono il testo di sistema.
             AriaMicGlyph(dictation: model.dictation)
+                .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
         } primaryAction: {
             model.toggleDictation()
         }
@@ -53,6 +55,7 @@ struct AriaDictationMicButton: View {
 /// solo questo cerchio, non tutta la barra.
 private struct AriaMicGlyph: View {
     let dictation: AriaDictation
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 38
 
     var body: some View {
         ZStack {
@@ -66,12 +69,12 @@ private struct AriaMicGlyph: View {
                 ProgressView()
             } else {
                 Image(systemName: dictation.isListening ? "stop.fill" : "mic")
-                    .font(.system(size: dictation.isListening ? 15 : 18, weight: .regular))
+                    .font(dictation.isListening ? Font.subheadline : .body)
                     .foregroundStyle(dictation.isListening ? Color.accentColor : .primary)
                     .contentTransition(.symbolEffect(.replace))
             }
         }
-        .frame(width: 38, height: 38)
+        .frame(width: side, height: side)
         .contentShape(Circle())
     }
 }
@@ -81,12 +84,14 @@ struct AriaDictationStrip: View {
     let model: AriaChatComposerViewModel
 
     private var dictation: AriaDictation { model.dictation }
+    @ScaledMetric(relativeTo: .caption2) private var buttonSide: CGFloat = 26
 
     var body: some View {
         HStack(spacing: 8) {
             if dictation.isListening, let startedAt = dictation.startedAt {
                 Image(systemName: "circle.fill")
-                    .font(.system(size: 7))
+                    .font(.caption2)
+                    .imageScale(.small)
                     .foregroundStyle(.red)
                     .symbolEffect(.pulse)
                     .accessibilityHidden(true)
@@ -98,9 +103,9 @@ struct AriaDictationStrip: View {
                         .foregroundStyle(limit - elapsed <= 10 ? Color.orange : Color.primary)
                         .accessibilityLabel(Text("Dictating for \(Duration.seconds(elapsed).formatted(.units(allowed: [.minutes, .seconds], width: .wide)))"))
                 }
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 Text(model.dictationSourceTitle)
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .accessibilityIdentifier("chat.dictation.source")
@@ -111,7 +116,7 @@ struct AriaDictationStrip: View {
             } else {
                 ProgressView().controlSize(.mini)
                 Text("Writing it down…")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 4)
                 stripButton(systemImage: "checkmark", label: "Keep the text as it is", identifier: "chat.dictation.keep") {
@@ -128,11 +133,11 @@ struct AriaDictationStrip: View {
                              action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .bold))
+                .font(.caption2.weight(.bold))
                 .foregroundStyle(.secondary)
-                .frame(width: 26, height: 26)
+                .frame(width: buttonSide, height: buttonSide)
                 .background(Color(.tertiarySystemFill), in: Circle())
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

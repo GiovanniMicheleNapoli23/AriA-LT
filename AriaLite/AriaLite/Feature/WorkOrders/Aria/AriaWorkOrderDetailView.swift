@@ -27,6 +27,8 @@ struct AriaWorkOrderDetailView: View {
     @State private var showComplete = false
     /// Il cerchio del numero di passo cresce col testo (Dynamic Type).
     @ScaledMetric(relativeTo: .caption) private var markerSize: CGFloat = 22
+    /// La colonna delle icone nelle sezioni informative, idem.
+    @ScaledMetric(relativeTo: .subheadline) private var infoIconWidth: CGFloat = 20
 
     nonisolated enum InfoSection: Hashable { case description, notes, details }
 
@@ -168,7 +170,7 @@ struct AriaWorkOrderDetailView: View {
             }
         } label: {
             Label(actionTitle, systemImage: actionIcon)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.headline)
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
         .ariaProminentGlassButtonStyle(tint: order.isClosed ? Color.liteAccent : allReported ? .green : Color.liteAccent)
@@ -203,7 +205,7 @@ struct AriaWorkOrderDetailView: View {
                     Text("Safety warnings").font(.headline)
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .rotationEffect(.degrees(isSafetyOpen ? 180 : 0))
                 }
                 .foregroundStyle(.orange)
@@ -289,7 +291,7 @@ struct AriaWorkOrderDetailView: View {
                     .foregroundStyle(.secondary)
                 Spacer()
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(showDoneSteps ? 180 : 0))
             }
@@ -318,7 +320,7 @@ struct AriaWorkOrderDetailView: View {
                         .foregroundStyle(text.isSafetyTag ? Color.orange : Color.liteAccent)
                 }
                 Text(text.headline)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(5)
@@ -457,9 +459,9 @@ struct AriaWorkOrderDetailView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.liteAccent)
-                        .frame(width: 20)
+                        .frame(width: infoIconWidth)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                         if !isOpen, let preview, !preview.isEmpty {
@@ -471,7 +473,7 @@ struct AriaWorkOrderDetailView: View {
                     }
                     Spacer(minLength: 8)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isOpen ? 180 : 0))
                 }
@@ -528,7 +530,7 @@ struct AriaWorkOrderDetailView: View {
                 .foregroundStyle(.secondary)
             Button { showComplete = true } label: {
                 Label("Complete task", systemImage: "checkmark.seal.fill")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.borderedProminent)

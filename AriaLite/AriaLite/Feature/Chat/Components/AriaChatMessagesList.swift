@@ -76,13 +76,15 @@ struct AriaInlineEditorFocusKey: PreferenceKey {
 struct AriaChatJumpToBottomButton: View {
     let isStreaming: Bool
     var action: () -> Void
+    // Il cerchio cresce con l'icona: a testo grande non la taglia.
+    @ScaledMetric(relativeTo: .subheadline) private var side: CGFloat = 40
 
     var body: some View {
         Button(action: action) {
             Image(systemName: isStreaming ? "arrow.down.circle.dotted" : "arrow.down")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
-                .frame(width: 40, height: 40)
+                .frame(width: side, height: side)
                 .ariaGlass(in: Circle(), interactive: true)
         }
         .buttonStyle(.plain)

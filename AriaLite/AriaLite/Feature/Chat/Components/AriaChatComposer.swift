@@ -22,6 +22,7 @@ struct AriaChatComposer: View {
     var onShowPending: () -> Void
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -64,7 +65,7 @@ struct AriaChatComposer: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             } else if let error = model.dictation.error {
                 Label(error, systemImage: "mic.slash")
-                    .font(.system(size: 12))
+                    .font(.caption)
                     .foregroundStyle(.red)
                     .padding(.horizontal, 10)
                     .padding(.top, 6)
@@ -72,27 +73,24 @@ struct AriaChatComposer: View {
                     .accessibilityIdentifier("chat.dictation.error")
             }
 
-            HStack(alignment: .bottom, spacing: 2) {
-                AriaComposerPlusMenu(model: model)
-
-                TextField(model.placeholder, text: $model.draft, axis: .vertical)
-                    .font(.system(size: 17))
-                    // In orizzontale con la tastiera restano ~150 pt: oltre due righe il campo scorre al suo interno.
-                    .lineLimit(verticalSizeClass == .compact ? 1...2 : 1...6)
-                    .focused(inputFocused)
-                    .padding(.vertical, 9)
-                    .padding(.leading, 2)
-                    .accessibilityIdentifier("chat.input")
-
-                if let usage = model.contextUsage, !model.dictation.isListening {
-                    AriaContextRing(model: model, usage: usage)
-                        .transition(.scale(scale: 0.6).combined(with: .opacity))
+            if dynamicTypeSize.isAccessibilitySize {
+                // Testo molto grande: il campo prende tutta la riga e i pulsanti vanno sotto,
+                // altrimenti quattro cerchi lascerebbero al testo poche lettere per riga.
+                VStack(alignment: .leading, spacing: 2) {
+                    field
+                        .padding(.horizontal, 8)
+                    HStack(alignment: .bottom, spacing: 2) {
+                        AriaComposerPlusMenu(model: model)
+                        Spacer(minLength: 0)
+                        trailingButtons
+                    }
                 }
-
-                AriaDictationMicButton(model: model)
-
-                AriaComposerPrimaryButton(model: model) { inputFocused.wrappedValue = false }
-                    .padding(.leading, 2)
+            } else {
+                HStack(alignment: .bottom, spacing: 2) {
+                    AriaComposerPlusMenu(model: model)
+                    field
+                    trailingButtons
+                }
             }
         }
         .animation(.snappy(duration: 0.2), value: model.dictation.error)
@@ -102,6 +100,35 @@ struct AriaChatComposer: View {
         // Liquid Glass (material prima di iOS 26): i messaggi scorrono sotto la barra.
         .ariaGlass(in: RoundedRectangle(cornerRadius: 26, style: .continuous), interactive: true)
     }
+
+    private var field: some View {
+        TextField(model.placeholder, text: $model.draft, axis: .vertical)
+            .font(.body)
+            // In orizzontale con la tastiera restano ~150 pt: oltre due righe il campo scorre al suo interno.
+            .lineLimit(verticalSizeClass == .compact ? 1...2 : 1...6)
+            .focused(inputFocused)
+            .padding(.vertical, 9)
+            .padding(.leading, 2)
+            .accessibilityIdentifier("chat.input")
+    }
+
+    @ViewBuilder
+    private var trailingButtons: some View {
+        if let usage = model.contextUsage, !model.dictation.isListening {
+            AriaContextRing(model: model, usage: usage)
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+        }
+
+        AriaDictationMicButton(model: model)
+
+        AriaComposerPrimaryButton(model: model) { inputFocused.wrappedValue = false }
+            .padding(.leading, 2)
+            // Il cerchio cresce col testo fino ad AX1, poi si ferma: i pulsanti devono stare in riga.
+            .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
+    }
+
+    /// Oltre questa taglia i cerchi della barra (e le loro icone) smettono di crescere.
+    static let maxButtonTypeSize = DynamicTypeSize.accessibility1
 }
 
 /// Il "+": foto, galleria, file, stile di risposta e ricerca web.
@@ -130,13 +157,23 @@ private struct AriaComposerPlusMenu: View {
                 }
             }
         } label: {
-            Image(systemName: "plus")
-                .font(.system(size: 20, weight: .regular))
-                .foregroundStyle(.primary)
-                .frame(width: 38, height: 38)
-                .contentShape(Circle())
+            // Il limite sta sull'etichetta, non sul Menu: le voci del menu seguono il testo di sistema.
+            AriaComposerPlusGlyph()
+                .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
         }
         .accessibilityLabel("Add")
+    }
+}
+
+private struct AriaComposerPlusGlyph: View {
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 38
+
+    var body: some View {
+        Image(systemName: "plus")
+            .font(.title3)
+            .foregroundStyle(.primary)
+            .frame(width: side, height: side)
+            .contentShape(Circle())
     }
 }
 
@@ -146,6 +183,8 @@ private struct AriaComposerPrimaryButton: View {
     /// Dopo un invio la tastiera si chiude.
     var onSent: () -> Void
 
+    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 38
+
     var body: some View {
         Button {
             if model.primaryAction() { onSent() }
@@ -153,12 +192,12 @@ private struct AriaComposerPrimaryButton: View {
             ZStack {
                 Circle()
                     .fill(tint)
-                    .frame(width: 38, height: 38)
+                    .frame(width: side, height: side)
                 if model.isVoiceConnecting {
                     ProgressView().tint(.white)
                 } else {
                     Image(systemName: symbol)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.subheadline.weight(.bold))
                         .foregroundStyle(.white)
                         .contentTransition(.symbolEffect(.replace))
                 }
