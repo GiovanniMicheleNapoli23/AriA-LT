@@ -17,15 +17,13 @@ struct AriaChatMessagesList: View {
     /// Si scrive in un campo dentro un messaggio (ricordo, parametri da approvare).
     @State private var inlineEditorFocused = false
 
-    private var chat: AriaAgentChat { model.chat }
-
     var body: some View {
         ScrollView {
             // VStack e non LazyVStack: con altezze stimate lo scroll in fondo saltella mentre il testo cresce.
             VStack(alignment: .leading, spacing: 16) {
-                ForEach(chat.messages) { message in
-                    AriaAgentMessageView(message: message, chat: chat, webBase: model.backend.webURL,
-                                         isLast: message.id == chat.messages.last?.id,
+                ForEach(model.messages) { message in
+                    AriaAgentMessageView(message: message, chat: model.chat, webBase: model.webURL,
+                                         isLast: model.isLast(message.id),
                                          orbNamespace: orbNamespace)
                         .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
                             model.messageHeightChanged(message.id, height: height)
@@ -65,7 +63,7 @@ struct AriaChatMessagesList: View {
             model.scroll.phaseChanged(to: phase)
         }
         // Un messaggio nuovo (mandato o ricevuto) riporta sempre in fondo.
-        .onChange(of: chat.messages.count) {
+        .onChange(of: model.messageCount) {
             model.scroll.followBottom()
             proxy.scrollTo("bottom", anchor: .bottom)
         }

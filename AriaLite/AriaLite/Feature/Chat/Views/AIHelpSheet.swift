@@ -7,15 +7,6 @@
 
 import SwiftUI
 
-/// La chat di "Ask AriA" di un'esecuzione: la tiene il chiamante, il foglio la legge da qui.
-/// Un oggetto osservabile e non un `@State` opzionale: il contenuto di `.sheet(isPresented:)` può essere
-/// costruito con il valore di prima del tocco che lo apre (era nil → foglio vuoto); questo invece è
-/// sempre lo stesso oggetto e la chat si legge quando il foglio si disegna.
-@Observable
-final class AriaHelpChatSlot {
-    var chat: AriaAgentChat?
-}
-
 // Assistente Aria dentro un passo: la chat del backend, col contesto del passo corrente.
 // La chat è del chiamante: chiudere il foglio la minimizza soltanto (la conversazione resta e si riapre
 // da "Ask AriA"); è il chiamante a azzerarla quando cambia il passo.

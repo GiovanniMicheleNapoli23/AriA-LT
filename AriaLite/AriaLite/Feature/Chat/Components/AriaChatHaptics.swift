@@ -6,48 +6,32 @@
 //
 //  Gli haptic della conversazione si leggono dallo stato della chat, così valgono da qualunque
 //  punto parta l'azione (composer, suggerimenti, aiuto sui task, domande guidate, card).
+//  Quale haptic e quando lo decide AriaAgentChatViewModel.
 //
 
 import SwiftUI
 
 struct AriaChatHaptics: ViewModifier {
-    let chat: AriaAgentChat
-
-    /// Esito dell'ultima pausa decisa (approvazione o LOTO).
-    private var outcome: AriaInterruptOutcome? {
-        chat.messages.last(where: { $0.role == .assistant })?.interruptOutcome
-    }
+    let model: AriaAgentChatViewModel
 
     func body(content: Content) -> some View {
         content
-            // Turno nuovo: domanda e risposta in arrivo aggiunte insieme (lo storico caricato non conta).
-            .sensoryFeedback(trigger: chat.messages.count) { old, new in
-                new == old + 2 && chat.isStreaming ? .impact(weight: .light) : nil
+            .sensoryFeedback(trigger: model.messageCount) { old, new in
+                model.feedbackForMessages(from: old, to: new)
             }
-            // Aria ha finito e aspetta l'operatore: una decisione da prendere o una domanda.
-            .sensoryFeedback(trigger: chat.isStreaming) { was, now in
-                guard was, !now, chat.lastError == nil else { return nil }
-                if chat.pendingInterrupt != nil { return .warning }
-                if chat.activeElicitation != nil { return .impact(weight: .medium) }
-                return nil
+            .sensoryFeedback(trigger: model.isStreaming) { was, now in
+                model.feedbackForStreaming(was: was, now: now)
             }
-            // La decisione sulla pausa: il LOTO confermato "pesa" più di un'approvazione.
-            .sensoryFeedback(trigger: outcome) { _, new in
-                guard chat.isStreaming, let new else { return nil }
-                return switch new {
-                case .approved, .edited: .success
-                case .rejected: .impact(weight: .medium)
-                case .lotoConfirmed: .impact(weight: .heavy)
-                case .lotoDeclined: .warning
-                }
+            .sensoryFeedback(trigger: model.lastInterruptOutcome) { _, new in
+                model.feedback(for: new)
             }
-            .sensoryFeedback(.error, trigger: chat.lastError) { _, new in new != nil }
-            .sensoryFeedback(.success, trigger: chat.notice) { _, new in new != nil }
+            .sensoryFeedback(.error, trigger: model.turnError) { _, new in new != nil }
+            .sensoryFeedback(.success, trigger: model.notice) { _, new in new != nil }
     }
 }
 
 extension View {
-    func ariaChatHaptics(_ chat: AriaAgentChat) -> some View {
-        modifier(AriaChatHaptics(chat: chat))
+    func ariaChatHaptics(_ model: AriaAgentChatViewModel) -> some View {
+        modifier(AriaChatHaptics(model: model))
     }
 }
