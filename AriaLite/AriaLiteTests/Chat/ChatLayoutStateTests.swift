@@ -120,4 +120,13 @@ struct ChatLayoutStateTests {
         #expect(scroll.followsBottom)
         #expect(!scroll.showsJumpToBottom)
     }
+
+    @Test("Scrivendo in un campo dentro un messaggio la lista non torna in fondo")
+    func inlineEditingHoldsPosition() {
+        var scroll = AriaChatScrollFollow()
+        scroll.isEditingInline = true
+        #expect(!scroll.sticksToBottom(overflowing))
+        scroll.isEditingInline = false
+        #expect(scroll.sticksToBottom(overflowing))
+    }
 }

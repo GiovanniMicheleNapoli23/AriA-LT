@@ -59,6 +59,9 @@ struct AriaChatScrollFollow: Equatable {
     var isNearBottom = true
     /// Scorrimento fatto con il dito (non da `scrollTo`).
     private(set) var isUserScrolling = false
+    /// Si scrive in un campo dentro un messaggio (ricordo, parametri da approvare): la tastiera che si apre
+    /// non deve trascinare la lista in fondo, con il campo fuori schermo.
+    var isEditingInline = false
 
     /// Il pulsante per tornare in fondo: solo se l'operatore si è allontanato.
     var showsJumpToBottom: Bool { !followsBottom && !isNearBottom }
@@ -78,7 +81,7 @@ struct AriaChatScrollFollow: Equatable {
 
     /// Solo se c'è davvero da scorrere: con un contenuto più corto dello schermo non serve.
     func sticksToBottom(_ sizes: Sizes) -> Bool {
-        followsBottom && !isUserScrolling && sizes.content > sizes.container + 1
+        followsBottom && !isUserScrolling && !isEditingInline && sizes.content > sizes.container + 1
     }
 
     /// Un messaggio nuovo o il pulsante "torna in fondo": si riprende a seguire.

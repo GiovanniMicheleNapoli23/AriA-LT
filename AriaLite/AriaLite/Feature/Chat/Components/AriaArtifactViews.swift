@@ -214,13 +214,8 @@ struct AriaTableArtifact: View {
     let data: [String: AriaJSON]
     var actions = AriaArtifactActions()
 
-    private var columns: [(key: String, label: String)] {
-        data["columns"]?.arrayValue.compactMap { c in
-            c["key"]?.stringValue.map { ($0, c["label"]?.stringValue ?? $0) }
-        } ?? []
-    }
-
-    private var rows: [[String: AriaJSON]] { data["rows"]?.arrayValue.compactMap(\.objectValue) ?? [] }
+    private var columns: [AriaArtifactContent.TableColumn] { AriaArtifactContent.tableColumns(data) }
+    private var rows: [[String: AriaJSON]] { AriaArtifactContent.tableRows(data) }
 
     var body: some View {
         AriaCard {
@@ -260,9 +255,7 @@ struct AriaTableArtifact: View {
 
     /// row_link_template: "/work-orders/{id}" → pagina della web.
     private func openRow(_ row: [String: AriaJSON]) {
-        guard var path = data["row_link_template"]?.nonEmptyString else { return }
-        for (key, value) in row { path = path.replacingOccurrences(of: "{\(key)}", with: value.stringValue ?? "") }
-        actions.open(path)
+        if let path = AriaArtifactContent.rowLink(data, row: row) { actions.open(path) }
     }
 }
 
@@ -340,20 +333,7 @@ struct AriaChartArtifact: View {
     let data: [String: AriaJSON]
     var framed = true
 
-    private struct Point: Identifiable {
-        let id: Int
-        let x: String
-        let y: Double
-    }
-
-    private var points: [Point] {
-        let xKey = data["x_key"]?.stringValue ?? "x"
-        let yKey = data["y_key"]?.stringValue ?? "y"
-        return (data["series"]?.arrayValue ?? []).enumerated().compactMap { i, row in
-            guard let y = row[yKey]?.doubleValue else { return nil }
-            return Point(id: i, x: row[xKey]?.stringValue ?? "\(i)", y: y)
-        }
-    }
+    private var points: [AriaArtifactContent.ChartPoint] { AriaArtifactContent.chartPoints(data) }
 
     var body: some View {
         if framed {
@@ -568,68 +548,8 @@ struct AriaListArtifact: View {
     var actions = AriaArtifactActions()
     @State private var expanded = false
 
-    private struct Item: Hashable {
-        let title: String
-        let detail: String
-        let path: String?
-    }
-
-    private var headline: String {
-        data["headline"]?.nonEmptyString ?? data["title"]?.nonEmptyString ?? data["summary"]?.nonEmptyString ?? kind
-    }
-
-    private var items: [Item] {
-        switch kind {
-        case "reassignment-plan":
-            return (data["moves"]?.arrayValue ?? []).map { m in
-                Item(title: m["wo_title"]?.stringValue ?? "",
-                     detail: [m["from_team_name"]?.stringValue, "→", m["to_team_name"]?.stringValue].compactMap { $0 }.joined(separator: " "),
-                     path: m["wo_id"]?.stringValue.map { "/work-orders/\($0)" })
-            }
-        case "member-absence-plan":
-            return (data["moves"]?.arrayValue ?? []).map { m in
-                Item(title: m["wo_title"]?.stringValue ?? "",
-                     detail: [m["from_name"]?.stringValue, "→", m["to_name"]?.stringValue].compactMap { $0 }.joined(separator: " "),
-                     path: m["wo_id"]?.stringValue.map { "/work-orders/\($0)" })
-            }
-        case "assignment-suggestion":
-            return (data["candidates"]?.arrayValue ?? []).map { c in
-                Item(title: c["member_name"]?.stringValue ?? c["team_name"]?.stringValue ?? "",
-                     detail: [c["team_name"]?.stringValue, c["suggested_due_date"]?.stringValue, c["motivation"]?.stringValue]
-                        .compactMap { $0 }.joined(separator: " · "),
-                     path: nil)
-            }
-        case "similar-wo-list":
-            return (data["items"]?.arrayValue ?? []).map { w in
-                Item(title: w["title"]?.stringValue ?? "",
-                     detail: [w["status"]?.stringValue, w["asset_tag"]?.stringValue, w["resolution_notes"]?.nonEmptyString]
-                        .compactMap { $0 }.joined(separator: " · "),
-                     path: w["wo_id"]?.stringValue.map { "/work-orders/\($0)" })
-            }
-        case "spare-parts-recommendation":
-            return (data["items"]?.arrayValue ?? []).map { p in
-                let stock = p["stock_quantity"]?.doubleValue.map { "\(String(localized: "stock")) \(Int($0))" }
-                return Item(title: p["name"]?.stringValue ?? p["code"]?.stringValue ?? "",
-                            detail: [p["code"]?.stringValue, stock, p["low_stock"]?.boolValue == true ? String(localized: "low stock") : nil]
-                                .compactMap { $0 }.joined(separator: " · "),
-                            path: nil)
-            }
-        case "triage-plan":
-            return (data["alarms"]?.arrayValue ?? []).map { a in
-                Item(title: a["alarm_code"]?.stringValue ?? "",
-                     detail: a["suggested_work_order"]?["title"]?.stringValue ?? "",
-                     path: a["wo_id"]?.stringValue.map { "/work-orders/\($0)" })
-            }
-        case "team-kanban":
-            return (data["columns"]?.arrayValue ?? []).map { c in
-                let titles = (c["wos"]?.arrayValue ?? []).prefix(3).compactMap { $0["title"]?.stringValue }
-                return Item(title: "\(c["title"]?.stringValue ?? "") · \(c["count"]?.stringValue ?? "0")",
-                            detail: titles.joined(separator: ", "), path: nil)
-            }
-        default:
-            return []
-        }
-    }
+    private var headline: String { AriaArtifactContent.listHeadline(kind: kind, data: data) }
+    private var items: [AriaArtifactContent.ListItem] { AriaArtifactContent.listItems(kind: kind, data: data) }
 
     var body: some View {
         AriaCard {

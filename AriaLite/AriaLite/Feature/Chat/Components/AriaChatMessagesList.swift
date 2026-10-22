@@ -14,9 +14,6 @@ struct AriaChatMessagesList: View {
     let orbNamespace: Namespace.ID?
     let proxy: ScrollViewProxy
 
-    /// Si scrive in un campo dentro un messaggio (ricordo, parametri da approvare).
-    @State private var inlineEditorFocused = false
-
     var body: some View {
         ScrollView {
             // VStack e non LazyVStack: con altezze stimate lo scroll in fondo saltella mentre il testo cresce.
@@ -53,11 +50,10 @@ struct AriaChatMessagesList: View {
         .onScrollGeometryChange(for: AriaChatScrollFollow.Sizes.self) { geometry in
             AriaChatScrollFollow.Sizes(content: geometry.contentSize.height, container: geometry.containerSize.height)
         } action: { _, sizes in
-            // La tastiera aperta da un campo nel messaggio non deve trascinare la lista in fondo, campo fuori schermo.
-            if model.scroll.sticksToBottom(sizes), !inlineEditorFocused { proxy.scrollTo("bottom", anchor: .bottom) }
+            if model.scroll.sticksToBottom(sizes) { proxy.scrollTo("bottom", anchor: .bottom) }
         }
         .onPreferenceChange(AriaInlineEditorFocusKey.self) { focused in
-            Task { @MainActor in inlineEditorFocused = focused }
+            Task { @MainActor in model.scroll.isEditingInline = focused }
         }
         .onScrollPhaseChange { _, phase in
             model.scroll.phaseChanged(to: phase)

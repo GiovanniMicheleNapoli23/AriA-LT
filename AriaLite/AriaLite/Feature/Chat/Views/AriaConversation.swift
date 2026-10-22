@@ -5,14 +5,14 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La conversazione riusabile (chat + composer): la schermata principale e l'assistente di un passo.
+//  È la chat della web app (AriaAgentChatView); senza backend collegato si chiede di collegarlo.
+//  La logica sta in AriaConversationViewModel.
 //
 
 import SwiftUI
 
-// Usata dalla schermata principale (showsEmptyState) e dall'assistente di un passo (contextText).
-// È la chat della web app (AriaAgentChatView); senza backend collegato si chiede di collegarlo.
 struct AriaConversation: View {
-    @Environment(AppViewModel.self) private var viewModel
+    @Environment(AppViewModel.self) private var app
 
     /// Chat del chiamante (la schermata tiene quella principale); nil = una chat propria con il contesto del passo.
     var agentChat: AriaAgentChat? = nil
@@ -20,22 +20,30 @@ struct AriaConversation: View {
     var contextText: String? = nil
     var showsEmptyState: Bool = true
 
-    @State private var ownAgentChat: AriaAgentChat?
-    @State private var voice = AriaVoiceViewModel()
-    @State private var showConnection = false
+    var body: some View {
+        AriaConversationContent(backend: app.backend, agentChat: agentChat, contextText: contextText,
+                                showsEmptyState: showsEmptyState)
+    }
+}
+
+private struct AriaConversationContent: View {
+    let showsEmptyState: Bool
+    @State private var model: AriaConversationViewModel
+
+    /// La chat del chiamante non cambia per questa vista (chi la cambia cambia anche identità, `.id`).
+    init(backend: AriaBackend, agentChat: AriaAgentChat?, contextText: String?, showsEmptyState: Bool) {
+        _model = State(initialValue: AriaConversationViewModel(backend: backend, agentChat: agentChat, contextText: contextText))
+        self.showsEmptyState = showsEmptyState
+    }
 
     var body: some View {
-        if viewModel.backend.isReady {
-            if let chat = agentChat ?? ownAgentChat {
-                AriaAgentChatView(chat: chat, backend: viewModel.backend, showsEmptyState: showsEmptyState, voice: voice)
+        if model.isConnected {
+            if let chat = model.chat {
+                AriaAgentChatView(chat: chat, backend: model.backend, showsEmptyState: showsEmptyState, voice: model.voice)
                     // Il view model della schermata nasce con la chat: un'altra chat, una schermata nuova.
                     .id(ObjectIdentifier(chat))
             } else {
-                Color(.systemGroupedBackground).onAppear {
-                    // Contesto del passo: viaggia col primo messaggio (modo A della guida).
-                    let context = contextText.map { "[Work order context]\n\($0)" }
-                    ownAgentChat = AriaAgentChat(backend: viewModel.backend, context: context)
-                }
+                Color(.systemGroupedBackground).onAppear { model.makeOwnChatIfNeeded() }
             }
         } else {
             disconnected
@@ -59,7 +67,7 @@ struct AriaConversation: View {
                     .padding(.horizontal, 32)
             }
 
-            Button { showConnection = true } label: {
+            Button { model.connect() } label: {
                 Label("Connect to the Aria server", systemImage: "bolt.horizontal.circle")
                     .font(.system(size: 14, weight: .semibold))
             }
@@ -68,8 +76,8 @@ struct AriaConversation: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemGroupedBackground))
-        .sheet(isPresented: $showConnection) {
-            AriaConnectionSheet(backend: viewModel.backend)
+        .sheet(isPresented: $model.showConnection) {
+            AriaConnectionSheet(backend: model.backend)
         }
     }
 }
