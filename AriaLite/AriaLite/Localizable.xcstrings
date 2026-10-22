@@ -17,6 +17,16 @@
         }
       }
     },
+    "· min %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "· min %lld"
+          }
+        }
+      }
+    },
     "/ %lld kWh" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -248,6 +258,16 @@
         }
       }
     },
+    "%lld assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld asset"
+          }
+        }
+      }
+    },
     "%lld attached" : {
       "localizations" : {
         "en" : {
@@ -440,6 +460,16 @@
         }
       }
     },
+    "%lld members" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld membri"
+          }
+        }
+      }
+    },
     "%lld of %lld steps reported" : {
       "localizations" : {
         "en" : {
@@ -485,6 +515,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld pz"
+          }
+        }
+      }
+    },
+    "%lld photos" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld foto"
           }
         }
       }
@@ -606,7 +646,6 @@
       }
     },
     "%lld/%lld steps" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -723,6 +762,16 @@
         }
       }
     },
+    "A part is low on stock when its quantity drops to the minimum." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un ricambio è sotto scorta quando la quantità scende al minimo."
+          }
+        }
+      }
+    },
     "A step can have at most 3 photos." : {
       "localizations" : {
         "en" : {
@@ -774,7 +823,6 @@
       }
     },
     "Access token (JWT)" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -802,6 +850,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Account"
+          }
+        }
+      }
+    },
+    "Account type" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo di account"
+          }
+        }
+      }
+    },
+    "Actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni"
+          }
+        }
+      }
+    },
+    "Actual duration" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durata effettiva"
           }
         }
       }
@@ -838,6 +916,16 @@
         }
       }
     },
+    "Add a title." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi un titolo."
+          }
+        }
+      }
+    },
     "Add Notes" : {
       "localizations" : {
         "en" : {
@@ -850,6 +938,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi note"
+          }
+        }
+      }
+    },
+    "Add one" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi uno"
           }
         }
       }
@@ -896,6 +994,16 @@
         }
       }
     },
+    "AI confidence" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Affidabilità AI"
+          }
+        }
+      }
+    },
     "Air filter cleaning" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -929,6 +1037,16 @@
         }
       }
     },
+    "Alarm code" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice allarme"
+          }
+        }
+      }
+    },
     "Alarm diagnostic" : {
       "localizations" : {
         "en" : {
@@ -941,6 +1059,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnostica allarme"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti"
+          }
+        }
+      }
+    },
+    "All categories" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutte le categorie"
           }
         }
       }
@@ -961,6 +1099,16 @@
         }
       }
     },
+    "All statuses" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti gli stati"
+          }
+        }
+      }
+    },
     "All steps reported" : {
       "localizations" : {
         "en" : {
@@ -973,6 +1121,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti i passi registrati"
+          }
+        }
+      }
+    },
+    "All types" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti i tipi"
           }
         }
       }
@@ -1006,6 +1164,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti i tuoi ordini di lavoro sono completati. Niente di aperto al momento."
+          }
+        }
+      }
+    },
+    "All zones" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutte le zone"
           }
         }
       }
@@ -1633,6 +1801,16 @@
         }
       }
     },
+    "Assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asset"
+          }
+        }
+      }
+    },
     "Assign to me" : {
       "localizations" : {
         "en" : {
@@ -1661,6 +1839,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assegnato"
+          }
+        }
+      }
+    },
+    "Assigned by" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegnato da"
           }
         }
       }
@@ -1726,6 +1914,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Auto"
+          }
+        }
+      }
+    },
+    "Auto-assign note" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nota assegnazione automatica"
           }
         }
       }
@@ -1828,6 +2026,16 @@
         }
       }
     },
+    "Average" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media"
+          }
+        }
+      }
+    },
     "awaiting approval" : {
       "localizations" : {
         "en" : {
@@ -1870,6 +2078,26 @@
         }
       }
     },
+    "Barcode" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice a barre"
+          }
+        }
+      }
+    },
+    "Bearing" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuscinetto"
+          }
+        }
+      }
+    },
     "Before any work, bring the system pressure to zero using the dedicated relief valve. Wait 5 minutes before proceeding." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1883,6 +2111,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prima di qualsiasi intervento, porta a zero la pressione dell’impianto usando l’apposita valvola di scarico. Attendi 5 minuti prima di procedere."
+          }
+        }
+      }
+    },
+    "Belt" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cinghia"
           }
         }
       }
@@ -1932,6 +2170,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Costruisco dashboard"
+          }
+        }
+      }
+    },
+    "Burner" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bruciatore"
           }
         }
       }
@@ -2001,6 +2249,26 @@
         }
       }
     },
+    "Can't load assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare gli asset"
+          }
+        }
+      }
+    },
+    "Can't load spare parts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare i ricambi"
+          }
+        }
+      }
+    },
     "Can't load tasks" : {
       "localizations" : {
         "en" : {
@@ -2013,6 +2281,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile caricare i task"
+          }
+        }
+      }
+    },
+    "Can't load work orders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare gli ordini di lavoro"
           }
         }
       }
@@ -2298,6 +2576,26 @@
         }
       }
     },
+    "Choose a plant to see its spare parts." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli uno stabilimento per vederne i ricambi."
+          }
+        }
+      }
+    },
+    "Choose a plant." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli uno stabilimento."
+          }
+        }
+      }
+    },
     "Choose all that apply" : {
       "localizations" : {
         "it" : {
@@ -2308,12 +2606,32 @@
         }
       }
     },
+    "Classification" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classificazione"
+          }
+        }
+      }
+    },
     "Clear" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Azzera"
+          }
+        }
+      }
+    },
+    "Clear filters" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azzera filtri"
           }
         }
       }
@@ -2330,6 +2648,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudi"
+          }
+        }
+      }
+    },
+    "Close now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi ora"
           }
         }
       }
@@ -2368,7 +2696,6 @@
       }
     },
     "Closed" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2434,6 +2761,46 @@
         }
       }
     },
+    "Code" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice"
+          }
+        }
+      }
+    },
+    "Code and name are required." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice e nome sono obbligatori."
+          }
+        }
+      }
+    },
+    "Code is required." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il codice è obbligatorio."
+          }
+        }
+      }
+    },
+    "Code, name, part number, barcode..." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice, nome, codice produttore, codice a barre..."
+          }
+        }
+      }
+    },
     "Cold start test" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2489,6 +2856,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Azienda"
+          }
+        }
+      }
+    },
+    "Compatible assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asset compatibili"
           }
         }
       }
@@ -2879,7 +3256,6 @@
       }
     },
     "Copy the link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 10 minutes." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2907,6 +3283,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copia il link di accesso dall'email e incollalo qui. Con gli appunti universali puoi copiarlo sul Mac. Non aprirlo nel browser: funziona una volta sola e scade dopo 15 minuti."
+          }
+        }
+      }
+    },
+    "Costs" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costi"
           }
         }
       }
@@ -3007,6 +3393,36 @@
         }
       }
     },
+    "Couldn't update downtime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare il fermo"
+          }
+        }
+      }
+    },
+    "Couldn't update the stock" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare la giacenza"
+          }
+        }
+      }
+    },
+    "Coupling" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giunto"
+          }
+        }
+      }
+    },
     "Create a work order for asset %@" : {
       "localizations" : {
         "en" : {
@@ -3071,6 +3487,16 @@
         }
       }
     },
+    "Created" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creato"
+          }
+        }
+      }
+    },
     "Creating maintenance plan" : {
       "localizations" : {
         "en" : {
@@ -3115,6 +3541,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Step corrente"
+          }
+        }
+      }
+    },
+    "Current vendor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornitore attuale"
           }
         }
       }
@@ -3165,6 +3601,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elimina"
+          }
+        }
+      }
+    },
+    "Delete this downtime?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo fermo?"
+          }
+        }
+      }
+    },
+    "Delete this work order?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo ordine di lavoro?"
           }
         }
       }
@@ -3552,6 +4008,36 @@
         }
       }
     },
+    "Downtime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fermi"
+          }
+        }
+      }
+    },
+    "Downtime actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azioni sul fermo"
+          }
+        }
+      }
+    },
+    "Draft" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bozza"
+          }
+        }
+      }
+    },
     "Drive belt inspection" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3565,6 +4051,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ispezione cinghia di trasmissione"
+          }
+        }
+      }
+    },
+    "Drive tag" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag azionamento"
+          }
+        }
+      }
+    },
+    "Drive type" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo azionamento"
           }
         }
       }
@@ -3586,7 +4092,6 @@
       }
     },
     "Due %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3598,6 +4103,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scadenza %@"
+          }
+        }
+      }
+    },
+    "Due date" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scadenza"
+          }
+        }
+      }
+    },
+    "e.g. M-101" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "es. M-101"
           }
         }
       }
@@ -3618,6 +4143,16 @@
         }
       }
     },
+    "Edit asset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica asset"
+          }
+        }
+      }
+    },
     "Edit before sending" : {
       "localizations" : {
         "en" : {
@@ -3630,6 +4165,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifica prima di inviare"
+          }
+        }
+      }
+    },
+    "Edit downtime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica fermo"
+          }
+        }
+      }
+    },
+    "Edit spare part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica ricambio"
+          }
+        }
+      }
+    },
+    "Edit Work Order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica ordine di lavoro"
+          }
+        }
+      }
+    },
+    "Electrical" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elettrico"
           }
         }
       }
@@ -3683,6 +4258,16 @@
         }
       }
     },
+    "Ended" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine"
+          }
+        }
+      }
+    },
     "Energy" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3696,6 +4281,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Energia"
+          }
+        }
+      }
+    },
+    "Enter a whole number, 0 or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci un numero intero, 0 o più."
+          }
+        }
+      }
+    },
+    "Enter the asset name." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci il nome dell'asset."
+          }
+        }
+      }
+    },
+    "Enter the asset tag." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci il tag dell'asset."
           }
         }
       }
@@ -3728,6 +4343,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Durata stimata"
+          }
+        }
+      }
+    },
+    "Events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eventi"
           }
         }
       }
@@ -3830,6 +4455,16 @@
         }
       }
     },
+    "Feedback" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Feedback"
+          }
+        }
+      }
+    },
     "Filed as a proposal — it needs approval before use." : {
       "localizations" : {
         "en" : {
@@ -3892,6 +4527,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compila il registro antincendio"
+          }
+        }
+      }
+    },
+    "Filter" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtro"
           }
         }
       }
@@ -4040,6 +4685,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Galleria"
+          }
+        }
+      }
+    },
+    "Gasket" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarnizione piana"
+          }
+        }
+      }
+    },
+    "General" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generico"
           }
         }
       }
@@ -4434,6 +5099,16 @@
         }
       }
     },
+    "Highest" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Massimo"
+          }
+        }
+      }
+    },
     "History of %@" : {
       "localizations" : {
         "en" : {
@@ -4594,6 +5269,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Come sta andando il turno?"
+          }
+        }
+      }
+    },
+    "Hydraulic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idraulico"
           }
         }
       }
@@ -4909,6 +5594,16 @@
         }
       }
     },
+    "Inverter" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inverter"
+          }
+        }
+      }
+    },
     "ISO-9001 Calibration Procedure" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4954,6 +5649,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adesso non è sicuro continuare"
+          }
+        }
+      }
+    },
+    "It will be removed for everyone. This can't be undone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verrà rimosso per tutti. L'operazione non si può annullare."
           }
         }
       }
@@ -5007,6 +5712,26 @@
         }
       }
     },
+    "Labor cost" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo manodopera"
+          }
+        }
+      }
+    },
+    "Labor hours" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ore di manodopera"
+          }
+        }
+      }
+    },
     "Last 7 days" : {
       "localizations" : {
         "en" : {
@@ -5019,6 +5744,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ultimi 7 giorni"
+          }
+        }
+      }
+    },
+    "Last 30 days" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimi 30 giorni"
           }
         }
       }
@@ -5056,6 +5791,16 @@
         }
       }
     },
+    "Latest" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultimo"
+          }
+        }
+      }
+    },
     "Learned" : {
       "localizations" : {
         "en" : {
@@ -5084,6 +5829,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conoscenza appresa usata · %lld"
+          }
+        }
+      }
+    },
+    "Linked work order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro collegato"
           }
         }
       }
@@ -5280,6 +6035,16 @@
         }
       }
     },
+    "Loading vendors..." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamento fornitori..."
+          }
+        }
+      }
+    },
     "Loading work order" : {
       "localizations" : {
         "en" : {
@@ -5325,6 +6090,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posizione"
+          }
+        }
+      }
+    },
+    "Log" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra"
+          }
+        }
+      }
+    },
+    "Log downtime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra fermo"
           }
         }
       }
@@ -5441,6 +6226,26 @@
         }
       }
     },
+    "Low stock" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto scorta"
+          }
+        }
+      }
+    },
+    "Low stock (%lld)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto scorta (%lld)"
+          }
+        }
+      }
+    },
     "Low-stock parts" : {
       "localizations" : {
         "en" : {
@@ -5453,6 +6258,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parti sotto scorta"
+          }
+        }
+      }
+    },
+    "Lowest" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minimo"
+          }
+        }
+      }
+    },
+    "Lubricant" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lubrificante"
           }
         }
       }
@@ -5769,6 +6594,56 @@
         }
       }
     },
+    "min" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "min"
+          }
+        }
+      }
+    },
+    "min %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "min %lld"
+          }
+        }
+      }
+    },
+    "Minimum quantity" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantità minima"
+          }
+        }
+      }
+    },
+    "Minimum quantity must be a whole number, 0 or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La quantità minima deve essere un numero intero, 0 o più."
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minuti"
+          }
+        }
+      }
+    },
     "Model" : {
       "localizations" : {
         "en" : {
@@ -5850,6 +6725,16 @@
         }
       }
     },
+    "Motor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motore"
+          }
+        }
+      }
+    },
     "Move the others" : {
       "localizations" : {
         "en" : {
@@ -5862,6 +6747,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sposta gli altri"
+          }
+        }
+      }
+    },
+    "MTBF" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MTBF"
+          }
+        }
+      }
+    },
+    "MTTR" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MTTR"
           }
         }
       }
@@ -5898,6 +6803,36 @@
         }
       }
     },
+    "Name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome"
+          }
+        }
+      }
+    },
+    "Name is required." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il nome è obbligatorio."
+          }
+        }
+      }
+    },
+    "New asset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo asset"
+          }
+        }
+      }
+    },
     "New chat" : {
       "localizations" : {
         "en" : {
@@ -5910,6 +6845,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuova chat"
+          }
+        }
+      }
+    },
+    "New spare part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo ricambio"
           }
         }
       }
@@ -5947,6 +6892,16 @@
         }
       }
     },
+    "New Work Order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo ordine di lavoro"
+          }
+        }
+      }
+    },
     "Next" : {
       "localizations" : {
         "en" : {
@@ -5975,6 +6930,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prossimo passo · %lld di %lld"
+          }
+        }
+      }
+    },
+    "No access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso non consentito"
+          }
+        }
+      }
+    },
+    "No access to work orders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun accesso agli ordini di lavoro"
+          }
+        }
+      }
+    },
+    "No assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun asset"
+          }
+        }
+      }
+    },
+    "No assets match these filters in this plant." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun asset corrisponde a questi filtri in questo stabilimento."
           }
         }
       }
@@ -6061,6 +7056,16 @@
         }
       }
     },
+    "No downtime logged for this asset." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun fermo registrato per questo asset."
+          }
+        }
+      }
+    },
     "No due date" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6074,6 +7079,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Senza scadenza"
+          }
+        }
+      }
+    },
+    "No matching spare parts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ricambio corrispondente"
           }
         }
       }
@@ -6209,6 +7224,26 @@
         }
       }
     },
+    "No plant selected" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno stabilimento selezionato"
+          }
+        }
+      }
+    },
+    "No price history yet. It fills in as work orders use this part." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessuno storico prezzi. Si riempie quando gli ordini di lavoro usano questo ricambio."
+          }
+        }
+      }
+    },
     "No procedure yet" : {
       "localizations" : {
         "en" : {
@@ -6253,6 +7288,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuna attività programmata"
+          }
+        }
+      }
+    },
+    "No spare part is below its minimum quantity." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ricambio è sotto la quantità minima."
+          }
+        }
+      }
+    },
+    "No spare part matches these filters." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ricambio corrisponde a questi filtri."
+          }
+        }
+      }
+    },
+    "No spare parts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ricambio"
+          }
+        }
+      }
+    },
+    "No statistics for this asset yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessuna statistica per questo asset."
           }
         }
       }
@@ -6305,6 +7380,66 @@
         }
       }
     },
+    "No work orders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ordine di lavoro"
+          }
+        }
+      }
+    },
+    "No work orders for this asset." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ordine di lavoro per questo asset."
+          }
+        }
+      }
+    },
+    "Non-stock" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non a magazzino"
+          }
+        }
+      }
+    },
+    "Non-stock item" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Articolo non a magazzino"
+          }
+        }
+      }
+    },
+    "Non-stock item: the quantity isn't tracked." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Articolo non a magazzino: la quantità non viene registrata."
+          }
+        }
+      }
+    },
+    "None" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno"
+          }
+        }
+      }
+    },
     "Normal" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -6318,6 +7453,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Normale"
+          }
+        }
+      }
+    },
+    "Not available for your role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non disponibile per il tuo ruolo"
           }
         }
       }
@@ -6366,6 +7511,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non fatto"
+          }
+        }
+      }
+    },
+    "Not found. It may have been deleted or renamed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non trovato. Potrebbe essere stato eliminato o rinominato."
           }
         }
       }
@@ -6499,6 +7654,26 @@
         }
       }
     },
+    "Nothing matches these filters." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun risultato con questi filtri."
+          }
+        }
+      }
+    },
+    "Nothing to choose from" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niente da scegliere"
+          }
+        }
+      }
+    },
     "Nothing was heard" : {
       "localizations" : {
         "en" : {
@@ -6624,6 +7799,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Meno recenti"
+          }
+        }
+      }
+    },
+    "Ongoing" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In corso"
           }
         }
       }
@@ -6935,6 +8120,16 @@
         }
       }
     },
+    "Operations" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operazioni"
+          }
+        }
+      }
+    },
     "Operator" : {
       "localizations" : {
         "en" : {
@@ -7068,6 +8263,16 @@
         }
       }
     },
+    "Other" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altro"
+          }
+        }
+      }
+    },
     "Other answer…" : {
       "localizations" : {
         "it" : {
@@ -7161,6 +8366,16 @@
         }
       }
     },
+    "Part number" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Codice produttore"
+          }
+        }
+      }
+    },
     "Partially unroll each hose reel and check for cracks or leaks. Verify the nozzle is present and the hydrant coupling is not corroded." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7190,6 +8405,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricambi"
+          }
+        }
+      }
+    },
+    "Parts cost" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Costo ricambi"
           }
         }
       }
@@ -7360,6 +8585,16 @@
         }
       }
     },
+    "Phone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefono"
+          }
+        }
+      }
+    },
     "Photo" : {
       "localizations" : {
         "en" : {
@@ -7372,6 +8607,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Foto"
+          }
+        }
+      }
+    },
+    "Photo of the spare part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto del ricambio"
           }
         }
       }
@@ -7536,6 +8781,26 @@
         }
       }
     },
+    "Platform account" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account della piattaforma"
+          }
+        }
+      }
+    },
+    "Pneumatic" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pneumatico"
+          }
+        }
+      }
+    },
     "Position the new pump according to the orientation shown in the diagram. Apply Loctite 577 sealant to the threads before tightening." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7549,6 +8814,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posiziona la nuova pompa secondo l’orientamento mostrato nello schema. Applica il sigillante Loctite 577 sui filetti prima del serraggio."
+          }
+        }
+      }
+    },
+    "Power" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Potenza"
+          }
+        }
+      }
+    },
+    "Power (kW)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Potenza (kW)"
+          }
+        }
+      }
+    },
+    "Power must be a positive number in kW." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La potenza deve essere un numero positivo in kW."
           }
         }
       }
@@ -7681,6 +8976,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Step precedenti"
+          }
+        }
+      }
+    },
+    "Price history" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Storico prezzi"
           }
         }
       }
@@ -7825,6 +9130,16 @@
         }
       }
     },
+    "Pump" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pompa"
+          }
+        }
+      }
+    },
     "Pump P-200 Technical Datasheet" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7838,6 +9153,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scheda tecnica pompa P-200"
+          }
+        }
+      }
+    },
+    "Purchasing" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acquisti"
+          }
+        }
+      }
+    },
+    "Qty %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Q.tà %@"
           }
         }
       }
@@ -7872,6 +9207,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controllo qualità"
+          }
+        }
+      }
+    },
+    "Quantity" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantità"
           }
         }
       }
@@ -8000,6 +9345,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Real-time Learning"
+          }
+        }
+      }
+    },
+    "Reason" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Motivo"
           }
         }
       }
@@ -8263,6 +9618,16 @@
         }
       }
     },
+    "Remove one" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togli uno"
+          }
+        }
+      }
+    },
     "Remove photo" : {
       "localizations" : {
         "en" : {
@@ -8406,6 +9771,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Richiesta bloccata dal firewall (contenuto oltre 8 KB)."
+          }
+        }
+      }
+    },
+    "Requested by" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiesto da"
+          }
+        }
+      }
+    },
+    "Resolution notes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note di chiusura"
+          }
+        }
+      }
+    },
+    "Resources" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Risorse"
           }
         }
       }
@@ -8690,6 +10085,16 @@
         }
       }
     },
+    "Schedule" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pianificazione"
+          }
+        }
+      }
+    },
     "Scheduled" : {
       "localizations" : {
         "en" : {
@@ -8706,12 +10111,32 @@
         }
       }
     },
+    "Scheduled date" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data pianificata"
+          }
+        }
+      }
+    },
     "Scroll to the latest message" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vai all'ultimo messaggio"
+          }
+        }
+      }
+    },
+    "Seal" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tenuta"
           }
         }
       }
@@ -8744,6 +10169,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca attività..."
+          }
+        }
+      }
+    },
+    "Search title, asset or zone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca titolo, asset o zona"
           }
         }
       }
@@ -8844,6 +10279,26 @@
         }
       }
     },
+    "Select" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona"
+          }
+        }
+      }
+    },
+    "Select a plant before adding spare parts." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona uno stabilimento prima di aggiungere ricambi."
+          }
+        }
+      }
+    },
     "Select a plant before answering — this is saved to the plant's knowledge." : {
       "localizations" : {
         "en" : {
@@ -8876,6 +10331,16 @@
         }
       }
     },
+    "Select a plant before logging downtime." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona uno stabilimento prima di registrare un fermo."
+          }
+        }
+      }
+    },
     "Select a plant before using the chat." : {
       "localizations" : {
         "en" : {
@@ -8888,6 +10353,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seleziona uno stabilimento prima di usare la chat."
+          }
+        }
+      }
+    },
+    "Select a plant." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona uno stabilimento."
           }
         }
       }
@@ -8989,6 +10464,16 @@
         }
       }
     },
+    "Sensor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensore"
+          }
+        }
+      }
+    },
     "Sent for review — an admin will check it." : {
       "localizations" : {
         "en" : {
@@ -9033,6 +10518,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inviato a"
+          }
+        }
+      }
+    },
+    "Separate compatible asset tags with commas." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Separa i tag degli asset compatibili con le virgole."
           }
         }
       }
@@ -9082,6 +10577,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controllo UPS sala server"
+          }
+        }
+      }
+    },
+    "Set quantity" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imposta quantità"
           }
         }
       }
@@ -9391,7 +10896,6 @@
       }
     },
     "Sign-in failed (%@). Request a new link." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9419,6 +10923,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Casi simili"
+          }
+        }
+      }
+    },
+    "Since %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dal %@"
           }
         }
       }
@@ -9504,6 +11018,36 @@
         }
       }
     },
+    "Spare Parts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambi"
+          }
+        }
+      }
+    },
+    "Spare parts of this plant appear here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui compaiono i ricambi di questo stabilimento."
+          }
+        }
+      }
+    },
+    "Staged" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In revisione"
+          }
+        }
+      }
+    },
     "Standard UNI EN 3 – Fire Extinguishers" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9553,6 +11097,16 @@
         }
       }
     },
+    "Started" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizio"
+          }
+        }
+      }
+    },
     "Status" : {
       "localizations" : {
         "en" : {
@@ -9565,6 +11119,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stato"
+          }
+        }
+      }
+    },
+    "Step %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo %lld"
           }
         }
       }
@@ -9665,6 +11229,16 @@
         }
       }
     },
+    "Still down" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora fermo"
+          }
+        }
+      }
+    },
     "Still on the line at this hour?" : {
       "localizations" : {
         "en" : {
@@ -9697,6 +11271,56 @@
         }
       }
     },
+    "Stock" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giacenza"
+          }
+        }
+      }
+    },
+    "Stock is fine" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scorte in ordine"
+          }
+        }
+      }
+    },
+    "Stock quantity" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantità a magazzino"
+          }
+        }
+      }
+    },
+    "Stock quantity must be a whole number, 0 or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La quantità a magazzino deve essere un numero intero, 0 o più."
+          }
+        }
+      }
+    },
+    "Stock tracking" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestione scorte"
+          }
+        }
+      }
+    },
     "Stop" : {
       "localizations" : {
         "en" : {
@@ -9725,6 +11349,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ferma dettatura"
+          }
+        }
+      }
+    },
+    "Storage" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Magazzino"
           }
         }
       }
@@ -9828,6 +11462,16 @@
         }
       }
     },
+    "Superseded" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sostituito"
+          }
+        }
+      }
+    },
     "Supervisor" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -9913,6 +11557,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Tag" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag"
+          }
+        }
+      }
+    },
+    "Tag, name, manufacturer, model" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tag, nome, costruttore, modello"
           }
         }
       }
@@ -10057,6 +11721,26 @@
         }
       }
     },
+    "Team" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Squadra"
+          }
+        }
+      }
+    },
+    "Technical data" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dati tecnici"
+          }
+        }
+      }
+    },
     "Technical Notes" : {
       "localizations" : {
         "en" : {
@@ -10186,6 +11870,26 @@
         }
       }
     },
+    "The end must come after the start." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La fine deve essere dopo l'inizio."
+          }
+        }
+      }
+    },
+    "The estimated duration must be a whole number of minutes." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La durata stimata deve essere un numero intero di minuti."
+          }
+        }
+      }
+    },
     "The intervention report will be archived with this chat." : {
       "localizations" : {
         "en" : {
@@ -10214,6 +11918,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il messaggio non è partito. Riprova."
+          }
+        }
+      }
+    },
+    "The new quantity in stock." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La nuova quantità a magazzino."
           }
         }
       }
@@ -10315,6 +12029,16 @@
         }
       }
     },
+    "The security check for web accounts wasn't ready. If no email arrives, send the link again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il controllo di sicurezza per gli account web non era pronto. Se non arriva nessuna email, rimanda il link."
+          }
+        }
+      }
+    },
     "The server didn't accept these changes. Each task now shows what is on the server." : {
       "localizations" : {
         "en" : {
@@ -10364,7 +12088,6 @@
       }
     },
     "The sign-in link did not start a session. Request a new one." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10409,6 +12132,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il server di accesso è offline. Riprova più tardi."
+          }
+        }
+      }
+    },
+    "The start can't be in the future." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'inizio non può essere nel futuro."
           }
         }
       }
@@ -10462,7 +12195,6 @@
       }
     },
     "The token is not a valid JWT or has expired." : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -10474,6 +12206,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il token non è un JWT valido o è scaduto."
+          }
+        }
+      }
+    },
+    "The uptime statistics of this asset will be recalculated." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le statistiche di disponibilità di questo asset verranno ricalcolate."
           }
         }
       }
@@ -10750,6 +12492,16 @@
         }
       }
     },
+    "This spare part no longer exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo ricambio non esiste più."
+          }
+        }
+      }
+    },
     "This step was removed. The task has been refreshed." : {
       "localizations" : {
         "en" : {
@@ -10842,6 +12594,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo task non è ancora salvato sul telefono. Aprilo una volta mentre sei online."
+          }
+        }
+      }
+    },
+    "This work order has no procedure steps." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo ordine di lavoro non ha passi di procedura."
           }
         }
       }
@@ -11138,6 +12900,16 @@
         }
       }
     },
+    "Tracked" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A magazzino"
+          }
+        }
+      }
+    },
     "Transcribe the measured values into the attached ISO-9001 form fields. The form must be signed, dated, and archived in the document system within 24 hours." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11259,6 +13031,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Annulla"
+          }
+        }
+      }
+    },
+    "Unit" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unità"
+          }
+        }
+      }
+    },
+    "Unit (e.g. pcs, m, kg)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unità (es. pz, m, kg)"
+          }
+        }
+      }
+    },
+    "Unit price" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prezzo unitario"
+          }
+        }
+      }
+    },
+    "Unit price must be a number, 0 or more." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il prezzo unitario deve essere un numero, 0 o più."
+          }
+        }
+      }
+    },
+    "Unknown" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sconosciuto"
           }
         }
       }
@@ -11408,6 +13230,16 @@
         }
       }
     },
+    "Untitled work order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro senza titolo"
+          }
+        }
+      }
+    },
     "Upcoming" : {
       "localizations" : {
         "en" : {
@@ -11440,6 +13272,16 @@
         }
       }
     },
+    "Updated" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiornato"
+          }
+        }
+      }
+    },
     "Updated %@" : {
       "localizations" : {
         "en" : {
@@ -11452,6 +13294,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiornato alle %@"
+          }
+        }
+      }
+    },
+    "Uptime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilità"
           }
         }
       }
@@ -11572,7 +13424,6 @@
       }
     },
     "Use these servers" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11606,7 +13457,6 @@
       }
     },
     "Use token" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11655,6 +13505,36 @@
         }
       }
     },
+    "Valve" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valvola"
+          }
+        }
+      }
+    },
+    "Vendor" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fornitore"
+          }
+        }
+      }
+    },
+    "Vendors couldn't be loaded." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare i fornitori."
+          }
+        }
+      }
+    },
     "Ventilation filter cleaning" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11684,6 +13564,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificato"
+          }
+        }
+      }
+    },
+    "Verified by" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificato da"
           }
         }
       }
@@ -11832,7 +13722,6 @@
       }
     },
     "Web" : {
-      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -11919,6 +13808,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cosa deve ricordare Aria"
+          }
+        }
+      }
+    },
+    "What happened?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa è successo?"
           }
         }
       }
@@ -12231,6 +14130,26 @@
         }
       }
     },
+    "Work Order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro"
+          }
+        }
+      }
+    },
+    "Work order %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro %@"
+          }
+        }
+      }
+    },
     "Work order suggested" : {
       "localizations" : {
         "en" : {
@@ -12243,6 +14162,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Work order suggerito"
+          }
+        }
+      }
+    },
+    "Work orders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordini di lavoro"
+          }
+        }
+      }
+    },
+    "Work Orders" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordini di lavoro"
           }
         }
       }
@@ -12639,6 +14578,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La tua domanda"
+          }
+        }
+      }
+    },
+    "Your role can't change spare parts. Ask an owner or admin of your company." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non può modificare i ricambi. Chiedi a un owner o admin della tua azienda."
+          }
+        }
+      }
+    },
+    "Your role doesn't allow this. Ask a company admin for access." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non lo consente. Chiedi l'accesso a un amministratore dell'azienda."
+          }
+        }
+      }
+    },
+    "Your role doesn't have access to spare parts. Ask an owner or admin of your company." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non ha accesso ai ricambi. Chiedi a un owner o admin della tua azienda."
+          }
+        }
+      }
+    },
+    "Your role isn't allowed to do this. Ask a company owner or admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non consente questa operazione. Chiedi a un owner o admin dell'azienda."
           }
         }
       }
