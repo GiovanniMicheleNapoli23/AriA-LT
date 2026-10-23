@@ -34,8 +34,6 @@ enum AriaDestination: Hashable {
     case assets
     case spareParts
     case adminAlarms
-    case adminMeters
-    case adminLocations
     case adminPurchaseOrders
     case adminVendors
     case adminReports
@@ -45,8 +43,6 @@ enum AriaDestination: Hashable {
     case adminTeams
     case adminMembers
     case adminMobileUsers
-    case adminChecklistTemplates
-    case adminCompanySettings
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -67,6 +63,19 @@ final class AriaSidebarController {
 extension EnvironmentValues {
     /// Apre la sidebar: il pulsante ☰ di ogni sezione lo legge da qui.
     @Entry var sidebarController: AriaSidebarController?
+    /// Apre una conversazione nella chat principale (per id di sessione): le sezioni lo usano per "Apri la chat".
+    @Entry var openChatSession: AriaOpenChatSessionAction?
+}
+
+/// L'azione dietro `openChatSession`, come `OpenURLAction`: si chiama con l'id della sessione. Una closure
+/// nell'environment non si confronta e invaliderebbe chi la legge a ogni aggiornamento; questa fa sempre
+/// la stessa cosa (apre la sessione nella chat principale), quindi due istanze valgono come uguali.
+struct AriaOpenChatSessionAction: Equatable {
+    let open: @MainActor (String) -> Void
+
+    func callAsFunction(_ sessionId: String) { open(sessionId) }
+
+    static func == (lhs: Self, rhs: Self) -> Bool { true }
 }
 
 /// Pulsante ☰ da mettere in alto a sinistra nella toolbar di ogni sezione.
@@ -93,6 +102,8 @@ struct AriaShellView: View {
     @State private var chatID = UUID()
     @State private var showSettings = false
     @State private var showConnection = false
+    /// La ricerca della schermata Chat è attiva (la lente della sidebar la apre).
+    @State private var searchingChats = false
 
     /// Da quanto vicino al bordo sinistro parte il trascinamento che apre la sidebar.
     private let edgeWidth: CGFloat = 30
@@ -114,6 +125,7 @@ struct AriaShellView: View {
                     destination: destination,
                     select: select,
                     openSession: openSession,
+                    searchChats: searchChats,
                     newChat: newChat,
                     showSettings: { showSettings = true },
                     showConnection: { showConnection = true }
@@ -131,6 +143,7 @@ struct AriaShellView: View {
         }
         .background(Color.liteSidebar.ignoresSafeArea())
         .environment(\.sidebarController, sidebar)
+        .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .task(id: viewModel.backend.isReady) { await store.load() }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
@@ -216,7 +229,7 @@ struct AriaShellView: View {
                 .id(chatID)
         case .chats:
             AriaChatHistoryView(chat: chat, store: store, backend: viewModel.backend,
-                                onOpen: openSession, onNewChat: newChat,
+                                isSearching: $searchingChats, onOpen: openSession, onNewChat: newChat,
                                 onConnect: { showConnection = true })
         case .calendar:
             AriaCalendarView(store: viewModel.ariaWorkOrders)
@@ -254,10 +267,6 @@ struct AriaShellView: View {
             AdminVendorsView(viewModel: viewModel.adminVendors)
         case .adminAlarms:
             AdminAlarmsView(viewModel: viewModel.adminAlarms)
-        case .adminMeters:
-            AdminComingSoonView(page: .meters)
-        case .adminLocations:
-            AdminComingSoonView(page: .locations)
         case .adminReports:
             AdminReportsView(viewModel: viewModel.adminReports)
         case .adminLLMUsage:
@@ -272,10 +281,6 @@ struct AriaShellView: View {
             AdminMembersView(viewModel: viewModel.adminMembers)
         case .adminMobileUsers:
             AdminMobileUsersView(viewModel: viewModel.adminMobileUsers)
-        case .adminChecklistTemplates:
-            AdminComingSoonView(page: .checklistTemplates)
-        case .adminCompanySettings:
-            AdminCompanySettingsView(viewModel: viewModel.adminCompanySettings)
         }
     }
 
@@ -304,14 +309,24 @@ struct AriaShellView: View {
 
     private func select(_ target: AriaDestination) {
         destination = target
+        searchingChats = false
         sidebar.setOpen(false)
     }
 
+    private func searchChats() {
+        select(.chats)
+        searchingChats = true
+    }
+
     private func openSession(_ session: AriaSessionSummary) {
+        openSession(id: session.sessionId)
+    }
+
+    private func openSession(id sessionId: String) {
         destination = .chat
         sidebar.setOpen(false)
-        guard session.sessionId != chat.sessionId || chat.messages.isEmpty else { return }
-        Task { await chat.open(sessionId: session.sessionId) }
+        guard sessionId != chat.sessionId || chat.messages.isEmpty else { return }
+        Task { await chat.open(sessionId: sessionId) }
     }
 
     private func newChat() {

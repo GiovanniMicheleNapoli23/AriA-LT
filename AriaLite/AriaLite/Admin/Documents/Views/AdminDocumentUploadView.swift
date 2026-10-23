@@ -62,7 +62,7 @@ struct AdminDocumentUploadView: View {
                 Task { await viewModel.filesImported(result) }
             }
             .task(id: viewModel.conflictKey) { await viewModel.checkConflicts() }
-            .confirmationDialog("Some files already exist", isPresented: $viewModel.showsConflictChoice, titleVisibility: .visible) {
+            .alert("Some files already exist", isPresented: $viewModel.showsConflictChoice) {
                 Button("Replace existing") { Task { await viewModel.upload(replacing: true) } }
                 Button("Upload only new files") { Task { await viewModel.upload(replacing: false) } }
                 Button("Cancel", role: .cancel) {}

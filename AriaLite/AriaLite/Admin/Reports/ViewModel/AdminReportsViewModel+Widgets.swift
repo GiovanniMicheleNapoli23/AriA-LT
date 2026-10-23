@@ -43,7 +43,7 @@ extension AdminReportsViewModel {
         deletingId = id
         defer { deletingId = nil; widgetToDelete = nil }
         do {
-            _ = try await backend.api.call(AdminCraftedAPI.deleteWidget(id: id))
+            _ = try await backend.api.call(AdminReportsAPI.deleteWidget(id: id))
             removeWidget(id: id)
             return nil
         } catch {

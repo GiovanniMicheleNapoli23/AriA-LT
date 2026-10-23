@@ -55,8 +55,7 @@ struct AdminAgentStudioPromptEditorView: View {
                 }
             }
         }
-        .confirmationDialog("Reset to the default prompt?", isPresented: $viewModel.showsResetConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Reset to the default prompt?", isPresented: $viewModel.showsResetConfirmation) {
             Button("Reset to default", role: .destructive) { Task { await viewModel.resetToBase() } }
             Button("Cancel", role: .cancel) {}
         } message: {

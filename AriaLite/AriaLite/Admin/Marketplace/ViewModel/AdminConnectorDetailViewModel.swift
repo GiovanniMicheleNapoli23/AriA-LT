@@ -6,7 +6,7 @@
 //
 //  Il dettaglio di un connettore: stato, tool esposti, connessioni dei membri (owner e admin) e azioni
 //  (verifica, consenso OAuth, chiave, scollega). Ogni blocco si carica per conto suo: se uno fallisce
-//  (o il ruolo non lo vede) gli altri restano. Il consenso OAuth si apre nel browser: al ritorno si ricarica.
+//  (o il ruolo non lo vede) gli altri restano. Il consenso OAuth si apre nel browser (Composio, nella sessione web dell'app): al ritorno si ricarica.
 //
 
 import Foundation
@@ -45,7 +45,7 @@ final class AdminConnectorDetailViewModel {
     var grantToRevoke: AdminConnectorGrant?
     var credentialsForm: AdminConnectorCredentialsFormViewModel?
 
-    /// Per `.alert` e `.confirmationDialog`: chiuderli azzera lo stato.
+    /// Per `.alert`: chiuderli azzera lo stato.
     var showsActionError: Bool {
         get { actionError != nil }
         set { if !newValue { actionError = nil } }
@@ -245,22 +245,34 @@ final class AdminConnectorDetailViewModel {
         }
     }
 
-    /// Chiede l'URL del consenso; la vista lo apre nel browser. `nil` se il server ha rifiutato.
-    func startConsent(personal: Bool, requestWrite: Bool = false) async -> URL? {
-        var target: URL?
+    /// Il consenso personale su Composio lo chiude l'app (la pagina web di ritorno non ha la sessione del telefono).
+    private var usesComposio: Bool { AdminConnectorConsentFlow.isComposio(connector.mcpUrl) }
+
+    /// Chiede l'URL del consenso e lo esegue con le azioni dell'ambiente che la vista passa: sessione web
+    /// per Composio, browser per tutto il resto (il ritorno lo gestisce il server e al ritorno si ricarica).
+    func consent(personal: Bool, requestWrite: Bool = false,
+                 authenticate: AdminConnectorConsentFlow.Authenticate, open: AdminConnectorConsentFlow.Open) async {
         await perform { companyId in
             let endpoint = personal
                 ? AdminMarketplaceAPI.startMyOAuth(companyId: companyId, provider: provider)
                 : AdminMarketplaceAPI.startOAuth(companyId: companyId, provider: provider, requestWrite: requestWrite)
             let start = try await backend.api.call(endpoint)
-            guard let url = URL(string: start.authorizeUrl), url.scheme?.hasPrefix("http") == true else {
-                throw AriaError.decoding("authorize_url")
+            let outcome = await AdminConnectorConsentFlow(backend: backend).run(
+                authorizeURL: start.authorizeUrl, composio: personal && usesComposio, fallbackName: connector.name,
+                authenticate: authenticate, open: open)
+            switch outcome {
+            case .connected(let notice):
+                actionNotice = notice
+                await load()
+            case .cancelled:
+                await load()
+            case .browser(let notice):
+                awaitingConsent = true
+                actionNotice = notice
+            case .failed(let message):
+                actionError = message
             }
-            target = url
-            awaitingConsent = true
-            actionNotice = String(localized: "Finish signing in in the browser, then come back here.")
         }
-        return target
     }
 
     /// L'app torna in primo piano dopo il consenso: si rilegge lo stato una volta.

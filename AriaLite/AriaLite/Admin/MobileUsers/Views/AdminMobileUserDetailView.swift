@@ -48,8 +48,8 @@ struct AdminMobileUserDetailView: View {
         .sheet(item: $viewModel.specialtiesForm) { form in
             AdminMobileUserSpecialtiesView(viewModel: form)
         }
-        .confirmationDialog(viewModel.pendingConfirmation?.title ?? "", isPresented: $viewModel.showsConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.pendingConfirmation) { confirmation in
+        .alert(viewModel.pendingConfirmation?.title ?? "", isPresented: $viewModel.showsConfirmation,
+               presenting: viewModel.pendingConfirmation) { confirmation in
             Button(confirmation.actionTitle, role: .destructive) { Task { await viewModel.confirm(confirmation) } }
             Button("Cancel", role: .cancel) {}
         } message: { confirmation in

@@ -47,7 +47,6 @@ class AppViewModel {
     let adminTeams: AdminTeamsViewModel
     let adminMembers: AdminMembersViewModel
     let adminMobileUsers: AdminMobileUsersViewModel
-    let adminCompanySettings: AdminCompanySettingsViewModel
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
     var accountKind: AriaAccountKind { backend.accountKind }
@@ -106,7 +105,6 @@ class AppViewModel {
         adminTeams = AdminTeamsViewModel(backend: backend)
         adminMembers = AdminMembersViewModel(backend: backend)
         adminMobileUsers = AdminMobileUsersViewModel(backend: backend)
-        adminCompanySettings = AdminCompanySettingsViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -283,7 +281,6 @@ class AppViewModel {
         adminTeams.reset()
         adminMembers.reset()
         adminMobileUsers.reset()
-        adminCompanySettings.reset()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

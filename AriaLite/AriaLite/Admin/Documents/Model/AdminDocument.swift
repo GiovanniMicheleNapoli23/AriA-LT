@@ -20,6 +20,8 @@ nonisolated struct AdminDocument: Decodable, Sendable, Identifiable, Hashable {
     let sizeBytes: Int?
     /// `upload`, `url`, `s3`…
     let sourceType: String?
+    /// Dove sta il file originale (`source.uri`): l'anteprima lo apre solo se è un link https.
+    let uri: String?
     let pageCount: Int?
     let language: String?
     let textLength: Int?
@@ -53,6 +55,12 @@ nonisolated struct AdminDocument: Decodable, Sendable, Identifiable, Hashable {
         return parts.joined(separator: " · ")
     }
 
+    /// Il file originale da scaricare per l'anteprima. Solo https: un percorso interno (s3://…) non si apre.
+    var fileURL: URL? {
+        guard let uri, let url = URL(string: uri), url.scheme?.lowercased() == "https", url.host() != nil else { return nil }
+        return url
+    }
+
     /// Dove cerca la barra di ricerca.
     var searchableFields: [String] { [title, fileName, description].compactMap { $0 } + tags }
 
@@ -62,7 +70,7 @@ nonisolated struct AdminDocument: Decodable, Sendable, Identifiable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case id, title, description, tags, source, content, status, isDeleted, createdAt, updatedAt
     }
-    private enum SourceKeys: String, CodingKey { case type, fileName, mimeType, sizeBytes }
+    private enum SourceKeys: String, CodingKey { case type, uri, fileName, mimeType, sizeBytes }
     private enum ContentKeys: String, CodingKey { case rawTextLength, language, pageCount }
     private enum StatusKeys: String, CodingKey { case ingestionState, extractionState, lastError, lastRunId, lastCompletedAt }
 
@@ -84,6 +92,7 @@ nonisolated struct AdminDocument: Decodable, Sendable, Identifiable, Hashable {
         mimeType = source.flatMap { AdminDocumentDecoding.text($0, .mimeType) }
         sizeBytes = source.flatMap { AdminDocumentDecoding.int($0, .sizeBytes) }
         sourceType = source.flatMap { AdminDocumentDecoding.text($0, .type) }
+        uri = source.flatMap { AdminDocumentDecoding.text($0, .uri) }
 
         let content = try? c.nestedContainer(keyedBy: ContentKeys.self, forKey: .content)
         pageCount = content.flatMap { AdminDocumentDecoding.int($0, .pageCount) }

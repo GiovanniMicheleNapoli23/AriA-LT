@@ -40,8 +40,8 @@ struct AdminTeamBoardView: View {
         .navigationTitle("Board")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: viewModel.teamId) { await viewModel.loadIfNeeded() }
-        .confirmationDialog("Cancel this work order?", isPresented: cancelShown, titleVisibility: .visible,
-                            presenting: viewModel.orderPendingCancel) { _ in
+        .alert("Cancel this work order?", isPresented: cancelShown,
+               presenting: viewModel.orderPendingCancel) { _ in
             Button("Mark as cancelled", role: .destructive) { viewModel.confirmCancel() }
             Button("Keep it", role: .cancel) {}
         } message: { order in

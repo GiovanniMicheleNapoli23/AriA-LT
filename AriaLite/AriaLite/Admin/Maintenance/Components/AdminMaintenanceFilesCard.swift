@@ -44,8 +44,9 @@ struct AdminMaintenanceFilesCard: View {
             CameraPicker { viewModel.photoTaken($0) }.ignoresSafeArea()
         }
         .quickLookPreview($viewModel.previewURL)
-        .confirmationDialog("Delete this file?", isPresented: $viewModel.isConfirmingDelete, titleVisibility: .visible) {
+        .alert("Delete this file?", isPresented: $viewModel.isConfirmingDelete) {
             Button("Delete", role: .destructive) { Task { await viewModel.deleteConfirmed() } }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("It will be removed from this plan for everyone.")
         }

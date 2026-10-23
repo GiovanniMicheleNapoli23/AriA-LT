@@ -25,9 +25,10 @@ struct AdminWorkOrderCostsTab: View {
             .sheet(item: $viewModel.laborForm) { AdminWorkOrderLaborFormView(viewModel: $0) }
             .sheet(item: $viewModel.partForm) { AdminWorkOrderPartFormView(viewModel: $0) }
             .sheet(item: $viewModel.extraForm) { AdminWorkOrderCostExtraFormView(viewModel: $0) }
-            .confirmationDialog("Delete this cost?", isPresented: $viewModel.isConfirmingDelete,
-                                titleVisibility: .visible, presenting: viewModel.pendingDelete) { row in
+            .alert("Delete this cost?", isPresented: $viewModel.isConfirmingDelete,
+                   presenting: viewModel.pendingDelete) { row in
                 Button("Delete", role: .destructive) { Task { await viewModel.delete(row) } }
+                Button("Cancel", role: .cancel) {}
             } message: { row in
                 Text("\(row.title) · \(row.amount) will be removed from this work order.")
             }

@@ -46,8 +46,8 @@ struct AdminLearnedKnowledgeView: View {
         }
         .task(id: viewModel.loadKey) { await viewModel.load() }
         // Sullo stack e non sulla lista: valgono anche col dettaglio aperto, che usa le stesse azioni.
-        .confirmationDialog(viewModel.pendingConfirmation?.title ?? "", isPresented: $viewModel.showsConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.pendingConfirmation) { confirmation in
+        .alert(viewModel.pendingConfirmation?.title ?? "", isPresented: $viewModel.showsConfirmation,
+               presenting: viewModel.pendingConfirmation) { confirmation in
             Button(confirmation.actionTitle, role: .destructive) { Task { await viewModel.confirm(confirmation) } }
             Button("Cancel", role: .cancel) {}
         } message: { confirmation in

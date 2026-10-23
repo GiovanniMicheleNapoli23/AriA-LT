@@ -102,8 +102,7 @@ struct SettingsSheet: View {
                             )
                         }
                         .padding(.horizontal, 20)
-                        .confirmationDialog("Log out with unsynced changes?", isPresented: $confirmingLogout,
-                                            titleVisibility: .visible) {
+                        .alert("Log out with unsynced changes?", isPresented: $confirmingLogout) {
                             Button("Log out anyway", role: .destructive) { viewModel.logout() }
                             Button("Cancel", role: .cancel) {}
                         } message: {

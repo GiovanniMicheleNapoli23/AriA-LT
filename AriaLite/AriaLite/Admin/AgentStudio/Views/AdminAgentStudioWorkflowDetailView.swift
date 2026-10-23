@@ -43,8 +43,7 @@ struct AdminAgentStudioWorkflowDetailView: View {
         } message: {
             Text(viewModel.actionError ?? "")
         }
-        .confirmationDialog("Run this workflow for real?", isPresented: $viewModel.showsRunConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Run this workflow for real?", isPresented: $viewModel.showsRunConfirmation) {
             Button("Run for real", role: .destructive) { Task { await viewModel.start(.run) } }
             Button("Cancel", role: .cancel) {}
         } message: {

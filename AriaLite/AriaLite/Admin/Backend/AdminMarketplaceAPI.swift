@@ -70,6 +70,26 @@ nonisolated enum AdminMarketplaceAPI {
         AriaEndpoint.delete(path(companyId, provider, "me")).snakeCased()
     }
 
+    // MARK: Abilitazione e ritorno Composio
+
+    /// PUT /connectors/{provider}/register: l'owner abilita un connettore one-click (crea la riga, ancora senza
+    /// connessioni). Mai su una riga che esiste già.
+    static func register(companyId: String, provider: String, _ body: AdminConnectorRegister) -> AriaEndpoint<AdminConnector> {
+        AriaEndpoint.put(path(companyId, provider, "register"), body: body).snakeCased()
+    }
+
+    /// POST /connectors/oauth/inspect: cosa sa fare il server MCP (serve a Composio: c'è un progetto sul server?).
+    /// Sta direttamente sotto /connectors, senza provider.
+    static func inspectOAuth(companyId: String, _ body: AdminConnectorInspectRequest) -> AriaEndpoint<AdminConnectorInspect> {
+        AriaEndpoint.post("\(base(companyId))/oauth/inspect", body: body).snakeCased()
+    }
+
+    /// POST /connectors/composio/complete: chiude il consenso Composio con il `session_uri` che la pagina web
+    /// di ritorno ha messo nell'URL. Anche questa sta direttamente sotto /connectors.
+    static func completeComposio(companyId: String, _ body: AdminComposioCompleteRequest) -> AriaEndpoint<AdminComposioCompletion> {
+        AriaEndpoint.post("\(base(companyId))/composio/complete", body: body).snakeCased()
+    }
+
     // MARK: Connessioni dei membri (owner e admin)
 
     static func grants(companyId: String, provider: String) -> AriaEndpoint<AdminConnectorGrantList> {

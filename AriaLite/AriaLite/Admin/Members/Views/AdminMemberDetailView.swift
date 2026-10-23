@@ -46,8 +46,8 @@ struct AdminMemberDetailView: View {
         .sheet(item: $viewModel.assignForm) { form in
             AdminMemberAssignShiftView(viewModel: form)
         }
-        .confirmationDialog("Remove this shift?", isPresented: $viewModel.isConfirmingRemoval,
-                            titleVisibility: .visible, presenting: viewModel.shiftToRemove) { shift in
+        .alert("Remove this shift?", isPresented: $viewModel.isConfirmingRemoval,
+               presenting: viewModel.shiftToRemove) { shift in
             Button("Remove shift", role: .destructive) {
                 Task { await viewModel.remove(shift) }
             }

@@ -29,6 +29,11 @@ extension Color {
     static let liteSwipeAccent = Color(light: (0.08, 0.14, 0.25), dark: (0.36, 0.34, 0.47))
     /// Il filo chiaro sul bordo delle schede sul vetro: in scuro più tenue, se no si accende.
     static let liteGlassEdge = Color(light: (1, 1, 1, 0.35), dark: (1, 1, 1, 0.12))
+
+    // MARK: - Toni spenti (esiti, tendenze): verde salvia, ambra e corallo invece dei colori pieni di sistema
+    static let liteSuccess = Color(light: (0.22, 0.52, 0.38), dark: (0.50, 0.76, 0.60))
+    static let liteWarning = Color(light: (0.72, 0.47, 0.16), dark: (0.90, 0.70, 0.42))
+    static let liteDanger = Color(light: (0.72, 0.31, 0.29), dark: (0.89, 0.54, 0.50))
 }
 
 private extension Color {

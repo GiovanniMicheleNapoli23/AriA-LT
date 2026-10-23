@@ -11,7 +11,7 @@
 import Foundation
 
 extension AdminLearnedKnowledgeViewModel {
-    /// Per `.alert` e `.confirmationDialog`: chiuderli azzera lo stato.
+    /// Per `.alert`: chiuderli azzera lo stato.
     var showsActionError: Bool {
         get { actionError != nil }
         set { if !newValue { actionError = nil } }

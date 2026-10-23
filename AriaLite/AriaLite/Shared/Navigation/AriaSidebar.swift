@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 26/09/26.
 //
-//  La sidebar di AriaPLT Mobile: sezioni in alto, conversazioni fissate e recenti,
+//  La sidebar di AriaPLT Mobile: logo e ricerca delle chat, sezioni in alto, conversazioni fissate e recenti,
 //  profilo e "Nuova chat" in fondo. L'operatore ha Task e Calendario; un account della piattaforma
 //  le sezioni della web, raggruppate come nella sidebar della web.
 //
@@ -16,6 +16,7 @@ struct AriaSidebar: View {
     let destination: AriaDestination
     let select: (AriaDestination) -> Void
     let openSession: (AriaSessionSummary) -> Void
+    let searchChats: () -> Void
     let newChat: () -> Void
     let showSettings: () -> Void
     let showConnection: () -> Void
@@ -57,8 +58,6 @@ struct AriaSidebar: View {
                     navRow("Assets", icon: "gearshape.2", target: .assets)
                     navRow("Spare Parts", icon: "shippingbox", target: .spareParts)
                     navRow("Alarms", icon: "bell.badge", target: .adminAlarms)
-                    navRow("Meters", icon: "gauge.with.needle", target: .adminMeters)
-                    navRow("Locations", icon: "mappin.and.ellipse", target: .adminLocations)
                     sectionTitle("Purchases")
                     navRow("Purchase Orders", icon: "cart", target: .adminPurchaseOrders)
                     navRow("Vendors", icon: "building.2", target: .adminVendors)
@@ -71,8 +70,6 @@ struct AriaSidebar: View {
                     navRow("Teams", icon: "person.3", target: .adminTeams)
                     navRow("Members", icon: "person.2", target: .adminMembers)
                     navRow("Mobile Users", icon: "iphone.gen3", target: .adminMobileUsers)
-                    navRow("Checklist Templates", icon: "checklist", target: .adminChecklistTemplates)
-                    navRow("Settings", icon: "slider.horizontal.3", target: .adminCompanySettings)
                 }
 
                 if !store.pinned.isEmpty {
@@ -88,25 +85,45 @@ struct AriaSidebar: View {
         .scrollIndicators(.hidden)
         // Il logo resta sempre in alto: sezioni e conversazioni gli scorrono sotto, sfocate.
         .ariaTopBar {
-            AriaWordmark(size: 28)
-                .padding(.horizontal, 24)
-                .padding(.top, 8)
-                .padding(.bottom, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background {
-                    // Il colore della sidebar, pieno dietro la scritta e sfumato sotto: le righe non si leggono
-                    // attraverso il logo (la sola sfocatura non basta, soprattutto nel tema scuro).
-                    LinearGradient(stops: [.init(color: Color.liteSidebar, location: 0),
-                                           .init(color: Color.liteSidebar, location: 0.7),
-                                           .init(color: Color.liteSidebar.opacity(0), location: 1)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .ignoresSafeArea(edges: .top)
-                        .allowsHitTesting(false)
-                }
+            HStack(spacing: 8) {
+                AriaWordmark(size: 28)
+                Spacer(minLength: 0)
+                searchButton
+            }
+            .padding(.leading, 24)
+            .padding(.trailing, 14)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                // Il colore della sidebar, pieno dietro la scritta e sfumato sotto: le righe non si leggono
+                // attraverso il logo (la sola sfocatura non basta, soprattutto nel tema scuro).
+                LinearGradient(stops: [.init(color: Color.liteSidebar, location: 0),
+                                       .init(color: Color.liteSidebar, location: 0.7),
+                                       .init(color: Color.liteSidebar.opacity(0), location: 1)],
+                               startPoint: .top, endPoint: .bottom)
+                    .ignoresSafeArea(edges: .top)
+                    .allowsHitTesting(false)
+            }
         }
         // La barra in fondo (profilo + Nuova chat) fa spazio da sé: anche se coi testi grandi diventa più alta.
         .safeAreaInset(edge: .bottom, spacing: 0) { bottomBar }
         .modifier(AriaRenameSessionAlert(session: $renaming, store: store))
+    }
+
+    // MARK: - Ricerca
+
+    /// Accanto al logo: apre la schermata Chat con la ricerca già attiva.
+    private var searchButton: some View {
+        Button(action: searchChats) {
+            Image(systemName: "magnifyingglass")
+                .font(.title3.weight(.medium))
+                .foregroundStyle(Color.liteText)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Search conversations"))
     }
 
     // MARK: - Sezioni

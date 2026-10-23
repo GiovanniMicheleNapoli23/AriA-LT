@@ -37,7 +37,7 @@ final class AdminAssetDetailViewModel {
     /// Il fermo di cui si chiede conferma prima di eliminarlo.
     var downtimeToDelete: AdminDowntime?
 
-    /// Per `.alert` e `.confirmationDialog`: chiuderli azzera lo stato.
+    /// Per due `.alert` (errore e conferma): chiuderli azzera lo stato.
     var showsActionError: Bool {
         get { actionError != nil }
         set { if !newValue { actionError = nil } }
@@ -197,7 +197,7 @@ final class AdminAssetDetailViewModel {
         }
     }
 
-    /// Eliminazione confermata nel dialogo.
+    /// Eliminazione confermata nell'alert.
     func delete(_ downtime: AdminDowntime) async {
         downtimeToDelete = nil
         guard let id = downtime.serverId, !isBusy(downtime) else { return }

@@ -80,7 +80,7 @@ final class AdminReportsViewModel {
             try await Self.assetsReport(backend: backend, plantId: plantId)
         }
         async let widgetsResult = outcome { [backend] in
-            try await backend.api.call(AdminCraftedAPI.widgets()).items
+            try await backend.api.call(AdminReportsAPI.widgets()).items
         }
         let results = await (overviewResult, workOrdersResult, assetsResult, widgetsResult)
         // Nel frattempo è cambiato il filtro: ci pensa il caricamento nuovo.

@@ -60,21 +60,21 @@ struct AdminWorkOrderDetailView: View {
             AdminWorkOrderStepReportSheet(viewModel: report)
         }
         .adminWorkOrderQuickActions(viewModel.actions)
-        .confirmationDialog("Delete this work order?", isPresented: $viewModel.isConfirmingDelete,
-                            titleVisibility: .visible) {
+        .alert("Delete this work order?", isPresented: $viewModel.isConfirmingDelete) {
             Button("Delete", role: .destructive) { Task { await viewModel.delete() } }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("It will be removed for everyone. This can't be undone.")
         }
-        .confirmationDialog("Clear this step's result?", isPresented: $stepActions.isConfirmingClear,
-                            titleVisibility: .visible) {
+        .alert("Clear this step's result?", isPresented: $stepActions.isConfirmingClear) {
             Button("Clear result", role: .destructive) { stepActions.clear() }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("The note and photos of this step are removed too.")
         }
-        .confirmationDialog("Reset all checks?", isPresented: $stepActions.isConfirmingReset,
-                            titleVisibility: .visible) {
+        .alert("Reset all checks?", isPresented: $stepActions.isConfirmingReset) {
             Button("Reset all checks", role: .destructive) { Task { await stepActions.resetAll() } }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Every step goes back to unchecked.")
         }

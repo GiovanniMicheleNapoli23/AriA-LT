@@ -4,10 +4,12 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un documento: intestazione, stato delle pipeline (con "Stop" mentre lavorano),
-//  descrizione e tag, scheda tecnica, run e il testo estratto. Il menu in alto rilancia o cancella.
+//  Il dettaglio di un documento: intestazione, anteprima del file con Quick Look, stato delle pipeline
+//  (con "Stop" mentre lavorano), descrizione e tag, scheda tecnica, run e il testo estratto.
+//  Il menu in alto rilancia o cancella.
 //
 
+import QuickLook
 import SwiftUI
 
 struct AdminDocumentDetailView: View {
@@ -26,6 +28,7 @@ struct AdminDocumentDetailView: View {
                 if let message = viewModel.documentError {
                     AdminSectionNotice(text: message, isError: true)
                 }
+                previewCard
                 AdminDocumentPipelineCard(viewModel: viewModel)
                 if viewModel.document.description != nil || !viewModel.document.tags.isEmpty { aboutCard }
                 detailsCard
@@ -38,6 +41,7 @@ struct AdminDocumentDetailView: View {
         .liteBackground()
         .navigationTitle(viewModel.document.displayName)
         .navigationBarTitleDisplayMode(.inline)
+        .quickLookPreview($viewModel.previewURL)
         .navigationDestination(isPresented: $showsChunks) {
             AdminDocumentChunksView(viewModel: viewModel.makeChunksViewModel())
         }
@@ -50,8 +54,8 @@ struct AdminDocumentDetailView: View {
         .onChange(of: viewModel.didDelete) { _, deleted in
             if deleted { dismiss() }
         }
-        .confirmationDialog(Text(viewModel.pendingAction?.title ?? ""), isPresented: $viewModel.showsConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.pendingAction) { action in
+        .alert(Text(viewModel.pendingAction?.title ?? ""), isPresented: $viewModel.showsConfirmation,
+               presenting: viewModel.pendingAction) { action in
             Button(action.confirmLabel, role: action.isDestructive ? .destructive : nil) {
                 Task { await viewModel.perform(action) }
             }
@@ -88,6 +92,38 @@ struct AdminDocumentDetailView: View {
     }
 
     // MARK: Schede
+
+    private var previewCard: some View {
+        AdminCard(title: "Preview", systemImage: "doc.viewfinder") {
+            VStack(alignment: .leading, spacing: 10) {
+                if viewModel.canPreview {
+                    Button {
+                        Task { await viewModel.openPreview() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if viewModel.isOpeningPreview {
+                                ProgressView().controlSize(.small)
+                                Text("Opening…")
+                            } else {
+                                Label("Open the document", systemImage: "eye")
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .ariaGlassButtonStyle()
+                    .disabled(viewModel.isOpeningPreview)
+                } else {
+                    Text("The server doesn't share the original file of this document yet, so it can't be previewed here. Its extracted text is below.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let message = viewModel.previewError {
+                    AdminSectionNotice(text: message, isError: true)
+                }
+            }
+        }
+    }
 
     private var aboutCard: some View {
         AdminCard(title: "About", systemImage: "text.alignleft") {

@@ -46,8 +46,7 @@ struct AdminScenarioAnalysisView: View {
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text(viewModel.searchPrompt))
-            .confirmationDialog("Backfill scenarios?", isPresented: Bindable(viewModel.backfill).showsConfirmation,
-                                titleVisibility: .visible) {
+            .alert("Backfill scenarios?", isPresented: Bindable(viewModel.backfill).showsConfirmation) {
                 Button("Assess new sessions") {
                     viewModel.tab = .scenarios
                     viewModel.backfill.start(force: false)

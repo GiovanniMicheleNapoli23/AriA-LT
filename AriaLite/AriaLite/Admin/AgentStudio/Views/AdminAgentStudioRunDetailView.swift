@@ -54,7 +54,7 @@ struct AdminAgentStudioRunDetailView: View {
             await viewModel.load()
             await viewModel.follow()
         }
-        .confirmationDialog("Cancel this run?", isPresented: $viewModel.showsCancelConfirmation, titleVisibility: .visible) {
+        .alert("Cancel this run?", isPresented: $viewModel.showsCancelConfirmation) {
             Button("Cancel run", role: .destructive) { Task { await viewModel.cancel() } }
             Button("Keep running", role: .cancel) {}
         } message: {

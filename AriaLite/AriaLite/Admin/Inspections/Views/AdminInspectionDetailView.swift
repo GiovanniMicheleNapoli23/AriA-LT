@@ -60,8 +60,7 @@ struct AdminInspectionDetailView: View {
         } message: {
             Text(viewModel.actionError ?? "")
         }
-        .confirmationDialog("Delete this inspection?", isPresented: $viewModel.showsDeleteConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Delete this inspection?", isPresented: $viewModel.showsDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 Task { if await viewModel.delete() { dismiss() } }
             }
@@ -69,8 +68,7 @@ struct AdminInspectionDetailView: View {
         } message: {
             Text("The inspection and its checklist will be removed. This can't be undone.")
         }
-        .confirmationDialog("Some checks are still open", isPresented: $viewModel.showsCompleteConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Some checks are still open", isPresented: $viewModel.showsCompleteConfirmation) {
             Button("Complete anyway") { Task { await viewModel.perform(.complete) } }
             Button("Cancel", role: .cancel) {}
         } message: {

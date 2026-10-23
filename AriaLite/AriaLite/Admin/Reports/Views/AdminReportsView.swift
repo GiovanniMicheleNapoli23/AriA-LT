@@ -38,8 +38,8 @@ struct AdminReportsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
             }
-            .confirmationDialog("Delete this widget?", isPresented: $viewModel.showsDeleteConfirmation,
-                                titleVisibility: .visible, presenting: viewModel.widgetToDelete) { widget in
+            .alert("Delete this widget?", isPresented: $viewModel.showsDeleteConfirmation,
+                   presenting: viewModel.widgetToDelete) { widget in
                 Button("Delete", role: .destructive) { Task { await viewModel.delete(widget) } }
                 Button("Cancel", role: .cancel) {}
             } message: { widget in

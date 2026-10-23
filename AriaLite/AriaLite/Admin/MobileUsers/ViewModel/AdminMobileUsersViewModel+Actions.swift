@@ -12,7 +12,7 @@
 import Foundation
 
 extension AdminMobileUsersViewModel {
-    /// Per `.alert` e `.confirmationDialog`: chiuderli azzera lo stato.
+    /// Per gli `.alert`: chiuderli azzera lo stato.
     var showsActionError: Bool {
         get { actionError != nil }
         set { if !newValue { actionError = nil } }

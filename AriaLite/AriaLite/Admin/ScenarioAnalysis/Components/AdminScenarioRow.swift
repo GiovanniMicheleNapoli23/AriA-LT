@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La scheda di uno scenario nella lista: tipo, titolo, codice allarme, sessioni, affidabilità,
-//  tendenza e maturità, con la barra degli esiti.
+//  La scheda di uno scenario nella lista: tipo, titolo, codice allarme, sessioni e affidabilità, la barra
+//  degli esiti e una riga di dettagli in testo semplice (ultimo esito con il suo pallino, tendenza, maturità).
 //
 
 import SwiftUI
@@ -22,15 +22,15 @@ struct AdminScenarioRow: View {
                 if !dynamicTypeSize.isAccessibilitySize {
                     Image(systemName: AdminScenarioKind.systemImage(for: scenario.kind))
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.liteAccent)
+                        .foregroundStyle(.secondary)
                         .frame(width: iconSize, height: iconSize)
-                        .background(Color.liteAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Color.secondary.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    if let code = scenario.alarmCode {
+                    if let code = scenario.rowCode {
                         Text(code)
-                            .font(.caption.weight(.bold).monospaced())
-                            .foregroundStyle(Color.liteAccent)
+                            .font(.caption.weight(.semibold).monospaced())
+                            .foregroundStyle(.secondary)
                     }
                     Text(scenario.displayTitle)
                         .font(.subheadline.weight(.semibold))
@@ -44,7 +44,7 @@ struct AdminScenarioRow: View {
                 Spacer(minLength: 8)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(AdminScenarioFormat.percent(scenario.metrics?.reliability))
-                        .font(.headline.monospacedDigit())
+                        .font(.headline.weight(.semibold).monospacedDigit())
                     Text("reliable")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
@@ -52,10 +52,7 @@ struct AdminScenarioRow: View {
             }
             AdminScenarioOutcomeBar(resolved: scenario.successCount ?? 0, unresolved: scenario.failureCount ?? 0,
                                     unclear: scenario.unclearCount ?? 0)
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) { badges }
-                VStack(alignment: .leading, spacing: 6) { badges }
-            }
+            if !scenario.rowDetails.isEmpty { details }
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 14)
@@ -64,18 +61,18 @@ struct AdminScenarioRow: View {
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 
-    @ViewBuilder
-    private var badges: some View {
-        if let trend = scenario.metrics?.trend {
-            AdminScenarioBadge(text: AdminScenarioLabel.trend(trend), tone: AdminScenarioLabel.trendTone(trend),
-                               systemImage: AdminScenarioLabel.trendSystemImage(trend))
-        }
-        if let maturity = scenario.metrics?.maturity {
-            AdminScenarioBadge(text: AdminScenarioLabel.maturity(maturity), tone: AdminScenarioLabel.maturityTone(maturity))
-        }
-        if let verdict = scenario.lastVerdict {
-            AdminScenarioBadge(text: String(localized: "Last: \(AdminScenarioLabel.verdict(verdict))"),
-                               tone: AdminScenarioLabel.verdictTone(verdict))
+    private var details: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            if scenario.lastVerdict != nil {
+                Circle()
+                    .fill(scenario.lastVerdictTone.color)
+                    .frame(width: 6, height: 6)
+                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] - 1 }
+            }
+            Text(scenario.rowDetails)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
         }
     }
 }

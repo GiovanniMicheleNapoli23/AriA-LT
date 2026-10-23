@@ -67,6 +67,11 @@ nonisolated enum AdminScenarioLabel {
         }
     }
 
+    /// Una tendenza vera: "nuovo" o "dati insufficienti" non dicono niente.
+    static func hasTrend(_ raw: String) -> Bool {
+        !["new", "insufficient", "insufficient_data", "unknown"].contains(raw.lowercased())
+    }
+
     static func trendSystemImage(_ raw: String?) -> String {
         switch raw?.lowercased() {
         case "improving", "up": "arrow.up.right"

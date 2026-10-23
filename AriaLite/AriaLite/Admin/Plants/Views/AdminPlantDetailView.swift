@@ -80,8 +80,7 @@ struct AdminPlantDetailView: View {
         .sheet(item: $viewModel.editForm) { form in
             AdminPlantFormView(viewModel: form)
         }
-        .confirmationDialog("Delete this plant?", isPresented: $viewModel.showsDeleteConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Delete this plant?", isPresented: $viewModel.showsDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 Task { if await viewModel.delete() { dismiss() } }
             }

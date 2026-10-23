@@ -19,8 +19,8 @@ private struct AdminWorkOrderQuickActionsModifier: ViewModifier {
             .sheet(item: $actions.completion) { completion in
                 AdminWorkOrderCompletionSheet(viewModel: completion)
             }
-            .confirmationDialog("Cancel this work order?", isPresented: $actions.isConfirmingCancel,
-                                titleVisibility: .visible, presenting: actions.cancelling) { _ in
+            .alert("Cancel this work order?", isPresented: $actions.isConfirmingCancel,
+                   presenting: actions.cancelling) { _ in
                 Button("Cancel work order", role: .destructive) { Task { await actions.confirmCancel() } }
                 Button("Keep it", role: .cancel) {}
             } message: { order in

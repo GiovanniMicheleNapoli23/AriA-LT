@@ -13,13 +13,7 @@ import SwiftUI
 struct AdminExtractionConfidenceBadge: View {
     let confidence: Double
 
-    private var color: Color {
-        switch confidence {
-        case ..<0.5: .red
-        case ..<0.8: .orange
-        default: .green
-        }
-    }
+    private var color: Color { AdminExtractionTone.confidence(confidence) }
 
     var body: some View {
         Label {

@@ -32,6 +32,24 @@ nonisolated struct AdminConnectorOAuthStartRequest: Encodable, Sendable {
     let requestWrite: Bool
 }
 
+/// PUT /connectors/{provider}/register: abilita un connettore one-click. Per-membro: ognuno collega poi il suo account.
+nonisolated struct AdminConnectorRegister: Encodable, Sendable {
+    let mcpUrl: String
+    /// Sempre `user` per un one-click.
+    let connectionScope: String
+    let displayName: String?
+}
+
+/// POST /connectors/oauth/inspect: il server MCP da interrogare.
+nonisolated struct AdminConnectorInspectRequest: Encodable, Sendable {
+    let mcpUrl: String
+}
+
+/// POST /connectors/composio/complete: il `session_uri` dell'URL su cui è finito il consenso.
+nonisolated struct AdminComposioCompleteRequest: Encodable, Sendable {
+    let sessionUri: String
+}
+
 /// Come un server con credenziale statica riceve la chiave.
 nonisolated enum AdminConnectorAuthMode: String, Sendable, CaseIterable, Identifiable {
     case bearer, header, none

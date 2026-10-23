@@ -36,7 +36,7 @@ struct AdminCategoryRow: View {
                 HStack(spacing: 6) {
                     Text(category.entityTypeLabel)
                     if let plantName {
-                        Text("·")
+                        Text(verbatim: "·")
                         Text(plantName)
                     }
                 }

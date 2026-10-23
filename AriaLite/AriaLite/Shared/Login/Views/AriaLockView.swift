@@ -48,7 +48,7 @@ struct AriaLockView: View {
             .scrollBounceBehavior(.basedOnSize)
         }
         .background { LoginBackdrop() }
-        .confirmationDialog("Use a different account?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+        .alert("Use a different account?", isPresented: $confirmSignOut) {
             Button("Logout", role: .destructive) { viewModel.logout() }
             Button("Cancel", role: .cancel) {}
         } message: {

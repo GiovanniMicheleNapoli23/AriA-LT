@@ -62,8 +62,8 @@ struct AdminAssetDetailView: View {
         } message: {
             Text(viewModel.actionError ?? "")
         }
-        .confirmationDialog("Delete this downtime?", isPresented: $viewModel.showsDeleteConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.downtimeToDelete) { downtime in
+        .alert("Delete this downtime?", isPresented: $viewModel.showsDeleteConfirmation,
+               presenting: viewModel.downtimeToDelete) { downtime in
             Button("Delete", role: .destructive) { Task { await viewModel.delete(downtime) } }
             Button("Cancel", role: .cancel) {}
         } message: { _ in

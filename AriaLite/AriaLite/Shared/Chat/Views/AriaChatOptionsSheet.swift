@@ -92,7 +92,7 @@ struct AriaChatOptionsSheet: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .confirmationDialog("End the procedure?", isPresented: $model.confirmingEnd, titleVisibility: .visible) {
+            .alert("End the procedure?", isPresented: $model.confirmingEnd) {
                 Button("End procedure", role: .destructive) {
                     dismiss()
                     model.endProcedure()

@@ -5,15 +5,17 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un connettore: intestazione con stato, azioni, scheda, tool esposti e connessioni
-//  dei membri. Il consenso OAuth si apre nel browser; tornando nell'app lo stato si rilegge da sé.
+//  dei membri. Il consenso OAuth si apre nel browser (Composio nella sessione web dell'app); tornando nell'app lo stato si rilegge da sé.
 //
 
+import AuthenticationServices
 import SwiftUI
 
 struct AdminConnectorDetailView: View {
     @State private var viewModel: AdminConnectorDetailViewModel
 
     @Environment(\.openURL) private var openURL
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.dismiss) private var dismiss
 
@@ -58,27 +60,27 @@ struct AdminConnectorDetailView: View {
         } message: {
             Text(viewModel.actionError ?? "")
         }
-        .confirmationDialog(viewModel.disconnectTitle, isPresented: $viewModel.confirmsDisconnect, titleVisibility: .visible) {
+        .alert(viewModel.disconnectTitle, isPresented: $viewModel.confirmsDisconnect) {
             Button(viewModel.disconnectTitle, role: .destructive) { Task { await viewModel.disconnect() } }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(viewModel.disconnectWarning)
         }
-        .confirmationDialog("Disconnect your account?", isPresented: $viewModel.confirmsDisconnectMine, titleVisibility: .visible) {
+        .alert("Disconnect your account?", isPresented: $viewModel.confirmsDisconnectMine) {
             Button("Disconnect", role: .destructive) { Task { await viewModel.disconnectMine() } }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Aria will no longer act on this system on your behalf.")
         }
-        .confirmationDialog("Access for Aria", isPresented: $viewModel.confirmsConsent, titleVisibility: .visible) {
+        .alert("Access for Aria", isPresented: $viewModel.confirmsConsent) {
             Button("Read only") { consent(personal: false, write: false) }
             Button("Read and write") { consent(personal: false, write: true) }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Choose what Aria may do in this system. You approve it in the browser.")
         }
-        .confirmationDialog("Revoke this connection?", isPresented: $viewModel.showsRevokeConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.grantToRevoke) { grant in
+        .alert("Revoke this connection?", isPresented: $viewModel.showsRevokeConfirmation,
+               presenting: viewModel.grantToRevoke) { grant in
             Button("Revoke", role: .destructive) { Task { await viewModel.revoke(grant) } }
             Button("Cancel", role: .cancel) {}
         } message: { grant in
@@ -86,10 +88,12 @@ struct AdminConnectorDetailView: View {
         }
     }
 
-    /// Il consenso si chiede al server e si apre nel browser (il ritorno lo gestisce il server, non l'app).
+    /// Il consenso lo esegue il view model; qui solo le azioni dell'ambiente: la sessione web e il browser.
     private func consent(personal: Bool, write: Bool) {
         Task {
-            if let url = await viewModel.startConsent(personal: personal, requestWrite: write) { openURL(url) }
+            await viewModel.consent(personal: personal, requestWrite: write,
+                                    authenticate: webAuthenticationSession.authenticateConsent,
+                                    open: { openURL($0) })
         }
     }
 

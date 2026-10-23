@@ -40,8 +40,8 @@ struct AdminAgentStudioApprovalDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .refreshable { await viewModel.load() }
         .task { await viewModel.load() }
-        .confirmationDialog(confirmationTitle, isPresented: $viewModel.showsDecisionConfirmation,
-                            titleVisibility: .visible, presenting: viewModel.decisionToConfirm) { decision in
+        .alert(confirmationTitle, isPresented: $viewModel.showsDecisionConfirmation,
+               presenting: viewModel.decisionToConfirm) { decision in
             if decision == .approve {
                 Button("Approve") { confirm(decision) }
             } else {
@@ -147,6 +147,7 @@ struct AdminAgentStudioApprovalDetailView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(Color.liteAccent)
+        .foregroundStyle(Color.liteOnAccent)
     }
 
     private func decisionLabel(_ title: LocalizedStringKey, systemImage: String, isBusy: Bool) -> some View {

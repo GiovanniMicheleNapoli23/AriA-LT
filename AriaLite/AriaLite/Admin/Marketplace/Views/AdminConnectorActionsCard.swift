@@ -90,7 +90,7 @@ struct AdminConnectorActionsCard: View {
         }
         .controlSize(.large)
         if prominent {
-            button.buttonStyle(.borderedProminent).tint(Color.liteAccent)
+            button.buttonStyle(.borderedProminent).tint(Color.liteAccent).foregroundStyle(Color.liteOnAccent)
         } else {
             button.buttonStyle(.bordered).tint(role == .destructive ? .red : Color.liteAccent)
         }

@@ -63,8 +63,7 @@ struct AdminAlarmDetailView: View {
         .sheet(item: $diagnosis.workOrderForm) { form in
             AdminAlarmWorkOrderFormView(viewModel: form)
         }
-        .confirmationDialog("Approve this alarm?", isPresented: $viewModel.showsApproveConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Approve this alarm?", isPresented: $viewModel.showsApproveConfirmation) {
             Button("Approve") { Task { await viewModel.approve() } }
             Button("Cancel", role: .cancel) {}
         } message: {

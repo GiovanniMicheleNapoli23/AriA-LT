@@ -28,6 +28,8 @@ struct AdminCategoriesPlaceholder: View {
                 if !failure.isNotFound {
                     Button("Try again", action: retry)
                         .buttonStyle(.borderedProminent)
+                        .tint(Color.liteAccent)
+                        .foregroundStyle(Color.liteOnAccent)
                 }
             }
             .frame(minHeight: 240)

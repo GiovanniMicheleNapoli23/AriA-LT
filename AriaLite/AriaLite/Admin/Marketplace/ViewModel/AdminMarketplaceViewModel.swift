@@ -4,9 +4,10 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La sezione Marketplace, come la pagina /marketplace della web: i connettori dell'azienda in griglia,
-//  divisi per stato, con ricerca. Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
-//  Non c'è una rotta di catalogo: la griglia è quello che risponde GET /connectors.
+//  La sezione Marketplace, come la pagina /marketplace della web: il catalogo (7 tipi, in locale) a scaffali
+//  con ricerca e filtri, e i connettori veri dell'azienda (GET /connectors) che ne accendono lo stato.
+//  Solo i connettori sono collegabili; gli acquisti restano su questo telefono (AdminMarketplacePurchases).
+//  Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
 //
 
 import Foundation
@@ -16,6 +17,8 @@ import Observation
 @Observable
 final class AdminMarketplaceViewModel {
     let backend: AriaBackend
+    /// Il catalogo intero, nella lingua dell'app.
+    let catalog: [AdminMarketplaceItem]
 
     private(set) var connectors: [AdminConnector] = []
     private(set) var isLoading = false
@@ -25,12 +28,44 @@ final class AdminMarketplaceViewModel {
     private(set) var lastUpdated: Date?
     @ObservationIgnored private var loadedKey: String?
 
+    /// Gli id globali comprati dall'azienda attiva.
+    private(set) var purchases: Set<String> = []
+    @ObservationIgnored private var purchasesKey: String
+    @ObservationIgnored private var itemDetails: [String: AdminMarketplaceItemDetailViewModel] = [:]
+
     var searchText = ""
+    /// nil = tutti i tipi.
+    var kind: AdminMarketplaceKind?
+    var area: AdminMarketplaceArea?
+    var ownershipFilter: AdminMarketplaceOwnershipFilter = .all
+    /// Le faccette dei full set (macchina, costruttore, settore): restringono solo loro, come sulla web.
+    var machineType: String?
+    var manufacturer: String?
+    var industry: String?
     /// Il form della chiave MaintainX aperto dalla barra (quando MaintainX non è nella lista).
     var maintainXForm: AdminConnectorCredentialsFormViewModel?
 
-    init(backend: AriaBackend) {
+    // Calcolati una volta dal catalogo, che non cambia.
+    private let itemsByID: [String: AdminMarketplaceItem]
+    private let connectorItems: [String: AdminMarketplaceItem]
+    /// Id globale → i pacchetti che lo contengono (plugin, agent pack, full set).
+    private let bundledIn: [String: [String]]
+    private let searchIndex: [String: [String]]
+    private let purchaseDefaults: UserDefaults
+
+    init(backend: AriaBackend, catalog: [AdminMarketplaceItem] = AdminMarketplaceCatalog.items,
+         purchaseDefaults: UserDefaults = .standard) {
         self.backend = backend
+        self.catalog = catalog
+        self.purchaseDefaults = purchaseDefaults
+        let byID = Dictionary(catalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        itemsByID = byID
+        connectorItems = Dictionary(catalog.filter { $0.kind == .connector }.map { ($0.sourceId, $0) },
+                                    uniquingKeysWith: { first, _ in first })
+        bundledIn = Self.bundles(in: catalog, byID: byID)
+        searchIndex = Dictionary(catalog.map { ($0.id, $0.searchHaystack) }, uniquingKeysWith: { first, _ in first })
+        purchasesKey = backend.activeCompanyId ?? "-"
+        purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
     }
 
     /// Cambia quando va richiesta la lista: l'azienda attiva.
@@ -47,25 +82,295 @@ final class AdminMarketplaceViewModel {
         return role == "owner" || role == "admin"
     }
 
-    // MARK: Gruppi
+    // MARK: Catalogo
 
-    /// I connettori filtrati dalla ricerca, divisi per stato (solo i gruppi non vuoti).
-    var sections: [AdminMarketplaceSection] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let visible = connectors
-            .filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.provider.localizedStandardContains(query) }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        return AdminMarketplaceSection.Kind.allCases.compactMap { kind in
-            let items = visible.filter { kind.contains($0.knownStatus) }
-            return items.isEmpty ? nil : AdminMarketplaceSection(kind: kind, connectors: items)
+    func item(id: String) -> AdminMarketplaceItem? { itemsByID[id] }
+
+    /// Nell'ordine dato; gli id che il catalogo non conosce (un tipo nuovo della web) si saltano.
+    func items(ids: [String]) -> [AdminMarketplaceItem] { ids.compactMap { itemsByID[$0] } }
+
+    /// Dove sta l'elemento per questa azienda: incluso nel piano, comprato (da solo o dentro un pacchetto,
+    /// o un connettore collegato) oppure in vendita, come `ownership` di pricing.ts.
+    func ownership(of item: AdminMarketplaceItem) -> AdminMarketplaceOwnership {
+        if item.isIncluded { return .included }
+        if purchases.contains(item.id) || isConnectedConnector(item) { return .purchased }
+        if bundledIn[item.id]?.contains(where: purchases.contains) == true { return .purchased }
+        return .forSale
+    }
+
+    /// Una riga del server in stato collegato.
+    func isConnected(_ provider: String) -> Bool { connector(for: provider)?.knownStatus == .connected }
+
+    func hasServerConnector(_ provider: String) -> Bool { connector(for: provider) != nil }
+
+    /// Il nome del catalogo, altrimenti quello del server, altrimenti uno ricavato dallo slug.
+    func connectorName(_ provider: String) -> String {
+        connectorItems[provider]?.name ?? connector(for: provider)?.name ?? AdminConnector.prettyName(provider)
+    }
+
+    /// Lo stato grezzo della riga del server per un connettore del catalogo; nil per ogni altro elemento.
+    func serverStatus(for item: AdminMarketplaceItem) -> String? {
+        item.kind == .connector ? connector(for: item.sourceId)?.status : nil
+    }
+
+    /// Un connettore con integrazione dietro non si compra mai (è "in arrivo"); gli altri solo se in vendita.
+    func canBuy(_ item: AdminMarketplaceItem) -> Bool {
+        canManage && ownership(of: item) == .forSale && !item.isPreview
+    }
+
+    /// Registra l'acquisto su questo telefono (non c'è fatturazione né rotta del backend).
+    func purchase(_ item: AdminMarketplaceItem) {
+        syncPurchases()
+        guard canBuy(item) else { return }
+        purchases.insert(item.id)
+        AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).save(purchases)
+    }
+
+    /// Un connettore che il server conosce va al suo dettaglio vero; ogni altro alla pagina del catalogo.
+    func route(for item: AdminMarketplaceItem) -> AdminMarketplaceRoute {
+        item.kind == .connector && hasServerConnector(item.sourceId) ? .connector(item.sourceId) : .item(item.id)
+    }
+
+    /// Uno per elemento e tenuto: la destinazione si ricalcola a ogni cambio della lista, e un VM nuovo
+    /// perderebbe l'avviso d'acquisto aperto.
+    func makeItemDetailViewModel(for id: String) -> AdminMarketplaceItemDetailViewModel? {
+        if let cached = itemDetails[id] { return cached }
+        guard let found = item(id: id) else { return nil }
+        let detail = AdminMarketplaceItemDetailViewModel(item: found, marketplace: self)
+        itemDetails[id] = detail
+        return detail
+    }
+
+    private func isConnectedConnector(_ item: AdminMarketplaceItem) -> Bool {
+        item.kind == .connector && isConnected(item.sourceId)
+    }
+
+    /// Posseduto = connettore collegato o acquisto; l'incluso non usato non conta.
+    private func isOwned(_ item: AdminMarketplaceItem) -> Bool {
+        isConnectedConnector(item) || ownership(of: item) == .purchased
+    }
+
+    /// Per ogni elemento, i pacchetti che lo portano: le skill di un plugin o di un agent pack, i componenti
+    /// di un full set più le skill degli agent pack che contiene.
+    private static func bundles(in catalog: [AdminMarketplaceItem], byID: [String: AdminMarketplaceItem]) -> [String: [String]] {
+        var result: [String: [String]] = [:]
+        func add(_ contained: String, in bundle: AdminMarketplaceItem) {
+            result[contained, default: []].append(bundle.id)
+        }
+        for bundle in catalog {
+            for skill in bundle.plugin?.skills ?? [] { add("skill:\(skill)", in: bundle) }
+            for skill in bundle.agentPack?.skills ?? [] { add("skill:\(skill)", in: bundle) }
+            for component in bundle.fullSet?.components ?? [] {
+                add(component, in: bundle)
+                for skill in byID[component]?.agentPack?.skills ?? [] { add("skill:\(skill)", in: bundle) }
+            }
+        }
+        return result
+    }
+
+    // MARK: Acquisti
+
+    /// Gli acquisti sono per azienda: cambiata quella attiva si rileggono i suoi.
+    private func syncPurchases() {
+        guard purchasesKey != loadKey else { return }
+        purchasesKey = loadKey
+        purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
+    }
+
+    // MARK: Filtri
+
+    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    /// Le faccette si offrono (e valgono) solo guardando tutto o i full set.
+    var showsMachineFacets: Bool {
+        (kind == nil || kind == .fullSet) && catalog.contains { $0.kind == .fullSet }
+    }
+
+    private var hasFacetFilter: Bool {
+        showsMachineFacets && (machineType != nil || manufacturer != nil || industry != nil)
+    }
+
+    var hasActiveFilters: Bool { !activeFilters.isEmpty }
+
+    var activeFilters: [AdminMarketplaceActiveFilter] {
+        var filters: [AdminMarketplaceActiveFilter] = []
+        if let area { filters.append(.init(kind: .area, title: area.label)) }
+        if ownershipFilter != .all { filters.append(.init(kind: .ownership, title: ownershipFilter.label)) }
+        if showsMachineFacets {
+            if let machineType { filters.append(.init(kind: .machineType, title: machineType)) }
+            if let manufacturer { filters.append(.init(kind: .manufacturer, title: manufacturer)) }
+            if let industry { filters.append(.init(kind: .industry, title: industry)) }
+        }
+        return filters
+    }
+
+    func remove(_ filter: AdminMarketplaceActiveFilter) {
+        switch filter.kind {
+        case .area: area = nil
+        case .ownership: ownershipFilter = .all
+        case .machineType: machineType = nil
+        case .manufacturer: manufacturer = nil
+        case .industry: industry = nil
         }
     }
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    /// Toglie area, possesso e faccette; la ricerca e il tipo restano.
+    func clearFilters() {
+        area = nil
+        ownershipFilter = .all
+        clearFacets()
+    }
+
+    /// Cambia tipo: le faccette dei full set non hanno senso sugli altri, si azzerano.
+    func select(kind newKind: AdminMarketplaceKind?) {
+        kind = newKind
+        if newKind != nil, newKind != .fullSet { clearFacets() }
+    }
+
+    private func clearFacets() {
+        machineType = nil
+        manufacturer = nil
+        industry = nil
+    }
+
+    private enum Facet { case machineType, manufacturer, industry }
+
+    private func matchesSearch(_ item: AdminMarketplaceItem) -> Bool {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return true }
+        return searchIndex[item.id]?.contains { $0.localizedStandardContains(query) } ?? false
+    }
+
+    /// Le faccette valgono per i full set; uno senza macchina non passa se ce n'è una scelta.
+    private func matchesFacets(_ item: AdminMarketplaceItem, ignoring skipped: Facet?) -> Bool {
+        guard showsMachineFacets, item.kind == .fullSet else { return true }
+        let wanted: [(Facet, String?, String?)] = [
+            (.machineType, machineType, item.machine?.type),
+            (.manufacturer, manufacturer, item.machine?.manufacturer),
+            (.industry, industry, item.machine?.industry),
+        ]
+        return wanted.allSatisfy { facet, chosen, actual in
+            guard facet != skipped, let chosen else { return true }
+            return chosen == actual
+        }
+    }
+
+    /// `ignoringKind` per i conteggi del selettore; `skipped` per le opzioni di una faccetta (contate sulle altre).
+    private func passes(_ item: AdminMarketplaceItem, ignoringKind: Bool = false, skipping skipped: Facet? = nil) -> Bool {
+        if !ignoringKind, let kind, item.kind != kind { return false }
+        if let area, item.area != area { return false }
+        guard matchesSearch(item) else { return false }
+        switch ownershipFilter {
+        case .all: break
+        case .owned: if !isOwned(item) { return false }
+        case .available: if isOwned(item) { return false }
+        }
+        return matchesFacets(item, ignoring: skipped)
+    }
+
+    // MARK: Connettori fuori catalogo
+
+    /// I connettori del server che il catalogo non ha (personalizzati, orfani, ritirati): restano visibili come
+    /// schede dei connettori. Cercati per nome, mai con area o faccette (non ne hanno).
+    var extraServerConnectors: [AdminConnector] { extras(ignoringKind: false) }
+
+    private func extras(ignoringKind: Bool) -> [AdminConnector] {
+        guard ignoringKind || kind == nil || kind == .connector, area == nil, !hasFacetFilter else { return [] }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return connectors
+            .filter { connectorItems[$0.provider] == nil }
+            .filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.provider.localizedStandardContains(query) }
+            .filter {
+                switch ownershipFilter {
+                case .all: true
+                case .owned: $0.knownStatus == .connected
+                case .available: $0.knownStatus != .connected
+                }
+            }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    // MARK: Scaffali
+
+    /// Con "Tutti" uno scaffale per tipo, con un tipo scelto uno per area; i vuoti si saltano.
+    var shelves: [AdminMarketplaceShelf] {
+        let visible = catalog.filter { passes($0) }
+        let extra = extras(ignoringKind: false)
+        if kind == nil {
+            let byKind = Dictionary(grouping: visible, by: \.kind)
+            return AdminMarketplaceKind.allCases.compactMap { kind in
+                let items = Self.sorted(byKind[kind] ?? [])
+                let extraConnectors = kind == .connector ? extra : []
+                guard !items.isEmpty || !extraConnectors.isEmpty else { return nil }
+                return AdminMarketplaceShelf(id: "kind:\(kind.rawValue)", title: kind.plural, blurb: kind.blurb,
+                                             items: items, extraConnectors: extraConnectors)
+            }
+        }
+        let byArea = Dictionary(grouping: visible, by: \.area)
+        var result = AdminMarketplaceArea.allCases.compactMap { area -> AdminMarketplaceShelf? in
+            let items = Self.sorted(byArea[area] ?? [])
+            guard !items.isEmpty else { return nil }
+            return AdminMarketplaceShelf(id: "area:\(area.rawValue)", title: area.label, blurb: area.blurb, items: items)
+        }
+        if !extra.isEmpty {
+            result.append(AdminMarketplaceShelf(id: "extra", title: String(localized: "Other connectors"),
+                                                blurb: String(localized: "Set up on your server, not in the catalog."),
+                                                items: [], extraConnectors: extra))
+        }
+        return result
+    }
+
+    /// Le novità prima, poi per nome.
+    private static func sorted(_ items: [AdminMarketplaceItem]) -> [AdminMarketplaceItem] {
+        items.sorted {
+            if $0.isNew != $1.isNew { return $0.isNew }
+            return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
+
+    // MARK: Selettore di tipo
+
+    /// "Tutti" e un chip per tipo, con quanti elementi ci sono ignorando il tipo scelto.
+    var kindChips: [AdminMarketplaceKindChip] {
+        var counts: [AdminMarketplaceKind: Int] = [:]
+        for item in catalog where passes(item, ignoringKind: true) { counts[item.kind, default: 0] += 1 }
+        counts[.connector, default: 0] += extras(ignoringKind: true).count
+        let total = counts.values.reduce(0, +)
+        let all = AdminMarketplaceKindChip(kind: nil, title: String(localized: "All"), count: total, isSelected: kind == nil)
+        return [all] + AdminMarketplaceKind.allCases.map { kindCase in
+            AdminMarketplaceKindChip(kind: kindCase, title: kindCase.plural, count: counts[kindCase] ?? 0,
+                                     isSelected: kind == kindCase)
+        }
+    }
+
+    // MARK: Faccette dei full set
+
+    var machineTypeOptions: [AdminMarketplaceFacetOption] { options(for: .machineType, selected: machineType) { $0.type } }
+    var manufacturerOptions: [AdminMarketplaceFacetOption] { options(for: .manufacturer, selected: manufacturer) { $0.manufacturer } }
+    var industryOptions: [AdminMarketplaceFacetOption] { options(for: .industry, selected: industry) { $0.industry } }
+
+    /// I valori presenti nei full set, contati contro le altre faccette (`facetOptions` della web); il valore
+    /// scelto resta in lista anche a zero, per poterlo togliere.
+    private func options(for facet: Facet, selected: String?,
+                         value: (AdminMarketplaceItem.Machine) -> String) -> [AdminMarketplaceFacetOption] {
+        var counts: [String: Int] = [:]
+        for item in catalog where item.kind == .fullSet {
+            guard let machine = item.machine, passes(item, ignoringKind: true, skipping: facet) else { continue }
+            counts[value(machine), default: 0] += 1
+        }
+        if let selected, counts[selected] == nil { counts[selected] = 0 }
+        return counts
+            .map { AdminMarketplaceFacetOption(value: $0.key, count: $0.value) }
+            .sorted { $0.value.localizedStandardCompare($1.value) == .orderedAscending }
+    }
+
+    // MARK: Riepilogo
 
     var connectedCount: Int { connectors.filter { $0.knownStatus == .connected }.count }
     var attentionCount: Int { connectors.filter { $0.knownStatus == .attention }.count }
     var toolCount: Int { connectors.filter { $0.knownStatus == .connected }.reduce(0) { $0 + $1.toolCount } }
+    /// Gli elementi del catalogo che l'azienda possiede: connettori collegati e acquisti.
+    var ownedCount: Int { catalog.filter(isOwned).count }
 
     /// MaintainX si collega con una chiave anche quando il server non lo elenca.
     var canAddMaintainX: Bool { canManage && !connectors.contains(where: \.isMaintainX) }
@@ -85,6 +390,7 @@ final class AdminMarketplaceViewModel {
             errorMessage = nil
             loadedKey = key
         }
+        syncPurchases()
         guard let companyId = backend.activeCompanyId else {
             errorMessage = AriaError.missingCompany.localizedDescription
             return
@@ -136,34 +442,9 @@ final class AdminMarketplaceViewModel {
         lastUpdated = nil
         loadedKey = nil
         searchText = ""
+        kind = nil
+        clearFilters()
         maintainXForm = nil
+        itemDetails = [:]
     }
-}
-
-/// Un gruppo della griglia: da sistemare, collegati, non collegati.
-nonisolated struct AdminMarketplaceSection: Identifiable, Sendable {
-    enum Kind: CaseIterable, Sendable {
-        case attention, connected, available
-
-        func contains(_ status: AdminConnectorStatus) -> Bool {
-            switch self {
-            case .attention: status == .attention
-            case .connected: status == .connected
-            case .available: status == .pending || status == .disconnected
-            }
-        }
-
-        var title: String {
-            switch self {
-            case .attention: String(localized: "Needs attention")
-            case .connected: String(localized: "Connected")
-            case .available: String(localized: "Not connected")
-            }
-        }
-    }
-
-    let kind: Kind
-    let connectors: [AdminConnector]
-
-    var id: Kind { kind }
 }

@@ -15,14 +15,17 @@ struct AriaChatHistoryView: View {
     let onOpen: (AriaSessionSummary) -> Void
     let onNewChat: () -> Void
     let onConnect: () -> Void
+    /// Campo di ricerca attivo: lo apre anche la lente accanto al logo nella sidebar.
+    @Binding var isSearching: Bool
 
     @State private var model: AriaChatHistoryViewModel
 
     /// Chat, archivio e backend sono quelli dell'app (gli stessi per tutta la vita della schermata):
     /// il view model nasce una volta sola con loro.
-    init(chat: AriaAgentChat, store: AriaSessionStore, backend: AriaBackend,
+    init(chat: AriaAgentChat, store: AriaSessionStore, backend: AriaBackend, isSearching: Binding<Bool>,
          onOpen: @escaping (AriaSessionSummary) -> Void, onNewChat: @escaping () -> Void, onConnect: @escaping () -> Void) {
         _model = State(initialValue: AriaChatHistoryViewModel(chat: chat, store: store, backend: backend))
+        _isSearching = isSearching
         self.onOpen = onOpen
         self.onNewChat = onNewChat
         self.onConnect = onConnect
@@ -47,7 +50,7 @@ struct AriaChatHistoryView: View {
             .scrollContentBackground(.hidden)
             .liteBackground()
             .overlay { placeholder }
-            .searchable(text: $model.query, prompt: "Search conversations")
+            .searchable(text: $model.query, isPresented: $isSearching, prompt: "Search conversations")
             .refreshable { await model.load() }
             .navigationTitle("Chats")
             .toolbar {

@@ -52,8 +52,7 @@ struct AdminVendorDetailView: View {
         .sheet(item: $viewModel.editForm) { form in
             AdminVendorFormView(viewModel: form)
         }
-        .confirmationDialog("Delete this vendor?", isPresented: $viewModel.showsDeleteConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Delete this vendor?", isPresented: $viewModel.showsDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 Task { if await viewModel.delete() { dismiss() } }
             }

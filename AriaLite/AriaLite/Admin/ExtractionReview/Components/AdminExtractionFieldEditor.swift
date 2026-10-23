@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  L'editor di un campo del dettaglio, secondo il tipo: testo, testo lungo, elenco (una voce per riga),
-//  numero o scelta. Un pallino segna i campi cambiati, il rosso quelli non validi.
+//  Una riga del modulo di revisione, come nelle Impostazioni: etichetta a sinistra e valore a destra per
+//  testo, numeri e scelte; etichetta sopra e testo sotto per i campi lunghi e gli elenchi (una voce per riga).
+//  Con il testo molto grande va tutto in colonna. Un pallino segna i campi cambiati, il corallo quelli non validi.
 //
 
 import SwiftUI
@@ -17,59 +18,71 @@ struct AdminExtractionFieldEditor: View {
     var isInvalid = false
     var isEnabled = true
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .caption) private var dotSize = 6
 
+    private var isStacked: Bool {
+        dynamicTypeSize.isAccessibilitySize || field.editor == .multiline || field.editor == .list
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text(field.label)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                if isChanged {
-                    Circle()
-                        .fill(isInvalid ? Color.red : Color.liteAccent)
-                        .frame(width: dotSize, height: dotSize)
-                        .accessibilityLabel(isInvalid ? Text("Invalid value") : Text("Edited"))
+        Group {
+            if isStacked {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        label
+                        Spacer(minLength: 0)
+                        if field.editor == .list {
+                            Text("One per line").font(.caption2).foregroundStyle(.tertiary)
+                        }
+                    }
+                    editor.frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Spacer(minLength: 0)
-                if field.editor == .list {
-                    Text("One per line")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    label
+                    editor
+                        .multilineTextAlignment(.trailing)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
-            editor
-                .font(.body)
-                .disabled(!isEnabled)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay {
-                    if isInvalid {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color.red.opacity(0.6), lineWidth: 1)
-                    }
-                }
         }
+        .padding(.vertical, 12)
+        .disabled(!isEnabled)
+    }
+
+    private var label: some View {
+        HStack(spacing: 6) {
+            Text(field.label)
+                .foregroundStyle(isInvalid ? Color.liteDanger : .secondary)
+                .fixedSize(horizontal: !isStacked, vertical: false)
+            if isChanged {
+                Circle()
+                    .fill(isInvalid ? Color.liteDanger : Color.liteAccent)
+                    .frame(width: dotSize, height: dotSize)
+                    .accessibilityLabel(isInvalid ? Text("Invalid value") : Text("Edited"))
+            }
+        }
+        .font(.subheadline)
     }
 
     @ViewBuilder
     private var editor: some View {
         switch field.editor {
         case .text:
-            TextField(field.label, text: $text)
+            TextField("Not set", text: $text)
                 .textInputAutocapitalization(.never)
         case .multiline:
-            TextField(field.label, text: $text, axis: .vertical)
+            TextField("Not set", text: $text, axis: .vertical)
                 .lineLimit(2...8)
         case .list:
-            TextField(field.label, text: $text, axis: .vertical)
+            TextField("Not set", text: $text, axis: .vertical)
                 .lineLimit(3...12)
         case .decimal:
-            TextField(field.label, text: $text)
+            TextField("Not set", text: $text)
                 .keyboardType(.decimalPad)
         case .integer:
-            TextField(field.label, text: $text)
+            TextField("Not set", text: $text)
                 .keyboardType(.numberPad)
         case .choice(let choices):
             Picker(field.label, selection: $text) {
@@ -78,7 +91,7 @@ struct AdminExtractionFieldEditor: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
-            .tint(Color.liteAccent)
+            .tint(.primary)
         }
     }
 }

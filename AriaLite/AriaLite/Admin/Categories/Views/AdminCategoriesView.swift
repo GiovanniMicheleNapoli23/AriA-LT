@@ -37,12 +37,9 @@ struct AdminCategoriesView: View {
             .sheet(item: $viewModel.form) { form in
                 AdminCategoryFormView(viewModel: form)
             }
-            .confirmationDialog(
-                "Delete category?",
-                isPresented: $viewModel.isShowingDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
+            .alert("Delete category?", isPresented: $viewModel.isShowingDeleteConfirmation) {
                 Button("Delete", role: .destructive) { Task { await viewModel.confirmDelete() } }
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text(viewModel.deleteMessage)
             }

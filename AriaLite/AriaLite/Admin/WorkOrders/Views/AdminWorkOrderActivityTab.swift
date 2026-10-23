@@ -100,25 +100,29 @@ struct AdminWorkOrderMessageComposer: View {
     let send: () -> Void
 
     var body: some View {
+        // Il pulsante sta dentro il campo, in basso: con più righe resta accanto all'ultima.
         HStack(alignment: .bottom, spacing: 8) {
             TextField("Write a message…", text: $text, axis: .vertical)
                 .lineLimit(1...5)
                 .font(.subheadline)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .ariaGlass(in: RoundedRectangle(cornerRadius: 18))
+                .padding(.vertical, 6)
             Button(action: send) {
                 if isSending {
-                    ProgressView().frame(width: 32, height: 32)
+                    ProgressView().controlSize(.small).frame(width: 30, height: 30)
                 } else {
                     Image(systemName: "arrow.up.circle.fill")
-                        .font(.title)
+                        .font(.title2)
                         .foregroundStyle(canSend ? Color.accentColor : Color.secondary.opacity(0.5))
+                        .frame(width: 30, height: 30)
                 }
             }
             .disabled(!canSend)
             .accessibilityLabel("Send")
         }
+        .padding(.leading, 14)
+        .padding(.trailing, 5)
+        .padding(.vertical, 4)
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 }
 

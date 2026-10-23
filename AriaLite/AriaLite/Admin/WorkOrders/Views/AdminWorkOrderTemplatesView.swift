@@ -52,15 +52,17 @@ struct AdminWorkOrderTemplatesView: View {
             }
         }
         .sheet(item: $viewModel.form) { AdminWorkOrderTemplateFormView(viewModel: $0) }
-        .confirmationDialog("Delete this template?", isPresented: $viewModel.isConfirmingDelete,
-                            titleVisibility: .visible, presenting: viewModel.pendingDelete) { template in
+        .alert("Delete this template?", isPresented: $viewModel.isConfirmingDelete,
+               presenting: viewModel.pendingDelete) { template in
             Button("Delete", role: .destructive) { Task { await viewModel.delete(template) } }
+            Button("Cancel", role: .cancel) {}
         } message: { template in
             Text("“\(template.title)” will be removed for everyone. Work orders already created from it stay.")
         }
-        .confirmationDialog("Create a work order?", isPresented: $viewModel.isConfirmingApply,
-                            titleVisibility: .visible, presenting: viewModel.pendingApply) { template in
+        .alert("Create a work order?", isPresented: $viewModel.isConfirmingApply,
+               presenting: viewModel.pendingApply) { template in
             Button("Create Work Order") { Task { await viewModel.apply(template) } }
+            Button("Cancel", role: .cancel) {}
         } message: { template in
             Text("A new work order will be created from “\(template.title)”.")
         }

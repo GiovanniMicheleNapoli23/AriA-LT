@@ -60,8 +60,7 @@ struct AdminTeamDetailView: View {
         .sheet(item: $viewModel.addMemberModel) { model in
             AdminTeamAddMemberView(viewModel: model)
         }
-        .confirmationDialog("Delete this team?", isPresented: $viewModel.showsDeleteConfirmation,
-                            titleVisibility: .visible) {
+        .alert("Delete this team?", isPresented: $viewModel.showsDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 Task { if await viewModel.delete() { dismiss() } }
             }
@@ -69,8 +68,8 @@ struct AdminTeamDetailView: View {
         } message: {
             Text("“\(viewModel.team.title)” will be removed along with its memberships. This can't be undone.")
         }
-        .confirmationDialog("Remove this member?", isPresented: removalShown, titleVisibility: .visible,
-                            presenting: viewModel.memberPendingRemoval) { member in
+        .alert("Remove this member?", isPresented: removalShown,
+               presenting: viewModel.memberPendingRemoval) { member in
             Button("Remove", role: .destructive) { Task { await viewModel.remove(member) } }
             Button("Cancel", role: .cancel) {}
         } message: { member in

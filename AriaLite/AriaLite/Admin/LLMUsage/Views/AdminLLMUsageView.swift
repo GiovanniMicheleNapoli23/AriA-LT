@@ -39,10 +39,9 @@ struct AdminLLMUsageView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
             }
-            .confirmationDialog(
+            .alert(
                 "Stop this session?",
-                isPresented: $viewModel.isShowingStopConfirmation,
-                titleVisibility: .visible
+                isPresented: $viewModel.isShowingStopConfirmation
             ) {
                 Button("Stop session", role: .destructive) {
                     Task { await viewModel.confirmStop() }

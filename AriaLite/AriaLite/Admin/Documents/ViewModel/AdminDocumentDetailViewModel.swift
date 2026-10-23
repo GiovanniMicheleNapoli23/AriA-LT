@@ -37,6 +37,11 @@ final class AdminDocumentDetailViewModel {
     /// Cancellato: la vista torna alla lista.
     private(set) var didDelete = false
 
+    /// Il file scaricato che Quick Look mostra; la vista lo azzera chiudendo l'anteprima.
+    var previewURL: URL?
+    private(set) var isOpeningPreview = false
+    private(set) var previewError: String?
+
     init(backend: AriaBackend, document: AdminDocument,
          onChange: @escaping (AdminDocument) -> Void, onDelete: @escaping (String) -> Void) {
         self.backend = backend
@@ -81,6 +86,26 @@ final class AdminDocumentDetailViewModel {
     /// I chunk dell'ultima indicizzazione completata, se la run lo dice.
     var chunkCount: Int? {
         runs.first { $0.pipelineType?.lowercased() == "ingestion" && $0.chunksCreated != nil }?.chunksCreated
+    }
+
+    // MARK: Anteprima
+
+    /// Il server dà un link al file originale (per ora solo i documenti con `source.uri` https).
+    var canPreview: Bool { document.fileURL != nil && !isDeleting }
+
+    func openPreview() async {
+        guard !isOpeningPreview, let url = document.fileURL else { return }
+        isOpeningPreview = true
+        defer { isOpeningPreview = false }
+        do {
+            let document = document
+            previewURL = try await AdminDocumentsAPI.downloadFile(url, documentId: document.id,
+                                                                  fileName: document.fileName, mimeType: document.mimeType)
+            previewError = nil
+        } catch {
+            guard let message = AdminDocumentsFailure.message(for: error, backend: backend) else { return }
+            previewError = String(localized: "Couldn't open the file: \(message)")
+        }
     }
 
     // MARK: Caricamento

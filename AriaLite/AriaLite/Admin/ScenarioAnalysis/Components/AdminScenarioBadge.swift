@@ -19,21 +19,22 @@ struct AdminScenarioBadge: View {
             if let systemImage { Image(systemName: systemImage) }
             Text(text)
         }
-        .font(.caption2.weight(.bold))
+        .font(.caption2.weight(.semibold))
         .foregroundStyle(tone.color)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
-        .background(tone.color.opacity(0.14), in: Capsule())
+        .background(tone.color.opacity(0.1), in: Capsule())
         .fixedSize()
     }
 }
 
 extension AdminScenarioTone {
+    /// Toni spenti: il colore accompagna il dato, non lo urla.
     var color: Color {
         switch self {
-        case .positive: .green
-        case .warning: .orange
-        case .negative: .red
+        case .positive: .liteSuccess
+        case .warning: .liteWarning
+        case .negative: .liteDanger
         case .info: .liteAccent
         case .neutral: .secondary
         }

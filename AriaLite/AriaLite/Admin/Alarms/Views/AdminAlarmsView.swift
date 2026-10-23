@@ -46,8 +46,7 @@ struct AdminAlarmsView: View {
             .ariaBottomBar {
                 if viewModel.isSelecting { AdminAlarmSelectionBar(viewModel: viewModel) }
             }
-            .confirmationDialog(viewModel.approveConfirmationTitle, isPresented: $viewModel.showsApproveConfirmation,
-                                titleVisibility: .visible) {
+            .alert(viewModel.approveConfirmationTitle, isPresented: $viewModel.showsApproveConfirmation) {
                 Button("Approve") { Task { await viewModel.approveSelected() } }
                 Button("Cancel", role: .cancel) {}
             } message: {
