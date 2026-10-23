@@ -25,12 +25,10 @@ class AppViewModel {
 
     /// Sezioni della web, per gli account della piattaforma (non operatori).
     let adminDocuments: AdminDocumentsViewModel
-    let adminKnowledgeGraph: AdminKnowledgeGraphViewModel
     let adminAgentStudio: AdminAgentStudioViewModel
     let adminMarketplace: AdminMarketplaceViewModel
     let adminExtractionReview: AdminExtractionReviewViewModel
     let adminLearnedKnowledge: AdminLearnedKnowledgeViewModel
-    let adminReasoningConsole: AdminReasoningConsoleViewModel
     let adminScenarioAnalysis: AdminScenarioAnalysisViewModel
     let adminCrafted: AdminCraftedViewModel
     let adminWorkOrders: AdminWorkOrdersViewModel
@@ -49,8 +47,6 @@ class AppViewModel {
     let adminTeams: AdminTeamsViewModel
     let adminMembers: AdminMembersViewModel
     let adminMobileUsers: AdminMobileUsersViewModel
-    let adminWorkflows: AdminWorkflowsViewModel
-    let adminAuditLog: AdminAuditLogViewModel
     let adminCompanySettings: AdminCompanySettingsViewModel
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
@@ -88,12 +84,10 @@ class AppViewModel {
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
         adminDocuments = AdminDocumentsViewModel(backend: backend)
-        adminKnowledgeGraph = AdminKnowledgeGraphViewModel(backend: backend)
         adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
         adminMarketplace = AdminMarketplaceViewModel(backend: backend)
         adminExtractionReview = AdminExtractionReviewViewModel(backend: backend)
         adminLearnedKnowledge = AdminLearnedKnowledgeViewModel(backend: backend)
-        adminReasoningConsole = AdminReasoningConsoleViewModel(backend: backend)
         adminScenarioAnalysis = AdminScenarioAnalysisViewModel(backend: backend)
         adminCrafted = AdminCraftedViewModel(backend: backend)
         adminWorkOrders = AdminWorkOrdersViewModel(backend: backend)
@@ -112,8 +106,6 @@ class AppViewModel {
         adminTeams = AdminTeamsViewModel(backend: backend)
         adminMembers = AdminMembersViewModel(backend: backend)
         adminMobileUsers = AdminMobileUsersViewModel(backend: backend)
-        adminWorkflows = AdminWorkflowsViewModel(backend: backend)
-        adminAuditLog = AdminAuditLogViewModel(backend: backend)
         adminCompanySettings = AdminCompanySettingsViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
@@ -269,12 +261,10 @@ class AppViewModel {
         sessions.reset()
         ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
         adminDocuments.reset()
-        adminKnowledgeGraph.reset()
         adminAgentStudio.reset()
         adminMarketplace.reset()
         adminExtractionReview.reset()
         adminLearnedKnowledge.reset()
-        adminReasoningConsole.reset()
         adminScenarioAnalysis.reset()
         adminCrafted.reset()
         adminWorkOrders.reset()
@@ -293,8 +283,6 @@ class AppViewModel {
         adminTeams.reset()
         adminMembers.reset()
         adminMobileUsers.reset()
-        adminWorkflows.reset()
-        adminAuditLog.reset()
         adminCompanySettings.reset()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.

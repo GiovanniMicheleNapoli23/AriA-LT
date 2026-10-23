@@ -21,12 +21,10 @@ enum AriaDestination: Hashable {
     case calendar
     // Admin
     case adminDocuments
-    case adminKnowledgeGraph
     case adminAgentStudio
     case adminMarketplace
     case adminExtractionReview
     case adminLearnedKnowledge
-    case adminReasoningConsole
     case adminScenarioAnalysis
     case adminCrafted
     case adminWorkOrders
@@ -48,9 +46,6 @@ enum AriaDestination: Hashable {
     case adminMembers
     case adminMobileUsers
     case adminChecklistTemplates
-    case adminWorkflows
-    case adminAgentPrompts
-    case adminAuditLog
     case adminCompanySettings
 }
 
@@ -229,8 +224,6 @@ struct AriaShellView: View {
             AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
         case .adminDocuments:
             AdminDocumentsView(viewModel: viewModel.adminDocuments)
-        case .adminKnowledgeGraph:
-            AdminKnowledgeGraphView(viewModel: viewModel.adminKnowledgeGraph)
         case .adminAgentStudio:
             AdminAgentStudioView(viewModel: viewModel.adminAgentStudio)
         case .adminMarketplace:
@@ -239,8 +232,6 @@ struct AriaShellView: View {
             AdminExtractionReviewView(viewModel: viewModel.adminExtractionReview)
         case .adminLearnedKnowledge:
             AdminLearnedKnowledgeView(viewModel: viewModel.adminLearnedKnowledge)
-        case .adminReasoningConsole:
-            AdminReasoningConsoleView(viewModel: viewModel.adminReasoningConsole)
         case .adminScenarioAnalysis:
             AdminScenarioAnalysisView(viewModel: viewModel.adminScenarioAnalysis)
         case .adminCrafted:
@@ -283,12 +274,6 @@ struct AriaShellView: View {
             AdminMobileUsersView(viewModel: viewModel.adminMobileUsers)
         case .adminChecklistTemplates:
             AdminComingSoonView(page: .checklistTemplates)
-        case .adminWorkflows:
-            AdminWorkflowsView(viewModel: viewModel.adminWorkflows)
-        case .adminAgentPrompts:
-            AdminAgentPromptsView(viewModel: viewModel.adminAgentStudio.prompts)
-        case .adminAuditLog:
-            AdminAuditLogView(viewModel: viewModel.adminAuditLog)
         case .adminCompanySettings:
             AdminCompanySettingsView(viewModel: viewModel.adminCompanySettings)
         }

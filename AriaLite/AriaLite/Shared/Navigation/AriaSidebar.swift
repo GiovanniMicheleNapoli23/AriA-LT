@@ -42,12 +42,10 @@ struct AriaSidebar: View {
                 case .admin:
                     sectionTitle("Intelligence")
                     navRow("Documents", icon: "doc.text", target: .adminDocuments)
-                    navRow("Knowledge Graph", icon: "point.3.connected.trianglepath.dotted", target: .adminKnowledgeGraph)
                     navRow("Agent Studio", icon: "cpu", target: .adminAgentStudio)
                     navRow("Marketplace", icon: "puzzlepiece.extension", target: .adminMarketplace)
                     navRow("Extraction Review", icon: "text.viewfinder", target: .adminExtractionReview)
                     navRow("Learned knowledge", icon: "brain", target: .adminLearnedKnowledge)
-                    navRow("Reasoning console", icon: "terminal", target: .adminReasoningConsole)
                     navRow("Scenario analysis", icon: "chart.line.uptrend.xyaxis", target: .adminScenarioAnalysis)
                     navRow("Crafted", icon: "sparkles", target: .adminCrafted)
                     sectionTitle("Operations")
@@ -74,9 +72,6 @@ struct AriaSidebar: View {
                     navRow("Members", icon: "person.2", target: .adminMembers)
                     navRow("Mobile Users", icon: "iphone.gen3", target: .adminMobileUsers)
                     navRow("Checklist Templates", icon: "checklist", target: .adminChecklistTemplates)
-                    navRow("Workflows", icon: "point.topleft.down.to.point.bottomright.curvepath", target: .adminWorkflows)
-                    navRow("Agent prompts", icon: "text.bubble", target: .adminAgentPrompts)
-                    navRow("Audit log", icon: "list.bullet.rectangle", target: .adminAuditLog)
                     navRow("Settings", icon: "slider.horizontal.3", target: .adminCompanySettings)
                 }
 
