@@ -15,7 +15,7 @@ struct AdminMaintenanceProposalCard: View {
     let proposal: AdminMaintenanceProposal
 
     var body: some View {
-        AdminCard(title: "Proposal", systemImage: "sparkles") {
+        AdminCard(ariaTitle: "Proposal") {
             VStack(alignment: .leading, spacing: 14) {
                 if let text = proposal.text {
                     Text(text).font(.subheadline).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)

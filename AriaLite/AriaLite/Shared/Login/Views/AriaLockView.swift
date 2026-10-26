@@ -180,6 +180,61 @@ final class AriaLockWindow {
     }
 }
 
+/// Copertura per il selettore delle app e la sua istantanea: compare appena l'app non è più attiva
+/// (`.inactive`, prima del background), con o senza Face ID. Non diventa la finestra principale e
+/// non chiude a chiave: al ritorno in primo piano sparisce e resta quello che c'era sotto
+/// (l'app, o la schermata di sblocco).
+@MainActor
+final class AriaPrivacyWindow {
+    /// Una finestra per scena, creata una volta sola e poi solo mostrata o nascosta.
+    private static var windows: [ObjectIdentifier: UIWindow] = [:]
+    private static var isShown = false
+
+    func show() {
+        Self.isShown = true
+        // Le scene chiuse non servono più.
+        Self.windows = Self.windows.filter { $0.value.windowScene != nil }
+        for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+            let key = ObjectIdentifier(scene)
+            let window = Self.windows[key] ?? Self.makeWindow(in: scene)
+            Self.windows[key] = window
+            // Anche a metà dissolvenza (hide in corso): torna subito opaca.
+            window.alpha = 1
+            window.isHidden = false
+        }
+    }
+
+    func hide() {
+        Self.isShown = false
+        for window in Self.windows.values where !window.isHidden {
+            UIView.animate(withDuration: 0.2) {
+                window.alpha = 0
+            } completion: { _ in
+                // Se nel frattempo è tornata `show`, la finestra resta visibile.
+                if !Self.isShown { window.isHidden = true }
+            }
+        }
+    }
+
+    private static func makeWindow(in scene: UIWindowScene) -> UIWindow {
+        let window = UIWindow(windowScene: scene)
+        window.windowLevel = .alert + 2
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: AriaPrivacyCover())
+        return window
+    }
+}
+
+/// Lo sfondo e il logo del login, senza niente dell'app.
+private struct AriaPrivacyCover: View {
+    var body: some View {
+        AriaWordmark(size: 40, stacked: true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { LoginBackdrop() }
+            .ignoresSafeArea()
+    }
+}
+
 #Preview {
     AriaLockView(viewModel: AppViewModel())
 }

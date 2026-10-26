@@ -14,10 +14,14 @@ struct AdminCraftedAriaResumeBar: View {
     let isRunning: Bool
     let open: () -> Void
 
+    @ScaledMetric(relativeTo: .subheadline) private var orbSide: CGFloat = 22
+
     var body: some View {
         Button(action: open) {
             HStack(spacing: 8) {
-                if isRunning { ProgressView() } else { Image(systemName: "sparkles") }
+                // Mentre lavora la sfera pensa; con la proposta pronta resta ferma.
+                AriaOrb(mood: isRunning ? .thinking : .idle, isAnimating: isRunning)
+                    .frame(width: orbSide, height: orbSide)
                 Text(isRunning ? "Aria is editing…" : "Review Aria's proposal")
                     .font(.subheadline.weight(.semibold))
             }

@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  L'AI nella creazione: una riga sola con ✦, cosa fa e la rotellina mentre lavora ("Draft with Aria" nei
+//  L'AI nella creazione: una riga sola con la sfera di Aria, cosa fa e la rotellina mentre lavora ("Draft with Aria" nei
 //  dettagli, "Suggest steps with Aria" nei passi). Sotto, la risposta che non è finita nei campi e gli
 //  errori; l'avviso "Filled by AI" con Undo.
 //
@@ -27,10 +27,11 @@ struct AdminWorkOrderFormAIButton: View {
             Task { await viewModel.draftWithAI(action) }
         } label: {
             HStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(Color.liteAccent)
-                    .frame(width: iconSide)
+                AriaOrb(mood: viewModel.isDrafting(action) ? .thinking : .idle,
+                        isAnimating: viewModel.isDrafting(action), radius: 0.9)
+                    .frame(width: iconSide, height: iconSide)
+                    // La sfera è uno shader: il pulsante disabilitato non la spegne da solo.
+                    .opacity(viewModel.canDraftWithAI ? 1 : 0.4)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
                         .font(.body.weight(.semibold))
@@ -98,11 +99,17 @@ struct AdminWorkOrderFormAINotice: View {
     let notice: String
     let onUndo: () -> Void
 
+    @ScaledMetric(relativeTo: .caption) private var orbSide: CGFloat = 14
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Label(notice, systemImage: "sparkles")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        HStack(alignment: .center, spacing: 8) {
+            Label {
+                Text(verbatim: notice)
+            } icon: {
+                AriaOrb(isAnimating: false).frame(width: orbSide, height: orbSide)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
             Spacer(minLength: 4)
             Button("Undo", action: onUndo)
                 .font(.caption.weight(.semibold))

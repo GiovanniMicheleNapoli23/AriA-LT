@@ -101,16 +101,19 @@ extension AriaAPIClient {
     func workOrderData(_ method: String, _ path: String, query: [URLQueryItem] = [],
                        body: (any Encodable & Sendable)? = nil) async throws -> Data {
         let raw = try await data(method, path, query: query, body: try body.map { try JSONEncoder().encode($0) })
-        return await Self.camelCased(raw)
+        return Self.camelCased(raw)
     }
 
-    static func camelCased(_ raw: Data) -> Data {
+    /// nonisolated: in un'estensione varrebbe il MainActor di default, e la conversione girerebbe sul main thread.
+    nonisolated static func camelCased(_ raw: Data) -> Data {
         guard !raw.isEmpty, let json = try? JSONDecoder().decode(AriaJSON.self, from: raw),
               let converted = try? JSONEncoder().encode(json.camelCased()) else { return raw }
         return converted
     }
 
     /// Ordine con la procedura. 404 = non è più dell'operatore (`AriaError.http`, status 404).
+    /// Rete e decodifica fuori dal main thread (`@concurrent`).
+    @concurrent
     func workOrder(id: String) async throws -> AriaWorkOrder {
         let raw = try await workOrderData("GET", "v1/work-orders/\(id)", query: [URLQueryItem(name: "include", value: "procedure")])
         do { return try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
@@ -120,6 +123,8 @@ extension AriaAPIClient {
     /// Gli ordini assegnati, a pagine di `pageSize` con `offset` crescente finché una pagina è più corta
     /// (nel frattempo ne possono arrivare o sparire: un ordine visto due volte resta uno). `maxPages` ferma
     /// un server che non finisce mai. Le chiavi sono già in camelCase.
+    /// Rete, validazione e decodifica delle pagine fuori dal main thread (`@concurrent`): `AriaJSON` è Sendable.
+    @concurrent
     func workOrders(_ filter: AriaWorkOrderFilter, pageSize: Int = 50, maxPages: Int = 20) async throws -> [AriaJSON] {
         let pageSize = min(max(pageSize, 1), 200)
         var orders: [AriaJSON] = []
@@ -141,6 +146,17 @@ extension AriaAPIClient {
             if items.count < pageSize { break }
         }
         return orders
+    }
+
+    /// Il dettaglio con la procedura come JSON libero (camelCase), per salvarlo com'è nella copia locale.
+    /// Prima si controlla che l'app lo sappia leggere: uno che non si legge non sostituisce la copia buona.
+    /// Tutto fuori dal main thread (`@concurrent`).
+    @concurrent
+    func workOrderJSON(id: String) async throws -> AriaJSON {
+        let raw = try await workOrderData("GET", "v1/work-orders/\(id)", query: [URLQueryItem(name: "include", value: "procedure")])
+        do { _ = try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
+        catch { throw AriaError.decoding("AriaWorkOrder: \(error)") }
+        return try JSONDecoder().decode(AriaJSON.self, from: raw)
     }
 
     // MARK: Passi
@@ -185,7 +201,7 @@ extension AriaAPIClient {
         return try Self.decodeStep(raw)
     }
 
-    private static func decodeStep(_ raw: Data) throws -> AriaProcedureStep {
+    private nonisolated static func decodeStep(_ raw: Data) throws -> AriaProcedureStep {
         do { return try JSONDecoder().decode(AriaProcedureStep.self, from: raw) }
         catch { throw AriaError.decoding("AriaProcedureStep: \(error)") }
     }
@@ -216,7 +232,9 @@ extension AriaAPIClient {
         var req = URLRequest(url: url, timeoutInterval: max(10, seconds))
         req.httpMethod = "POST"
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        let (data, response) = try await AriaHTTP.cookielessSession().upload(for: req, from: body)
+        let session = AriaHTTP.cookielessSession()
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.upload(for: req, from: body)
         guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
         // 204 = caricata. Il resto è S3 (XML), non il nostro formato d'errore.
         guard http.statusCode == 204 || (200..<300).contains(http.statusCode) else {
@@ -228,6 +246,7 @@ extension AriaAPIClient {
 
     /// Chiude l'ordine (`completed`). Ogni passo deve avere un risultato (`steps_incomplete` con
     /// `missing`); dopo, ogni chiamata sui passi risponde `work_order_closed`. La verifica resta al desktop.
+    @concurrent
     func complete(order orderId: String, resolutionNotes: String) async throws -> AriaWorkOrder {
         let raw = try await completeData(order: orderId, resolutionNotes: resolutionNotes)
         do { return try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
@@ -235,6 +254,7 @@ extension AriaAPIClient {
     }
 
     /// Come `complete`, con l'ordine chiuso così com'è (camelCase) per salvarlo senza rileggerlo.
+    @concurrent
     func completeData(order orderId: String, resolutionNotes: String) async throws -> Data {
         let notes = resolutionNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         if notes.isEmpty { throw AriaError.workOrder(.resolutionNotesRequired) }

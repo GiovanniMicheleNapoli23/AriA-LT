@@ -56,7 +56,7 @@ struct AdminInspectionAIView: View {
 
     private var request: some View {
         VStack(alignment: .leading, spacing: 16) {
-            AdminCard(title: "What should Aria do?", systemImage: "sparkles") {
+            AdminCard(ariaTitle: "What should Aria do?") {
                 VStack(spacing: 8) {
                     ForEach(AdminInspectionAIAction.allCases) { action in
                         actionRow(action)
@@ -119,7 +119,7 @@ struct AdminInspectionAIView: View {
     @ViewBuilder
     private func proposal(_ answer: AdminInspectionAIAnswer) -> some View {
         if answer.isEmpty {
-            AdminCard(title: "Proposal", systemImage: "sparkles") {
+            AdminCard(ariaTitle: "Proposal") {
                 AdminSectionNotice(text: String(localized: "Aria had nothing to suggest for this inspection."))
             }
         }

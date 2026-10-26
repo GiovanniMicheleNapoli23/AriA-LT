@@ -31,6 +31,7 @@ nonisolated extension AdminDocumentsAPI {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let destination = folder.appending(path: previewName(fileName: fileName, url: url, mimeType: mimeType))
         try FileManager.default.moveItem(at: temporary, to: destination)
+        AriaLocalFiles.protect(destination)
         return destination
     }
 

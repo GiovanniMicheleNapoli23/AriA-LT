@@ -22,7 +22,7 @@ struct AriaElicitationPill: View {
                 if isLearning {
                     AriaLearningIcon(size: 22)
                 } else {
-                    AriaOrb()
+                    AriaOrb(isAnimating: false)
                         .frame(width: orbSide, height: orbSide)
                 }
                 VStack(alignment: .leading, spacing: 1) {

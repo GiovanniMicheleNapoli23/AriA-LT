@@ -17,6 +17,46 @@
         }
       }
     },
+    "Ask for a different version" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi una versione diversa"
+          }
+        }
+      }
+    },
+    "Changes appear on the page. Nothing is saved until you accept." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le modifiche compaiono sulla pagina. Non si salva niente finché non accetti."
+          }
+        }
+      }
+    },
+    "Tell Aria what to change" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di' ad Aria cosa cambiare"
+          }
+        }
+      }
+    },
+    "What should Aria change?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa deve cambiare Aria?"
+          }
+        }
+      }
+    },
     "· min %lld" : {
       "localizations" : {
         "it" : {
@@ -126,6 +166,9 @@
           }
         }
       }
+    },
+    "%@" : {
+
     },
     "%@ · %@" : {
       "localizations" : {
@@ -615,6 +658,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld allegate · massimo"
+          }
+        }
+      }
+    },
+    "%lld attempts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld tentativi"
           }
         }
       }
@@ -2972,6 +3025,16 @@
         }
       }
     },
+    "After" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dopo"
+          }
+        }
+      }
+    },
     "after %lld min: %@" : {
       "localizations" : {
         "it" : {
@@ -3190,6 +3253,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnostica allarme"
+          }
+        }
+      }
+    },
+    "Alarm raised" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allarme generato"
           }
         }
       }
@@ -3512,6 +3585,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un amministratore lo controlla prima che Aria lo usi."
+          }
+        }
+      }
+    },
+    "an event" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "un evento"
           }
         }
       }
@@ -4042,6 +4125,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Area"
+          }
+        }
+      }
+    },
+    "Arguments" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Argomenti"
           }
         }
       }
@@ -4746,22 +4839,6 @@
         }
       }
     },
-    "Ask for it differently — shorter, more formal…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask for it differently — shorter, more formal…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chiedilo in un altro modo — più corto, più formale…"
-          }
-        }
-      }
-    },
     "Ask for something specific" : {
       "localizations" : {
         "it" : {
@@ -5374,6 +5451,16 @@
         }
       }
     },
+    "Behaviour" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comportamento"
+          }
+        }
+      }
+    },
     "Being made…" : {
       "localizations" : {
         "en" : {
@@ -5446,6 +5533,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bacheche"
+          }
+        }
+      }
+    },
+    "Body" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corpo"
+          }
+        }
+      }
+    },
+    "Branches" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rami"
           }
         }
       }
@@ -5614,6 +5721,16 @@
         }
       }
     },
+    "Call webhook" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiama webhook"
+          }
+        }
+      }
+    },
     "Camera" : {
       "localizations" : {
         "en" : {
@@ -5626,6 +5743,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fotocamera"
+          }
+        }
+      }
+    },
+    "Can delegate to" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Può delegare a"
           }
         }
       }
@@ -7308,6 +7435,16 @@
         }
       }
     },
+    "Condition" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Condizione"
+          }
+        }
+      }
+    },
     "Confidence" : {
       "localizations" : {
         "it" : {
@@ -7590,6 +7727,16 @@
         }
       }
     },
+    "Connections" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamenti"
+          }
+        }
+      }
+    },
     "Connector" : {
       "localizations" : {
         "it" : {
@@ -7806,6 +7953,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Costo"
+          }
+        }
+      }
+    },
+    "Cost cap (€)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limite di costo (€)"
           }
         }
       }
@@ -9504,6 +9661,16 @@
         }
       }
     },
+    "Document uploaded" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documento caricato"
+          }
+        }
+      }
+    },
     "Documents" : {
       "localizations" : {
         "en" : {
@@ -9536,6 +9703,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Documenti da caricare"
+          }
+        }
+      }
+    },
+    "done" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "fatto"
           }
         }
       }
@@ -9638,6 +9815,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bozza"
+          }
+        }
+      }
+    },
+    "Draft purchase order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bozza ordine d'acquisto"
           }
         }
       }
@@ -9904,6 +10091,16 @@
         }
       }
     },
+    "each pass" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "a ogni passaggio"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "en" : {
@@ -10072,6 +10269,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifica modello"
+          }
+        }
+      }
+    },
+    "Edit this workflow on the web." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica questo workflow sul web."
           }
         }
       }
@@ -10502,6 +10709,16 @@
         }
       }
     },
+    "Every %@ at %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni %@ alle %@"
+          }
+        }
+      }
+    },
     "Every %@ h" : {
       "localizations" : {
         "it" : {
@@ -10512,12 +10729,42 @@
         }
       }
     },
+    "Every %lld min" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni %lld min"
+          }
+        }
+      }
+    },
+    "Every day at %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni giorno alle %@"
+          }
+        }
+      }
+    },
     "Every extracted item of this type has been reviewed." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti gli elementi estratti di questo tipo sono stati rivisti."
+          }
+        }
+      }
+    },
+    "Every hour" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni ora"
           }
         }
       }
@@ -11016,6 +11263,16 @@
         }
       }
     },
+    "File" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File"
+          }
+        }
+      }
+    },
     "File name" : {
       "localizations" : {
         "it" : {
@@ -11220,6 +11477,16 @@
         }
       }
     },
+    "Fit" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adatta"
+          }
+        }
+      }
+    },
     "Fit width" : {
       "localizations" : {
         "en" : {
@@ -11334,6 +11601,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiusure forzate"
+          }
+        }
+      }
+    },
+    "Format" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formato"
           }
         }
       }
@@ -11496,6 +11773,16 @@
         }
       }
     },
+    "Generate report" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Genera rapporto"
+          }
+        }
+      }
+    },
     "Generate steps" : {
       "localizations" : {
         "it" : {
@@ -11596,6 +11883,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vai ai passi"
+          }
+        }
+      }
+    },
+    "Goal" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obiettivo"
           }
         }
       }
@@ -12398,6 +12695,16 @@
         }
       }
     },
+    "Inputs" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingressi"
+          }
+        }
+      }
+    },
     "Inspection" : {
       "localizations" : {
         "it" : {
@@ -12430,6 +12737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Istruzione"
+          }
+        }
+      }
+    },
+    "Instructions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Istruzioni"
           }
         }
       }
@@ -12511,6 +12828,9 @@
           }
         }
       }
+    },
+    "Invalid request." : {
+
     },
     "Invalid server response: %@" : {
       "localizations" : {
@@ -12778,6 +13098,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unione"
+          }
+        }
+      }
+    },
+    "Judge" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giudice"
           }
         }
       }
@@ -13868,6 +14198,16 @@
         }
       }
     },
+    "Made with a newer version of Aria" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creato con una versione più recente di Aria"
+          }
+        }
+      }
+    },
     "MaintainX" : {
       "localizations" : {
         "it" : {
@@ -14020,6 +14360,16 @@
         }
       }
     },
+    "Manual — on demand" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manuale — su richiesta"
+          }
+        }
+      }
+    },
     "Manufacturer" : {
       "localizations" : {
         "en" : {
@@ -14128,6 +14478,16 @@
         }
       }
     },
+    "Match" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrispondenza"
+          }
+        }
+      }
+    },
     "Max cost per run" : {
       "localizations" : {
         "it" : {
@@ -14144,6 +14504,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Costo massimo per run (€)"
+          }
+        }
+      }
+    },
+    "Max passes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passaggi max"
           }
         }
       }
@@ -14184,6 +14554,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Run massimi all'ora"
+          }
+        }
+      }
+    },
+    "Max sub-tasks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sotto-attività max"
           }
         }
       }
@@ -14244,6 +14624,16 @@
         }
       }
     },
+    "Member" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Membro"
+          }
+        }
+      }
+    },
     "Member connections" : {
       "localizations" : {
         "it" : {
@@ -14290,6 +14680,16 @@
         }
       }
     },
+    "Merge" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unione"
+          }
+        }
+      }
+    },
     "Message" : {
       "localizations" : {
         "it" : {
@@ -14322,6 +14722,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Messaggi"
+          }
+        }
+      }
+    },
+    "Meter crosses threshold" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contatore oltre la soglia"
           }
         }
       }
@@ -16848,6 +17258,16 @@
         }
       }
     },
+    "Not set up yet" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ancora configurato"
+          }
+        }
+      }
+    },
     "Not signed in on any device." : {
       "localizations" : {
         "it" : {
@@ -17236,12 +17656,42 @@
         }
       }
     },
+    "on error" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in caso di errore"
+          }
+        }
+      }
+    },
+    "On error" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In caso di errore"
+          }
+        }
+      }
+    },
     "On running hours" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "A ore di marcia"
+          }
+        }
+      }
+    },
+    "On timeout" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allo scadere del tempo"
           }
         }
       }
@@ -17438,6 +17888,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apri board"
+          }
+        }
+      }
+    },
+    "Open canvas" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri canvas"
           }
         }
       }
@@ -17720,6 +18180,16 @@
         }
       }
     },
+    "Operation" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operazione"
+          }
+        }
+      }
+    },
     "Operations" : {
       "localizations" : {
         "it" : {
@@ -17986,12 +18456,32 @@
         }
       }
     },
+    "Other settings" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altre impostazioni"
+          }
+        }
+      }
+    },
     "Other systems of record, and the channels Aria speaks through." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Altri sistemi gestionali e i canali con cui Aria comunica."
+          }
+        }
+      }
+    },
+    "otherwise" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "altrimenti"
           }
         }
       }
@@ -18042,6 +18532,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Output %@"
+          }
+        }
+      }
+    },
+    "Output format" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formato di uscita"
           }
         }
       }
@@ -18146,6 +18646,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Posseduti"
+          }
+        }
+      }
+    },
+    "Owner" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titolare"
           }
         }
       }
@@ -18898,6 +19408,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Versione della policy"
+          }
+        }
+      }
+    },
+    "Post to chat" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi in chat"
           }
         }
       }
@@ -20466,6 +20986,26 @@
         }
       }
     },
+    "Repeat guard" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protezione ripetizioni"
+          }
+        }
+      }
+    },
+    "Repeat until %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripeti finché %@"
+          }
+        }
+      }
+    },
     "Replace API key" : {
       "localizations" : {
         "it" : {
@@ -21158,6 +21698,16 @@
         }
       }
     },
+    "rule %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "regola %lld"
+          }
+        }
+      }
+    },
     "Rules" : {
       "localizations" : {
         "it" : {
@@ -21476,6 +22026,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Salvato alle %@"
+          }
+        }
+      }
+    },
+    "Saved as" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salvato come"
           }
         }
       }
@@ -22044,6 +22604,16 @@
         }
       }
     },
+    "Send email" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia email"
+          }
+        }
+      }
+    },
     "Send for review" : {
       "localizations" : {
         "en" : {
@@ -22066,6 +22636,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invia invito"
+          }
+        }
+      }
+    },
+    "Send notification" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia notifica"
           }
         }
       }
@@ -22928,12 +23508,32 @@
         }
       }
     },
+    "Sources" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fonti"
+          }
+        }
+      }
+    },
     "Spare part" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricambio"
+          }
+        }
+      }
+    },
+    "Spare part below reorder point" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricambio sotto il punto di riordino"
           }
         }
       }
@@ -23010,6 +23610,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Specialità"
+          }
+        }
+      }
+    },
+    "Specification" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Specifica"
           }
         }
       }
@@ -23112,6 +23722,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avviato da"
+          }
+        }
+      }
+    },
+    "Starts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si avvia"
           }
         }
       }
@@ -23502,6 +24122,16 @@
         }
       }
     },
+    "Stop on no progress" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferma se non avanza"
+          }
+        }
+      }
+    },
     "Stop processing" : {
       "localizations" : {
         "it" : {
@@ -23518,6 +24148,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Interrompere l'elaborazione?"
+          }
+        }
+      }
+    },
+    "Stop rule" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regola di arresto"
           }
         }
       }
@@ -23614,6 +24254,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sotto-workflow"
+          }
+        }
+      }
+    },
+    "Subject" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oggetto"
           }
         }
       }
@@ -24192,22 +24842,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tecnico"
-          }
-        }
-      }
-    },
-    "Tell Aria what to change — e.g. make the conclusion shorter, translate the table headings…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tell Aria what to change — e.g. make the conclusion shorter, translate the table headings…"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scrivi ad Aria cosa cambiare — es. accorcia la conclusione, traduci le intestazioni della tabella…"
           }
         }
       }
@@ -25201,6 +25835,16 @@
         }
       }
     },
+    "Then" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Poi"
+          }
+        }
+      }
+    },
     "There's no procedure to close out in this chat." : {
       "localizations" : {
         "en" : {
@@ -25883,6 +26527,46 @@
         }
       }
     },
+    "Time cap (s)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limite di tempo (s)"
+          }
+        }
+      }
+    },
+    "Timeout (min)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout (min)"
+          }
+        }
+      }
+    },
+    "Timeout (s)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeout (s)"
+          }
+        }
+      }
+    },
+    "Timezone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fuso orario"
+          }
+        }
+      }
+    },
     "title" : {
       "localizations" : {
         "it" : {
@@ -25945,6 +26629,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Titolo, fornitore, note..."
+          }
+        }
+      }
+    },
+    "To" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A"
           }
         }
       }
@@ -26071,6 +26765,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I limiti di token e orari devono essere numeri interi, o vuoti per nessun limite."
+          }
+        }
+      }
+    },
+    "Token budget" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Budget di token"
           }
         }
       }
@@ -26899,6 +27603,16 @@
         }
       }
     },
+    "Until" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fino a"
+          }
+        }
+      }
+    },
     "Untitled conversation" : {
       "localizations" : {
         "en" : {
@@ -27179,6 +27893,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Disponibilità"
+          }
+        }
+      }
+    },
+    "URL" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL"
           }
         }
       }
@@ -27529,6 +28253,16 @@
         }
       }
     },
+    "Verify answer" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica la risposta"
+          }
+        }
+      }
+    },
     "Version" : {
       "localizations" : {
         "it" : {
@@ -27707,6 +28441,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "vs v%lld"
+          }
+        }
+      }
+    },
+    "Wait for" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attendi"
           }
         }
       }
@@ -28215,6 +28959,16 @@
         }
       }
     },
+    "When: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando: %@"
+          }
+        }
+      }
+    },
     "Where" : {
       "localizations" : {
         "it" : {
@@ -28517,6 +29271,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordine di lavoro %@"
+          }
+        }
+      }
+    },
+    "Work order completed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ordine di lavoro completato"
           }
         }
       }

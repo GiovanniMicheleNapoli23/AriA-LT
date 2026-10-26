@@ -199,7 +199,12 @@ struct AdminMarketplaceView: View {
     @ViewBuilder
     private var content: some View {
         let shelves = viewModel.shelves
-        if shelves.isEmpty {
+        if !viewModel.isCatalogReady {
+            // Il catalogo si legge alla prima apertura: non ancora pronto non è "vuoto".
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+        } else if shelves.isEmpty {
             emptyState
         } else {
             ForEach(shelves) { shelf in

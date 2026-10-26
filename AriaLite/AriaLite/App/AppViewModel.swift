@@ -281,6 +281,9 @@ class AppViewModel {
         adminTeams.reset()
         adminMembers.reset()
         adminMobileUsers.reset()
+        // File scaricati, report esportati e foto in cache non restano per chi entra dopo.
+        AriaLocalFiles.removeTemporaryDocuments()
+        URLCache.shared.removeAllCachedResponses()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

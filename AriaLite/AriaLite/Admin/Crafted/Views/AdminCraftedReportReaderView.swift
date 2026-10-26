@@ -83,6 +83,8 @@ struct AdminCraftedReportReaderView: View {
         } message: {
             Text(viewModel.actionError ?? "")
         }
+        // Il testo è del modello: i link passano da AriaURLPolicy, come nella chat.
+        .ariaLinks(viewModel.backend.webURL)
     }
 
     // MARK: Contenuto

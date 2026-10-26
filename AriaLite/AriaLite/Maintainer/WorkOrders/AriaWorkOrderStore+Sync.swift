@@ -179,8 +179,10 @@ extension AriaWorkOrderStore {
 
     /// Scarica i dettagli degli ordini aperti cambiati sul server dall'ultima volta (o mai scaricati),
     /// tre alla volta. Gli errori si ignorano: il dettaglio si riprova quando l'operatore lo apre.
-    func prefetchDetails() async {
-        guard network.isOnline, !network.status.isConstrained, let account else { return }
+    /// `rebuilding: false` lascia il rebuild a chi chiama. Restituisce se la copia locale è cambiata.
+    @discardableResult
+    func prefetchDetails(rebuilding: Bool = true) async -> Bool {
+        guard network.isOnline, !network.status.isConstrained, let account else { return false }
         let stale = offline.orders(accountId: account).filter { cached in
             guard cached.bucket == "open" else { return false }
             guard let detail = cached.detail else { return true }
@@ -190,31 +192,29 @@ extension AriaWorkOrderStore {
             // Senza date non si sa se è cambiato: si riscarica se ha più di un giorno.
             return Date.now.timeIntervalSince(cached.detailFetchedAt ?? .distantPast) > 24 * 3600
         }.map(\.orderId)
-        guard !stale.isEmpty else { return }
+        guard !stale.isEmpty else { return false }
 
         let api = backend.api
-        var fetched: [Data] = []
-        await withTaskGroup(of: Data?.self) { group in
+        var fetched: [AriaJSON] = []
+        // Rete, controllo col modello e decodifica stanno dentro il task (fuori dal main thread).
+        await withTaskGroup(of: AriaJSON?.self) { group in
             var pending = stale[...]
             func addNext() {
                 guard let id = pending.popFirst() else { return }
                 group.addTask {
-                    try? await api.workOrderData("GET", "v1/work-orders/\(id)",
-                                                 query: [URLQueryItem(name: "include", value: "procedure")])
+                    try? await api.workOrderJSON(id: id)
                 }
             }
             for _ in 0..<3 { addNext() }
-            for await raw in group {
-                if let raw { fetched.append(raw) }
+            for await json in group {
+                if let json { fetched.append(json) }
                 addNext()
             }
         }
-        for raw in fetched {
-            guard (try? JSONDecoder().decode(AriaWorkOrder.self, from: raw)) != nil,
-                  let json = try? JSONDecoder().decode(AriaJSON.self, from: raw) else { continue }
-            offline.saveDetail(json, accountId: account)
-        }
-        rebuild()
+        // Un solo commit per tutti i dettagli (prima uno per ordine).
+        offline.saveDetails(fetched, accountId: account)
+        if rebuilding { rebuild() }
+        return true
     }
 }
 

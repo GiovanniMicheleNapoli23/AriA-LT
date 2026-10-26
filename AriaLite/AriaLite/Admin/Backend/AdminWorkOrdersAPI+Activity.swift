@@ -91,6 +91,7 @@ nonisolated extension AdminWorkOrdersAPI {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let destination = folder.appending(path: Self.safeName(filename))
         try FileManager.default.moveItem(at: temporary, to: destination)
+        AriaLocalFiles.protect(destination)
         return destination
     }
 

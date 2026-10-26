@@ -255,12 +255,15 @@ nonisolated enum AriaHTTP {
     nonisolated(unsafe) static var extraProtocolClasses: [AnyClass] = []
 
     /// Sessione senza cookie: i cookie non si salvano né si mandano mai (solo l'header Authorization).
+    /// Niente cache su disco (le risposte sono dati dell'azienda) e redirect filtrati da `AriaRedirectGuard`.
     static func cookielessSession(_ configuration: URLSessionConfiguration = .ephemeral) -> URLSession {
         configuration.protocolClasses = extraProtocolClasses + (configuration.protocolClasses ?? [])
         configuration.httpShouldSetCookies = false
         configuration.httpCookieAcceptPolicy = .never
         configuration.httpCookieStorage = nil
-        return URLSession(configuration: configuration)
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration, delegate: AriaRedirectGuard.shared, delegateQueue: nil)
     }
 
     static func check(_ response: URLResponse, _ data: Data) throws {
@@ -338,6 +341,31 @@ nonisolated enum AriaHTTP {
         case .object: detail["message"]?.stringValue ?? detail["code"]?.stringValue ?? "\(detail)"
         default: "\(detail)"
         }
+    }
+}
+
+/// Redirect delle sessioni dell'app: mai verso http, e verso un altro host senza le credenziali
+/// (URLSession copierebbe Authorization, Company-Id e Cookie sulla richiesta nuova).
+/// Un delegate del singolo task (es. `NoRedirect` di AriaAuth) ha la precedenza.
+nonisolated final class AriaRedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
+    static let shared = AriaRedirectGuard()
+
+    static let credentialHeaders = ["Authorization", "Company-Id", "Cookie"]
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(Self.redirect(request, from: task.originalRequest))
+    }
+
+    /// La richiesta da seguire, o `nil` per fermarsi sulla risposta 3xx.
+    static func redirect(_ new: URLRequest, from original: URLRequest?) -> URLRequest? {
+        guard let url = new.url, url.scheme?.lowercased() == "https" else { return nil }
+        if let host = original?.url?.host()?.lowercased(), url.host()?.lowercased() == host { return new }
+        var stripped = new
+        for header in credentialHeaders { stripped.setValue(nil, forHTTPHeaderField: header) }
+        return stripped
     }
 }
 

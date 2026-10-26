@@ -27,6 +27,8 @@ nonisolated enum AdminAgentStudioTab: String, CaseIterable, Identifiable, Sendab
 
 nonisolated enum AdminAgentStudioRoute: Hashable, Sendable {
     case workflow(id: String)
+    /// Il grafo del workflow su un canvas, come sulla web.
+    case canvas(workflowId: String)
     /// `workflowId` serve per leggere il record del run; un run attivo può non dirlo.
     case run(workflowId: String?, runId: String)
     case approval(id: String)

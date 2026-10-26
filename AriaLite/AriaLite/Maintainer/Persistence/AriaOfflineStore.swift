@@ -174,15 +174,16 @@ final class AriaOfflineStore {
     }
 
     func saveDetail(_ order: AriaJSON, accountId: String, fetchedAt: Date = .now) {
-        guard let id = order["id"]?.stringValue else { return }
-        let row = row(id, accountId: accountId) ?? {
-            let closed = ["completed", "verified", "cancelled"].contains(order["status"]?.stringValue ?? "")
-            let row = AriaCachedOrder(accountId: accountId, orderId: id, bucket: closed ? "closed" : "open", position: -1)
-            context.insert(row)
-            return row
-        }()
-        row.detailPayload = Self.data(order)
-        row.detailFetchedAt = fetchedAt
+        var inserted: [String: AriaCachedOrder] = [:]
+        applyDetail(order, accountId: accountId, fetchedAt: fetchedAt, inserted: &inserted)
+        commit()
+    }
+
+    /// Più dettagli insieme (prefetch): un solo commit invece di uno per ordine.
+    func saveDetails(_ orders: [AriaJSON], accountId: String, fetchedAt: Date = .now) {
+        guard !orders.isEmpty else { return }
+        var inserted: [String: AriaCachedOrder] = [:]
+        for order in orders { applyDetail(order, accountId: accountId, fetchedAt: fetchedAt, inserted: &inserted) }
         commit()
     }
 
@@ -220,7 +221,11 @@ final class AriaOfflineStore {
 
     /// La coda dell'account, nell'ordine di invio.
     func queue(accountId: String) -> [AriaQueuedChange] {
-        entries(accountId: accountId).compactMap { entry in
+        Self.queued(entries(accountId: accountId))
+    }
+
+    private static func queued(_ entries: [AriaOutboxEntry]) -> [AriaQueuedChange] {
+        entries.compactMap { entry in
             guard let change = try? JSONDecoder().decode(AriaPendingChange.self, from: entry.payload) else { return nil }
             return AriaQueuedChange(id: entry.id, orderId: entry.orderId, change: change)
         }
@@ -234,8 +239,9 @@ final class AriaOfflineStore {
     /// (AriaWorkOrderOverlay.plan). `serverHasReport`: il passo ha un risultato sul server.
     func enqueue(_ change: AriaPendingChange, orderId: String, photo: Data? = nil, accountId: String,
                  serverHasReport: (String) -> Bool) {
+        // Le righe si leggono una volta sola: la coda dell'ordine si ricava da quelle (stesso ordine di invio).
         let all = entries(accountId: accountId)
-        let orderQueue = queue(accountId: accountId).filter { $0.orderId == orderId }
+        let orderQueue = Self.queued(all.filter { $0.orderId == orderId })
         let plan = AriaWorkOrderOverlay.plan(change, queue: orderQueue, serverHasReport: serverHasReport)
         for entry in all where plan.drop.contains(entry.id) { context.delete(entry) }
         if plan.enqueue, let payload = try? JSONEncoder().encode(change) {
@@ -312,6 +318,24 @@ final class AriaOfflineStore {
         let descriptor = FetchDescriptor<AriaOutboxEntry>(predicate: #Predicate { $0.accountId == accountId },
                                                           sortBy: [SortDescriptor(\.sequence)])
         return (try? context.fetch(descriptor)) ?? []
+    }
+
+    /// Scrive il dettaglio nella riga dell'ordine (la crea se manca) senza fare commit.
+    /// `inserted`: le righe create in questo giro, per non crearne due se lo stesso ordine ricompare.
+    private func applyDetail(_ order: AriaJSON, accountId: String, fetchedAt: Date,
+                             inserted: inout [String: AriaCachedOrder]) {
+        guard let id = order["id"]?.stringValue else { return }
+        let row: AriaCachedOrder
+        if let existing = inserted[id] ?? self.row(id, accountId: accountId) {
+            row = existing
+        } else {
+            let closed = ["completed", "verified", "cancelled"].contains(order["status"]?.stringValue ?? "")
+            row = AriaCachedOrder(accountId: accountId, orderId: id, bucket: closed ? "closed" : "open", position: -1)
+            context.insert(row)
+            inserted[id] = row
+        }
+        row.detailPayload = Self.data(order)
+        row.detailFetchedAt = fetchedAt
     }
 
     private func entry(_ id: UUID) -> AriaOutboxEntry? {

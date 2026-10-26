@@ -249,6 +249,11 @@ final class AdminAgentStudioViewModel {
         )
     }
 
+    /// Dal workflow già in lista: il dettaglio la aggiorna a ogni caricamento.
+    func makeCanvasViewModel(workflowId: String) -> AdminAgentStudioCanvasViewModel? {
+        workflows.first { $0.id == workflowId }.map(AdminAgentStudioCanvasViewModel.init(workflow:))
+    }
+
     func makeRunViewModel(workflowId: String?, runId: String) -> AdminAgentStudioRunViewModel {
         let active = activeRuns.first { $0.id == runId }
         return AdminAgentStudioRunViewModel(

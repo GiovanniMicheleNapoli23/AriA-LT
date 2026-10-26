@@ -26,7 +26,10 @@ struct AriaOrb: View {
     /// La posa della GIF di riferimento: parte alta chiara con il riflesso rosa, parte bassa scura.
     static let restingPhase: Double = 2.4
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var engine: AriaOrbEngine
+    /// Appena `isAnimating` passa a false la timeline resta accesa finché la transizione verso idle non finisce.
+    @State private var settling = false
 
     init(mood: Mood = .idle, isAnimating: Bool = true, radius: Float = 0.86, startPhase: Double = AriaOrb.restingPhase) {
         self.mood = mood
@@ -37,14 +40,25 @@ struct AriaOrb: View {
     }
 
     var body: some View {
-        TimelineView(.animation(paused: !isAnimating)) { timeline in
-            let values = engine.values(at: timeline.date, mood: mood, radius: radius)
+        // Con Riduci movimento resta un fotogramma fermo; da idle (lento) bastano 30 fps, con `thinking` si va a pieno ritmo.
+        let running = (isAnimating || settling) && !reduceMotion
+        TimelineView(.animation(minimumInterval: mood == .idle ? 1.0 / 30 : nil, paused: !running)) { timeline in
+            let values = engine.values(at: timeline.date, mood: mood, radius: radius, animated: running)
             Rectangle()
                 .visualEffect { content, proxy in
                     content.colorEffect(ShaderLibrary.ariaOrb(.float2(proxy.size), .floatArray(values)))
                 }
         }
         .accessibilityHidden(true)
+        .onChange(of: isAnimating) { _, now in
+            if !now { settling = true }
+        }
+        .task(id: settling) {
+            guard settling else { return }
+            // Un po' più dei 0,7 s della transizione verso idle.
+            try? await Task.sleep(for: .seconds(0.8))
+            if !Task.isCancelled { settling = false }
+        }
     }
 }
 
@@ -70,15 +84,21 @@ private final class AriaOrbEngine {
     private var duration: TimeInterval = 0
     private var lastFrame: Date?
     private var phase: Double
+    /// `displayed` ha raggiunto `target`: finché non cambia mood non serve ricalcolare l'interpolazione.
+    private var settled = false
+    /// Il fotogramma precedente girava: nel passaggio a fermo la transizione parte comunque (la timeline resta accesa).
+    private var wasAnimated = false
 
     init(phase: Double) { self.phase = phase }
 
-    private func transition(to next: AriaOrb.Mood, at date: Date) {
+    private func transition(to next: AriaOrb.Mood, at date: Date, animated: Bool) {
         guard next != mood else { return }
         let first = mood == nil
         mood = next
         let seed = next == .thinking ? Self.thinking : Self.idle
-        if first {
+        settled = false
+        // Senza animazione (fermo o Riduci movimento) il tempo non scorre: il nuovo stato si applica subito.
+        if first || !animated {
             from = seed
             target = seed
             displayed = seed
@@ -94,13 +114,18 @@ private final class AriaOrbEngine {
 
     /// Il fotogramma a `date`. Lo stato si legge qui e non in un `onChange`, così vale anche
     /// per il primo fotogramma e per ImageRenderer.
-    func values(at date: Date, mood: AriaOrb.Mood, radius: Float) -> [Float] {
-        transition(to: mood, at: date)
-        let progress = progress(at: date)
-        for i in 3..<displayed.count {
-            let isColor = i >= 40 && (i - 40) % 4 < 3
-            displayed[i] = isColor ? Self.mixSRGB(from[i], target[i], progress)
-                                   : from[i] + (target[i] - from[i]) * progress
+    func values(at date: Date, mood: AriaOrb.Mood, radius: Float, animated: Bool = true) -> [Float] {
+        transition(to: mood, at: date, animated: animated || wasAnimated)
+        wasAnimated = animated
+        if !settled {
+            let progress = progress(at: date)
+            for i in 3..<displayed.count {
+                let isColor = i >= 40 && (i - 40) % 4 < 3
+                displayed[i] = isColor ? Self.mixSRGB(from[i], target[i], progress)
+                                       : from[i] + (target[i] - from[i]) * progress
+            }
+            // A transizione finita il risultato non cambia più: i fotogrammi dopo saltano il ciclo.
+            settled = progress >= 1
         }
         // La fase avanza con la velocità corrente: cambiare velocità non fa saltare il fluido.
         let speed = Double(max(displayed[3], 0))
@@ -174,19 +199,24 @@ struct AriaOrbGlow: View {
 
     var body: some View {
         let strength = colorScheme == .dark ? 0.32 : 0.45
+        // Sfocatura e rasterizzazione stanno dentro a ogni cerchio: l'animazione muove solo livelli già pronti,
+        // il blur non si ricalcola a ogni fotogramma.
         ZStack {
             Circle()
                 .fill(RadialGradient(colors: [Color(red: 0.80, green: 0.66, blue: 0.86).opacity(strength), .clear],
                                      center: .center, startRadius: 0, endRadius: 150))
                 .frame(width: 300, height: 300)
+                .blur(radius: 12)
+                .drawingGroup()
             Circle()
                 .fill(RadialGradient(colors: [Color(red: 0.95, green: 0.72, blue: 0.82).opacity(strength * 0.7), .clear],
                                      center: .center, startRadius: 0, endRadius: 90))
                 .frame(width: 180, height: 180)
+                .blur(radius: 12)
+                .drawingGroup()
                 .offset(x: breathing ? 14 : -10, y: breathing ? -8 : 10)
         }
         .scaleEffect(breathing ? 1.06 : 0.94)
-        .blur(radius: 12)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
         .onAppear {

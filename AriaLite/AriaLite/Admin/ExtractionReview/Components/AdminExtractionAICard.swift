@@ -16,7 +16,7 @@ struct AdminExtractionAICard: View {
     @ScaledMetric(relativeTo: .subheadline) private var actionWidth = 150
 
     var body: some View {
-        AdminCard(title: LocalizedStringKey(viewModel.item.kind.aiTitle), systemImage: "sparkles") {
+        AdminCard(ariaTitle: LocalizedStringKey(viewModel.item.kind.aiTitle)) {
             VStack(alignment: .leading, spacing: 12) {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: actionWidth), spacing: 8)], alignment: .leading, spacing: 8) {
                     ForEach(viewModel.aiActions) { action in

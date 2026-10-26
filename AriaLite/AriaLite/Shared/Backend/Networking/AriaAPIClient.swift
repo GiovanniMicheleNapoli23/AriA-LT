@@ -228,6 +228,14 @@ nonisolated final class AriaAPIClient: Sendable {
         throw AriaError.signedOut
     }
 
+    /// Gli id dei percorsi arrivano dal server o da testo estratto dai documenti: un segmento `.` o `..`
+    /// (`appending(path:)` non li normalizza) porterebbe la richiesta, con le credenziali, su un'altra rotta.
+    static func checkPath(_ path: String) throws {
+        guard !path.split(separator: "/").contains(where: { $0 == "." || $0 == ".." }) else {
+            throw AriaError.stream(String(localized: "Invalid request."))
+        }
+    }
+
     private func request(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
                          headers: [String: String] = [:], accept: String = "application/json",
                          companyScoped: Bool = true) async throws -> URLRequest {
@@ -235,6 +243,7 @@ nonisolated final class AriaAPIClient: Sendable {
         if let body, body.count > config.maxBodyBytes {
             throw AriaError.bodyTooLarge(bytes: body.count, limit: config.maxBodyBytes)
         }
+        try Self.checkPath(path)
         var url = config.apiBaseURL.appending(path: path)
         if !query.isEmpty { url.append(queryItems: query) }
         var req = URLRequest(url: url)

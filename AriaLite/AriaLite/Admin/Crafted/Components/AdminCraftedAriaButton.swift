@@ -20,7 +20,7 @@ struct AdminCraftedAriaButton: View {
 
     var body: some View {
         Button(action: action) {
-            AriaOrb(radius: 0.86)
+            AriaOrb(isAnimating: false, radius: 0.86)
                 .frame(width: size - 12, height: size - 12)
                 .frame(width: size, height: size)
                 .contentShape(Circle())

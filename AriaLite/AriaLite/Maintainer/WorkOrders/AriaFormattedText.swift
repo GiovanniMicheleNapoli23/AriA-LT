@@ -245,9 +245,12 @@ struct AriaFormattedTextView: View {
     }
 
     /// **grassetto**, _corsivo_ e `codice` dentro la riga; se il Markdown non si legge, il testo com'è.
+    /// Niente link: il testo è dei lavori o del modello, e un link toccato aprirebbe qualsiasi schema.
     private func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+        var styled = (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
+        for run in styled.runs where run.link != nil { styled[run.range].link = nil }
+        return styled
     }
 }
 

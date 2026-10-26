@@ -67,7 +67,7 @@ struct AdminWorkOrderAssistantSheet: View {
 
     private var contextHeader: some View {
         HStack(spacing: 12) {
-            AriaOrb(radius: 0.9)
+            AriaOrb(mood: viewModel.isRunning ? .thinking : .idle, isAnimating: viewModel.isRunning, radius: 0.9)
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Working on")
@@ -224,7 +224,7 @@ struct AdminWorkOrderAssistantSheet: View {
                 isApplying: viewModel.applyingEntryId == entry.id,
                 isBusy: viewModel.isApplying,
                 onApply: { kind in Task { await viewModel.apply(kind, from: entry) } },
-                onCopy: { UIPasteboard.general.string = viewModel.copyText(for: entry) }
+                onCopy: { AriaPasteboard.copy(viewModel.copyText(for: entry)) }
             )
         }
     }

@@ -76,7 +76,7 @@ nonisolated enum AdminInspectionAIAction: String, CaseIterable, Identifiable, Se
 
     var systemImage: String {
         switch self {
-        case .improve: "sparkles"
+        case .improve: "wand.and.stars"
         case .addMissing: "text.badge.plus"
         case .custom: "bubble.left.and.text.bubble.right"
         }

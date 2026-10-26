@@ -49,7 +49,9 @@ struct AdminConnectorConsentFlow {
     /// da dire se Composio non manda l'account.
     func run(authorizeURL: String, composio: Bool, fallbackName: String,
              authenticate: Authenticate, open: Open) async -> Outcome {
-        guard let url = URL(string: authorizeURL), url.scheme?.hasPrefix("http") == true else {
+        // Solo https con un host: `hasPrefix("http")` lasciava passare http in chiaro e schemi come `httpx:`.
+        guard let url = URL(string: authorizeURL), url.scheme?.lowercased() == "https",
+              url.host()?.isEmpty == false else {
             return .failed(AriaError.decoding("authorize_url").localizedDescription)
         }
         // Senza host della web non c'è un ritorno da intercettare: si va dal browser.

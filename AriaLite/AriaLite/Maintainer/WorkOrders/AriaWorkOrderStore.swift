@@ -114,7 +114,9 @@ final class AriaWorkOrderStore {
         self.offline = offline
         preferredAvailability = UserDefaults.standard.string(forKey: Self.preferenceKey)
             .flatMap(AriaAvailability.init(rawValue:)) ?? .available
-        restoreIfNeeded()
+        // La copia locale è dell'operatore: un account admin non la legge all'avvio (costa keepOnly, tre fetch e
+        // un rebuild). Se serve, sync/refresh/detail/enqueue chiamano comunque restoreIfNeeded() al primo uso.
+        if backend.accountKind == .operator { restoreIfNeeded() }
         // Torna la rete: parte la coda e, se è vecchia, si ricarica la lista.
         networkObserver = network.observe { [weak self] old, new in
             guard let self, !old.isOnline, new.isOnline else { return }
@@ -151,9 +153,16 @@ final class AriaWorkOrderStore {
         await flush()
         await syncAvailability()
         if let lastUpdated, Date.now.timeIntervalSince(lastUpdated) < Self.listFreshness { return }
+        await reloadLists()
+    }
+
+    /// Lista degli aperti (si vede subito, con un suo rebuild), poi chiusi e dettagli: per questi due
+    /// il rebuild è uno solo alla fine, e solo se la copia locale è cambiata.
+    private func reloadLists() async {
         await loadOrders()
-        await loadClosedOrders()
-        await prefetchDetails()
+        let closedChanged = await loadClosedOrders(rebuilding: false)
+        let detailsChanged = await prefetchDetails(rebuilding: false)
+        if closedChanged || detailsChanged { rebuild() }
     }
 
     /// Pull-to-refresh: sempre, se c'è rete.
@@ -168,27 +177,30 @@ final class AriaWorkOrderStore {
                 try await self.getProfile()
             }
         }
-        await loadOrders()
-        await loadClosedOrders()
-        await prefetchDetails()
+        await reloadLists()
     }
 
     /// Task chiusi (completati, verificati, annullati) per la sezione "Past", fino a 200: il massimo di GET /v1/work-orders (una pagina).
-    func loadClosedOrders() async {
-        guard !isLoadingClosed, network.isOnline, await prepare(), let account else { return }
+    /// `rebuilding: false` lascia il rebuild a chi chiama (sync: uno solo dopo anche il prefetch).
+    /// Restituisce se la copia locale è cambiata.
+    @discardableResult
+    func loadClosedOrders(rebuilding: Bool = true) async -> Bool {
+        guard !isLoadingClosed, network.isOnline, await prepare(), let account else { return false }
         isLoadingClosed = true
         defer { isLoadingClosed = false }
         do {
             let list = try await fetchList(.closed, pageSize: 200, maxPages: 1)
             offline.saveList(list, bucket: "closed", accountId: account)
             offline.saveValue(Data(), name: "list.closed", accountId: account)
-            rebuild()
+            if rebuilding { rebuild() }
             hasLoadedClosed = true
             closedError = nil
+            return true
         } catch {
-            if error is CancellationError || (error as? URLError)?.code == .cancelled { return }
+            if error is CancellationError || (error as? URLError)?.code == .cancelled { return false }
             if case .signedOut? = error as? AriaError { backend.handle(error) }
             else if !AriaHTTP.isOffline(error) || !hasLoadedClosed { closedError = error.localizedDescription }
+            return false
         }
     }
 
@@ -327,15 +339,17 @@ final class AriaWorkOrderStore {
         restoreIfNeeded()
         guard let account else { return .failed(AriaError.signedOut.localizedDescription) }
         // L'ordine deve essere sul telefono: è da lì che si sa com'è fatto e cosa mostrare.
-        if offline.order(orderId, accountId: account) == nil {
+        var cached = offline.order(orderId, accountId: account)
+        if cached == nil {
             guard case .found? = await detail(of: orderId) else {
                 return .failed(String(localized: "This task isn't saved on the phone yet. Open it once while online."))
             }
+            cached = offline.order(orderId, accountId: account)
         }
         if let order = current(orderId), order.isClosed, !change.isComplete {
             return .failed(AriaServerCode.workOrderClosed.localized)
         }
-        let serverReported = AriaWorkOrderOverlay.reportedStepIds(in: offline.order(orderId, accountId: account)?.merged)
+        let serverReported = AriaWorkOrderOverlay.reportedStepIds(in: cached?.merged)
         offline.enqueue(change, orderId: orderId, photo: photo, accountId: account,
                         serverHasReport: { serverReported.contains($0) })
         rebuild()
@@ -471,12 +485,9 @@ final class AriaWorkOrderStore {
         try await backend.api.workOrders(filter, pageSize: pageSize, maxPages: maxPages)
     }
 
+    /// Il dettaglio come JSON libero; rete e decodifica girano fuori dal main thread (AriaAPIClient.workOrderJSON).
     func fetchDetail(_ id: String) async throws -> AriaJSON {
-        let raw = try await backend.api.workOrderData("GET", "v1/work-orders/\(id)",
-                                                      query: [URLQueryItem(name: "include", value: "procedure")])
-        do { _ = try JSONDecoder().decode(AriaWorkOrder.self, from: raw) }
-        catch { throw AriaError.decoding("AriaWorkOrder: \(error)") }
-        return try JSONDecoder().decode(AriaJSON.self, from: raw)
+        try await backend.api.workOrderJSON(id: id)
     }
 
     private func loadOrders() async {

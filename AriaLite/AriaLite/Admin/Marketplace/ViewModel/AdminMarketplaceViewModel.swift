@@ -17,8 +17,13 @@ import Observation
 @Observable
 final class AdminMarketplaceViewModel {
     let backend: AriaBackend
+    /// Il catalogo e i suoi indici: si costruiscono alla prima apertura della sezione (`ensureCatalog`),
+    /// non all'avvio. Con un catalogo passato all'init (i test) sono pronti subito.
+    private var index: AdminMarketplaceIndex
+    /// Il catalogo è pronto: prima del primo `load()` la lista è vuota perché non è ancora stato letto.
+    private(set) var isCatalogReady: Bool
     /// Il catalogo intero, nella lingua dell'app.
-    let catalog: [AdminMarketplaceItem]
+    var catalog: [AdminMarketplaceItem] { index.catalog }
 
     private(set) var connectors: [AdminConnector] = []
     private(set) var isLoading = false
@@ -45,25 +50,19 @@ final class AdminMarketplaceViewModel {
     /// Il form della chiave MaintainX aperto dalla barra (quando MaintainX non è nella lista).
     var maintainXForm: AdminConnectorCredentialsFormViewModel?
 
-    // Calcolati una volta dal catalogo, che non cambia.
-    private let itemsByID: [String: AdminMarketplaceItem]
-    private let connectorItems: [String: AdminMarketplaceItem]
-    /// Id globale → i pacchetti che lo contengono (plugin, agent pack, full set).
-    private let bundledIn: [String: [String]]
-    private let searchIndex: [String: [String]]
     private let purchaseDefaults: UserDefaults
 
-    init(backend: AriaBackend, catalog: [AdminMarketplaceItem] = AdminMarketplaceCatalog.items,
-         purchaseDefaults: UserDefaults = .standard) {
+    /// Senza `catalog` il catalogo del bundle si legge al primo `load()`, fuori dal main actor.
+    init(backend: AriaBackend, catalog: [AdminMarketplaceItem]? = nil, purchaseDefaults: UserDefaults = .standard) {
         self.backend = backend
-        self.catalog = catalog
         self.purchaseDefaults = purchaseDefaults
-        let byID = Dictionary(catalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        itemsByID = byID
-        connectorItems = Dictionary(catalog.filter { $0.kind == .connector }.map { ($0.sourceId, $0) },
-                                    uniquingKeysWith: { first, _ in first })
-        bundledIn = Self.bundles(in: catalog, byID: byID)
-        searchIndex = Dictionary(catalog.map { ($0.id, $0.searchHaystack) }, uniquingKeysWith: { first, _ in first })
+        if let catalog {
+            index = AdminMarketplaceIndex(catalog: catalog)
+            isCatalogReady = true
+        } else {
+            index = .empty
+            isCatalogReady = false
+        }
         purchasesKey = backend.activeCompanyId ?? "-"
         purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
     }
@@ -84,17 +83,17 @@ final class AdminMarketplaceViewModel {
 
     // MARK: Catalogo
 
-    func item(id: String) -> AdminMarketplaceItem? { itemsByID[id] }
+    func item(id: String) -> AdminMarketplaceItem? { index.itemsByID[id] }
 
     /// Nell'ordine dato; gli id che il catalogo non conosce (un tipo nuovo della web) si saltano.
-    func items(ids: [String]) -> [AdminMarketplaceItem] { ids.compactMap { itemsByID[$0] } }
+    func items(ids: [String]) -> [AdminMarketplaceItem] { ids.compactMap { index.itemsByID[$0] } }
 
     /// Dove sta l'elemento per questa azienda: incluso nel piano, comprato (da solo o dentro un pacchetto,
     /// o un connettore collegato) oppure in vendita, come `ownership` di pricing.ts.
     func ownership(of item: AdminMarketplaceItem) -> AdminMarketplaceOwnership {
         if item.isIncluded { return .included }
         if purchases.contains(item.id) || isConnectedConnector(item) { return .purchased }
-        if bundledIn[item.id]?.contains(where: purchases.contains) == true { return .purchased }
+        if index.bundledIn[item.id]?.contains(where: purchases.contains) == true { return .purchased }
         return .forSale
     }
 
@@ -105,7 +104,7 @@ final class AdminMarketplaceViewModel {
 
     /// Il nome del catalogo, altrimenti quello del server, altrimenti uno ricavato dallo slug.
     func connectorName(_ provider: String) -> String {
-        connectorItems[provider]?.name ?? connector(for: provider)?.name ?? AdminConnector.prettyName(provider)
+        index.connectorItems[provider]?.name ?? connector(for: provider)?.name ?? AdminConnector.prettyName(provider)
     }
 
     /// Lo stato grezzo della riga del server per un connettore del catalogo; nil per ogni altro elemento.
@@ -148,24 +147,6 @@ final class AdminMarketplaceViewModel {
     /// Posseduto = connettore collegato o acquisto; l'incluso non usato non conta.
     private func isOwned(_ item: AdminMarketplaceItem) -> Bool {
         isConnectedConnector(item) || ownership(of: item) == .purchased
-    }
-
-    /// Per ogni elemento, i pacchetti che lo portano: le skill di un plugin o di un agent pack, i componenti
-    /// di un full set più le skill degli agent pack che contiene.
-    private static func bundles(in catalog: [AdminMarketplaceItem], byID: [String: AdminMarketplaceItem]) -> [String: [String]] {
-        var result: [String: [String]] = [:]
-        func add(_ contained: String, in bundle: AdminMarketplaceItem) {
-            result[contained, default: []].append(bundle.id)
-        }
-        for bundle in catalog {
-            for skill in bundle.plugin?.skills ?? [] { add("skill:\(skill)", in: bundle) }
-            for skill in bundle.agentPack?.skills ?? [] { add("skill:\(skill)", in: bundle) }
-            for component in bundle.fullSet?.components ?? [] {
-                add(component, in: bundle)
-                for skill in byID[component]?.agentPack?.skills ?? [] { add("skill:\(skill)", in: bundle) }
-            }
-        }
-        return result
     }
 
     // MARK: Acquisti
@@ -238,7 +219,7 @@ final class AdminMarketplaceViewModel {
     private func matchesSearch(_ item: AdminMarketplaceItem) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
-        return searchIndex[item.id]?.contains { $0.localizedStandardContains(query) } ?? false
+        return index.searchIndex[item.id]?.contains { $0.localizedStandardContains(query) } ?? false
     }
 
     /// Le faccette valgono per i full set; uno senza macchina non passa se ce n'è una scelta.
@@ -278,7 +259,7 @@ final class AdminMarketplaceViewModel {
         guard ignoringKind || kind == nil || kind == .connector, area == nil, !hasFacetFilter else { return [] }
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return connectors
-            .filter { connectorItems[$0.provider] == nil }
+            .filter { index.connectorItems[$0.provider] == nil }
             .filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.provider.localizedStandardContains(query) }
             .filter {
                 switch ownershipFilter {
@@ -381,7 +362,17 @@ final class AdminMarketplaceViewModel {
 
     // MARK: Caricamento
 
+    /// Legge il catalogo del bundle una volta, fuori dal main actor; poi gli indici restano.
+    private func ensureCatalog() async {
+        guard !isCatalogReady else { return }
+        let loaded = await AdminMarketplaceCatalog.loadIndex()
+        guard !isCatalogReady else { return }
+        index = loaded
+        isCatalogReady = true
+    }
+
     func load() async {
+        await ensureCatalog()
         // Altra azienda: la lista vecchia non vale, non si mostra mentre arriva la nuova.
         let key = loadKey
         if key != loadedKey {

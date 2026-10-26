@@ -132,7 +132,7 @@ private struct AriaElicitationPanelContent: View {
             if kind.isLearning {
                 AriaLearningBadge()
             } else {
-                AriaOrb()
+                AriaOrb(isAnimating: false)
                     .frame(width: orbSide, height: orbSide)
                 Text("Aria is asking")
                     .font(.footnote.weight(.semibold))

@@ -18,14 +18,17 @@ struct AriaChatMessagesList: View {
         ScrollView {
             // VStack e non LazyVStack: con altezze stimate lo scroll in fondo saltella mentre il testo cresce.
             VStack(alignment: .leading, spacing: 16) {
+                // Una volta per body, non una scansione dei messaggi per riga.
+                let lastID = model.lastMessageID
+                let reply = model.replyMinHeight
                 ForEach(model.messages) { message in
                     AriaAgentMessageView(message: message, chat: model.chat, webBase: model.webURL,
-                                         isLast: model.isLast(message.id),
+                                         isLast: message.id == lastID,
                                          orbNamespace: orbNamespace)
                         .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
                             model.messageHeightChanged(message.id, height: height)
                         }
-                        .frame(minHeight: model.minHeight(for: message.id), alignment: .top)
+                        .frame(minHeight: message.id == reply?.id ? reply?.height : nil, alignment: .top)
                         .id(message.id)
                 }
                 Color.clear.frame(height: 1).id("bottom")

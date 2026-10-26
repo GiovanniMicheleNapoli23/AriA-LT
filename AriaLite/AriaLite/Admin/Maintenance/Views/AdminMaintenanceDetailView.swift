@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un piano, come /maintenance/{id} della web: intestazione, programmazione, passi, ricambi,
-//  ordini di lavoro generati, allegati, storico e scheda. In alto "Improve with AI" e "Edit".
+//  ordini di lavoro generati, allegati, storico e scheda. In alto "Edit"; "Improve with AI" è il blob di
+//  Aria in basso a destra, come nel dettaglio di un ordine.
 //
 
 import SwiftUI
@@ -43,13 +44,21 @@ struct AdminMaintenanceDetailView: View {
             .padding(20)
             .ariaReadableWidth()
         }
+        // Spazio sotto l'ultimo contenuto: il pulsante di Aria non copre niente.
+        .contentMargins(.bottom, viewModel.canEdit ? 96 : 0, for: .scrollContent)
+        .overlay(alignment: .bottomTrailing) {
+            if viewModel.canEdit {
+                AdminWorkOrderAssistantButton(label: "Improve with AI") { improveModel = viewModel.makeImproveViewModel() }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 12)
+                    .ignoresSafeArea(.keyboard)
+            }
+        }
         .liteBackground()
         .navigationTitle(viewModel.plan.assetTag ?? String(localized: "Plan"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Improve with AI", systemImage: "sparkles") { improveModel = viewModel.makeImproveViewModel() }
-                    .disabled(!viewModel.canEdit)
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { isEditing = true }
                     .disabled(!viewModel.canEdit)
             }

@@ -25,7 +25,14 @@ struct AdminCraftedAriaSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button("Close", action: actions.hide)
+                        if #available(iOS 26.0, *) {
+                            Button(role: .close, action: actions.hide)
+                        } else {
+                            Button(action: actions.hide) {
+                                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                            }
+                            .accessibilityLabel(Text("Close"))
+                        }
                     }
                 }
                 .navigationDestination(isPresented: $panel.showsScope) {

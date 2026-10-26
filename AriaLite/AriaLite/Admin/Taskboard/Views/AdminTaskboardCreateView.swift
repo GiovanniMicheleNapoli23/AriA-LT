@@ -14,6 +14,7 @@ struct AdminTaskboardCreateView: View {
     /// In `@State`: il foglio si ricostruisce col genitore, quello che si è scritto non deve sparire.
     @State private var viewModel: AdminTaskboardCreateViewModel
     @FocusState private var focused: Field?
+    @ScaledMetric(relativeTo: .body) private var orbSide: CGFloat = 20
     @Environment(\.dismiss) private var dismiss
 
     private enum Field { case title, details }
@@ -108,7 +109,13 @@ struct AdminTaskboardCreateView: View {
             if viewModel.isDrafting {
                 HStack(spacing: 8) { ProgressView(); Text("Drafting…") }
             } else {
-                Label("Draft with AI", systemImage: "sparkles")
+                Label {
+                    Text("Draft with AI")
+                } icon: {
+                    AriaOrb(isAnimating: false).frame(width: orbSide, height: orbSide)
+                        // La sfera è uno shader: il pulsante disabilitato non la spegne da solo.
+                        .opacity(viewModel.canDraft ? 1 : 0.4)
+                }
             }
         }
         .buttonStyle(.bordered)

@@ -71,6 +71,8 @@ struct AdminCraftedArtifactReaderView: View {
             Button("Discard", role: .destructive) { viewModel.discard() }
             Button("Keep editing", role: .cancel) {}
         }
+        // Il testo è del modello: i link passano da AriaURLPolicy, come nella chat.
+        .ariaLinks(viewModel.backend.webURL)
     }
 
     // MARK: Contenuto

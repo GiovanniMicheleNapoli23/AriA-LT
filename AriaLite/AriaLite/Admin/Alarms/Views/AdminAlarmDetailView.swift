@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un allarme (pagina /alarms/{id} della web): intestazione, approvazione se è una bozza,
-//  scheda, cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo, la bacchetta l'AI.
+//  scheda, cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo; l'AI è il blob di
+//  Aria in basso a destra, come nel dettaglio di un ordine.
 //
 
 import SwiftUI
@@ -40,13 +41,18 @@ struct AdminAlarmDetailView: View {
             .ariaReadableWidth()
         }
         .scrollDismissesKeyboard(.interactively)
+        // Spazio sotto l'ultimo contenuto: il pulsante di Aria non copre niente.
+        .contentMargins(.bottom, 96, for: .scrollContent)
+        .overlay(alignment: .bottomTrailing) {
+            AdminWorkOrderAssistantButton(label: "Improve with AI") { viewModel.startImproving() }
+                .padding(.trailing, 20)
+                .padding(.bottom, 12)
+                .ignoresSafeArea(.keyboard)
+        }
         .liteBackground()
         .navigationTitle(Text(verbatim: viewModel.alarm.code))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Improve with AI", systemImage: "wand.and.stars") { viewModel.startImproving() }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { viewModel.startEditing() }
             }

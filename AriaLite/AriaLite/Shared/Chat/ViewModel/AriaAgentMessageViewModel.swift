@@ -42,8 +42,9 @@ final class AriaAgentMessageViewModel {
     var canRegenerate: Bool { !chat.isStreaming && chat.pendingInterrupt == nil }
 
     /// Aria sta lavorando ma non ha ancora scritto niente.
-    func isThinking(_ message: AriaAgentMessage) -> Bool {
-        !message.finished && message.displayText.isEmpty
+    /// `displayText`: il testo già calcolato dalla vista (costa, lo si calcola una volta per body).
+    func isThinking(_ message: AriaAgentMessage, displayText: String? = nil) -> Bool {
+        !message.finished && (displayText ?? message.displayText).isEmpty
     }
 
     /// Con la domanda nella stessa risposta la checklist vive solo nel pannello in basso
@@ -67,8 +68,9 @@ final class AriaAgentMessageViewModel {
         return interrupt
     }
 
-    func showsToolbar(_ message: AriaAgentMessage) -> Bool {
-        message.finished && (!message.displayText.isEmpty || !message.artifacts.isEmpty)
+    func showsToolbar(_ message: AriaAgentMessage, displayText: String? = nil) -> Bool {
+        guard message.finished else { return false }
+        return !(displayText ?? message.displayText).isEmpty || !message.artifacts.isEmpty
     }
 
     func showsFollowUps(_ message: AriaAgentMessage, isLast: Bool) -> Bool {
@@ -115,7 +117,7 @@ final class AriaAgentMessageViewModel {
     // MARK: - Actions
 
     func copy(_ message: AriaAgentMessage) {
-        UIPasteboard.general.string = message.displayText
+        AriaPasteboard.copy(message.displayText)
         copied = true
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(1.5))

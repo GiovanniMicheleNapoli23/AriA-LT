@@ -529,9 +529,12 @@ nonisolated enum AriaStreamEvent: Sendable {
     private nonisolated struct Diagnostic: Decodable { let episodeNumber: Int?
         enum CodingKeys: String, CodingKey { case episodeNumber = "episode_number" } }
 
+    /// Uno solo per tutti gli eventi: ne arriva uno per token (JSONDecoder è Sendable e senza stato che cambia).
+    private nonisolated static let decoder = JSONDecoder()
+
     init(_ sse: AriaSSEEvent) {
         let raw = Data(sse.data.utf8)
-        func decode<T: Decodable>(_ type: T.Type) -> T? { try? JSONDecoder().decode(type, from: raw) }
+        func decode<T: Decodable>(_ type: T.Type) -> T? { try? Self.decoder.decode(type, from: raw) }
         func pipelineOrIgnored() -> AriaStreamEvent {
             guard Self.pipelineEvents.contains(sse.event), let json = decode(AriaJSON.self) else { return .ignored }
             return .pipeline(name: sse.event, data: json)

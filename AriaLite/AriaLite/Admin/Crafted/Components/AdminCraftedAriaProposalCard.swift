@@ -14,10 +14,12 @@ struct AdminCraftedAriaProposalCard: View {
     let summary: AdminCraftedAriaProposalSummary
     let actions: AdminCraftedAriaActions
 
+    @ScaledMetric(relativeTo: .subheadline) private var orbSide: CGFloat = 18
+
     var body: some View {
         AriaCard {
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
+            HStack(spacing: 8) {
+                AriaOrb(isAnimating: false).frame(width: orbSide, height: orbSide)
                 Text("Proposal on the page")
             }
             .font(.subheadline.weight(.semibold))

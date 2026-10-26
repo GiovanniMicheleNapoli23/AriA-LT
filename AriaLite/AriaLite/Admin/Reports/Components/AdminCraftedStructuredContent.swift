@@ -23,7 +23,8 @@ struct AdminCraftedStructuredContent: View {
                 }
             }
             ForEach(tables) { table in
-                AdminCard(title: LocalizedStringKey(table.title ?? String(localized: "Rows")), systemImage: "tablecells") {
+                // Il titolo arriva dal server: interpolato, non si legge come Markdown (niente link).
+                AdminCard(title: "\(table.title ?? String(localized: "Rows"))", systemImage: "tablecells") {
                     tableView(table)
                 }
             }

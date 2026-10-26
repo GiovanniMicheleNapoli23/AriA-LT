@@ -1131,6 +1131,15 @@ private final class StreamPlayback {
 
     /// Mette in coda un evento e restituisce quelli da mostrare subito.
     func push(_ event: AriaStreamEvent) -> [AriaStreamEvent] {
+        // Il ragionamento arriva token per token come il testo: si unisce e esce al tick (stesso ordine di coda).
+        if case .reasoningDelta(let text) = event {
+            if case .ready(.reasoningDelta(let previous))? = queue.last {
+                queue[queue.count - 1] = .ready(.reasoningDelta(previous + text))
+            } else {
+                queue.append(.ready(event))
+            }
+            return []
+        }
         guard case .textDelta(let text) = event else {
             // Tool, card, testo finale: senza un pezzo lungo in uscita si mostrano subito, dopo il testo già ricevuto.
             guard pendingSlices > 0 else { return drain() + [event] }

@@ -46,7 +46,7 @@ struct AriaStepRunnerView: View {
     /// Misure pensate per il testo "Large": crescono col Dynamic Type così le icone non tagliano il testo.
     @ScaledMetric(relativeTo: .callout) private var iconBadgeSide: CGFloat = 38
     @ScaledMetric(relativeTo: .body) private var orbSide: CGFloat = 40
-    @ScaledMetric(relativeTo: .footnote) private var sparkleSide: CGFloat = 32
+    @ScaledMetric(relativeTo: .footnote) private var chevronSide: CGFloat = 32
 
     private enum NoteMode: Identifiable {
         /// Aggiungere o cambiare la nota del passo.
@@ -576,7 +576,7 @@ struct AriaStepRunnerView: View {
             showAIHelp = true
         } label: {
             if compact {
-                AriaOrb(radius: 0.9)
+                AriaOrb(isAnimating: false, radius: 0.9)
                     .frame(width: 34, height: 34)
                     .frame(width: 46, height: 46)
                     .contentShape(Circle())
@@ -593,7 +593,7 @@ struct AriaStepRunnerView: View {
 
     private var askAriaPill: some View {
         HStack(spacing: 12) {
-            AriaOrb(radius: 0.9)
+            AriaOrb(isAnimating: false, radius: 0.9)
                 .frame(width: orbSide, height: orbSide)
                 .shadow(color: Color(red: 0.89, green: 0.55, blue: 1).opacity(0.55), radius: 8)
             VStack(alignment: .leading, spacing: 1) {
@@ -605,10 +605,11 @@ struct AriaStepRunnerView: View {
                     .foregroundStyle(Color.liteAccent.opacity(0.6))
             }
             Spacer(minLength: 8)
-            Image(systemName: "sparkles")
+            // La sfera a sinistra dice già che è Aria: a destra, dove porta il tocco.
+            Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Color.liteAccent)
-                .frame(width: sparkleSide, height: sparkleSide)
+                .frame(width: chevronSide, height: chevronSide)
                 .background(Color.liteAccent.opacity(0.08), in: Circle())
         }
         .padding(.leading, 10)

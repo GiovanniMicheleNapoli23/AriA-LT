@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un'ispezione, come /inspections/{id} della web: intestazione, avanzamento, stato,
-//  checklist compilabile e note. "Edit" apre il form; il menu ha "Improve with AI" ed "Delete".
+//  checklist compilabile e note. "Edit" apre il form; il menu ha "Delete"; "Improve with AI" è il blob di
+//  Aria in basso a destra, come nel dettaglio di un ordine.
 //
 
 import SwiftUI
@@ -37,6 +38,16 @@ struct AdminInspectionDetailView: View {
             .ariaReadableWidth()
         }
         .scrollDismissesKeyboard(.interactively)
+        // Spazio sotto l'ultimo contenuto: il pulsante di Aria non copre niente.
+        .contentMargins(.bottom, viewModel.canEdit ? 96 : 0, for: .scrollContent)
+        .overlay(alignment: .bottomTrailing) {
+            if viewModel.canEdit {
+                AdminWorkOrderAssistantButton(label: "Improve with AI") { aiViewModel = viewModel.makeAIViewModel() }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 12)
+                    .ignoresSafeArea(.keyboard)
+            }
+        }
         .liteBackground()
         .navigationTitle("Inspection")
         .navigationBarTitleDisplayMode(.inline)
@@ -78,8 +89,6 @@ struct AdminInspectionDetailView: View {
 
     private var menu: some View {
         Menu {
-            Button("Improve with AI", systemImage: "sparkles") { aiViewModel = viewModel.makeAIViewModel() }
-                .disabled(!viewModel.canEdit)
             Button("Delete", systemImage: "trash", role: .destructive) { viewModel.showsDeleteConfirmation = true }
                 .disabled(!viewModel.canEdit || viewModel.isWorking)
         } label: {

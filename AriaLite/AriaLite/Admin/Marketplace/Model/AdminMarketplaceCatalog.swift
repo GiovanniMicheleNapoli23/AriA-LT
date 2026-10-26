@@ -19,8 +19,15 @@ nonisolated enum AdminMarketplaceCatalog {
         "frequency", "agent", "source", "custom", "preview",
     ]
 
-    /// Il catalogo nella lingua dell'app, letto una volta.
+    /// Il catalogo nella lingua dell'app, letto una volta alla prima richiesta (mai all'avvio: lo evita
+    /// AdminMarketplaceViewModel, che passa da `loadIndex`).
     static let items: [AdminMarketplaceItem] = load()
+
+    /// Catalogo e indici di ricerca, decodificati fuori dal main actor.
+    @concurrent
+    static func loadIndex() async -> AdminMarketplaceIndex {
+        AdminMarketplaceIndex(catalog: items)
+    }
 
     static func load(bundle: Bundle = .main, language: String? = nil) -> [AdminMarketplaceItem] {
         guard let url = bundle.url(forResource: "MarketplaceCatalog", withExtension: "json"),

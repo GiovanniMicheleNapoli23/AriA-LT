@@ -18,7 +18,7 @@ struct AriaTurnstileView: UIViewRepresentable {
     let origin: URL
     let onEvent: (AriaTurnstileEvent) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onEvent: onEvent) }
+    func makeCoordinator() -> Coordinator { Coordinator(origin: origin, onEvent: onEvent) }
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -26,6 +26,7 @@ struct AriaTurnstileView: UIViewRepresentable {
         configuration.websiteDataStore = .nonPersistent()
         configuration.userContentController.add(context.coordinator, name: Coordinator.handler)
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = context.coordinator
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.isScrollEnabled = false
@@ -72,16 +73,29 @@ struct AriaTurnstileView: UIViewRepresentable {
         """
     }
 
-    final class Coordinator: NSObject, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         static let handler = "turnstile"
+        let origin: URL
         var onEvent: (AriaTurnstileEvent) -> Void
 
-        init(onEvent: @escaping (AriaTurnstileEvent) -> Void) {
+        init(origin: URL, onEvent: @escaping (AriaTurnstileEvent) -> Void) {
+            self.origin = origin
             self.onEvent = onEvent
         }
 
+        /// La pagina principale resta quella caricata da `loadHTMLString`: un link o un redirect nel widget
+        /// non la porta altrove. I riquadri interni (l'iframe di Cloudflare) caricano liberamente.
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            guard navigationAction.targetFrame?.isMainFrame ?? true else { return .allow }
+            let isInitialLoad = navigationAction.navigationType == .other
+                && navigationAction.request.url?.host() == origin.host()
+            return isInitialLoad ? .allow : .cancel
+        }
+
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-            guard let body = message.body as? [String: String] else { return }
+            // Solo la nostra pagina, non un riquadro di altri, può mandare il token.
+            guard message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.host == origin.host(),
+                  let body = message.body as? [String: String] else { return }
             switch body["type"] {
             case "token":
                 if let token = body["value"], !token.isEmpty { onEvent(.token(token)) } else { onEvent(.failed) }

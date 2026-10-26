@@ -76,8 +76,13 @@ final class AriaBackend {
             .flatMap { try? JSONDecoder().decode(AriaMobileAccount.self, from: Data($0.utf8)) }
         // Una sessione (dell'operatore o della web) senza il suo profilo è di una versione precedente
         // o di un accesso non completato: non vale, si rifà l'accesso col link.
-        if api.auth.hasStoredLogin, saved == nil { api.auth.forgetStoredSession() }
-        isSignedIn = api.auth.hasStoredSession
+        // Il Keychain si interroga una volta: dopo `forgetStoredSession` il login salvato non c'è più.
+        var hasStoredLogin = api.auth.hasStoredLogin
+        if hasStoredLogin, saved == nil {
+            api.auth.forgetStoredSession()
+            hasStoredLogin = false
+        }
+        isSignedIn = api.auth.hasStoredSession(knowingLogin: hasStoredLogin)
         mobileAccount = isSignedIn ? saved : nil
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {

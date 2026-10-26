@@ -76,6 +76,12 @@ struct AdminAgentStudioView: View {
         switch route {
         case .workflow(let id):
             AdminAgentStudioWorkflowDetailView(viewModel: viewModel.makeWorkflowViewModel(id: id))
+        case .canvas(let workflowId):
+            if let canvas = viewModel.makeCanvasViewModel(workflowId: workflowId) {
+                AdminAgentStudioCanvasView(viewModel: canvas)
+            } else {
+                ContentUnavailableView("Can't load this workflow", systemImage: "exclamationmark.triangle")
+            }
         case .run(let workflowId, let runId):
             AdminAgentStudioRunDetailView(viewModel: viewModel.makeRunViewModel(workflowId: workflowId, runId: runId))
         case .approval(let id):

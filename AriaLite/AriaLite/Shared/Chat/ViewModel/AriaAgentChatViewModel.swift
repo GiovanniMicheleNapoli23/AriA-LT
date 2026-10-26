@@ -209,6 +209,15 @@ final class AriaAgentChatViewModel {
         return last.id
     }
 
+    /// L'id dell'ultimo messaggio: la lista lo legge una volta per body invece di `isLast` per riga.
+    var lastMessageID: String? { chat.messages.last?.id }
+
+    /// La risposta del turno con la sua altezza minima, calcolata una volta (come `minHeight(for:)`).
+    var replyMinHeight: (id: String, height: CGFloat)? {
+        guard let id = turnReplyID, let height = minHeight(for: id) else { return nil }
+        return (id, height)
+    }
+
     /// Altezza minima della risposta: con la lista in fondo, la domanda resta in cima allo schermo e
     /// la risposta (con la sfera sotto) scende man mano che si scrive; quando non ci sta più, si segue il fondo.
     func minHeight(for messageId: String) -> CGFloat? {

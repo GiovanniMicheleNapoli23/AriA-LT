@@ -15,7 +15,7 @@ struct AdminAlarmProposalCard: View {
     let proposal: AdminAlarmProposal
 
     var body: some View {
-        AdminCard(title: "Proposal", systemImage: "sparkles") {
+        AdminCard(ariaTitle: "Proposal") {
             VStack(alignment: .leading, spacing: 14) {
                 if let text = proposal.text {
                     Text(verbatim: text)

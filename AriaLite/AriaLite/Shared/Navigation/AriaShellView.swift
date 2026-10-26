@@ -134,7 +134,7 @@ struct AriaShellView: View {
                 .offset(x: (progress - 1) * 60)
                 .opacity(0.3 + 0.7 * progress)
 
-                main(progress: progress)
+                main(progress: progress, safeArea: geo.safeAreaInsets)
                     // Il pannello disegna anche nell'area sicura a sinistra (notch in orizzontale):
                     // scivola oltre anche quella, se no copre la sidebar.
                     .offset(x: offset + progress * geo.safeAreaInsets.leading)
@@ -193,22 +193,31 @@ struct AriaShellView: View {
 
     // MARK: - Pannello principale
 
-    private func main(progress: CGFloat) -> some View {
+    private func main(progress: CGFloat, safeArea: EdgeInsets) -> some View {
         let shape = RoundedRectangle(cornerRadius: 44 * progress, style: .continuous)
         return content
             .overlay {
-                Color.litePanelVeil
-                    .opacity(0.45 * progress)
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
+                // A sidebar chiusa niente velo: non c'è un livello in più da comporre.
+                if progress > 0 {
+                    Color.litePanelVeil
+                        .opacity(0.45 * progress)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
             }
-            // Maschera e ombra fin sotto la status bar: il pannello è tutto lo schermo.
-            .mask { shape.ignoresSafeArea() }
+            // Ritaglio fin sotto la status bar: il pannello è tutto lo schermo. `clipShape` al posto di `mask`
+            // (niente passaggio offscreen sull'intera schermata); la forma esce dai bordi quanto l'area sicura.
+            .clipShape(AriaPanelShape(cornerRadius: 44 * progress, outsets: safeArea))
             .background {
-                shape
-                    .fill(Color.liteBackground)
-                    .shadow(color: .black.opacity(0.12 * progress), radius: 24, x: -4)
-                    .ignoresSafeArea()
+                // L'ombra solo mentre il pannello scorre: a riposo basta lo sfondo.
+                if progress > 0 {
+                    shape
+                        .fill(Color.liteBackground)
+                        .shadow(color: .black.opacity(0.12 * progress), radius: 24, x: -4)
+                        .ignoresSafeArea()
+                } else {
+                    Color.liteBackground.ignoresSafeArea()
+                }
             }
             .overlay {
                 // Aperta la sidebar, il pannello non si usa: un tocco lo richiude.
@@ -334,6 +343,25 @@ struct AriaShellView: View {
         chatID = UUID()
         destination = .chat
         sidebar.setOpen(false)
+    }
+}
+
+/// Il rettangolo arrotondato del pannello, allargato dell'area sicura: come `shape.ignoresSafeArea()` ma
+/// utilizzabile in `clipShape`.
+nonisolated private struct AriaPanelShape: Shape {
+    var cornerRadius: CGFloat
+    var outsets: EdgeInsets
+
+    var animatableData: CGFloat {
+        get { cornerRadius }
+        set { cornerRadius = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let full = CGRect(x: rect.minX - outsets.leading, y: rect.minY - outsets.top,
+                          width: rect.width + outsets.leading + outsets.trailing,
+                          height: rect.height + outsets.top + outsets.bottom)
+        return Path(roundedRect: full, cornerRadius: cornerRadius, style: .continuous)
     }
 }
 

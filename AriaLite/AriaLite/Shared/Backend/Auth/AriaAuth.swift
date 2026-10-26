@@ -178,13 +178,24 @@ actor AriaAuth {
     init(config: AriaConfig) {
         self.config = config
         session = AriaHTTP.cookielessSession()
-        // Le sessioni delle versioni precedenti non servono più: via dal Keychain.
-        Keys.legacy.forEach(AriaKeychain.delete)
+        // Le sessioni delle versioni precedenti non servono più: via dal Keychain, una volta per installazione
+        // (la reinstallazione azzera UserDefaults, quindi il flag, e il Keychain si ripulisce di nuovo).
+        if !UserDefaults.standard.bool(forKey: Self.legacyPurgedKey) {
+            Keys.legacy.forEach(AriaKeychain.delete)
+            UserDefaults.standard.set(true, forKey: Self.legacyPurgedKey)
+        }
     }
+
+    private nonisolated static let legacyPurgedKey = "aria.legacy_keys_purged"
 
     /// Controlli sul Keychain che non leggono il valore: non chiedono mai Face ID.
     nonisolated var hasStoredSession: Bool {
-        hasStoredLogin || AriaKeychain.exists(Keys.devAccess)
+        hasStoredSession(knowingLogin: hasStoredLogin)
+    }
+
+    /// Come `hasStoredSession` quando `hasStoredLogin` è già stato letto: evita di rileggere il Keychain.
+    nonisolated func hasStoredSession(knowingLogin hasLogin: Bool) -> Bool {
+        hasLogin || AriaKeychain.exists(Keys.devAccess)
     }
 
     /// Una sessione salvata, dell'operatore o della web (non il token di sviluppo): all'avvio va aperta con Face ID.
@@ -289,14 +300,14 @@ actor AriaAuth {
     }
 
     /// Il link della web ricostruito sul nostro host (schema e porta compresi): del link arrivato
-    /// passano solo `token` e `callbackURL`.
+    /// passa solo `token`; `callbackURL` è sempre quello dell'app.
     private nonisolated func webVerifyURL(from url: URL) -> URL? {
         guard let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
               let token = items.first(where: { $0.name == "token" })?.value, !token.isEmpty,
               var components = URLComponents(url: config.authBaseURL.appending(path: String(Self.webVerifyPath.dropFirst())),
                                              resolvingAgainstBaseURL: false) else { return nil }
-        let callback = items.first { $0.name == "callbackURL" }?.value ?? Self.appCallbackPath
-        components.queryItems = [URLQueryItem(name: "token", value: token), URLQueryItem(name: "callbackURL", value: callback)]
+        components.queryItems = [URLQueryItem(name: "token", value: token),
+                                 URLQueryItem(name: "callbackURL", value: Self.appCallbackPath)]
         return components.url
     }
 
@@ -333,7 +344,9 @@ actor AriaAuth {
         }
         store(.mobile(session))
         resetAccessToken()
-        _ = try await refresh()
+        // Senza il primo JWT l'accesso non è completo: la sessione appena aperta non resta né in memoria
+        // né nel Keychain (il link è già consumato, non si potrebbe comunque riusare).
+        do { _ = try await refresh() } catch { clear(); throw error }
         AriaAuthTrace.step("link.verify.ok", "id=\(verified.user.id)")
         return verified.user
     }
@@ -371,7 +384,7 @@ actor AriaAuth {
         }
         store(.webCookie(cookie))
         resetAccessToken()
-        _ = try await refresh()
+        do { _ = try await refresh() } catch { clear(); throw error }
         AriaAuthTrace.step("webLink.verify.ok", "")
     }
 

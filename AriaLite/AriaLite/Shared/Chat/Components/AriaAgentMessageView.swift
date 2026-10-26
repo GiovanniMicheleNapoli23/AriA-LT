@@ -58,14 +58,16 @@ struct AriaAgentMessageView: View {
     /// Come Claude: il testo occupa tutta la larghezza e il blob di Aria sta sotto l'ultima risposta.
     private var assistant: some View {
         let actions = model.artifactActions { openURL($0) }
+        // Costa (regex): una volta per body, non a ogni uso.
+        let display = message.displayText
         return VStack(alignment: .leading, spacing: 10) {
             if !message.toolCalls.isEmpty { AriaMessageActivityStrip(calls: message.toolCalls) }
             if !message.sources.isEmpty { AriaMessageSources(sources: message.sources, isExpanded: $model.showSources) }
             if !message.reasoning.isEmpty { AriaMessageReasoning(text: message.reasoning, isExpanded: $model.showReasoning) }
 
-            if !message.displayText.isEmpty {
+            if !display.isEmpty {
                 // Senza bolla: la bolla è solo per i messaggi dell'operatore.
-                AriaMarkdownView(text: message.displayText)
+                AriaMarkdownView(text: display)
                     .padding(.top, 4)
             }
 
@@ -125,7 +127,7 @@ struct AriaAgentMessageView: View {
                 }
             }
 
-            if model.showsToolbar(message) {
+            if model.showsToolbar(message, displayText: display) {
                 AriaMessageToolbar(model: model, message: message)
             }
             if model.showsFollowUps(message, isLast: isLast) {
@@ -137,19 +139,20 @@ struct AriaAgentMessageView: View {
             // La sfera chiude sempre l'ultima risposta e scende insieme al testo che cresce;
             // "Thinking" le sta accanto solo finché non arriva il testo.
             if isLast {
+                let thinking = model.isThinking(message, displayText: display)
                 HStack(spacing: 10) {
-                    AriaOrb(mood: message.finished ? .idle : .thinking)
+                    AriaOrb(mood: message.finished ? .idle : .thinking, isAnimating: !message.finished)
                         .ariaOrbHero(orbNamespace)
                         .frame(width: 28, height: 28)
                         .shadow(color: Color.accentColor.opacity(0.2), radius: 3)
                         .accessibilityHidden(true)
-                    if model.isThinking(message) {
+                    if thinking {
                         AriaThinkingText()
                             .transition(.opacity)
                     }
                 }
                 .padding(.top, 2)
-                .animation(.easeInOut(duration: 0.25), value: model.isThinking(message))
+                .animation(.easeInOut(duration: 0.25), value: thinking)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

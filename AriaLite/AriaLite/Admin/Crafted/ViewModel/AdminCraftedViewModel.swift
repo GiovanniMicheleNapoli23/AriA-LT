@@ -53,7 +53,7 @@ final class AdminCraftedViewModel {
 
     init(backend: AriaBackend) {
         self.backend = backend
-        syncCompany()
+        // Gli store (artifacts.json, report-versions.json) si aprono al primo load(), non all'avvio dell'app.
     }
 
     /// Cambia quando va richiesto tutto di nuovo: azienda o stabilimento.

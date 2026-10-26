@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un workflow: attiva/disattiva, avvio (controllo, simulazione, run reale) con l'esito,
-//  i passi in sola lettura, la scheda e lo storico dei run. Il grafo si modifica sulla web.
+//  i passi in sola lettura (con l'apertura del canvas del grafo), la scheda e lo storico dei run.
+//  Il grafo, anche sul canvas, è in sola lettura: si modifica sulla web.
 //
 
 import SwiftUI
@@ -109,12 +110,33 @@ struct AdminAgentStudioWorkflowDetailView: View {
                 AdminSectionNotice(text: String(localized: "This workflow has no steps yet."))
             } else {
                 VStack(spacing: 0) {
+                    canvasLink
                     ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
                         AdminAgentStudioStepRow(index: index + 1, step: step, showsDivider: index < steps.count - 1)
                     }
                 }
             }
         }
+    }
+
+    /// L'ingresso al canvas del grafo, in cima ai passi.
+    private var canvasLink: some View {
+        NavigationLink(value: AdminAgentStudioRoute.canvas(workflowId: viewModel.workflowId)) {
+            HStack(spacing: 10) {
+                Label("Open canvas", systemImage: "point.3.filled.connected.trianglepath.dotted")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.liteAccent)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(12)
+            .background(Color.liteAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.bottom, 6)
     }
 
     private var detailsCard: some View {

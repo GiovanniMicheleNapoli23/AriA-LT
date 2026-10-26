@@ -284,7 +284,7 @@ nonisolated struct AriaChatAPI: Sendable {
         let folder = FileManager.default.temporaryDirectory.appending(path: "aria-report-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: filename)
-        try data.write(to: url, options: .atomic)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
         return AriaReportFile(url: url, filename: filename)
     }
 

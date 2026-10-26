@@ -63,7 +63,7 @@ extension AdminCraftedReportReaderViewModel {
         let folder = FileManager.default.temporaryDirectory.appending(path: "aria-report-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: filename)
-        try result.data.write(to: url, options: .atomic)
+        try result.data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
         return url
     }
 

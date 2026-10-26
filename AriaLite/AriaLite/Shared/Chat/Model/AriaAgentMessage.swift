@@ -205,7 +205,8 @@ struct AriaAgentMessage: Identifiable {
 
     /// stripElicitBlock della web: toglie i blocchi completi e quello ancora aperto durante lo streaming.
     static func stripElicitBlock(_ text: String) -> String {
-        guard text.localizedCaseInsensitiveContains("elicit") else { return text }
+        // Senza locale: più veloce, e "elicit" è ASCII.
+        guard text.range(of: "elicit", options: .caseInsensitive) != nil else { return text }
         var out = text.replacingOccurrences(of: #"```[ \t]*elicit[ \t]*\r?\n[\s\S]*?```"#,
                                             with: "", options: [.regularExpression, .caseInsensitive])
         out = out.replacingOccurrences(of: #"```[ \t]*elicit[ \t]*[\s\S]*$"#,

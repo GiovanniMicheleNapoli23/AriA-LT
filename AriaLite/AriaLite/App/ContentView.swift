@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(AppViewModel.self) private var viewModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var lockWindow = AriaLockWindow()
+    @State private var privacyWindow = AriaPrivacyWindow()
 
     var body: some View {
         Group {
@@ -31,6 +32,8 @@ struct ContentView: View {
         // Link di accesso toccato nell'email (Universal Link) o dal pulsante della pagina web (aria://).
         .onOpenURL { viewModel.open($0) }
         .onChange(of: scenePhase, initial: true) { _, phase in
+            // Il selettore delle app mostra (e salva) l'app già da `.inactive`: da lì in poi è coperta.
+            if phase == .active || viewModel.loggedInUser == nil { privacyWindow.hide() } else { privacyWindow.show() }
             switch phase {
             case .background: viewModel.lockForBackground()
             // Face ID si può chiedere solo con l'app in primo piano.
