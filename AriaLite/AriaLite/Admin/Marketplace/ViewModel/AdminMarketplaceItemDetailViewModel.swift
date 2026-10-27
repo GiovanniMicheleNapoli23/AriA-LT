@@ -201,6 +201,7 @@ final class AdminMarketplaceItemDetailViewModel {
 
     func run(_ command: AdminMarketplaceConnectorCommand,
              authenticate: AdminConnectorConsentFlow.Authenticate, open: AdminConnectorConsentFlow.Open) async {
+        AriaAuthTrace.step("connector.run", "\(command) \(provider)")
         switch command {
         case .connectWithKey: openCredentialsForm()
         case .enable: await enable(authenticate: authenticate, open: open)
@@ -243,6 +244,7 @@ final class AdminMarketplaceItemDetailViewModel {
     private var consentFlow: AdminConnectorConsentFlow { AdminConnectorConsentFlow(backend: marketplace.backend) }
 
     private func finish(_ outcome: AdminConnectorConsentFlow.Outcome) async {
+        AriaAuthTrace.step("connector.outcome", String(describing: outcome))
         switch outcome {
         case .connected(let notice):
             actionNotice = notice
@@ -288,6 +290,7 @@ final class AdminMarketplaceItemDetailViewModel {
         do {
             try await action(companyId)
         } catch {
+            AriaAuthTrace.step("connector.error", String(describing: error))
             actionError = AdminMarketplaceFailure.message(for: error, backend: marketplace.backend)
         }
     }

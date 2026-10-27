@@ -152,13 +152,13 @@ final class AriaLockWindow {
             .compactMap { $0 as? UIWindowScene }
             .filter { Self.locks[ObjectIdentifier($0)] == nil }
         guard !scenes.isEmpty else { return }
+        AriaAuthTrace.step("lockWindow.show")
         // La tastiera starebbe sopra la finestra.
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         for scene in scenes {
             let previousKeyWindow = scene.keyWindow
             let window = UIWindow(windowScene: scene)
             window.windowLevel = .alert + 1
-            window.overrideUserInterfaceStyle = .light
             window.rootViewController = UIHostingController(rootView: AriaLockView(viewModel: viewModel))
             window.makeKeyAndVisible()
             Self.locks[ObjectIdentifier(scene)] = Lock(window: window, previousKeyWindow: previousKeyWindow)
@@ -168,14 +168,11 @@ final class AriaLockWindow {
     func hide() {
         let locks = Self.locks.values
         Self.locks = [:]
+        if !locks.isEmpty { AriaAuthTrace.step("lockWindow.hide") }
+        // Niente dissolvenza: dopo Face ID l'app torna subito.
         for lock in locks {
-            let window = lock.window
             lock.previousKeyWindow?.makeKey()
-            UIView.animate(withDuration: 0.25) {
-                window.alpha = 0
-            } completion: { _ in
-                window.isHidden = true
-            }
+            lock.window.isHidden = true
         }
     }
 }
@@ -191,6 +188,7 @@ final class AriaPrivacyWindow {
     private static var isShown = false
 
     func show() {
+        AriaAuthTrace.step("privacy.show")
         Self.isShown = true
         // Le scene chiuse non servono più.
         Self.windows = Self.windows.filter { $0.value.windowScene != nil }
@@ -198,28 +196,19 @@ final class AriaPrivacyWindow {
             let key = ObjectIdentifier(scene)
             let window = Self.windows[key] ?? Self.makeWindow(in: scene)
             Self.windows[key] = window
-            // Anche a metà dissolvenza (hide in corso): torna subito opaca.
-            window.alpha = 1
             window.isHidden = false
         }
     }
 
     func hide() {
+        if Self.isShown { AriaAuthTrace.step("privacy.hide") }
         Self.isShown = false
-        for window in Self.windows.values where !window.isHidden {
-            UIView.animate(withDuration: 0.2) {
-                window.alpha = 0
-            } completion: { _ in
-                // Se nel frattempo è tornata `show`, la finestra resta visibile.
-                if !Self.isShown { window.isHidden = true }
-            }
-        }
+        for window in Self.windows.values { window.isHidden = true }
     }
 
     private static func makeWindow(in scene: UIWindowScene) -> UIWindow {
         let window = UIWindow(windowScene: scene)
         window.windowLevel = .alert + 2
-        window.overrideUserInterfaceStyle = .light
         window.rootViewController = UIHostingController(rootView: AriaPrivacyCover())
         return window
     }

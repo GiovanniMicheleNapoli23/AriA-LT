@@ -36,7 +36,7 @@ struct AdminScenarioTrailRow: View {
                 if event.taughtAria {
                     Label("Aria learned from this", systemImage: "lightbulb")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.liteAccent)
                 }
                 if let footnote = event.footnote {
                     Text(footnote).font(.caption).foregroundStyle(.secondary)

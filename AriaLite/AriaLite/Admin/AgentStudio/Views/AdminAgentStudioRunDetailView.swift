@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un run: stato (seguito dal vivo finché non finisce), contatori, riassunto, blocchi,
-//  verdetto di ogni nodo, registro degli eventi e scheda. "Cancel run" in alto finché è vivo.
+//  Il run visto dal vivo, un passo alla volta: intestazione con avanzamento, controlli iniziali, approvazioni,
+//  cronologia che si segue da sola, riassunto, file, dettagli e registro tecnico. "Cancel run" finché è vivo.
 //
 
 import SwiftUI
@@ -13,30 +13,49 @@ import SwiftUI
 struct AdminAgentStudioRunDetailView: View {
     @State private var viewModel: AdminAgentStudioRunViewModel
 
-    @ScaledMetric(relativeTo: .body) private var tileWidth: CGFloat = 120
+    /// Passi aperti dalla persona: solo presentazione.
+    @State private var expandedSteps: Set<String> = []
+    /// La persona ha toccato lo scorrimento: la cronologia non si porta più da sola al passo in corso.
+    @State private var userScrolled = false
 
     init(viewModel: AdminAgentStudioRunViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                if let message = viewModel.runError {
-                    AdminSectionNotice(text: message, isError: true)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    AdminAgentStudioRunHeaderCard(viewModel: viewModel)
+                    notices
+                    if viewModel.isConnecting { connecting }
+                    if viewModel.hasPreflight {
+                        AdminAgentStudioPreflightCard(checks: viewModel.preflightChecks,
+                                                      startsExpanded: viewModel.preflightFailed)
+                    }
+                    if viewModel.isRefused {
+                        AdminAgentStudioRefusalCard(reasons: viewModel.refusalReasons)
+                    }
+                    ForEach(viewModel.pendingApprovals) { approval in
+                        AdminAgentStudioApprovalWaitCard(approval: approval)
+                    }
+                    if viewModel.showsTimeline { timeline }
+                    if let narrative = viewModel.narrativeText { summary(narrative) }
+                    if !viewModel.artifacts.isEmpty { artifacts }
+                    AdminAgentStudioRunDetailsCard(fields: viewModel.fields, counters: viewModel.counters,
+                                                   isActive: viewModel.isActive)
+                    AdminAgentStudioRunLogCard(events: viewModel.logEvents)
                 }
-                if !viewModel.counters.isEmpty { counters }
-                if let run = viewModel.run {
-                    if let narrative = run.narrative { narrativeCard(narrative) }
-                    if !run.blockers.isEmpty { blockersCard(run) }
-                    if !run.steps.isEmpty { stepsCard(run) }
-                }
-                eventsCard
-                detailsCard
+                .padding(20)
+                .ariaReadableWidth()
             }
-            .padding(20)
-            .ariaReadableWidth()
+            .onScrollPhaseChange { _, phase in
+                if phase == .interacting { userScrolled = true }
+            }
+            .onChange(of: viewModel.focusRowId) { _, id in
+                guard viewModel.isActive, !userScrolled, let id else { return }
+                withAnimation(.snappy) { proxy.scrollTo(id, anchor: .center) }
+            }
         }
         .liteBackground()
         .navigationTitle(viewModel.title)
@@ -49,11 +68,7 @@ struct AdminAgentStudioRunDetailView: View {
                 }
             }
         }
-        .refreshable { await viewModel.load() }
-        .task {
-            await viewModel.load()
-            await viewModel.follow()
-        }
+        .task { await viewModel.run() }
         .alert("Cancel this run?", isPresented: $viewModel.showsCancelConfirmation) {
             Button("Cancel run", role: .destructive) { Task { await viewModel.cancel() } }
             Button("Keep running", role: .cancel) {}
@@ -67,43 +82,48 @@ struct AdminAgentStudioRunDetailView: View {
         }
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(viewModel.title)
-                    .font(.title3.weight(.bold))
-                Spacer(minLength: 8)
-                if let status = viewModel.status { AdminAgentStudioBadge(status: status) }
-            }
-            if viewModel.isActive {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Group {
-                        if viewModel.canReadRecord { Text("Following live") } else { Text("In progress") }
+    // MARK: Pezzi
+
+    @ViewBuilder
+    private var notices: some View {
+        if let message = viewModel.notice {
+            AdminSectionNotice(text: message, systemImage: "info.circle")
+        }
+        if let message = viewModel.runError {
+            AdminSectionNotice(text: message, isError: true)
+        }
+        if let message = viewModel.liveErrorMessage {
+            AdminSectionNotice(text: message, isError: true)
+        }
+    }
+
+    private var connecting: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Connecting to the run…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var timeline: some View {
+        let rows = viewModel.rows
+        return AdminCard(title: "Steps", systemImage: "list.number") {
+            VStack(spacing: 0) {
+                ForEach(rows) { row in
+                    AdminAgentStudioLiveStepView(row: row, isLast: row.id == rows.last?.id,
+                                                 isExpanded: expandedSteps.contains(row.id)) {
+                        toggle(row.id)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
                 }
             }
-            if viewModel.run?.refused == true {
-                AdminSectionNotice(text: String(localized: "The policy refused this run."), isError: true)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var counters: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 10)], spacing: 10) {
-            ForEach(viewModel.counters, id: \.status) { counter in
-                AdminStatTile(title: counter.title, value: "\(counter.value)",
-                              tint: AdminAgentStudioStatus.tone(for: counter.status).color)
-            }
         }
     }
 
-    private func narrativeCard(_ narrative: String) -> some View {
+    private func summary(_ narrative: String) -> some View {
         AdminCard(title: "Summary", systemImage: "text.alignleft") {
             Text(narrative)
                 .font(.subheadline)
@@ -112,86 +132,31 @@ struct AdminAgentStudioRunDetailView: View {
         }
     }
 
-    private func blockersCard(_ run: AdminAgentStudioRun) -> some View {
-        AdminCard(title: "Blockers", systemImage: "hand.raised") {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(run.blockers, id: \.self) { blocker in
-                    Label {
-                        Text(blocker).fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: "exclamationmark.octagon").foregroundStyle(.red)
-                    }
-                    .font(.subheadline)
-                }
-            }
-        }
-    }
-
-    private func stepsCard(_ run: AdminAgentStudioRun) -> some View {
-        AdminCard(title: "Steps", systemImage: "list.number") {
-            VStack(spacing: 0) {
-                ForEach(run.steps) { step in
-                    AdminAgentStudioRunStepRow(step: step, showsDivider: step.id != run.steps.last?.id)
-                }
-                if run.truncated {
-                    AdminSectionNotice(text: String(localized: "The server kept only part of this run's steps."))
-                        .padding(.top, 8)
-                }
-            }
-        }
-    }
-
-    private var eventsCard: some View {
-        AdminCard(title: "Event log", systemImage: "list.bullet.rectangle") {
-            VStack(alignment: .leading, spacing: 8) {
-                if let message = viewModel.eventsError {
-                    AdminSectionNotice(text: message, isError: true)
-                }
-                if viewModel.hasLoadedEvents {
-                    if viewModel.events.isEmpty {
-                        AdminSectionNotice(text: String(localized: "No events recorded."))
-                    } else {
-                        VStack(spacing: 0) {
-                            ForEach(viewModel.events) { event in
-                                AdminAgentStudioEventRow(event: event, showsDivider: event.id != viewModel.events.last?.id)
-                            }
-                        }
-                    }
-                } else if viewModel.isLoadingEvents {
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Group {
-                            if viewModel.eventsWaitUntilFinished { Text("Waiting for the run to finish…") } else { Text("Loading…") }
-                        }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Button {
-                        Task { await viewModel.loadEvents() }
-                    } label: {
-                        Label("Load event log", systemImage: "arrow.down.circle")
+    private var artifacts: some View {
+        AdminCard(title: "Artifacts", systemImage: "doc.on.doc") {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(viewModel.artifacts) { artifact in
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Image(systemName: "doc")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.liteAccent)
+                        Text(artifact.name)
                             .font(.subheadline.weight(.semibold))
-                    }
-                    .tint(Color.liteAccent)
-                    if viewModel.eventsWaitUntilFinished {
-                        Text("While the run is going, the log arrives when it finishes.")
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 8)
+                        Text(artifact.kind)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
                 }
             }
         }
     }
 
-    private var detailsCard: some View {
-        AdminCard(title: "Details", systemImage: "info.circle") {
-            let fields = viewModel.fields
-            VStack(spacing: 0) {
-                ForEach(fields) { field in
-                    AdminFieldRow(field: field, showsDivider: field != fields.last)
-                }
-            }
+    private func toggle(_ id: String) {
+        withAnimation(.snappy) {
+            if !expandedSteps.insert(id).inserted { expandedSteps.remove(id) }
         }
     }
 }

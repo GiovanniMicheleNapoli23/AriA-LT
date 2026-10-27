@@ -17,46 +17,6 @@
         }
       }
     },
-    "Ask for a different version" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chiedi una versione diversa"
-          }
-        }
-      }
-    },
-    "Changes appear on the page. Nothing is saved until you accept." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le modifiche compaiono sulla pagina. Non si salva niente finché non accetti."
-          }
-        }
-      }
-    },
-    "Tell Aria what to change" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Di' ad Aria cosa cambiare"
-          }
-        }
-      }
-    },
-    "What should Aria change?" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cosa deve cambiare Aria?"
-          }
-        }
-      }
-    },
     "· min %lld" : {
       "localizations" : {
         "it" : {
@@ -402,6 +362,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ non potrà usare l'app finché non lo riattivi."
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
           }
         }
       }
@@ -1078,6 +1048,16 @@
         }
       }
     },
+    "%lld enabled" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld attivi"
+          }
+        }
+      }
+    },
     "%lld entries" : {
       "localizations" : {
         "en" : {
@@ -1442,6 +1422,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld di %2$lld posti usati"
+          }
+        }
+      }
+    },
+    "%lld of %lld steps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld steps"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld di %2$lld passi"
           }
         }
       }
@@ -2072,6 +2068,16 @@
         }
       }
     },
+    "%lld workflows" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld workflow"
+          }
+        }
+      }
+    },
     "%lld." : {
       "localizations" : {
         "it" : {
@@ -2564,6 +2570,7 @@
       }
     },
     "Active runs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -3151,6 +3158,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Agenti"
+          }
+        }
+      }
+    },
+    "Agents really work on your data, but actions on external systems are only simulated." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli agenti lavorano davvero sui tuoi dati, ma le azioni sui sistemi esterni sono solo simulate."
+          }
+        }
+      }
+    },
+    "Agents run and their actions reach the connected systems. Steps that need approval wait for a person." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli agenti vengono eseguiti e le loro azioni raggiungono i sistemi collegati. I passi che richiedono approvazione aspettano una persona."
           }
         }
       }
@@ -4709,6 +4736,16 @@
         }
       }
     },
+    "Artifacts" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "File prodotti"
+          }
+        }
+      }
+    },
     "Ask" : {
       "localizations" : {
         "it" : {
@@ -4835,6 +4872,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiedi ad Aria un grafico, un piano o un ordine di lavoro: comparirà qui."
+          }
+        }
+      }
+    },
+    "Ask for a different version" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi una versione diversa"
           }
         }
       }
@@ -5508,6 +5555,7 @@
       }
     },
     "Blockers" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5758,6 +5806,7 @@
       }
     },
     "Can't load active runs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -6289,6 +6338,16 @@
         }
       }
     },
+    "Changes appear on the page. Nothing is saved until you accept." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le modifiche compaiono sulla pagina. Non si salva niente finché non accetti."
+          }
+        }
+      }
+    },
     "Changes data" : {
       "localizations" : {
         "it" : {
@@ -6391,6 +6450,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Controlla tutto, poi crea l'ordine."
+          }
+        }
+      }
+    },
+    "Check now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica ora"
           }
         }
       }
@@ -7691,6 +7760,16 @@
         }
       }
     },
+    "Connecting to the run…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegamento al run…"
+          }
+        }
+      }
+    },
     "CONNECTING…" : {
       "localizations" : {
         "en" : {
@@ -8967,6 +9046,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nota della decisione"
+          }
+        }
+      }
+    },
+    "Decisions on steps that waited for a person." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le decisioni sui passi che hanno aspettato una persona."
           }
         }
       }
@@ -10416,6 +10505,7 @@
       }
     },
     "Enabled workflows run on their trigger." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10690,6 +10780,7 @@
       }
     },
     "Event log" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10971,6 +11062,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scade"
+          }
+        }
+      }
+    },
+    "Expires %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scade %@"
           }
         }
       }
@@ -11576,6 +11677,7 @@
       }
     },
     "Following live" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -12049,6 +12151,16 @@
         }
       }
     },
+    "Hides the details" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nasconde i dettagli"
+          }
+        }
+      }
+    },
     "High" : {
       "localizations" : {
         "en" : {
@@ -12235,6 +12347,16 @@
         }
       }
     },
+    "How it works" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Come funziona"
+          }
+        }
+      }
+    },
     "How it's made" : {
       "localizations" : {
         "it" : {
@@ -12261,6 +12383,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quanto è urgente, e che tipo di lavoro è?"
+          }
+        }
+      }
+    },
+    "How well each agent's answers were graded." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Come sono state valutate le risposte di ogni agente."
           }
         }
       }
@@ -12830,7 +12962,14 @@
       }
     },
     "Invalid request." : {
-
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Richiesta non valida."
+          }
+        }
+      }
     },
     "Invalid server response: %@" : {
       "localizations" : {
@@ -13108,6 +13247,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giudice"
+          }
+        }
+      }
+    },
+    "Kanban" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kanban"
           }
         }
       }
@@ -13442,6 +13591,16 @@
         }
       }
     },
+    "Layout" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Layout"
+          }
+        }
+      }
+    },
     "Learned" : {
       "localizations" : {
         "en" : {
@@ -13564,6 +13723,16 @@
         }
       }
     },
+    "Limits and rules for every workflow." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limiti e regole per ogni workflow."
+          }
+        }
+      }
+    },
     "Line total: %@" : {
       "localizations" : {
         "it" : {
@@ -13600,6 +13769,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ordine di lavoro collegato"
+          }
+        }
+      }
+    },
+    "List" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elenco"
           }
         }
       }
@@ -13715,6 +13894,7 @@
       }
     },
     "Load event log" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -13889,6 +14069,7 @@
       }
     },
     "Loading…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -14038,6 +14219,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ciclo"
+          }
+        }
+      }
+    },
+    "Lost the connection to this run. It keeps going on the server." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connessione al run persa. Il run continua sul server."
           }
         }
       }
@@ -15657,6 +15848,7 @@
       }
     },
     "No active runs" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -16240,6 +16432,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuna notifica"
+          }
+        }
+      }
+    },
+    "No open tasks." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna attività aperta."
           }
         }
       }
@@ -17434,6 +17636,16 @@
         }
       }
     },
+    "Nothing needs you right now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al momento niente richiede la tua attenzione"
+          }
+        }
+      }
+    },
     "Nothing recorded yet." : {
       "localizations" : {
         "it" : {
@@ -17532,6 +17744,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notifica"
+          }
+        }
+      }
+    },
+    "Now: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ora: %@"
           }
         }
       }
@@ -18041,6 +18263,7 @@
       }
     },
     "Open run" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -18874,6 +19097,16 @@
         }
       }
     },
+    "Passed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Superato"
+          }
+        }
+      }
+    },
     "Password" : {
       "localizations" : {
         "en" : {
@@ -18959,6 +19192,7 @@
       }
     },
     "Pending approvals" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -19452,6 +19686,16 @@
         }
       }
     },
+    "Pre-flight checks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlli preliminari"
+          }
+        }
+      }
+    },
     "Prefilled from the diagnosis. Check it before creating the work order." : {
       "localizations" : {
         "it" : {
@@ -19749,6 +19993,7 @@
       }
     },
     "Prompt" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -20326,6 +20571,16 @@
         }
       }
     },
+    "Real" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reale"
+          }
+        }
+      }
+    },
     "Real-time Learning" : {
       "localizations" : {
         "en" : {
@@ -20436,6 +20691,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricevi nuovi task fino alle %@"
+          }
+        }
+      }
+    },
+    "Recent runs" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run recenti"
           }
         }
       }
@@ -21414,6 +21679,16 @@
         }
       }
     },
+    "Retry %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tentativo %lld"
+          }
+        }
+      }
+    },
     "Revert" : {
       "localizations" : {
         "it" : {
@@ -21430,6 +21705,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vedi"
+          }
+        }
+      }
+    },
+    "Review approval" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rivedi l'approvazione"
           }
         }
       }
@@ -21648,6 +21933,16 @@
         }
       }
     },
+    "Risk: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rischio: %@"
+          }
+        }
+      }
+    },
     "Risks and precautions" : {
       "localizations" : {
         "it" : {
@@ -21768,12 +22063,32 @@
         }
       }
     },
+    "Run for real…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esegui davvero…"
+          }
+        }
+      }
+    },
     "Run ID" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ID del run"
+          }
+        }
+      }
+    },
+    "Run it" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvialo"
           }
         }
       }
@@ -21840,6 +22155,16 @@
         }
       }
     },
+    "Runs automatically" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si avvia da solo"
+          }
+        }
+      }
+    },
     "Runs on its own" : {
       "localizations" : {
         "it" : {
@@ -21851,6 +22176,7 @@
       }
     },
     "Runs that are going, or waiting for someone, show up here." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -23033,6 +23359,7 @@
       }
     },
     "Show all %lld" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -23122,6 +23449,16 @@
         }
       }
     },
+    "Show only the latest" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra solo gli ultimi"
+          }
+        }
+      }
+    },
     "Show original" : {
       "localizations" : {
         "it" : {
@@ -23152,12 +23489,32 @@
         }
       }
     },
+    "Shows all warnings" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra tutti gli avvisi"
+          }
+        }
+      }
+    },
     "Shows less" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mostra meno"
+          }
+        }
+      }
+    },
+    "Shows the details" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostra i dettagli"
           }
         }
       }
@@ -23304,6 +23661,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Simulato"
+          }
+        }
+      }
+    },
+    "Simulation" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Simulazione"
           }
         }
       }
@@ -23680,6 +24047,16 @@
         }
       }
     },
+    "Start simulation" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia simulazione"
+          }
+        }
+      }
+    },
     "Start work" : {
       "localizations" : {
         "en" : {
@@ -23824,6 +24201,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passo %lld di %lld"
+          }
+        }
+      }
+    },
+    "Step %lld, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld, %2$@, %3$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passo %1$lld, %2$@, %3$@"
           }
         }
       }
@@ -24820,6 +25213,16 @@
         }
       }
     },
+    "Technical log" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registro tecnico"
+          }
+        }
+      }
+    },
     "Technical Notes" : {
       "localizations" : {
         "en" : {
@@ -24842,6 +25245,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tecnico"
+          }
+        }
+      }
+    },
+    "Tell Aria what to change" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di' ad Aria cosa cambiare"
           }
         }
       }
@@ -24872,6 +25285,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prova connessione"
+          }
+        }
+      }
+    },
+    "Tests connectors and policies. No agent runs, nothing is changed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica connettori e policy. Nessun agente viene eseguito, non cambia nulla."
           }
         }
       }
@@ -25422,7 +25845,18 @@
         }
       }
     },
+    "The policy refused this run" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La policy ha rifiutato questo run"
+          }
+        }
+      }
+    },
     "The policy refused this run." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25480,6 +25914,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La risposta non è riuscita."
+          }
+        }
+      }
+    },
+    "The run could not be started." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile avviare il run."
+          }
+        }
+      }
+    },
+    "The run failed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il run non è riuscito"
+          }
+        }
+      }
+    },
+    "The run was refused" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il run è stato rifiutato"
           }
         }
       }
@@ -25573,6 +26037,7 @@
       }
     },
     "The server kept only part of this run's steps." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25593,6 +26058,7 @@
       }
     },
     "The server sent no step verdicts." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25733,6 +26199,7 @@
       }
     },
     "The text this agent uses without customisation." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -26280,11 +26747,22 @@
       }
     },
     "This run is taking a while. It keeps going on the server: follow it under Active." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo run richiede tempo. Continua sul server: seguilo in Attivi."
+          }
+        }
+      }
+    },
+    "This run keeps going on the server: you'll find it under Needs attention." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il run continua sul server: lo trovi in Da sistemare."
           }
         }
       }
@@ -27133,6 +27611,17 @@
         }
       }
     },
+    "Try it" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provalo"
+          }
+        }
+      }
+    },
     "Try removing a filter." : {
       "localizations" : {
         "it" : {
@@ -27387,6 +27876,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stato sconosciuto"
+          }
+        }
+      }
+    },
+    "Unknown team" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Squadra sconosciuta"
           }
         }
       }
@@ -28367,6 +28866,16 @@
         }
       }
     },
+    "View base prompt" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vedi il prompt di base"
+          }
+        }
+      }
+    },
     "View chunks" : {
       "localizations" : {
         "it" : {
@@ -28472,6 +28981,7 @@
       }
     },
     "Waiting for" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28508,6 +29018,7 @@
       }
     },
     "Waiting for every step's verdict. You can leave this screen: the run goes on." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28528,11 +29039,32 @@
       }
     },
     "Waiting for the run to finish…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "In attesa che il run finisca…"
+          }
+        }
+      }
+    },
+    "Waiting for your approval" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In attesa della tua approvazione"
+          }
+        }
+      }
+    },
+    "Warning" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avviso"
           }
         }
       }
@@ -28789,6 +29321,16 @@
         }
       }
     },
+    "What should Aria change?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa deve cambiare Aria?"
+          }
+        }
+      }
+    },
     "What should Aria do?" : {
       "localizations" : {
         "it" : {
@@ -28949,6 +29491,16 @@
         }
       }
     },
+    "When on, it runs on its trigger." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando è attivo, parte al suo trigger."
+          }
+        }
+      }
+    },
     "When or where it applies" : {
       "localizations" : {
         "it" : {
@@ -29048,6 +29600,7 @@
       }
     },
     "While the run is going, the log arrives when it finishes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -29451,6 +30004,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stai lavorando su"
+          }
+        }
+      }
+    },
+    "Working…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In corso…"
           }
         }
       }

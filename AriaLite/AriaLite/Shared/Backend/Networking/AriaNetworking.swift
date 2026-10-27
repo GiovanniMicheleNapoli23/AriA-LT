@@ -448,7 +448,9 @@ nonisolated enum AriaBiometrics {
     static func authenticate(reason: String) async throws -> LAContext {
         let context = LAContext()
         context.localizedFallbackTitle = String(localized: "Use Passcode")
+        AriaAuthTrace.step("faceid.prompt")
         try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
+        AriaAuthTrace.step("faceid.done")
         return context
     }
 

@@ -55,6 +55,34 @@ nonisolated struct AdminAgentStudioWorkflowStep: Sendable, Identifiable, Hashabl
     let detail: String?
     let systemImage: String
 
+    /// I nodi del workflow nell'ordine del grafo (dal trigger in giù); quelli in un ciclo o staccati in fondo.
+    static func ordered(in workflow: AdminAgentStudioWorkflow) -> [AdminAgentStudioWorkflowStep] {
+        let nodes = workflow.nodes.compactMap(AdminAgentStudioWorkflowStep.init(json:))
+        var incoming = Dictionary(nodes.map { ($0.id, 0) }, uniquingKeysWith: { first, _ in first })
+        var next: [String: [String]] = [:]
+        for edge in workflow.edges {
+            let fields = AdminAgentStudioFields(edge)
+            guard let source = fields.string("source"), let target = fields.string("target"),
+                  incoming[source] != nil, incoming[target] != nil else { continue }
+            incoming[target, default: 0] += 1
+            next[source, default: []].append(target)
+        }
+        var queue = nodes.map(\.id).filter { incoming[$0] == 0 }
+        var order: [String] = []
+        var seen = Set<String>()
+        while !queue.isEmpty {
+            let id = queue.removeFirst()
+            guard seen.insert(id).inserted else { continue }
+            order.append(id)
+            for target in next[id] ?? [] {
+                incoming[target, default: 0] -= 1
+                if incoming[target] == 0 { queue.append(target) }
+            }
+        }
+        let byId = Dictionary(nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return order.compactMap { byId[$0] } + nodes.filter { !seen.contains($0.id) }
+    }
+
     init?(json: AriaJSON) {
         let fields = AdminAgentStudioFields(json)
         guard let id = fields.string("id") else { return nil }

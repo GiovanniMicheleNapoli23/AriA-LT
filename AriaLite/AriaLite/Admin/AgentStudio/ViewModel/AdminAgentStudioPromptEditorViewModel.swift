@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La modifica del prompt di sistema di un agente: salva il testo come override dell'azienda (PUT)
-//  o torna al prompt di base (DELETE). Gli avvisi del server sul testo salvato si mostrano sotto.
+//  o torna al prompt di base (DELETE). Gli avvisi del server sul testo salvato e il prompt di base si
+//  aprono in un foglio, così l'editor tiene tutta l'altezza.
 //
 
 import Foundation
@@ -24,6 +25,8 @@ final class AdminAgentStudioPromptEditorViewModel {
     private(set) var isResetting = false
     private(set) var savedAt: Date?
     var showsResetConfirmation = false
+    var showsBasePrompt = false
+    var showsWarnings = false
     var actionError: String?
 
     var showsActionError: Bool {
@@ -51,6 +54,19 @@ final class AdminAgentStudioPromptEditorViewModel {
     }
 
     var canReset: Bool { (prompt?.isOverridden ?? false) && !isBusy }
+
+    /// Il prompt di base si può guardare solo se quello dell'azienda lo sostituisce.
+    var canViewBase: Bool { prompt?.isOverridden ?? false }
+
+    var hasMenuActions: Bool { canViewBase || canReset }
+
+    /// "Saved 14:32" dopo un salvataggio.
+    var savedLabel: String? {
+        savedAt.map { (date: Date) -> String in
+            let time = date.formatted(date: .omitted, time: .shortened)
+            return String(localized: "Saved \(time)")
+        }
+    }
 
     var characterCount: String {
         let count = text.count
@@ -83,6 +99,7 @@ final class AdminAgentStudioPromptEditorViewModel {
         do {
             let restored = try await backend.api.call(AdminAgentStudioAPI.resetAgentPrompt(companyId: companyId, agent: name)).value
             warnings = []
+            showsWarnings = false
             applySaved(restored)
             savedAt = .now
         } catch {

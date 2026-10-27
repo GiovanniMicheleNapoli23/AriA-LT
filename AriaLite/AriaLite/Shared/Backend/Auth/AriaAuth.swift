@@ -225,7 +225,10 @@ actor AriaAuth {
     /// `false`: non c'è più nessuna sessione salvata. Annullare lancia un LAError.
     func unlock(reason: String) async throws -> Bool {
         let context = try await AriaBiometrics.authenticate(reason: reason)
-        if credential != nil { return true }
+        if credential != nil {
+            AriaAuthTrace.step("unlock.ok", "sessione già in memoria")
+            return true
+        }
         guard let found = loadCredential(context: context) else { return false }
         // Una sessione salvata prima di Face ID era in chiaro: da ora è protetta.
         store(found)

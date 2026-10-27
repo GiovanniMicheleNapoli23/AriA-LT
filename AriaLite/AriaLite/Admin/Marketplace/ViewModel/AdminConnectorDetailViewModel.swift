@@ -252,6 +252,7 @@ final class AdminConnectorDetailViewModel {
     /// per Composio, browser per tutto il resto (il ritorno lo gestisce il server e al ritorno si ricarica).
     func consent(personal: Bool, requestWrite: Bool = false,
                  authenticate: AdminConnectorConsentFlow.Authenticate, open: AdminConnectorConsentFlow.Open) async {
+        AriaAuthTrace.step("connector.run", "consent personal=\(personal) \(provider) mcp=\(connector.mcpUrl ?? "nil")")
         await perform { companyId in
             let endpoint = personal
                 ? AdminMarketplaceAPI.startMyOAuth(companyId: companyId, provider: provider)
@@ -260,6 +261,7 @@ final class AdminConnectorDetailViewModel {
             let outcome = await AdminConnectorConsentFlow(backend: backend).run(
                 authorizeURL: start.authorizeUrl, composio: personal && usesComposio, fallbackName: connector.name,
                 authenticate: authenticate, open: open)
+            AriaAuthTrace.step("connector.outcome", String(describing: outcome))
             switch outcome {
             case .connected(let notice):
                 actionNotice = notice
@@ -338,6 +340,7 @@ final class AdminConnectorDetailViewModel {
         do {
             try await action(companyId)
         } catch {
+            AriaAuthTrace.step("connector.error", String(describing: error))
             actionError = AdminMarketplaceFailure.message(for: error, backend: backend)
         }
     }

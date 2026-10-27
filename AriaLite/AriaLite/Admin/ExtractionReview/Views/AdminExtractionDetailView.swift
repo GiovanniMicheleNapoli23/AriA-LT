@@ -33,13 +33,19 @@ struct AdminExtractionDetailView: View {
                                        systemImage: "lock")
                 }
                 fieldsCard
-                AdminExtractionAICard(viewModel: viewModel)
+                AdminExtractionAICard(viewModel: viewModel, focus: $focusedField)
             }
             .padding(20)
             .ariaReadableWidth()
         }
         .scrollDismissesKeyboard(.interactively)
-        .ariaBottomBar { decisionBar }
+        .ariaBottomBar {
+            // Con la tastiera aperta la barra le resterebbe incollata sopra, coprendo il campo e il "Done".
+            if focusedField == nil {
+                decisionBar.transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeOut(duration: 0.2), value: focusedField == nil)
         .liteBackground()
         .navigationTitle(viewModel.item.kind.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -103,16 +109,17 @@ struct AdminExtractionDetailView: View {
 
     // MARK: Decisione
 
-    /// Fissa in basso: la decisione resta a portata mentre si scorrono i campi.
+    /// Fissa in basso: la decisione resta a portata mentre si scorrono i campi (non mentre si scrive).
+    /// Due capsule che galleggiano da sole, senza un riquadro di vetro intorno: "Reject" stretto, "Approve"
+    /// prende il resto. Con il testo grande una sotto l'altra, l'approvazione sopra.
     private var decisionBar: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) { rejectButton; approveButton }
-            VStack(spacing: 8) { approveButton; rejectButton }
+            HStack(spacing: 12) { rejectButton(fills: false); approveButton }
+            VStack(spacing: 10) { approveButton; rejectButton(fills: true) }
         }
         .disabled(!viewModel.canDecide)
-        .padding(10)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         .padding(.horizontal, 20)
+        .padding(.top, 8)
         .padding(.bottom, 8)
         .ariaReadableWidth()
     }
@@ -121,30 +128,36 @@ struct AdminExtractionDetailView: View {
         Button {
             decide(AdminExtractionStatus.approved)
         } label: {
-            Group {
+            HStack(spacing: 8) {
                 if viewModel.isDeciding {
-                    ProgressView()
+                    ProgressView().tint(Color.liteOnAccent)
                 } else {
-                    Label(viewModel.isDirty ? LocalizedStringKey("Save & approve") : LocalizedStringKey("Approve"),
-                          systemImage: "checkmark")
+                    Image(systemName: "checkmark")
+                    Text(viewModel.isDirty ? LocalizedStringKey("Save & approve") : LocalizedStringKey("Approve"))
                 }
             }
-            .font(.subheadline.weight(.semibold))
-            .frame(maxWidth: .infinity)
+            .font(.callout.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 50)
         }
         .ariaAccentGlassButtonStyle()
+        .buttonBorderShape(.capsule)
     }
 
-    private var rejectButton: some View {
+    private func rejectButton(fills: Bool) -> some View {
         Button(role: .destructive) {
             confirmsReject = true
         } label: {
-            Label("Reject", systemImage: "xmark")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.liteDanger)
-                .frame(maxWidth: .infinity)
+            HStack(spacing: 6) {
+                Image(systemName: "xmark")
+                Text("Reject")
+            }
+            .font(.callout.weight(.semibold))
+            .foregroundStyle(Color.liteDanger)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: fills ? .infinity : nil, minHeight: 50)
         }
         .ariaGlassButtonStyle()
+        .buttonBorderShape(.capsule)
     }
 
     private func decide(_ status: String) {

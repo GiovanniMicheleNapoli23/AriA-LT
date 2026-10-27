@@ -50,6 +50,7 @@ struct AdminConnectorConsentFlow {
     func run(authorizeURL: String, composio: Bool, fallbackName: String,
              authenticate: Authenticate, open: Open) async -> Outcome {
         // Solo https con un host: `hasPrefix("http")` lasciava passare http in chiaro e schemi come `httpx:`.
+        AriaAuthTrace.step("connector.consent", "composio=\(composio) authorize=\(URL(string: authorizeURL)?.host() ?? "?")")
         guard let url = URL(string: authorizeURL), url.scheme?.lowercased() == "https",
               url.host()?.isEmpty == false else {
             return .failed(AriaError.decoding("authorize_url").localizedDescription)
@@ -60,6 +61,7 @@ struct AdminConnectorConsentFlow {
         do {
             callback = try await authenticate(url, host, Self.verifyPath)
         } catch {
+            AriaAuthTrace.step("connector.session.error", String(describing: error))
             if Self.isCancellation(error) { return .cancelled }
             // Il ritorno https non parte finché la web non pubblica l'AASA (o la sessione non si apre):
             // si ripiega sul browser, dove la pagina web chiude con la sessione di chi la ha.
@@ -69,13 +71,18 @@ struct AdminConnectorConsentFlow {
     }
 
     private func browser(_ url: URL, _ open: Open) -> Outcome {
+        AriaAuthTrace.step("connector.browser", url.host() ?? "?")
         open(url)
         return .browser(notice: String(localized: "Finish signing in in the browser, then come back here."))
     }
 
-    private static func isCancellation(_ error: any Error) -> Bool {
+    /// Annullato da chi guarda. iOS manda lo stesso `canceledLogin` quando l'app non risulta associata al dominio
+    /// del ritorno (webcredentials non ancora verificato): quello non è un annullamento, si va dal browser.
+    static func isCancellation(_ error: any Error) -> Bool {
         if error is CancellationError { return true }
-        return (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin
+        guard (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin else { return false }
+        let reason = (error as NSError).localizedFailureReason ?? ""
+        return !reason.contains("webcredentials")
     }
 
     /// composio/complete con il `session_uri` dell'URL di ritorno.

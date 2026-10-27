@@ -19,8 +19,6 @@ final class AdminAgentStudioViewModel {
     /// I prompt degli agenti: lista ed editor condividono lo stesso stato.
     let prompts: AdminAgentStudioPromptsViewModel
 
-    var tab: AdminAgentStudioTab = .workflows
-
     private(set) var workflows: [AdminAgentStudioWorkflow] = []
     private(set) var workflowsError: String?
     private(set) var activeRuns: [AdminAgentStudioActiveRun] = []
@@ -44,6 +42,9 @@ final class AdminAgentStudioViewModel {
     @ObservationIgnored private var loadedApprovalsKey: String?
 
     var showsUnreadOnly = false
+
+    /// I run avviati dall'app, vivi finché non finiscono anche fuori dalla loro schermata.
+    @ObservationIgnored private var launches: [AdminAgentStudioRunViewModel] = []
 
     private(set) var isLoading = false
     private(set) var hasLoaded = false
@@ -108,7 +109,6 @@ final class AdminAgentStudioViewModel {
 
         hasLoaded = true
         lastUpdated = .now
-        if tab == .approvals, approvalFilter != .pending { await loadApprovals(force: true) }
     }
 
     /// Dopo un'azione in un dettaglio (run avviato o annullato, approvazione decisa): run e approvazioni.
@@ -245,8 +245,26 @@ final class AdminAgentStudioViewModel {
         AdminAgentStudioWorkflowViewModel(
             backend: backend, workflowId: id, seed: workflows.first { $0.id == id },
             onWorkflowChanged: { [weak self] in self?.apply($0) },
-            onActivityChanged: { [weak self] in await self?.refreshActivity() }
+            onLaunch: { [weak self] body, mode, steps, onEnded in
+                self?.launch(body, mode: mode, steps: steps, onEnded: onEnded)
+            }
         )
+    }
+
+    /// Un run avviato dall'app: resta qui (e continua a seguire lo stream) anche se si torna indietro.
+    private func launch(_ body: AdminAgentStudioRunBody, mode: AdminAgentStudioRunMode,
+                        steps: [AdminAgentStudioWorkflowStep],
+                        onEnded: @escaping () async -> Void) -> AdminAgentStudioRunViewModel {
+        launches.removeAll { !$0.isActive }
+        let run = AdminAgentStudioRunViewModel(
+            backend: backend, source: .start(body, mode: mode), workflowSteps: steps,
+            onActivityChanged: { [weak self] in
+                await self?.refreshActivity()
+                await onEnded()
+            }
+        )
+        launches.append(run)
+        return run
     }
 
     /// Dal workflow già in lista: il dettaglio la aggiorna a ogni caricamento.
@@ -254,10 +272,14 @@ final class AdminAgentStudioViewModel {
         workflows.first { $0.id == workflowId }.map(AdminAgentStudioCanvasViewModel.init(workflow:))
     }
 
+    /// Un run partito da qui si riprende com'è; gli altri si seguono dal registro degli eventi.
     func makeRunViewModel(workflowId: String?, runId: String) -> AdminAgentStudioRunViewModel {
+        if let launched = launches.first(where: { $0.runId == runId }) { return launched }
         let active = activeRuns.first { $0.id == runId }
+        let workflowId = workflowId ?? active?.workflowId
         return AdminAgentStudioRunViewModel(
-            backend: backend, workflowId: workflowId ?? active?.workflowId, runId: runId, activeSeed: active,
+            backend: backend, source: .attach(runId: runId), workflowId: workflowId,
+            workflowName: active?.workflowName ?? workflows.first { $0.id == workflowId }?.name,
             onActivityChanged: { [weak self] in await self?.refreshActivity() }
         )
     }
@@ -306,9 +328,9 @@ final class AdminAgentStudioViewModel {
         isLoading = false
         isLoadingApprovals = false
         actionError = nil
-        tab = .workflows
         approvalFilter = .pending
         showsUnreadOnly = false
         prompts.reset()
+        launches.removeAll()
     }
 }

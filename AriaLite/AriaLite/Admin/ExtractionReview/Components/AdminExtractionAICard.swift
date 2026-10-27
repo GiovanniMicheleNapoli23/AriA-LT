@@ -12,6 +12,11 @@ import SwiftUI
 
 struct AdminExtractionAICard: View {
     @Bindable var viewModel: AdminExtractionDetailViewModel
+    /// Il focus del dettaglio: con la richiesta libera attiva la barra della decisione si nasconde.
+    var focus: FocusState<String?>.Binding
+
+    /// La chiave di focus della richiesta libera (le chiavi dei campi non hanno punti).
+    static let promptFocusKey = "ai.prompt"
 
     @ScaledMetric(relativeTo: .subheadline) private var actionWidth = 150
 
@@ -23,7 +28,7 @@ struct AdminExtractionAICard: View {
                         Button {
                             Task { await viewModel.ask(action) }
                         } label: {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 8) {
                                 if viewModel.aiAction == action {
                                     ProgressView().controlSize(.small)
                                 } else {
@@ -31,10 +36,13 @@ struct AdminExtractionAICard: View {
                                 }
                                 Text(action.title).lineLimit(2).multilineTextAlignment(.leading)
                             }
-                            .font(.footnote.weight(.semibold))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
                         }
-                        .ariaGlassButtonStyle()
+                        // Dentro la scheda di vetro: un pieno tenue d'accento, non altro vetro.
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.roundedRectangle(radius: 12))
+                        .tint(Color.liteAccent)
                         .disabled(!viewModel.canAskAI)
                     }
                 }
@@ -55,6 +63,7 @@ struct AdminExtractionAICard: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .focused(focus, equals: Self.promptFocusKey)
                 .submitLabel(.send)
                 .onSubmit { Task { await viewModel.sendPrompt() } }
             Button {
@@ -91,22 +100,31 @@ struct AdminExtractionAICard: View {
             }
             ForEach(proposal.changes) { AdminExtractionProposalChangeRow(change: $0) }
             HStack(spacing: 10) {
-                Button("Discard", role: .cancel) { viewModel.discardProposal() }
-                    .ariaGlassButtonStyle()
+                Button(role: .cancel) { viewModel.discardProposal() } label: {
+                    Text("Discard")
+                        .font(.subheadline.weight(.semibold))
+                        .padding(.horizontal, 4)
+                }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .tint(Color.primary)
                 Spacer(minLength: 0)
                 if !proposal.changes.isEmpty {
                     Button {
                         Task { await viewModel.applyProposal() }
                     } label: {
                         if viewModel.isSaving {
-                            ProgressView()
+                            ProgressView().tint(Color.liteOnAccent)
                         } else {
                             Label("Apply & save", systemImage: "checkmark")
                                 .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color.liteOnAccent)
                         }
                     }
                     .disabled(viewModel.isSaving || !viewModel.canEdit)
-                    .ariaProminentGlassButtonStyle(tint: .liteAccent, foreground: .liteOnAccent)
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .tint(Color.liteAccent)
                 }
             }
         }

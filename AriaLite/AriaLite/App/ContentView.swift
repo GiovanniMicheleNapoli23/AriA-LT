@@ -28,12 +28,18 @@ struct ContentView: View {
                 LoginView(viewModel: viewModel)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: viewModel.lock == .launch)
         // Link di accesso toccato nell'email (Universal Link) o dal pulsante della pagina web (aria://).
         .onOpenURL { viewModel.open($0) }
         .onChange(of: scenePhase, initial: true) { _, phase in
+            AriaAuthTrace.step("scene.phase", "\(phase)")
             // Il selettore delle app mostra (e salva) l'app già da `.inactive`: da lì in poi è coperta.
-            if phase == .active || viewModel.loggedInUser == nil { privacyWindow.hide() } else { privacyWindow.show() }
+            // Non durante il nostro Face ID: copre già la schermata di blocco, e il sistema torna `.active`
+            // secondi dopo l'esito, quando ha chiuso il suo foglio.
+            if phase == .active || viewModel.loggedInUser == nil || viewModel.isUnlocking {
+                privacyWindow.hide()
+            } else {
+                privacyWindow.show()
+            }
             switch phase {
             case .background: viewModel.lockForBackground()
             // Face ID si può chiedere solo con l'app in primo piano.

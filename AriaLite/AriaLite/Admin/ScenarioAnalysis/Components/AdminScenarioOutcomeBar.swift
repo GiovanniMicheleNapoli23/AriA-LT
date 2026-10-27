@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Una barra sottile divisa fra sessioni risolte, non risolte e incerte di uno scenario, nei toni spenti
-//  della sezione su un binario appena visibile.
+//  Una barra sottile divisa fra sessioni risolte (accento), non risolte e incerte (grigi) di uno scenario,
+//  su un binario grigio tenue (non nero: sul vetro scuro deve restare visibile).
 //
 
 import SwiftUI
@@ -24,12 +24,13 @@ struct AdminScenarioOutcomeBar: View {
             GeometryReader { proxy in
                 HStack(spacing: 2) {
                     segment(resolved, AdminScenarioTone.positive.color, width: proxy.size.width)
-                    segment(unresolved, AdminScenarioTone.negative.color.opacity(0.85), width: proxy.size.width)
-                    segment(unclear, Color.secondary.opacity(0.35), width: proxy.size.width)
+                    // Non risolte in grigio pieno, incerte in grigio più chiaro: si distinguono dal binario.
+                    segment(unresolved, AdminScenarioTone.negative.color, width: proxy.size.width)
+                    segment(unclear, Color.secondary.opacity(0.45), width: proxy.size.width)
                 }
             }
             .frame(height: height)
-            .background(Color.secondary.opacity(0.12), in: Capsule())
+            .background(Color.secondary.opacity(0.2), in: Capsule())
             .clipShape(Capsule())
             .accessibilityElement()
             .accessibilityLabel(Text("\(resolved) resolved, \(unresolved) unresolved, \(unclear) unclear"))

@@ -4,9 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un workflow: attiva/disattiva, avvio (controllo, simulazione, run reale) con l'esito,
-//  i passi in sola lettura (con l'apertura del canvas del grafo), la scheda e lo storico dei run.
-//  Il grafo, anche sul canvas, è in sola lettura: si modifica sulla web.
+//  Il dettaglio di un workflow: intestazione con attiva/disattiva, "Run it" (modalità + Start), il flusso
+//  "How it works", gli ultimi run e i dettagli. Il canvas si apre dalla barra in alto.
+//  Niente testo selezionabile né controlli UIKit (a parte il Toggle). Il grafo è in sola lettura.
 //
 
 import SwiftUI
@@ -19,16 +19,31 @@ struct AdminAgentStudioWorkflowDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 20) {
                 if viewModel.workflow == nil {
                     loadingOrError
                 } else {
-                    headerCard
-                    AdminAgentStudioRunLauncherCard(viewModel: viewModel)
-                    stepsCard
-                    detailsCard
-                    runsCard
+                    AdminAgentStudioWorkflowHeader(
+                        title: viewModel.title,
+                        description: viewModel.workflow?.description,
+                        statusLine: viewModel.statusLine,
+                        isEnabledNow: viewModel.isEnabled,
+                        errorMessage: viewModel.workflowError,
+                        isEnabled: $viewModel.isEnabled,
+                        isToggling: viewModel.isTogglingEnabled
+                    )
+                    AdminAgentStudioRunModeSection(
+                        selection: viewModel.selectedMode,
+                        startLabel: viewModel.startLabel,
+                        isRealRun: viewModel.isRealRun,
+                        canStart: viewModel.canStart,
+                        onSelect: { viewModel.selectedMode = $0 },
+                        onStart: { Task { await viewModel.choose(viewModel.selectedMode) } }
+                    )
+                    AdminAgentStudioHowItWorksSection(steps: viewModel.flowSteps)
+                    AdminAgentStudioRecentRunsSection(viewModel: viewModel)
+                    AdminAgentStudioDetailsSection(fields: viewModel.fields)
                 }
             }
             .padding(20)
@@ -37,8 +52,21 @@ struct AdminAgentStudioWorkflowDetailView: View {
         .liteBackground()
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if viewModel.workflow != nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(value: AdminAgentStudioRoute.canvas(workflowId: viewModel.workflowId)) {
+                        Image(systemName: "point.3.filled.connected.trianglepath.dotted")
+                    }
+                    .accessibilityLabel("Open canvas")
+                }
+            }
+        }
         .refreshable { await viewModel.load() }
         .task { await viewModel.load() }
+        .navigationDestination(isPresented: $viewModel.showsLaunchedRun) {
+            if let run = viewModel.launchedRun { AdminAgentStudioRunDetailView(viewModel: run) }
+        }
         .alert("Agent Studio", isPresented: $viewModel.showsActionError) {
             Button("OK") {}
         } message: {
@@ -70,118 +98,6 @@ struct AdminAgentStudioWorkflowDetailView: View {
             ProgressView()
                 .frame(maxWidth: .infinity)
                 .padding(.top, 60)
-        }
-    }
-
-    private var headerCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(viewModel.title)
-                .font(.title3.weight(.bold))
-                .textSelection(.enabled)
-            if let description = viewModel.workflow?.description {
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let message = viewModel.workflowError {
-                AdminSectionNotice(text: message, isError: true)
-            }
-            Toggle(isOn: $viewModel.isEnabled) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Enabled").font(.subheadline.weight(.semibold))
-                    Text("Enabled workflows run on their trigger.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .tint(Color.liteAccent)
-            .disabled(viewModel.isTogglingEnabled)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var stepsCard: some View {
-        AdminCard(title: "Steps", systemImage: "list.number") {
-            let steps = viewModel.steps
-            if steps.isEmpty {
-                AdminSectionNotice(text: String(localized: "This workflow has no steps yet."))
-            } else {
-                VStack(spacing: 0) {
-                    canvasLink
-                    ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
-                        AdminAgentStudioStepRow(index: index + 1, step: step, showsDivider: index < steps.count - 1)
-                    }
-                }
-            }
-        }
-    }
-
-    /// L'ingresso al canvas del grafo, in cima ai passi.
-    private var canvasLink: some View {
-        NavigationLink(value: AdminAgentStudioRoute.canvas(workflowId: viewModel.workflowId)) {
-            HStack(spacing: 10) {
-                Label("Open canvas", systemImage: "point.3.filled.connected.trianglepath.dotted")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.liteAccent)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(12)
-            .background(Color.liteAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .padding(.bottom, 6)
-    }
-
-    private var detailsCard: some View {
-        AdminCard(title: "Details", systemImage: "info.circle") {
-            let fields = viewModel.fields
-            VStack(spacing: 0) {
-                ForEach(fields) { field in
-                    AdminFieldRow(field: field, showsDivider: field != fields.last)
-                }
-            }
-        }
-    }
-
-    private var runsCard: some View {
-        AdminCard(title: "Runs", systemImage: "clock.arrow.circlepath") {
-            VStack(alignment: .leading, spacing: 8) {
-                if let message = viewModel.runsError {
-                    AdminSectionNotice(text: message, isError: true)
-                } else if viewModel.sortedRuns.isEmpty {
-                    AdminSectionNotice(text: String(localized: "No runs yet."), systemImage: "clock")
-                }
-                ForEach(viewModel.sortedRuns.prefix(30)) { run in
-                    NavigationLink(value: AdminAgentStudioRoute.run(workflowId: viewModel.workflowId, runId: run.id)) {
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(viewModel.subtitle(for: run))
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .multilineTextAlignment(.leading)
-                                if let footnote = viewModel.footnote(for: run) {
-                                    Text(footnote).font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer(minLength: 8)
-                            if let status = run.status { AdminAgentStudioBadge(status: status) }
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
         }
     }
 }

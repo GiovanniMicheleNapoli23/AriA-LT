@@ -4,28 +4,25 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La sezione Agent Studio, come le pagine /agent-studio della web: quattro schede (workflow, approvazioni,
-//  run attivi, policy), la campanella delle notifiche e la navigazione verso i dettagli.
+//  La sezione Agent Studio: una sola schermata che scorre (cosa richiede attenzione, i workflow, la
+//  configurazione), la campanella delle notifiche e la navigazione verso i dettagli.
 //
 
 import SwiftUI
 
 struct AdminAgentStudioView: View {
-    @Bindable var viewModel: AdminAgentStudioViewModel
+    let viewModel: AdminAgentStudioViewModel
 
     @State private var path: [AdminAgentStudioRoute] = []
     @State private var showsNotifications = false
-    @State private var policyForm: AdminAgentStudioPolicyFormViewModel?
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Picker("Section", selection: $viewModel.tab) {
-                        ForEach(AdminAgentStudioTab.allCases) { Text($0.label).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    tabContent
+                VStack(alignment: .leading, spacing: 24) {
+                    if viewModel.hasLoaded { AdminAgentStudioAttentionSection(viewModel: viewModel) }
+                    AdminAgentStudioWorkflowsSection(viewModel: viewModel)
+                    AdminAgentStudioConfigurationSection()
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
@@ -48,27 +45,8 @@ struct AdminAgentStudioView: View {
                     path.append(route)
                 }
             }
-            .sheet(item: $policyForm) { form in
-                AdminAgentStudioPolicyFormView(viewModel: form) { viewModel.policySaved($0) }
-            }
         }
         .task(id: viewModel.loadKey) { await viewModel.load() }
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        switch viewModel.tab {
-        case .workflows:
-            AdminAgentStudioWorkflowsTab(viewModel: viewModel)
-        case .approvals:
-            AdminAgentStudioApprovalsTab(viewModel: viewModel)
-        case .runs:
-            AdminAgentStudioRunsTab(viewModel: viewModel)
-        case .policy:
-            AdminAgentStudioPolicyTab(viewModel: viewModel) {
-                policyForm = viewModel.makePolicyFormViewModel()
-            }
-        }
     }
 
     @ViewBuilder
@@ -86,6 +64,12 @@ struct AdminAgentStudioView: View {
             AdminAgentStudioRunDetailView(viewModel: viewModel.makeRunViewModel(workflowId: workflowId, runId: runId))
         case .approval(let id):
             AdminAgentStudioApprovalDetailView(viewModel: viewModel.makeApprovalViewModel(id: id))
+        case .approvals:
+            AdminAgentStudioApprovalsView(viewModel: viewModel)
+        case .policy:
+            AdminAgentStudioPolicyView(viewModel: viewModel)
+        case .accuracy:
+            AdminAgentStudioAccuracyView(viewModel: viewModel)
         case .prompts:
             AdminAgentStudioPromptsView(viewModel: viewModel.prompts)
         case .prompt(let name):

@@ -4,13 +4,41 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  I testi derivati che le schede di Agent Studio mostrano: righe secondarie delle liste
-//  (workflow, approvazioni, run attivi) e la policy in sola lettura (limiti, liste, livelli di rischio).
+//  I testi derivati che le schermate di Agent Studio mostrano: la riga di numeri e "Needs attention" della
+//  principale, righe secondarie delle liste (workflow, approvazioni, run attivi) e la policy in sola lettura.
 //
 
 import Foundation
 
 extension AdminAgentStudioViewModel {
+    // MARK: Schermata principale
+
+    /// "5 workflows · 3 enabled · 12 runs today"; niente se non ci sono workflow.
+    var statsLine: String? {
+        guard !workflows.isEmpty else { return nil }
+        let total = workflows.count
+        let enabled = enabledCount
+        let today = runsTodayCount
+        return [
+            String(localized: "\(total) workflows"),
+            String(localized: "\(enabled) enabled"),
+            String(localized: "\(today) runs today"),
+        ].joined(separator: " · ")
+    }
+
+    /// Né approvazioni in attesa né run attivi: la schermata dice che è tutto tranquillo.
+    var needsAttentionIsEmpty: Bool { pendingApprovals.isEmpty && activeRuns.isEmpty }
+
+    /// Perché "Needs attention" può essere incompleta (approvazioni o run non arrivati).
+    var attentionErrors: [String] {
+        [pendingApprovalsError, activeRunsError].compactMap { $0 }
+    }
+
+    /// Le approvazioni in attesa, dalla più recente.
+    var attentionApprovals: [AdminAgentStudioApproval] {
+        pendingApprovals.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+    }
+
     // MARK: Righe delle liste
 
     func subtitle(for workflow: AdminAgentStudioWorkflow) -> String {

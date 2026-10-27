@@ -268,7 +268,7 @@ extension AdminMarketplaceItem {
 
     /// Tutto quello che la ricerca deve raggiungere: chi scrive "pareto", "ALCOA" o un codice allarme
     /// sta nominando quello che vuole, non il nome della scheda.
-    var searchHaystack: [String] {
+    nonisolated var searchHaystack: [String] {
         var text = [name, summary, publisher, area.label, kind.label, descriptor ?? ""] + adds + keywords
         if let machine {
             text += [machine.manufacturer, machine.type, machine.model, machine.industry]

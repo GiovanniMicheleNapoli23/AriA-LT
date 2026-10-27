@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La sezione Taskboard, come la pagina /taskboard della web: gli ordini dello stabilimento attivo in colonne
-//  per stato. Su telefono si sceglie una colonna alla volta (chip con il conteggio), su schermi larghi si
-//  vedono affiancate. Filtri e ricerca sono locali; lo spostamento di colonna è un PATCH dello stato, subito
+//  per stato. In kanban le colonne stanno tutte affiancate e le card si trascinano; in lista su telefono si
+//  sceglie una colonna alla volta (chip con il conteggio), su schermi larghi si vedono in griglia (la scelta
+//  resta sul dispositivo). Le viste per persona e calendario sono nelle estensioni +People e +Calendar. Filtri e ricerca sono locali; lo spostamento di colonna è un PATCH dello stato, subito
 //  visibile e annullato se il server rifiuta. "Completed" e "Cancelled" passano dalle azioni rapide degli
 //  ordini (note di chiusura, conferma). Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
 //
@@ -27,8 +28,15 @@ final class AdminTaskboardViewModel {
     private(set) var orders: [AdminWorkOrder] = []
     private(set) var members: [AdminTaskboardMember] = []
     var selectedStatus: AdminWorkOrderStatus = .planned
+    /// Kanban o lista: una preferenza del dispositivo, non si azzera all'uscita dall'account.
+    var layout = AdminTaskboardViewModel.savedLayout {
+        didSet { UserDefaults.standard.set(layout.rawValue, forKey: Self.layoutKey) }
+    }
     var filters = AdminTaskboardFilters()
     var searchText = ""
+    /// Il mese a schermo nel calendario e il giorno di cui si vedono le attività.
+    var calendarMonth = AdminTaskboardViewModel.startOfMonth(.now)
+    var calendarDay = Calendar.current.startOfDay(for: .now)
 
     private(set) var hasLoaded = false
     private(set) var isLoading = false
@@ -48,6 +56,11 @@ final class AdminTaskboardViewModel {
     static let maxPages = 5
     /// Le colonne, nell'ordine del flusso di lavoro.
     static let columns = AdminWorkOrderStatus.known
+
+    private static let layoutKey = "admin.taskboard.layout"
+    private static var savedLayout: AdminTaskboardLayout {
+        UserDefaults.standard.string(forKey: layoutKey).flatMap(AdminTaskboardLayout.init(rawValue:)) ?? .kanban
+    }
 
     @ObservationIgnored private var movingIds: Set<String> = []
     @ObservationIgnored private var details: [String: AdminWorkOrderDetailViewModel] = [:]
@@ -77,6 +90,8 @@ final class AdminTaskboardViewModel {
         selectedStatus = .planned
         filters = AdminTaskboardFilters()
         searchText = ""
+        calendarMonth = Self.startOfMonth(.now)
+        calendarDay = Calendar.current.startOfDay(for: .now)
         hasLoaded = false
         isLoading = false
         errorMessage = nil
@@ -166,7 +181,7 @@ final class AdminTaskboardViewModel {
     var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     /// Gli ordini che passano filtri e ricerca.
-    private var visibleOrders: [AdminWorkOrder] {
+    var visibleOrders: [AdminWorkOrder] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return orders.filter { order in
             guard filters.matches(order) else { return false }
@@ -185,7 +200,7 @@ final class AdminTaskboardViewModel {
         AdminWorkOrderSort.priority.sorted(visibleOrders.filter { $0.status == status }).map(card)
     }
 
-    private func card(_ order: AdminWorkOrder) -> AdminWorkOrderRowItem {
+    func card(_ order: AdminWorkOrder) -> AdminWorkOrderRowItem {
         let steps = order.stepProgress.flatMap { $0.total > 0 ? $0 : nil }
         return AdminWorkOrderRowItem(
             order: order,
@@ -201,7 +216,7 @@ final class AdminTaskboardViewModel {
         )
     }
 
-    private func assigneeName(for order: AdminWorkOrder) -> String? {
+    func assigneeName(for order: AdminWorkOrder) -> String? {
         members.first { $0.id == order.assignedToUserId }?.displayName ?? directory.assigneeName(for: order)
     }
 
@@ -235,10 +250,22 @@ final class AdminTaskboardViewModel {
     }
 
     func move(_ item: AdminWorkOrderRowItem, to status: AdminWorkOrderStatus) {
+        move(item.order, to: status)
+    }
+
+    /// Una card trascinata su una colonna della kanban: come "Move to…", solo verso le colonne permesse.
+    func drop(_ ids: [String], on status: AdminWorkOrderStatus) -> Bool {
+        guard let id = ids.first, !movingIds.contains(id), let order = orders.first(where: { $0.id == id }),
+              !quickActions.isBusy(order), quickActions.statusChoices(for: order).contains(status) else { return false }
+        move(order, to: status)
+        return true
+    }
+
+    private func move(_ order: AdminWorkOrder, to status: AdminWorkOrderStatus) {
         switch status {
-        case .completed, .cancelled: quickActions.change(item.order, to: status)
+        case .completed, .cancelled: quickActions.change(order, to: status)
         case .unknown: break
-        default: Task { await moveOptimistically(item.order, to: status) }
+        default: Task { await moveOptimistically(order, to: status) }
         }
     }
 

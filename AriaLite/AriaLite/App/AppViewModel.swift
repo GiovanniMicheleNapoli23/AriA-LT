@@ -23,7 +23,7 @@ class AppViewModel {
     /// Notifiche push dei lavori assegnati.
     let notifications = AriaPushNotifications.shared
 
-    /// Sezioni della web, per gli account della piattaforma (non operatori).
+    /// Sezioni della web: tutte per gli account della piattaforma, una parte per l'operatore (AriaSidebarSections).
     let adminDocuments: AdminDocumentsViewModel
     let adminAgentStudio: AdminAgentStudioViewModel
     let adminMarketplace: AdminMarketplaceViewModel
@@ -123,6 +123,7 @@ class AppViewModel {
     /// Chiede Face ID (o il codice del telefono) e riapre l'app. Annullare lascia l'app chiusa.
     func unlock() async {
         guard lock != .none, !isUnlocking else { return }
+        AriaAuthTrace.step("unlock.start", "\(lock)")
         isUnlocking = true
         unlockError = nil
         defer { isUnlocking = false }
@@ -135,6 +136,7 @@ class AppViewModel {
         }
         // Sessione sparita dal Keychain: `backend.isSignedIn` è falso e ContentView torna al login.
         lock = .none
+        AriaAuthTrace.step("unlock.cleared")
     }
 
     /// Il primo prompt parte da solo appena l'app è in primo piano, una volta per chiusura.

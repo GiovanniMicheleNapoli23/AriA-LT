@@ -7,7 +7,8 @@
 //  Navigazione come Claude mobile: la chat è la schermata principale e tutte le
 //  sezioni (Chat, Task, Calendario, conversazioni fissate e recenti)
 //  stanno in una sidebar che si apre dal pulsante ☰ o trascinando dal bordo sinistro.
-//  Un account della piattaforma (admin) vede le sezioni della web al posto di Task e Calendario.
+//  Un account della piattaforma (admin) vede le sezioni della web al posto di Task e Calendario; l'operatore
+//  ha Task e Calendario più una parte di quelle sezioni (vedi AriaSidebarSections).
 //  Il pannello principale scivola a destra con gli angoli arrotondati.
 //
 
@@ -19,7 +20,7 @@ enum AriaDestination: Hashable {
     // Operatore
     case tasks
     case calendar
-    // Admin
+    // Sezioni della web (l'operatore ne vede una parte)
     case adminDocuments
     case adminAgentStudio
     case adminMarketplace
@@ -145,6 +146,7 @@ struct AriaShellView: View {
         .environment(\.sidebarController, sidebar)
         .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
+        .onAppear { AriaAuthTrace.step("shell.appear") }
         .task(id: viewModel.backend.isReady) { await store.load() }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
         .task {

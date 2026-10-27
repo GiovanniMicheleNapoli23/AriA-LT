@@ -62,6 +62,15 @@ nonisolated enum AdminAgentStudioRunMode: String, CaseIterable, Identifiable, Se
         }
     }
 
+    /// Una frase che dice cosa succede davvero scegliendo questa modalità.
+    var explanation: String {
+        switch self {
+        case .check: String(localized: "Tests connectors and policies. No agent runs, nothing is changed.")
+        case .simulate: String(localized: "Agents really work on your data, but actions on external systems are only simulated.")
+        case .run: String(localized: "Agents run and their actions reach the connected systems. Steps that need approval wait for a person.")
+        }
+    }
+
     var systemImage: String {
         switch self {
         case .check: "checklist"

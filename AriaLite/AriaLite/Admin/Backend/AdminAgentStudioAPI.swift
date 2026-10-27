@@ -7,7 +7,7 @@
 //  Le rotte dei workflow di Agent Studio (pagina /agent-studio della web): lista, dettaglio, attiva/disattiva,
 //  storico dei run, run attivi, annulla. Questa API risponde in camelCase con pezzi in snake_case: i modelli
 //  si leggono da JSON libero (AdminAgentStudioFields), quindi niente `.snakeCased()`.
-//  Avvio di un run ed eventi sono stream: si leggono per intero con `api.data` e si dividono in righe.
+//  Avvio di un run ed eventi sono stream NDJSON: le righe si consumano man mano (AriaAPIClient.ndjson).
 //
 
 import Foundation
@@ -50,17 +50,18 @@ nonisolated enum AdminAgentStudioAPI {
 
     // MARK: Stream
 
-    /// POST workflow-runs: il server manda un verdetto per nodo man mano; qui si aspetta la fine dello stream.
-    static func startRun(_ body: AdminAgentStudioRunBody, api: AriaAPIClient) async throws -> [AriaJSON] {
-        let data = try JSONEncoder().encode(body)
-        let raw = try await api.data("POST", "v1/agent-studio/workflow-runs", body: data)
-        return AdminAgentStudioRunStream.lines(from: raw)
+    /// POST workflow-runs: il server manda una riga JSON per evento man mano che il run avanza.
+    /// Lo stream non si può riprovare (rilancerebbe il run): se cade, si prosegue con `eventLines`.
+    static func runLines(_ body: AdminAgentStudioRunBody, api: AriaAPIClient) -> AsyncThrowingStream<AriaJSON, any Error> {
+        guard let data = try? JSONEncoder().encode(body) else {
+            return AsyncThrowingStream { $0.finish(throwing: AriaError.stream(String(localized: "Invalid request."))) }
+        }
+        return api.ndjson("POST", "v1/agent-studio/workflow-runs", body: data)
     }
 
-    /// GET workflow-runs/{id}/events: le righe dopo `after`; finché il run è vivo la risposta resta aperta.
-    static func runEvents(runId: String, after: Int = 0, api: AriaAPIClient) async throws -> [AriaJSON] {
-        let raw = try await api.data("GET", "v1/agent-studio/workflow-runs/\(runId)/events",
-                                     query: [URLQueryItem(name: "after", value: String(after))])
-        return AdminAgentStudioRunStream.lines(from: raw)
+    /// GET workflow-runs/{id}/events: le righe con `seq` > `after`, poi quelle nuove finché il run è vivo.
+    static func eventLines(runId: String, after: Int = 0, api: AriaAPIClient) -> AsyncThrowingStream<AriaJSON, any Error> {
+        api.ndjson("GET", "v1/agent-studio/workflow-runs/\(runId)/events",
+                   query: [URLQueryItem(name: "after", value: String(after))])
     }
 }

@@ -110,6 +110,8 @@ nonisolated struct AdminAgentStudioRunStep: Sendable, Identifiable, Hashable {
     let model: String?
     let accuracyScore: Int?
     let grounded: Bool?
+    /// L'approvazione su cui il passo è fermo (outcome `needs_approval`).
+    let approvalId: String?
 
     init?(json: AriaJSON) {
         let fields = AdminAgentStudioFields(json)
@@ -129,6 +131,7 @@ nonisolated struct AdminAgentStudioRunStep: Sendable, Identifiable, Hashable {
         let accuracy = fields.object("accuracy")
         accuracyScore = accuracy.int("score")
         grounded = accuracy.bool("grounded")
+        approvalId = fields.string("approvalId")
     }
 
     /// Simulato, durata, costo, modello, accuratezza: solo quelli presenti, in una riga.

@@ -6,22 +6,37 @@
 //
 //  La card di un ordine nella bacheca: titolo, priorità, asset e zona, chi lo esegue (persona e squadra),
 //  avanzamento dei passi e scadenza (rossa se superata). Il menu contestuale lo mette chi la usa.
+//  Compatta (kanban) è più bassa, così in una colonna se ne vedono di più. Fuori dalle colonne (persone,
+//  calendario) mostra anche lo stato, che lì non si capirebbe dalla posizione.
 //
 
 import SwiftUI
 
 struct AdminTaskboardCard: View {
     let item: AdminWorkOrderRowItem
+    var isCompact = false
+    var showsStatus = false
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: isCompact ? 14 : 16, style: .continuous) }
+
+    private var titleLines: Int {
+        switch (isCompact, dynamicTypeSize.isAccessibilitySize) {
+        case (true, false): 2
+        case (true, true): 4
+        case (false, false): 3
+        case (false, true): 5
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
             HStack(alignment: .top, spacing: 8) {
                 Text(item.order.title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.liteText)
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? 5 : 3)
+                    .lineLimit(titleLines)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if item.isBusy {
@@ -29,6 +44,12 @@ struct AdminTaskboardCard: View {
                 } else if let priority = item.priority {
                     AdminWorkOrderPriorityBadge(priority: priority)
                 }
+            }
+            if showsStatus, let status = item.status, status != .unknown {
+                Label(status.localized, systemImage: status.systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(status.tint)
+                    .lineLimit(1)
             }
             if !item.place.isEmpty {
                 Label(item.place, systemImage: "gearshape.2")
@@ -42,11 +63,11 @@ struct AdminTaskboardCard: View {
                 .lineLimit(1)
             if item.progress != nil || item.due != nil { footer }
         }
-        .padding(14)
+        .padding(isCompact ? 10 : 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .ariaGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .ariaGlass(in: shape)
         .opacity(item.order.isClosed ? 0.75 : 1)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(shape)
     }
 
     private var footer: some View {

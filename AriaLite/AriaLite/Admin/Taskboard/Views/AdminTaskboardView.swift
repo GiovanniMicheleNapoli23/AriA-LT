@@ -4,10 +4,13 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La sezione Taskboard, come la pagina /taskboard della web: una sola scroll view. Su telefono i chip degli
-//  stati (con il conteggio) scelgono la colonna e sotto stanno le sue card; su schermi larghi le colonne
-//  stanno affiancate in una griglia adattiva. Dal menu contestuale di una card si sposta di colonna;
-//  un tocco apre il dettaglio degli ordini di lavoro. Tutta la logica è in AdminTaskboardViewModel.
+//  La sezione Taskboard, come la pagina /taskboard della web. In kanban le colonne stanno tutte affiancate,
+//  ognuna con il suo scroll, e le card si trascinano da una colonna all'altra. In lista è una sola scroll view:
+//  su telefono i chip degli stati (con il conteggio) scelgono la colonna e sotto stanno le sue card; su schermi
+//  larghi le colonne stanno affiancate in una griglia adattiva. Dal menu contestuale di una card si sposta di
+//  colonna; un tocco apre il dettaglio degli ordini di lavoro. Per persona le task aperte stanno sotto chi le
+//  esegue; in calendario si sceglie un giorno e sotto ci sono le sue attività, sempre per persona.
+//  Tutta la logica è in AdminTaskboardViewModel.
 //
 
 import SwiftUI
@@ -18,27 +21,33 @@ struct AdminTaskboardView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var isWide: Bool { horizontalSizeClass == .regular }
+    private var isKanban: Bool { viewModel.layout == .kanban }
 
     var body: some View {
         NavigationStack(path: $viewModel.path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    AdminTaskboardFilterBar(viewModel: viewModel)
-                    if viewModel.hasLoaded, let message = viewModel.errorMessage { errorPill(message) }
-                    content
-                }
-                .padding(.top, 4)
-                .padding(.bottom, 24)
-                .ariaReadableWidth(isWide ? 1200 : AriaLayout.readableWidth)
+            Group {
+                if isKanban && viewModel.hasLoaded { kanbanBoard } else { scrollingBoard }
             }
             .refreshable { await viewModel.refresh() }
             .liteBackground()
             .navigationTitle("Taskboard")
+            .navigationBarTitleDisplayMode(isKanban ? .inline : .automatic)
             .navigationDestination(for: AdminWorkOrderRoute.self) { route in
                 AdminWorkOrderDetailView(viewModel: viewModel.detailModel(for: route.order))
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Layout", selection: $viewModel.layout) {
+                            ForEach(AdminTaskboardLayout.allCases, id: \.self) { layout in
+                                Label(layout.localized, systemImage: layout.systemImage).tag(layout)
+                            }
+                        }
+                    } label: {
+                        Label("Layout", systemImage: viewModel.layout.systemImage)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("New task", systemImage: "plus") { viewModel.startCreating() }
                         .disabled(viewModel.isForbidden || !viewModel.hasLoaded)
@@ -65,6 +74,34 @@ struct AdminTaskboardView: View {
 
     // MARK: Contenuto
 
+    /// Kanban: filtri in alto, sotto le colonne a tutta altezza (scorrono loro, non la pagina).
+    private var kanbanBoard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AdminTaskboardFilterBar(viewModel: viewModel)
+            if let message = viewModel.errorMessage { errorPill(message) }
+            footnote
+            AdminTaskboardKanbanBoard(viewModel: viewModel) { item in
+                card(item, isCompact: true)
+            }
+        }
+        .padding(.top, 4)
+        .padding(.bottom, 8)
+    }
+
+    /// Lista, e il caricamento o l'errore prima che ci sia una bacheca.
+    private var scrollingBoard: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                AdminTaskboardFilterBar(viewModel: viewModel)
+                if viewModel.hasLoaded, let message = viewModel.errorMessage { errorPill(message) }
+                content
+            }
+            .padding(.top, 4)
+            .padding(.bottom, 24)
+            .ariaReadableWidth(isWide ? 1200 : AriaLayout.readableWidth)
+        }
+    }
+
     @ViewBuilder
     private var content: some View {
         if !viewModel.hasLoaded {
@@ -73,10 +110,17 @@ struct AdminTaskboardView: View {
             } else {
                 ProgressView().frame(maxWidth: .infinity).padding(.top, 60)
             }
-        } else if isWide {
-            wideBoard
         } else {
-            compactBoard
+            switch viewModel.layout {
+            case .people:
+                AdminTaskboardPeopleBoard(viewModel: viewModel) { card($0, showsStatus: true) }
+                footnote
+            case .calendar:
+                AdminTaskboardCalendarBoard(viewModel: viewModel) { card($0, showsStatus: true) }
+                footnote
+            case .kanban, .list:
+                if isWide { wideBoard } else { compactBoard }
+            }
         }
     }
 
@@ -114,9 +158,9 @@ struct AdminTaskboardView: View {
         }
     }
 
-    private func card(_ item: AdminWorkOrderRowItem) -> some View {
+    private func card(_ item: AdminWorkOrderRowItem, isCompact: Bool = false, showsStatus: Bool = false) -> some View {
         NavigationLink(value: AdminWorkOrderRoute(order: item.order)) {
-            AdminTaskboardCard(item: item)
+            AdminTaskboardCard(item: item, isCompact: isCompact, showsStatus: showsStatus)
         }
         .buttonStyle(.plain)
         .contextMenu {

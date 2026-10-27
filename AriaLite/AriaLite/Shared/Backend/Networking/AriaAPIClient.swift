@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 25/09/26.
 //
 //  Client HTTP verso aria-backend: header comuni, retry su 401,
-//  richieste JSON (AriaEndpoint + `call`) e stream SSE di POST /v1/responses.
+//  richieste JSON (AriaEndpoint + `call`), stream SSE di POST /v1/responses e stream NDJSON.
 //
 
 import Foundation
@@ -206,6 +206,53 @@ nonisolated final class AriaAPIClient: Sendable {
                             }
                         }
                         if let event = parser.finish() { continuation.yield(AriaStreamEvent(event)) }
+                        break
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    // MARK: NDJSON
+
+    /// Una richiesta il cui corpo è NDJSON (una riga JSON per evento, es. i run di Agent Studio): le righe escono
+    /// man mano che arrivano. Stessi retry 401 ed errori di `stream`. Cancellare chi consuma chiude la connessione;
+    /// il server però può continuare il lavoro (un run non si ferma, si annulla con la sua rotta).
+    func ndjson(_ method: String, _ path: String, query: [URLQueryItem] = [],
+                body: Data? = nil) -> AsyncThrowingStream<AriaJSON, any Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task(name: "aria.ndjson.stream") {
+                do {
+                    var retried = false
+                    while true {
+                        let req = try await self.request(method, path, query: query, body: body,
+                                                         accept: "*/*")
+                        let (bytes, response) = try await self.streamSession.bytes(for: req)
+                        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                        if status == 401, !retried {
+                            retried = true
+                            await self.auth.invalidate()
+                            continue
+                        }
+                        if !(200..<300).contains(status) {
+                            var errorBody = Data()
+                            for try await byte in bytes {
+                                errorBody.append(byte)
+                                if errorBody.count >= 16_384 { break }
+                            }
+                            if AriaHTTP.isHostDown(response) { throw AriaError.serverOffline }
+                            try await self.checkMembership(response, errorBody)
+                            try AriaHTTP.check(response, errorBody)
+                        }
+                        var splitter = AriaNDJSONSplitter()
+                        for try await byte in bytes {
+                            if let line = splitter.consume(byte) { continuation.yield(line) }
+                        }
+                        if let line = splitter.finish() { continuation.yield(line) }
                         break
                     }
                     continuation.finish()

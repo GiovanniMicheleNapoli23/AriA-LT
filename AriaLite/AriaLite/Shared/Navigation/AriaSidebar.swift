@@ -5,8 +5,7 @@
 //  Created by Giovanni Michele on 26/09/26.
 //
 //  La sidebar di AriaPLT Mobile: logo e ricerca delle chat, sezioni in alto, conversazioni fissate e recenti,
-//  profilo e "Nuova chat" in fondo. L'operatore ha Task e Calendario; un account della piattaforma
-//  le sezioni della web, raggruppate come nella sidebar della web.
+//  profilo e "Nuova chat" in fondo. Le sezioni per tipo di account sono in AriaSidebarSections.
 //
 
 import SwiftUI
@@ -35,49 +34,18 @@ struct AriaSidebar: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                navRow("Chats", icon: "bubble.left.and.bubble.right", target: .chats)
-                switch viewModel.accountKind {
-                case .operator:
-                    navRow("Tasks", icon: "checklist", target: .tasks)
-                    navRow("Calendar", icon: "calendar", target: .calendar)
-                case .admin:
-                    sectionTitle("Intelligence")
-                    navRow("Documents", icon: "doc.text", target: .adminDocuments)
-                    navRow("Agent Studio", icon: "cpu", target: .adminAgentStudio)
-                    navRow("Marketplace", icon: "puzzlepiece.extension", target: .adminMarketplace)
-                    navRow("Extraction Review", icon: "text.viewfinder", target: .adminExtractionReview)
-                    navRow("Learned knowledge", icon: "brain", target: .adminLearnedKnowledge)
-                    navRow("Scenario analysis", icon: "chart.line.uptrend.xyaxis", target: .adminScenarioAnalysis)
-                    navRow("Crafted", icon: "sparkles", target: .adminCrafted)
-                    sectionTitle("Operations")
-                    navRow("Work Orders", icon: "wrench.and.screwdriver", target: .adminWorkOrders)
-                    navRow("Maintenance", icon: "calendar.badge.clock", target: .adminMaintenance)
-                    navRow("Inspections", icon: "checklist.checked", target: .adminInspections)
-                    navRow("Taskboard", icon: "rectangle.split.3x1", target: .adminTaskboard)
-                    sectionTitle("Resources")
-                    navRow("Assets", icon: "gearshape.2", target: .assets)
-                    navRow("Spare Parts", icon: "shippingbox", target: .spareParts)
-                    navRow("Alarms", icon: "bell.badge", target: .adminAlarms)
-                    sectionTitle("Purchases")
-                    navRow("Purchase Orders", icon: "cart", target: .adminPurchaseOrders)
-                    navRow("Vendors", icon: "building.2", target: .adminVendors)
-                    sectionTitle("Analytics")
-                    navRow("Reports", icon: "chart.bar.xaxis", target: .adminReports)
-                    navRow("LLM Usage", icon: "chart.pie", target: .adminLLMUsage)
-                    sectionTitle("Configuration")
-                    navRow("Plants", icon: "building.columns", target: .adminPlants)
-                    navRow("Categories", icon: "tag", target: .adminCategories)
-                    navRow("Teams", icon: "person.3", target: .adminTeams)
-                    navRow("Members", icon: "person.2", target: .adminMembers)
-                    navRow("Mobile Users", icon: "iphone.gen3", target: .adminMobileUsers)
+                navRow(Text("Chats"), icon: "bubble.left.and.bubble.right", target: .chats)
+                ForEach(AriaSidebarSections.groups(for: viewModel.accountKind)) { group in
+                    if let title = group.title { sectionTitle(Text(title)) }
+                    ForEach(group.items) { navRow(Text($0.title), icon: $0.icon, target: $0.target) }
                 }
 
                 if !store.pinned.isEmpty {
-                    sectionTitle("Pinned")
+                    sectionTitle(Text("Pinned"))
                     ForEach(store.pinned) { sessionRow($0) }
                 }
 
-                sectionTitle("Recents")
+                sectionTitle(Text("Recents"))
                 recents
             }
             .padding(.horizontal, 12)
@@ -128,15 +96,15 @@ struct AriaSidebar: View {
 
     // MARK: - Sezioni
 
-    private func navRow(_ title: LocalizedStringKey, icon: String, target: AriaDestination) -> some View {
+    private func navRow(_ title: Text, icon: String, target: AriaDestination) -> some View {
         Button { select(target) } label: {
-            SidebarRowLabel(title: Text(title), icon: icon, isSelected: destination == target, prominent: true)
+            SidebarRowLabel(title: title, icon: icon, isSelected: destination == target, prominent: true)
         }
         .buttonStyle(.plain)
     }
 
-    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
-        Text(title)
+    private func sectionTitle(_ title: Text) -> some View {
+        title
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 16)

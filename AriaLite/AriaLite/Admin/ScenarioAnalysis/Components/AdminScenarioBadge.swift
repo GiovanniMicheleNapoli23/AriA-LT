@@ -29,12 +29,13 @@ struct AdminScenarioBadge: View {
 }
 
 extension AdminScenarioTone {
-    /// Toni spenti: il colore accompagna il dato, non lo urla.
+    /// Toni spenti: il colore accompagna il dato, non lo urla. Il positivo è l'accento (bianco lilla in
+    /// scuro), non il verde; il negativo è grigio, non il rosso.
     var color: Color {
         switch self {
-        case .positive: .liteSuccess
+        case .positive: .liteAccent
         case .warning: .liteWarning
-        case .negative: .liteDanger
+        case .negative: .secondary
         case .info: .liteAccent
         case .neutral: .secondary
         }
