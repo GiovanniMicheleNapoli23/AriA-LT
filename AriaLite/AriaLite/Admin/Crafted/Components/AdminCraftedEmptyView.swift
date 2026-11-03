@@ -75,7 +75,8 @@ private struct AdminCraftedPreviewSteps: View {
             step(3, title: Text("Read the report"), detail: Text("Aria writes it and files it on this page."))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 4)
+        .padding(16)
+        .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
     }
 
     private func step(_ number: Int, title: Text, detail: Text) -> some View {
