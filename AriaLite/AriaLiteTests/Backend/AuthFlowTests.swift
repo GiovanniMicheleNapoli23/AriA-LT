@@ -306,6 +306,8 @@ extension BackendTests {
         // MARK: Sessioni delle versioni precedenti
 
         @Test func legacySessionsAreRemovedAtStartup() {
+            // La pulizia gira una volta per installazione: sul simulatore il flag è già acceso da un'esecuzione precedente.
+            UserDefaults.standard.removeObject(forKey: "aria.legacy_keys_purged")
             for key in ["aria.web_session", "aria.link_session", "aria.link_verifier"] {
                 AriaKeychain.set("old", for: key)
             }
