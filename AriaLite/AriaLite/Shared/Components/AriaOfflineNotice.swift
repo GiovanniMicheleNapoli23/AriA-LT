@@ -69,7 +69,12 @@ struct AriaOfflineNotice: View {
             }
         }
         .padding(12)
-        .background(tint.opacity(0.09), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // Pieno sotto la tinta: nella chat sta sopra i messaggi che scorrono, e non devono vedersi attraverso.
+        .background {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay { RoundedRectangle(cornerRadius: 16, style: .continuous).fill(tint.opacity(0.09)) }
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(tint.opacity(0.25), lineWidth: 1)

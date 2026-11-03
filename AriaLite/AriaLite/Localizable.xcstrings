@@ -2529,6 +2529,26 @@
         }
       }
     },
+    "Action completed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azione completata"
+          }
+        }
+      }
+    },
+    "Action failed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Azione non riuscita"
+          }
+        }
+      }
+    },
     "Actions" : {
       "localizations" : {
         "it" : {

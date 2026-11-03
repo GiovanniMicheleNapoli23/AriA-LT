@@ -160,11 +160,16 @@ struct AriaMessageCMMSNotices: View {
                     }
                 }
             case "aria.external_action":
-                let ok = entry.data["status"]?.stringValue == "ok"
-                Label("\(entry.data["system"]?.stringValue ?? "CMMS"): \(entry.data["summary"]?.stringValue ?? entry.data["tool"]?.stringValue ?? "")",
-                      systemImage: ok ? "arrow.up.forward.app.fill" : "exclamationmark.triangle")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(ok ? .green : .orange)
+                let action = AriaExternalAction(entry.data)
+                Label {
+                    Text(verbatim: "\(action.system) · \(action.detail)")
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                } icon: {
+                    Image(systemName: action.isOK ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundStyle(action.isOK ? Color.green : Color.secondary)
+                }
+                .font(.caption.weight(.medium))
             case "aria.cmms_entity_referenced":
                 if let type = entry.data["entity_type"]?.stringValue, let id = entry.data["entity_id"]?.stringValue {
                     Button(entry.data["entity_label"]?.stringValue ?? "\(type) \(id)", systemImage: "link") {
