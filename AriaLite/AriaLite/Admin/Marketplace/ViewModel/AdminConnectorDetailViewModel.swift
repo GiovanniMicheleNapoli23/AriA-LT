@@ -146,15 +146,21 @@ final class AdminConnectorDetailViewModel {
         return rows
     }
 
-    /// La riga "la mia connessione" di un connettore personale.
+    /// La riga "la mia connessione" di un connettore personale: "Connected as <email>" quando funziona, solo
+    /// "Connected" senza email; altrimenti lo stato e l'ultimo errore.
     var myGrantLine: String? {
         guard connector.isPerMember else { return nil }
         guard let grant = connector.myGrant else { return String(localized: "You haven't connected your account yet.") }
-        let account = grant.accountEmail ?? AdminConnectorStatus.label(for: grant.status)
-        if let date = grant.connectedAt {
-            return String(localized: "Connected as \(account) on \(date.formatted(date: .abbreviated, time: .omitted))")
+        guard AdminConnectorStatus(raw: grant.status) == .connected else {
+            return [AdminConnectorStatus.label(for: grant.status), grant.lastError].compactMap { $0 }.joined(separator: " · ")
         }
-        return String(localized: "Connected as \(account)")
+        let date = grant.connectedAt?.formatted(date: .abbreviated, time: .omitted)
+        switch (grant.accountEmail, date) {
+        case let (email?, date?): return String(localized: "Connected as \(email) on \(date)")
+        case let (email?, nil): return String(localized: "Connected as \(email)")
+        case let (nil, date?): return String(localized: "Connected on \(date)")
+        case (nil, nil): return String(localized: "Connected")
+        }
     }
 
     func tools(in group: AdminConnectorToolGroup) -> [AdminConnectorTool] {
@@ -195,6 +201,10 @@ final class AdminConnectorDetailViewModel {
             let response = try await backend.api.call(AdminMarketplaceAPI.connectors(companyId: companyId))
             if let fresh = response.connectors.first(where: { $0.provider == provider }) {
                 update(fresh)
+            } else if !didRemove {
+                // Non è più accesa per l'azienda (tolta dalla web o da un altro admin): si torna alla griglia.
+                didRemove = true
+                onRemoved()
             }
             connectorError = nil
         } catch {
@@ -246,7 +256,7 @@ final class AdminConnectorDetailViewModel {
     }
 
     /// Il consenso personale su Composio lo chiude l'app (la pagina web di ritorno non ha la sessione del telefono).
-    private var usesComposio: Bool { AdminConnectorConsentFlow.isComposio(connector.mcpUrl) }
+    private var usesComposio: Bool { AdminConnectorConsentFlow.isComposio(provider: provider, mcpUrl: connector.mcpUrl) }
 
     /// Chiede l'URL del consenso e lo esegue con le azioni dell'ambiente che la vista passa: sessione web
     /// per Composio, browser per tutto il resto (il ritorno lo gestisce il server e al ritorno si ricarica).
@@ -259,7 +269,8 @@ final class AdminConnectorDetailViewModel {
                 : AdminMarketplaceAPI.startOAuth(companyId: companyId, provider: provider, requestWrite: requestWrite)
             let start = try await backend.api.call(endpoint)
             let outcome = await AdminConnectorConsentFlow(backend: backend).run(
-                authorizeURL: start.authorizeUrl, composio: personal && usesComposio, fallbackName: connector.name,
+                authorizeURL: start.authorizeUrl, companyId: companyId, composio: personal && usesComposio,
+                fallbackName: connector.name,
                 authenticate: authenticate, open: open)
             AriaAuthTrace.step("connector.outcome", String(describing: outcome))
             switch outcome {
@@ -273,6 +284,8 @@ final class AdminConnectorDetailViewModel {
                 actionNotice = notice
             case .failed(let message):
                 actionError = message
+                // La chiusura può fallire perché il connettore è stato tolto nel frattempo (409 `connector_removed`).
+                await loadConnector(companyId)
             }
         }
     }
@@ -342,6 +355,8 @@ final class AdminConnectorDetailViewModel {
         } catch {
             AriaAuthTrace.step("connector.error", String(describing: error))
             actionError = AdminMarketplaceFailure.message(for: error, backend: backend)
+            // Connettore tolto o cambiato nel frattempo (404, 409 `connector_removed`): si rilegge com'è ora.
+            if AdminMarketplaceFailure.needsRefetch(error) { await loadConnector(companyId) }
         }
     }
 }

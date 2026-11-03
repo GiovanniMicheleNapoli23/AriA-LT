@@ -38,6 +38,17 @@ struct AdminConnectorConsentFlow {
 
     let backend: AriaBackend
 
+    /// Le dieci card one-click di Composio (toolkits.py del backend): il loro URL è fisso e il server lo salva
+    /// comunque, ma una riga senza `mcp_url` resta riconoscibile dal provider.
+    static let composioProviders: Set<String> = [
+        "gmail-personal", "calendar-personal", "drive-personal", "teams", "outlook",
+        "dynamics-crm", "salesforce-crm", "slack-chat", "asana", "hubspot-crm",
+    ]
+
+    static func isComposio(provider: String, mcpUrl: String?) -> Bool {
+        composioProviders.contains(provider) || isComposio(mcpUrl)
+    }
+
     /// Il server MCP è di Composio (https, composio.dev o un suo sottodominio).
     static func isComposio(_ mcpUrl: String?) -> Bool {
         guard let url = mcpUrl.flatMap({ URL(string: $0) }), url.scheme == "https",
@@ -46,8 +57,9 @@ struct AdminConnectorConsentFlow {
     }
 
     /// Esegue il consenso sull'URL che il server ha dato. `composio`: lo chiude l'app; `fallbackName` è il nome
-    /// da dire se Composio non manda l'account.
-    func run(authorizeURL: String, composio: Bool, fallbackName: String,
+    /// da dire se Composio non manda l'account. `companyId` è quella dello start: Composio rifiuta una chiusura
+    /// sotto un'altra azienda, anche se nel frattempo è cambiata quella attiva.
+    func run(authorizeURL: String, companyId: String, composio: Bool, fallbackName: String,
              authenticate: Authenticate, open: Open) async -> Outcome {
         // Solo https con un host: `hasPrefix("http")` lasciava passare http in chiaro e schemi come `httpx:`.
         AriaAuthTrace.step("connector.consent", "composio=\(composio) authorize=\(URL(string: authorizeURL)?.host() ?? "?")")
@@ -67,13 +79,13 @@ struct AdminConnectorConsentFlow {
             // si ripiega sul browser, dove la pagina web chiude con la sessione di chi la ha.
             return browser(url, open)
         }
-        return await complete(callback: callback, fallbackName: fallbackName)
+        return await complete(callback: callback, companyId: companyId, fallbackName: fallbackName)
     }
 
     private func browser(_ url: URL, _ open: Open) -> Outcome {
         AriaAuthTrace.step("connector.browser", url.host() ?? "?")
         open(url)
-        return .browser(notice: String(localized: "Finish signing in in the browser, then come back here."))
+        return .browser(notice: String(localized: "Finish signing in in the browser, then come back here. It works only if you're signed in to Aria on the web in that browser."))
     }
 
     /// Annullato da chi guarda. iOS manda lo stesso `canceledLogin` quando l'app non risulta associata al dominio
@@ -85,11 +97,9 @@ struct AdminConnectorConsentFlow {
         return !reason.contains("webcredentials")
     }
 
-    /// composio/complete con il `session_uri` dell'URL di ritorno.
-    private func complete(callback: URL, fallbackName: String) async -> Outcome {
-        guard let companyId = backend.activeCompanyId else {
-            return .failed(AriaError.missingCompany.localizedDescription)
-        }
+    /// composio/complete con il `session_uri` dell'URL di ritorno. Il `session_uri` è monouso e di chi ha
+    /// iniziato: non si registra né si salva da nessuna parte.
+    private func complete(callback: URL, companyId: String, fallbackName: String) async -> Outcome {
         let sessionURI = URLComponents(url: callback, resolvingAgainstBaseURL: false)?
             .queryItems?.first { $0.name == "session_uri" }?.value
         guard let sessionURI, !sessionURI.isEmpty else {
@@ -104,10 +114,8 @@ struct AdminConnectorConsentFlow {
             let name = done.displayName ?? fallbackName
             return .connected(notice: String(localized: "\(name) connected"))
         } catch {
-            // 410: il link è di un consenso già chiuso (o scaduto).
-            if case .http(let status, _)? = error as? AriaError, status == 410 {
-                return .failed(String(localized: "This sign-in link was already used. Start again."))
-            }
+            // 410 `consent_expired`, 409 `not_your_consent`/`not_confirmed`, 502 `gateway_rejected`: il messaggio
+            // del server dice cosa fare (di solito collegare di nuovo).
             return .failed(AdminMarketplaceFailure.message(for: error, backend: backend))
         }
     }

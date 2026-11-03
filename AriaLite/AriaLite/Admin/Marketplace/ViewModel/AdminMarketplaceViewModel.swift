@@ -67,18 +67,21 @@ final class AdminMarketplaceViewModel {
         purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
     }
 
-    /// Cambia quando va richiesta la lista: l'azienda attiva.
-    var loadKey: String { backend.activeCompanyId ?? "-" }
+    /// Cambia quando va richiesta la lista: l'azienda attiva, e l'accesso pieno appena /v1/me lo conferma.
+    var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(canManage)" }
+
+    /// Gli acquisti sono dell'azienda, non dell'accesso.
+    private var companyKey: String { backend.activeCompanyId ?? "-" }
 
     // MARK: Ruolo
 
-    /// Owner e admin gestiscono i connettori; senza ruolo noto si lascia decidere al server (403).
+    /// Owner e admin gestiscono i connettori. Lo dice `membership.restricted` di /v1/me per l'azienda attiva:
+    /// senza `membership` (non ancora letta, o un backend precedente) niente connettori, come vuole il contratto.
+    /// Una sessione ristretta (operatore) non chiama mai le loro rotte: le risponderebbero 403.
     var canManage: Bool { AdminMarketplaceViewModel.canManage(backend) }
 
     static func canManage(_ backend: AriaBackend) -> Bool {
-        let role = backend.companies.first { $0.id == backend.activeCompanyId }?.myRole?.lowercased()
-        guard let role else { return true }
-        return role == "owner" || role == "admin"
+        backend.membership?.restricted == false
     }
 
     // MARK: Catalogo
@@ -153,8 +156,8 @@ final class AdminMarketplaceViewModel {
 
     /// Gli acquisti sono per azienda: cambiata quella attiva si rileggono i suoi.
     private func syncPurchases() {
-        guard purchasesKey != loadKey else { return }
-        purchasesKey = loadKey
+        guard purchasesKey != companyKey else { return }
+        purchasesKey = companyKey
         purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
     }
 
@@ -384,6 +387,13 @@ final class AdminMarketplaceViewModel {
         syncPurchases()
         guard let companyId = backend.activeCompanyId else {
             errorMessage = AriaError.missingCompany.localizedDescription
+            return
+        }
+        // Solo il catalogo: la lista dei connettori è di owner e admin.
+        guard canManage else {
+            connectors = []
+            hasLoaded = true
+            errorMessage = nil
             return
         }
         isLoading = true

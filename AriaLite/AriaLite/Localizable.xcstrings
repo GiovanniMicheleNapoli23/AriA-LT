@@ -7790,6 +7790,16 @@
         }
       }
     },
+    "Connected on %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collegato il %@"
+          }
+        }
+      }
+    },
     "Connecting to the run…" : {
       "localizations" : {
         "it" : {
@@ -11582,12 +11592,12 @@
         }
       }
     },
-    "Finish signing in in the browser, then come back here." : {
+    "Finish signing in in the browser, then come back here. It works only if you're signed in to Aria on the web in that browser." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Completa l'accesso nel browser, poi torna qui."
+            "value" : "Completa l'accesso nel browser, poi torna qui. Funziona solo se in quel browser hai già fatto l'accesso ad Aria sul web."
           }
         }
       }
@@ -25511,6 +25521,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La connessione non ha superato la verifica."
+          }
+        }
+      }
+    },
+    "The connection service isn't reachable right now. Try again later." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il servizio di collegamento non è raggiungibile. Riprova più tardi."
           }
         }
       }

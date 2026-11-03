@@ -224,7 +224,8 @@ final class AdminMarketplaceItemDetailViewModel {
             }
             let start = try await marketplace.backend.api.call(
                 AdminMarketplaceAPI.startMyOAuth(companyId: companyId, provider: provider))
-            let outcome = await consentFlow.run(authorizeURL: start.authorizeUrl, composio: info.isComposio,
+            let outcome = await consentFlow.run(authorizeURL: start.authorizeUrl, companyId: companyId,
+                                                composio: info.isComposio || AdminConnectorConsentFlow.composioProviders.contains(provider),
                                                 fallbackName: item.name, authenticate: authenticate, open: open)
             await finish(outcome)
         }
@@ -235,7 +236,7 @@ final class AdminMarketplaceItemDetailViewModel {
         await perform { companyId in
             let start = try await marketplace.backend.api.call(
                 AdminMarketplaceAPI.startOAuth(companyId: companyId, provider: provider, requestWrite: false))
-            let outcome = await consentFlow.run(authorizeURL: start.authorizeUrl, composio: false,
+            let outcome = await consentFlow.run(authorizeURL: start.authorizeUrl, companyId: companyId, composio: false,
                                                 fallbackName: item.name, authenticate: authenticate, open: open)
             await finish(outcome)
         }
@@ -256,6 +257,7 @@ final class AdminMarketplaceItemDetailViewModel {
             actionNotice = notice
         case .failed(let message):
             actionError = message
+            await marketplace.load()
         }
     }
 
@@ -292,6 +294,8 @@ final class AdminMarketplaceItemDetailViewModel {
         } catch {
             AriaAuthTrace.step("connector.error", String(describing: error))
             actionError = AdminMarketplaceFailure.message(for: error, backend: marketplace.backend)
+            // 404 allo start (non abilitato qui), 409 `connector_removed`: la pagina torna allo stato vero.
+            if AdminMarketplaceFailure.needsRefetch(error) { await marketplace.load() }
         }
     }
 
