@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il caricamento di documenti da Files: stabilimento, pipeline da avviare, file scelti. Prima di inviare
-//  chiede al server quali nomi esistono già e fa scegliere: sostituirli o saltarli. I file partono uno alla volta.
+//  chiede al server quali nomi esistono già e fa scegliere: sostituirli o saltarli. L'invio lo fa
+//  AdminDocumentUploadCenter, in background: il foglio si chiude appena i file gli sono affidati.
 //
 
 import Foundation
@@ -15,6 +16,8 @@ import Observation
 @Observable
 final class AdminDocumentUploadViewModel {
     let backend: AriaBackend
+    private let uploads: AdminDocumentUploadCenter
+    private let store: AdminDocumentUploadStore
 
     var plantId: String?
     /// Indicizzazione (RAG): Aria può citare il documento nelle risposte.
@@ -29,18 +32,18 @@ final class AdminDocumentUploadViewModel {
     private(set) var conflictCheckError: String?
     private(set) var isReading = false
 
+    /// I file si stanno affidando al caricamento in background (token, richieste): un attimo.
     private(set) var isUploading = false
-    /// Avanzamento complessivo (0…1) e file in invio.
-    private(set) var progress: Double = 0
-    private(set) var currentFileName: String?
     private(set) var errorMessage: String?
     var showsConflictChoice = false
-    /// Tutto inviato: la vista si chiude.
+    /// Tutto affidato: la vista si chiude.
     private(set) var didFinish = false
-    private(set) var uploadedCount = 0
 
-    init(backend: AriaBackend, plantId: String?) {
+    init(backend: AriaBackend, plantId: String?, uploads: AdminDocumentUploadCenter,
+         store: AdminDocumentUploadStore = .shared) {
         self.backend = backend
+        self.uploads = uploads
+        self.store = store
         self.plantId = plantId ?? backend.plants.first?.id
     }
 
@@ -75,7 +78,7 @@ final class AdminDocumentUploadViewModel {
 
     // MARK: File
 
-    /// I file scelti in Files: si leggono fuori dal main actor; un nome già in lista non si ripete.
+    /// I file scelti in Files: si copiano fuori dal main actor; un nome già in lista non si ripete.
     func filesImported(_ result: Result<[URL], any Error>) async {
         switch result {
         case .failure(let error):
@@ -86,10 +89,9 @@ final class AdminDocumentUploadViewModel {
             var failed: [String] = []
             var added: [AdminDocumentUploadFile] = []
             for url in urls {
+                guard !(files + added).contains(where: { $0.filename == url.lastPathComponent }) else { continue }
                 do {
-                    let file = try await AdminDocumentUploadFile.read(url)
-                    guard !(files + added).contains(where: { $0.filename == file.filename }) else { continue }
-                    added.append(file)
+                    added.append(try await AdminDocumentUploadFile.read(url, into: store))
                 } catch {
                     failed.append(url.lastPathComponent)
                 }
@@ -104,6 +106,13 @@ final class AdminDocumentUploadViewModel {
     func remove(_ file: AdminDocumentUploadFile) {
         files.removeAll { $0.id == file.id }
         conflicts.remove(file.filename)
+        store.discardBody(file.id)
+    }
+
+    /// Le copie dei file non affidati non servono più.
+    private func discardUnsent() {
+        files.forEach { store.discardBody($0.id) }
+        files = []
     }
 
     // MARK: Conflitti
@@ -142,48 +151,25 @@ final class AdminDocumentUploadViewModel {
         }
     }
 
-    /// Invia i file uno alla volta. `replacing`: i doppioni sostituiscono i documenti esistenti;
-    /// altrimenti si saltano. Quelli che falliscono restano in lista con il motivo.
+    /// Affida i file al caricamento in background. `replacing`: i doppioni sostituiscono i documenti esistenti;
+    /// altrimenti si saltano.
     func upload(replacing: Bool) async {
         guard canUpload, let companyId = backend.activeCompanyId, let plantId else { return }
         let queue = replacing ? files : files.filter { !conflicts.contains($0.filename) }
-        guard !queue.isEmpty else {
-            didFinish = true
-            return
-        }
         isUploading = true
         errorMessage = nil
-        progress = 0
-        defer {
-            isUploading = false
-            currentFileName = nil
+        defer { isUploading = false }
+        let notSaved = await uploads.enqueue(queue, companyId: companyId, plantId: plantId, pipelines: pipelines,
+                                             replacing: replacing ? conflicts : [])
+        // Un file che non è partito resta nel foglio, con il motivo; i saltati si buttano.
+        guard notSaved.isEmpty else {
+            files = notSaved
+            errorMessage = String(localized: "Couldn't start uploading \(notSaved.map(\.filename).joined(separator: ", ")).")
+            return
         }
-        let uploader = AdminDocumentsUploader(api: backend.api)
-        let pipelines = pipelines
-        var failures: [String] = []
-        for (index, file) in queue.enumerated() {
-            currentFileName = file.filename
-            let base = Double(index) / Double(queue.count)
-            let share = 1 / Double(queue.count)
-            do {
-                try await uploader.upload(file, companyId: companyId, plantId: plantId, pipelines: pipelines,
-                                          replaceExisting: replacing && conflicts.contains(file.filename)) { [weak self] sent in
-                    let model = self
-                    Task { @MainActor in model?.progress = base + sent * share }
-                }
-                files.removeAll { $0.id == file.id }
-                uploadedCount += 1
-            } catch {
-                let reason = AdminDocumentsFailure.message(for: error, backend: backend) ?? error.localizedDescription
-                failures.append("\(file.filename): \(reason)")
-            }
-            progress = base + share
-        }
-        if failures.isEmpty {
-            didFinish = true
-        } else {
-            errorMessage = failures.joined(separator: "\n")
-        }
+        files.removeAll { file in queue.contains { $0.id == file.id } }
+        discardUnsent()
+        didFinish = true
     }
 }
 

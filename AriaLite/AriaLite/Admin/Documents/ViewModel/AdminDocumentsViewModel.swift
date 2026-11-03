@@ -8,6 +8,7 @@
 //  Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
 //  Lo stabilimento si chiede al server; stato e ricerca filtrano qui sui documenti scaricati.
 //  Finché un documento è in elaborazione la lista si riaggiorna da sola ogni pochi secondi.
+//  I caricamenti (AdminDocumentUploadCenter) vivono qui: continuano a foglio chiuso e app in background.
 //
 
 import Foundation
@@ -17,6 +18,8 @@ import Observation
 @Observable
 final class AdminDocumentsViewModel {
     let backend: AriaBackend
+    /// I file in caricamento, con la loro barra.
+    let uploads: AdminDocumentUploadCenter
 
     static let pageSize = 50
     /// Ogni quanto si riaggiorna la lista mentre qualcosa è in elaborazione.
@@ -33,6 +36,7 @@ final class AdminDocumentsViewModel {
     /// L'ultima pagina era piena: forse ce ne sono altre (quando `total` manca).
     private var lastPageWasFull = false
     @ObservationIgnored private var loadedKey: String?
+    @ObservationIgnored private var reloadTask: Task<Void, Never>?
 
     var searchText = ""
     var statusFilter: AdminDocumentStatusGroup?
@@ -53,6 +57,10 @@ final class AdminDocumentsViewModel {
 
     init(backend: AriaBackend) {
         self.backend = backend
+        uploads = AdminDocumentUploadCenter(backend: backend)
+        uploads.onUploaded = { [weak self] in self?.scheduleReload() }
+        // Ritrova subito i caricamenti lasciati dall'esecuzione precedente.
+        Task { [uploads] in await uploads.start() }
     }
 
     /// Cambia quando va richiesta la lista: azienda o stabilimento.
@@ -185,6 +193,11 @@ final class AdminDocumentsViewModel {
         }
     }
 
+    /// Di ritorno nell'app: la lista si riallinea subito, senza aspettare il prossimo giro.
+    func refreshOnReturn() async {
+        await refreshSilently()
+    }
+
     /// Riprende le prime pagine (fino a 100 documenti) e le sostituisce; quelli oltre restano.
     private func refreshSilently() async {
         guard let companyId = backend.activeCompanyId, hasLoaded else { return }
@@ -242,12 +255,23 @@ final class AdminDocumentsViewModel {
     }
 
     func makeUploadViewModel() -> AdminDocumentUploadViewModel {
-        AdminDocumentUploadViewModel(backend: backend, plantId: plantId ?? backend.activePlantId)
+        AdminDocumentUploadViewModel(backend: backend, plantId: plantId ?? backend.activePlantId, uploads: uploads)
+    }
+
+    /// Il foglio di caricamento si è chiuso: i file scelti e non affidati non servono più.
+    func uploadSheetClosed() {
+        uploads.discardUnsentFiles()
     }
 
     /// Dopo un caricamento: la lista si ricarica e il ciclo di aggiornamento segue l'elaborazione.
-    func uploadFinished() async {
-        await load()
+    /// Più file finiti insieme fanno una ricarica sola.
+    private func scheduleReload() {
+        reloadTask?.cancel()
+        reloadTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            await self?.load()
+        }
     }
 
     /// Il caricamento vuole un'azienda e uno stabilimento.
@@ -255,6 +279,8 @@ final class AdminDocumentsViewModel {
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {
+        reloadTask?.cancel()
+        uploads.reset()
         documents = []
         total = nil
         isLoading = false

@@ -18,11 +18,10 @@ struct AdminDocumentPipelineCard: View {
             if viewModel.isWorking { ProgressView().controlSize(.small) }
         } content: {
             VStack(alignment: .leading, spacing: 0) {
-                AdminFieldRow(field: AdminAssetField(title: String(localized: "Indexing for answers"),
-                                                     value: viewModel.ingestionLabel ?? String(localized: "Not run")))
-                AdminFieldRow(field: AdminAssetField(title: String(localized: "Maintenance data extraction"),
-                                                     value: viewModel.extractionLabel ?? String(localized: "Not run")),
-                              showsDivider: false)
+                pipelineRow(title: String(localized: "Indexing for answers"), label: viewModel.ingestionLabel,
+                            progress: viewModel.ingestionProgress)
+                pipelineRow(title: String(localized: "Maintenance data extraction"), label: viewModel.extractionLabel,
+                            progress: viewModel.extractionProgress, showsDivider: false)
                 if let error = viewModel.document.lastError {
                     AdminSectionNotice(text: error, isError: true)
                         .padding(.top, 10)
@@ -37,6 +36,20 @@ struct AdminDocumentPipelineCard: View {
                     .ariaGlassButtonStyle()
                     .padding(.top, 12)
                 }
+            }
+        }
+    }
+
+    /// La riga dello stato e, finché la pipeline è attiva, la sua barra di avanzamento.
+    private func pipelineRow(title: String, label: String?, progress: AdminDocumentPipelineProgress?,
+                             showsDivider: Bool = true) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AdminFieldRow(field: AdminAssetField(title: title, value: label ?? String(localized: "Not run")),
+                          showsDivider: showsDivider && progress == nil)
+            if let progress {
+                AdminDocumentPipelineProgressBar(progress: progress)
+                    .padding(.bottom, 10)
+                if showsDivider { Divider() }
             }
         }
     }

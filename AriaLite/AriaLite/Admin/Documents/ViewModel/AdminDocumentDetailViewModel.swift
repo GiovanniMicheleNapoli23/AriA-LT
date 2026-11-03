@@ -65,6 +65,16 @@ final class AdminDocumentDetailViewModel {
     var ingestionLabel: String? { document.ingestionState.map(AdminDocumentState.label(for:)) }
     var extractionLabel: String? { document.extractionState.map(AdminDocumentState.label(for:)) }
 
+    /// L'avanzamento di ciascuna pipeline finché è attiva, affinato con la sua ultima run in corso
+    /// (le run sono ordinate dalla più recente).
+    var ingestionProgress: AdminDocumentPipelineProgress? { progress(for: .ingestion) }
+    var extractionProgress: AdminDocumentPipelineProgress? { progress(for: .extraction) }
+
+    private func progress(for pipeline: AdminDocumentPipeline) -> AdminDocumentPipelineProgress? {
+        let run = runs.first { AdminDocumentPipeline(pipelineType: $0.pipelineType) == pipeline && $0.isActive }
+        return document.progress(for: pipeline, run: run)
+    }
+
     /// La scheda "Details".
     var fields: [AdminAssetField] {
         var rows: [AdminAssetField] = []

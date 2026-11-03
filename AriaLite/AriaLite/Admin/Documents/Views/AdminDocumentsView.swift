@@ -6,6 +6,7 @@
 //
 //  La libreria documenti, come la pagina /knowledge della web: filtri (stato, stabilimento), ricerca,
 //  riepilogo, lista con stato di elaborazione aggiornato da solo, "+" per caricare da Files.
+//  Sopra la lista, i file in caricamento (continuano in background) con la loro barra.
 //  Il dettaglio è in AdminDocumentDetailView.
 //
 
@@ -16,6 +17,7 @@ struct AdminDocumentsView: View {
 
     @State private var path: [AdminDocument] = []
     @State private var upload: AdminDocumentUploadViewModel?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -23,6 +25,10 @@ struct AdminDocumentsView: View {
             List {
                 Group {
                     AdminDocumentsFilterBar(viewModel: viewModel)
+                    if !viewModel.uploads.isEmpty {
+                        AdminDocumentUploadsCard(center: viewModel.uploads)
+                            .padding(.horizontal, 20)
+                    }
                     if viewModel.hasLoaded, let message = viewModel.errorMessage {
                         AdminDocumentErrorPill(message: message, isDisabled: viewModel.isLoading) {
                             Task { await viewModel.load() }
@@ -52,10 +58,8 @@ struct AdminDocumentsView: View {
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Title, file name, tag"))
-            .sheet(item: $upload) { model in
-                AdminDocumentUploadView(viewModel: model) {
-                    Task { await viewModel.uploadFinished() }
-                }
+            .sheet(item: $upload, onDismiss: viewModel.uploadSheetClosed) { model in
+                AdminDocumentUploadView(viewModel: model)
             }
             .alert("Delete this document?", isPresented: $viewModel.showsDeleteConfirmation,
                    presenting: viewModel.documentToDelete) { document in
@@ -77,6 +81,9 @@ struct AdminDocumentsView: View {
         }
         .task(id: viewModel.loadKey) { await viewModel.load() }
         .task(id: viewModel.pollKey) { await viewModel.pollWhileProcessing() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await viewModel.refreshOnReturn() } }
+        }
     }
 
     // MARK: Contenuto

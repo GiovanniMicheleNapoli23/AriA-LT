@@ -156,6 +156,26 @@
         }
       }
     },
+    "%@ · Starting processing…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · Avvio dell'elaborazione…"
+          }
+        }
+      }
+    },
+    "%@ · Waiting to upload" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · In attesa di invio"
+          }
+        }
+      }
+    },
     "%@ (%lld)" : {
       "localizations" : {
         "it" : {
@@ -6204,6 +6224,16 @@
         }
       }
     },
+    "Cancel upload" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla caricamento"
+          }
+        }
+      }
+    },
     "Cancel work order" : {
       "localizations" : {
         "it" : {
@@ -8468,6 +8498,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile avviare l'indicizzazione"
+          }
+        }
+      }
+    },
+    "Couldn't start uploading %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile avviare il caricamento di %@."
           }
         }
       }
@@ -26256,6 +26296,16 @@
         }
       }
     },
+    "The upload was interrupted." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il caricamento si è interrotto."
+          }
+        }
+      }
+    },
     "The uptime statistics of this asset will be recalculated." : {
       "localizations" : {
         "it" : {
@@ -28366,22 +28416,32 @@
         }
       }
     },
-    "Uploading %@…" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Caricamento di %@…"
-          }
-        }
-      }
-    },
     "Uploading…" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Caricamento…"
+          }
+        }
+      }
+    },
+    "Uploads" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamenti"
+          }
+        }
+      }
+    },
+    "Uploads continue in the background, even if you leave the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I caricamenti continuano in background, anche se esci dall'app."
           }
         }
       }

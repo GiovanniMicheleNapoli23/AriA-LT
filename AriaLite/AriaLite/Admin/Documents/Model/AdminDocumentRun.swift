@@ -107,25 +107,46 @@ nonisolated struct AdminDocumentRun: Decodable, Sendable, Identifiable, Hashable
     }
 }
 
-/// Una fase della run (`parsing`, `embedding`…) con il suo esito.
+/// Una fase della run (`parsing`, `embedding`…) con il suo esito (StageResponse). Il server manda `name` e
+/// `state` (stringhe libere); le vecchie chiavi `stage`/`status` si leggono come ripiego.
 nonisolated struct AdminDocumentRunStage: Decodable, Sendable, Hashable {
     let stage: String
     let status: String?
     let error: String?
+    /// Lotti fatti e totali (`metrics`): l'embedding li riporta, permette un avanzamento più fine.
+    let batchesDone: Int?
+    let totalBatches: Int?
 
     var label: String { AdminDocumentState.label(for: stage) }
-    var isFailed: Bool { status == "failed" || error != nil }
-    var isDone: Bool { status == "completed" || status == "succeeded" || status == "skipped" }
+    var isFailed: Bool { normalizedStatus == "failed" || error != nil }
+    var isDone: Bool { ["completed", "succeeded", "skipped"].contains(normalizedStatus) }
+    /// È la fase che sta lavorando ora.
+    var isRunning: Bool { ["running", "in_progress", "started"].contains(normalizedStatus) }
 
-    private enum CodingKeys: String, CodingKey { case stage, status, error }
+    private var normalizedStatus: String? { status?.lowercased() }
+
+    init(stage: String, status: String? = nil, error: String? = nil, batchesDone: Int? = nil, totalBatches: Int? = nil) {
+        self.stage = stage
+        self.status = status
+        self.error = error
+        self.batchesDone = batchesDone
+        self.totalBatches = totalBatches
+    }
+
+    private enum CodingKeys: String, CodingKey { case name, state, stage, status, error, metrics }
+    private enum MetricsKeys: String, CodingKey { case batchesDone, totalBatches }
 
     init(from decoder: any Decoder) throws {
+        typealias D = AdminDocumentDecoding
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        guard let stage = AdminDocumentDecoding.text(c, .stage) else {
-            throw DecodingError.keyNotFound(CodingKeys.stage, .init(codingPath: c.codingPath, debugDescription: "Fase senza nome"))
+        guard let stage = D.text(c, .name) ?? D.text(c, .stage) else {
+            throw DecodingError.keyNotFound(CodingKeys.name, .init(codingPath: c.codingPath, debugDescription: "Fase senza nome"))
         }
         self.stage = stage
-        status = AdminDocumentDecoding.text(c, .status)
-        error = AdminDocumentDecoding.errorMessage(c, .error)
+        status = D.text(c, .state) ?? D.text(c, .status)
+        error = D.errorMessage(c, .error)
+        let metrics = try? c.nestedContainer(keyedBy: MetricsKeys.self, forKey: .metrics)
+        batchesDone = metrics.flatMap { D.int($0, .batchesDone) }
+        totalBatches = metrics.flatMap { D.int($0, .totalBatches) }
     }
 }

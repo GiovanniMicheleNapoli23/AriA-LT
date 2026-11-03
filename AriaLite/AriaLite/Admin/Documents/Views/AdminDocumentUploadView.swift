@@ -6,7 +6,8 @@
 //
 //  Il foglio di caricamento, una sola scroll view di schede: stabilimento, cosa fare del documento
 //  (indicizzarlo, estrarne i dati), file da Files con l'avviso sui nomi già presenti.
-//  Con doppioni chiede se sostituirli o saltarli.
+//  Con doppioni chiede se sostituirli o saltarli. "Upload" affida i file al caricamento in background
+//  e chiude il foglio: l'avanzamento si segue nella lista.
 //
 
 import SwiftUI
@@ -15,14 +16,12 @@ import UniformTypeIdentifiers
 struct AdminDocumentUploadView: View {
     /// In `@State`: il foglio si ricostruisce col genitore, la scelta a metà non deve ripartire da capo.
     @State private var viewModel: AdminDocumentUploadViewModel
-    let onUploaded: () -> Void
 
     @State private var isImporting = false
     @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: AdminDocumentUploadViewModel, onUploaded: @escaping () -> Void) {
+    init(viewModel: AdminDocumentUploadViewModel) {
         _viewModel = State(initialValue: viewModel)
-        self.onUploaded = onUploaded
     }
 
     var body: some View {
@@ -70,9 +69,7 @@ struct AdminDocumentUploadView: View {
                 Text(viewModel.conflictMessage)
             }
             .onChange(of: viewModel.didFinish) { _, finished in
-                guard finished else { return }
-                onUploaded()
-                dismiss()
+                if finished { dismiss() }
             }
         }
     }
@@ -127,18 +124,8 @@ struct AdminDocumentUploadView: View {
             .buttonStyle(.bordered)
             .tint(Color.liteAccent)
             .disabled(viewModel.isUploading || viewModel.isReading)
-            if viewModel.isUploading {
-                VStack(alignment: .leading, spacing: 6) {
-                    ProgressView(value: viewModel.progress)
-                    if let name = viewModel.currentFileName {
-                        Text("Uploading \(name)…")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-            }
             filesFooter
+            caption("Uploads continue in the background, even if you leave the app.")
         }
     }
 

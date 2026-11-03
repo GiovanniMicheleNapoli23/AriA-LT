@@ -37,6 +37,9 @@ struct AdminDocumentRow: View {
                     VStack(alignment: .leading, spacing: 4) { badge; date }
                 }
                 .padding(.top, 2)
+                if document.statusGroup == .processing {
+                    progressBars
+                }
             }
             Spacer(minLength: 0)
         }
@@ -45,6 +48,18 @@ struct AdminDocumentRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// Le pipeline che lavorano: se sono due, ognuna col suo nome.
+    private var progressBars: some View {
+        let pipelines = document.activeProgress
+        return VStack(alignment: .leading, spacing: 6) {
+            ForEach(pipelines) { progress in
+                AdminDocumentPipelineProgressBar(progress: progress, showsPipeline: pipelines.count > 1)
+            }
+        }
+        .frame(maxWidth: 360, alignment: .leading)
+        .padding(.top, 2)
     }
 
     private var badge: some View {
