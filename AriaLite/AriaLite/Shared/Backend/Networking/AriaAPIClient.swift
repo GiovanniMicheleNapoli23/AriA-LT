@@ -101,7 +101,7 @@ nonisolated final class AriaAPIClient: Sendable {
                 await auth.invalidate()
                 continue
             }
-            if let offline = AriaHTTP.hostDownError(response) { throw offline }
+            if let offline = AriaHTTP.hostDownError(response, body: data) { throw offline }
             try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
             guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
@@ -190,7 +190,7 @@ nonisolated final class AriaAPIClient: Sendable {
                                 errorBody.append(byte)
                                 if errorBody.count >= 16_384 { break }
                             }
-                            if AriaHTTP.isHostDown(response) { throw AriaError.serverOffline }
+                            if AriaHTTP.isHostDown(response, body: errorBody) { throw AriaError.serverOffline }
                             try await self.checkMembership(response, errorBody)
                             try AriaHTTP.check(response, errorBody)
                         }
@@ -244,7 +244,7 @@ nonisolated final class AriaAPIClient: Sendable {
                                 errorBody.append(byte)
                                 if errorBody.count >= 16_384 { break }
                             }
-                            if AriaHTTP.isHostDown(response) { throw AriaError.serverOffline }
+                            if AriaHTTP.isHostDown(response, body: errorBody) { throw AriaError.serverOffline }
                             try await self.checkMembership(response, errorBody)
                             try AriaHTTP.check(response, errorBody)
                         }
@@ -266,11 +266,13 @@ nonisolated final class AriaAPIClient: Sendable {
 
     // MARK: Private
 
-    /// Operatore disabilitato a sessione aperta: il backend risponde 403 "Not a member of this company".
+    /// Operatore disabilitato a sessione aperta: il backend risponde 403 `not_a_member` ("Not a member of this
+    /// company" sui backend precedenti).
     /// Gli altri 403 rifiutano solo quell'azione e non sloggano.
     private func checkMembership(_ response: URLResponse, _ data: Data) async throws {
         guard (response as? HTTPURLResponse)?.statusCode == 403, auth.isMobileSession,
-              AriaHTTP.detail(from: data) == "Not a member of this company" else { return }
+              AriaHTTP.code(from: data) == "not_a_member"
+                || AriaHTTP.detail(from: data) == "Not a member of this company" else { return }
         await auth.discardSession()
         throw AriaError.signedOut
     }

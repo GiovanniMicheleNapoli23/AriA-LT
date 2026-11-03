@@ -296,14 +296,17 @@ nonisolated enum AriaHTTP {
     }
 
     /// Il gateway davanti all'host non raggiunge il server (502/503/504): l'host è giù, non ha rifiutato lui.
-    /// Si guarda solo il codice: l'HTML è anche quello del firewall (403 CloudFront) e di un 404 di Next.
-    static func isHostDown(_ response: URLResponse) -> Bool {
-        guard let status = (response as? HTTPURLResponse)?.statusCode else { return false }
-        return [502, 503, 504].contains(status)
+    /// Si guarda il codice, non l'HTML (è anche quello del firewall, 403 CloudFront, e di un 404 di Next). Con il
+    /// body, un JSON con `detail` vuol dire che ha risposto il backend (502 `gateway_rejected` di Composio, 503 di
+    /// un servizio non configurato): non è un host giù, il messaggio va mostrato.
+    static func isHostDown(_ response: URLResponse, body: Data? = nil) -> Bool {
+        guard let status = (response as? HTTPURLResponse)?.statusCode, [502, 503, 504].contains(status) else { return false }
+        guard let body, let json = try? JSONDecoder().decode(AriaJSON.self, from: body) else { return true }
+        return json["detail"] == nil
     }
 
-    static func hostDownError(_ response: URLResponse) -> AriaError? {
-        isHostDown(response) ? .signInHostOffline : nil
+    static func hostDownError(_ response: URLResponse, body: Data? = nil) -> AriaError? {
+        isHostDown(response, body: body) ? .signInHostOffline : nil
     }
 
     /// Il sistema non si raggiunge: telefono senza rete, server che non risponde.
