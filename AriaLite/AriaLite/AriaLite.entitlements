@@ -8,8 +8,8 @@
 	<string>NSFileProtectionComplete</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:$(ARIA_WEB_HOST)</string>
-		<string>webcredentials:$(ARIA_WEB_HOST)</string>
+		<string>applinks:$(ARIA_WEB_HOST)$(ARIA_ASSOCIATED_DOMAINS_MODE)</string>
+		<string>webcredentials:$(ARIA_WEB_HOST)$(ARIA_ASSOCIATED_DOMAINS_MODE)</string>
 	</array>
 </dict>
 </plist>

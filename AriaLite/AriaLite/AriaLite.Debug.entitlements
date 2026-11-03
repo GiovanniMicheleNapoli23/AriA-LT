@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  AriaLite.Debug.entitlements
+  AriaLite
+
+  Created by Giovanni Michele on 30/10/26.
+
+  Come AriaLite.entitlements, più i domini in mode=developer (vedi AriaLite.xcconfig). Si tengono anche quelli
+  normali: senza Impostazioni › Sviluppatore › Associated Domains Development il telefono ignora le righe
+  mode=developer, e senza le altre l'app non risulta associata (il consenso Composio finisce in Safari).
+-->
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>com.apple.developer.default-data-protection</key>
+	<string>NSFileProtectionComplete</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:$(ARIA_WEB_HOST)</string>
+		<string>webcredentials:$(ARIA_WEB_HOST)</string>
+		<string>applinks:$(ARIA_WEB_HOST)$(ARIA_ASSOCIATED_DOMAINS_MODE)</string>
+		<string>webcredentials:$(ARIA_WEB_HOST)$(ARIA_ASSOCIATED_DOMAINS_MODE)</string>
+	</array>
+</dict>
+</plist>
