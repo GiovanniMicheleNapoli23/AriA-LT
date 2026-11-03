@@ -39,14 +39,24 @@ struct AriaArtifactView: View {
         case "reassignment-plan", "assignment-suggestion", "similar-wo-list", "spare-parts-recommendation",
              "triage-plan", "member-absence-plan", "team-kanban":
             AriaListArtifact(kind: artifact.kind, data: d, actions: actions)
+        case "connector-connect":
+            if let connector = AriaArtifactContent.connectorConnect(d) {
+                AriaConnectorConnectCard(connector: connector, actions: actions)
+            } else {
+                placeholder
+            }
         default:
-            Text("Artifact \(artifact.kind)")
-                .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4])).foregroundStyle(.tertiary))
+            placeholder
         }
+    }
+
+    private var placeholder: some View {
+        Text("Artifact \(artifact.kind)")
+            .font(.system(.caption, design: .monospaced))
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4])).foregroundStyle(.tertiary))
     }
 }
 

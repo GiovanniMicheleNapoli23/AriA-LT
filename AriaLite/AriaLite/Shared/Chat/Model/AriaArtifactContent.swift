@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Come si leggono i dati delle card che Aria manda in chat (`aria.ui_artifact`): colonne e righe delle
-//  tabelle, punti dei grafici, voci delle liste di pianificazione. Stessi campi della web (types/agent-stream.ts).
+//  tabelle, punti dei grafici, voci delle liste di pianificazione, card "collega connettore". Stessi campi
+//  della web (types/agent-stream.ts).
 //
 
 import Foundation
@@ -117,5 +118,43 @@ enum AriaArtifactContent {
         default:
             return []
         }
+    }
+
+    // MARK: - Collega connettore
+
+    struct ConnectorSource: Hashable {
+        let label: String
+        let url: URL
+    }
+
+    struct ConnectorConnect: Hashable {
+        let title: String
+        /// Lo stato in parole; nil se il valore non è tra quelli noti.
+        let stateLine: String?
+        let sources: [ConnectorSource]
+        /// Il pulsante "Collega dal web": non serve se il connettore non c'è o nessuno può collegarlo da qui.
+        let showsWebButton: Bool
+    }
+
+    /// `connector-connect`: nil senza etichetta né provider. Valori sconosciuti non rompono nulla; la card non
+    /// porta altri URL oltre a `guide.sources`.
+    static func connectorConnect(_ data: [String: AriaJSON]) -> ConnectorConnect? {
+        guard let title = data["label"]?.nonEmptyString ?? data["provider"]?.nonEmptyString else { return nil }
+        let state = data["state"]?.stringValue
+        let stateLine: String? = switch state {
+        case "not_connected": String(localized: "Not connected")
+        case "reconnect": String(localized: "Needs reconnecting")
+        case "needs_admin": String(localized: "An owner or admin has to connect it")
+        case "not_available": String(localized: "Not available on this server")
+        default: nil
+        }
+        let sources: [ConnectorSource] = (data["guide"]?["sources"]?.arrayValue ?? []).compactMap { s in
+            guard let raw = s["url"]?.nonEmptyString, let url = URL(string: raw),
+                  url.scheme?.lowercased() == "https", !(url.host(percentEncoded: false) ?? "").isEmpty
+            else { return nil }
+            return ConnectorSource(label: s["label"]?.nonEmptyString ?? url.host(percentEncoded: false) ?? raw, url: url)
+        }
+        return ConnectorConnect(title: title, stateLine: stateLine, sources: sources,
+                                showsWebButton: data["callerCan"]?.stringValue != "none" && state != "not_available")
     }
 }

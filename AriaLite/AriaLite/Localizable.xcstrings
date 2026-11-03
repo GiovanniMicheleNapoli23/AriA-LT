@@ -3646,6 +3646,16 @@
         }
       }
     },
+    "An owner or admin has to connect it" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deve collegarlo un owner o un admin"
+          }
+        }
+      }
+    },
     "Analytics" : {
       "localizations" : {
         "it" : {
@@ -7682,6 +7692,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collega il mio account"
+          }
+        }
+      }
+    },
+    "Connect on the web" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega dal web"
           }
         }
       }
@@ -15501,6 +15521,16 @@
         }
       }
     },
+    "Needs reconnecting" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Da ricollegare"
+          }
+        }
+      }
+    },
     "Needs the chat" : {
       "localizations" : {
         "en" : {
@@ -17256,6 +17286,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non disponibile per il tuo ruolo"
+          }
+        }
+      }
+    },
+    "Not available on this server" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non disponibile su questo server"
           }
         }
       }
