@@ -25,6 +25,20 @@ nonisolated struct AriaMe: Decodable, Sendable {
     let name: String?
     let email: String?
     let operatorProfile: AriaMobileProfile?
+    /// Solo con `Company-Id`: il ruolo nell'azienda e se la sessione dell'app è ristretta (operatore).
+    let membership: AriaMeMembership?
+
+    private enum CodingKeys: String, CodingKey { case id, name, email, operatorProfile, membership }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        email = try c.decodeIfPresent(String.self, forKey: .email)
+        operatorProfile = try c.decodeIfPresent(AriaMobileProfile.self, forKey: .operatorProfile)
+        // Un backend senza il campo, o con una forma nuova, non rompe l'accesso.
+        membership = try? c.decodeIfPresent(AriaMeMembership.self, forKey: .membership)
+    }
 
     /// L'account come lo ricorda l'app: per un operatore valgono nome ed email del profilo operatore.
     var account: AriaMobileAccount {
@@ -33,4 +47,11 @@ nonisolated struct AriaMe: Decodable, Sendable {
         }
         return AriaMobileAccount(id: id, name: name ?? "", email: email ?? "", kind: .admin)
     }
+}
+
+/// `membership` di GET /v1/me per l'azienda di `Company-Id`. Dall'app `restricted` è vero per un operatore e
+/// falso per un owner o un admin: decide la modalità piena (connettori compresi).
+nonisolated struct AriaMeMembership: Decodable, Sendable, Equatable {
+    let role: String?
+    let restricted: Bool
 }

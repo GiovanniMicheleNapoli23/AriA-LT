@@ -733,6 +733,8 @@ nonisolated struct AriaCompany: Decodable, Sendable, Identifiable, Hashable {
     let id: String
     let name: String
     let myRole: String?
+    /// `false`: la persona non ha più accesso a quest'azienda dall'app. `nil` su un backend precedente.
+    let appAccess: Bool?
 }
 
 nonisolated struct AriaPlant: Decodable, Sendable, Identifiable, Hashable {

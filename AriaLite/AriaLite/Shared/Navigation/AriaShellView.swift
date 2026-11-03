@@ -155,8 +155,12 @@ struct AriaShellView: View {
             await viewModel.ariaWorkOrders.sync()
         }
         .onChange(of: scenePhase) { _, phase in
+            // Account della piattaforma: a ogni ritorno si rilegge se l'accesso è ancora pieno.
+            guard isOperator else {
+                if phase == .active { Task { await viewModel.backend.refreshMembership() } }
+                return
+            }
             // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
-            guard isOperator else { return }
             if phase == .background {
                 Task { await viewModel.ariaWorkOrders.flushForBackground() }
                 return

@@ -40,7 +40,8 @@ enum AriaSidebarSections {
             AriaSidebarItem(title: "Tasks", icon: "checklist", target: .tasks),
             AriaSidebarItem(title: "Calendar", icon: "calendar", target: .calendar),
         ]),
-        AriaSidebarGroup(title: "Intelligence", items: [marketplace, crafted]),
+        // Niente Marketplace: un operatore non collega mai un connettore (guida "one account", §9).
+        AriaSidebarGroup(title: "Intelligence", items: [crafted]),
         // Niente Work Orders: i lavori dell'operatore sono già in Task.
         AriaSidebarGroup(title: "Operations", items: [maintenance, taskboard]),
         AriaSidebarGroup(title: "Resources", items: [assets, spareParts, alarms]),

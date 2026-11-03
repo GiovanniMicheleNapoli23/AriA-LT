@@ -53,6 +53,9 @@ final class AriaBackend {
     var lastError: String?
     /// L'operatore collegato; `nil` da scollegati.
     private(set) var mobileAccount: AriaMobileAccount?
+    /// `membership` di GET /v1/me per l'azienda attiva, solo per un account della piattaforma: `restricted == false`
+    /// è un owner o un admin con i diritti pieni. `nil`: non ancora letta, o un backend senza il campo.
+    private(set) var membership: AriaMeMembership?
     /// Email a cui è stato mandato il link di accesso, finché il link è valido (15').
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
@@ -311,6 +314,7 @@ final class AriaBackend {
         isSignedIn = false
         didBootstrap = false
         setMobileAccount(nil)
+        membership = nil
         companies = []
         plants = []
         activeCompanyId = nil
@@ -357,7 +361,9 @@ final class AriaBackend {
         isLoading = true
         defer { isLoading = false }
         do {
-            companies = try await api.get("v1/companies", companyScoped: false)
+            let listed: [AriaCompany] = try await api.get("v1/companies", companyScoped: false)
+            // Solo quelle aperte all'app; un backend senza `appAccess` le lascia tutte.
+            companies = listed.filter { $0.appAccess != false }
             // Operatore senza aziende: la membership non è più attiva, è come essere scollegati.
             if companies.isEmpty, api.auth.isMobileSession {
                 await api.auth.discardSession()
@@ -367,6 +373,7 @@ final class AriaBackend {
                 ?? companies.first { $0.myRole == "owner" }
                 ?? companies.first
             try await loadPlants(for: pick?.id)
+            await refreshMembership()
             didBootstrap = true
             lastError = nil
             AriaAuthTrace.step("bootstrap.ok", "aziende=\(companies.count) stabilimenti=\(plants.count)")
@@ -378,6 +385,33 @@ final class AriaBackend {
 
     func selectCompany(_ id: String?) async {
         do { try await loadPlants(for: id) } catch { handle(error) }
+        await refreshMembership()
+    }
+
+    /// 403 `operation_forbidden`: l'accesso a quest'azienda è cambiato (guida "one account", §11). Si rileggono
+    /// le aziende, quella persa sparisce e se ne sceglie un'altra, poi `membership`; un operatore senza aziende
+    /// esce come in `bootstrap`.
+    func refreshAccess() async {
+        guard isSignedIn, !isLoading else { return }
+        await bootstrap()
+    }
+
+    /// Rilegge `membership` per l'azienda attiva (all'avvio, al cambio di azienda e al ritorno in primo piano):
+    /// chi ha perso l'accesso pieno lo vede subito. Senza rete resta l'ultima letta; un rifiuto la toglie.
+    func refreshMembership() async {
+        guard isSignedIn, isAdmin, let companyId = activeCompanyId else {
+            membership = nil
+            return
+        }
+        do {
+            let me: AriaMe = try await api.get("v1/me")
+            guard companyId == activeCompanyId else { return }
+            membership = me.membership
+        } catch {
+            guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
+            AriaAuthTrace.failure("me.membership.failed", error)
+            membership = nil
+        }
     }
 
     func selectPlant(_ id: String?) async {
@@ -392,7 +426,10 @@ final class AriaBackend {
 
     private func loadPlants(for companyId: String?) async throws {
         // Il vocabolario della dettatura è dell'azienda: con un'altra si richiede.
-        if companyId != activeCompanyId { dictationSupport = nil }
+        if companyId != activeCompanyId {
+            dictationSupport = nil
+            membership = nil
+        }
         await api.context.setCompany(companyId)
         activeCompanyId = companyId
         if companyId == nil {
