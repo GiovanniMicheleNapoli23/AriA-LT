@@ -155,7 +155,11 @@ final class AdminVendorsViewModel {
 
     // MARK: - Modifiche
 
+    /// Senza `create` il ruolo guarda soltanto: niente "+".
+    var canCreate: Bool { backend.rights.can(.create, in: .vendors) }
+
     func startCreating() {
+        guard canCreate else { return }
         newVendorForm = AdminVendorFormViewModel(mode: .create, owner: self)
     }
 

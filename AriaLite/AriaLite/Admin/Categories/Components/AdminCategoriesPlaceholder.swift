@@ -11,6 +11,7 @@ import SwiftUI
 
 struct AdminCategoriesPlaceholder: View {
     let placeholder: AdminCategoriesViewModel.Placeholder
+    let canCreate: Bool
     let retry: () -> Void
     let clearFilters: () -> Void
 
@@ -34,8 +35,9 @@ struct AdminCategoriesPlaceholder: View {
             }
             .frame(minHeight: 240)
         case .empty:
+            // Senza `create` non c'è il "+": niente invito a toccarlo.
             ContentUnavailableView("No categories", systemImage: "tag",
-                                   description: Text("Tap + to add the first category."))
+                                   description: canCreate ? Text("Tap + to add the first category.") : nil)
                 .frame(minHeight: 240)
         case .noMatches:
             ContentUnavailableView {

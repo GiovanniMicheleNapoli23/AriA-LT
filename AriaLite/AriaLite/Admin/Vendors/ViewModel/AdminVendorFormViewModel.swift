@@ -161,9 +161,14 @@ final class AdminVendorFormViewModel: Identifiable {
 
     // MARK: - Salvataggio
 
+    /// Il diritto che serve a salvare: `create` per un nuovo, `edit` per una modifica.
+    private var isAllowed: Bool {
+        isEditing ? owner.backend.rights.can(.edit, in: .vendors) : owner.canCreate
+    }
+
     /// `true` se salvato (o niente da salvare): il modulo si può chiudere.
     func save() async -> Bool {
-        guard !isSaving else { return false }
+        guard isAllowed, !isSaving else { return false }
         errorMessage = nil
         do { try validate() } catch {
             errorMessage = (error as? InvalidField)?.message ?? error.localizedDescription

@@ -93,7 +93,12 @@ final class AdminVendorDetailViewModel {
 
     // MARK: - Azioni
 
+    /// Senza `edit` la scheda è solo da guardare (rating compreso); senza `delete` non c'è il cestino.
+    var canEdit: Bool { backend.rights.can(.edit, in: .vendors) }
+    var canDelete: Bool { backend.rights.can(.delete, in: .vendors) }
+
     func startEditing() {
+        guard canEdit else { return }
         editForm = AdminVendorFormViewModel(mode: .edit(vendor), owner: owner) { [weak self] saved in
             self?.vendor = saved
         }
@@ -101,7 +106,7 @@ final class AdminVendorDetailViewModel {
 
     /// `true` se eliminato: la schermata si chiude. Un 404 vuol dire che non c'era già più.
     func delete() async -> Bool {
-        guard !isDeleting else { return false }
+        guard canDelete, !isDeleting else { return false }
         isDeleting = true
         defer { isDeleting = false }
         do {

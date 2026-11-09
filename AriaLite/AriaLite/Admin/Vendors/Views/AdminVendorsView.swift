@@ -34,8 +34,10 @@ struct AdminVendorsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New vendor", systemImage: "plus") { viewModel.startCreating() }
+                if viewModel.canCreate {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("New vendor", systemImage: "plus") { viewModel.startCreating() }
+                    }
                 }
             }
             .searchable(text: $viewModel.query, prompt: Text("Name, company, city, email..."))

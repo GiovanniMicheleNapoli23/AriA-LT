@@ -11,21 +11,29 @@
 import Foundation
 
 extension AdminCategoriesViewModel {
+    /// Senza queste azioni il ruolo guarda soltanto l'elenco: niente "+", modifica ed elimina.
+    var canCreate: Bool { backend.rights.can(.create, in: .categories) }
+    var canEdit: Bool { backend.rights.can(.edit, in: .categories) }
+    var canDelete: Bool { backend.rights.can(.delete, in: .categories) }
+
     func startCreating() {
+        guard canCreate else { return }
         form = AdminCategoryFormViewModel(mode: .create, owner: self)
     }
 
     func startEditing(_ category: AdminCategory) {
+        guard canEdit else { return }
         form = AdminCategoryFormViewModel(mode: .edit(category), owner: self)
     }
 
     func askDelete(_ category: AdminCategory) {
+        guard canDelete else { return }
         pendingDelete = category
     }
 
     /// Elimina dopo la conferma. Un 404 vuol dire che non c'era già più: si toglie comunque dall'elenco.
     func confirmDelete() async {
-        guard let category = pendingDelete, !isDeleting else { return }
+        guard canDelete, let category = pendingDelete, !isDeleting else { return }
         pendingDelete = nil
         isDeleting = true
         defer { isDeleting = false }

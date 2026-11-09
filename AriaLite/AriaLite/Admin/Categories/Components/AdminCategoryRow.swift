@@ -12,6 +12,8 @@ import SwiftUI
 struct AdminCategoryRow: View {
     let category: AdminCategory
     let plantName: String?
+    /// Senza `edit` la riga non si apre: niente freccia.
+    var isEditable = true
 
     @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 36
 
@@ -44,10 +46,12 @@ struct AdminCategoryRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+            if isEditable {
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)

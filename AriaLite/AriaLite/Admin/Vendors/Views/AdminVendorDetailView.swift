@@ -36,14 +36,18 @@ struct AdminVendorDetailView: View {
         .navigationTitle(Text(verbatim: viewModel.vendor.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Edit") { viewModel.startEditing() }
+            if viewModel.canEdit {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Edit") { viewModel.startEditing() }
+                }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if viewModel.isDeleting {
-                    ProgressView()
-                } else {
-                    Button("Delete", systemImage: "trash", role: .destructive) { viewModel.showsDeleteConfirmation = true }
+            if viewModel.canDelete {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isDeleting {
+                        ProgressView()
+                    } else {
+                        Button("Delete", systemImage: "trash", role: .destructive) { viewModel.showsDeleteConfirmation = true }
+                    }
                 }
             }
         }

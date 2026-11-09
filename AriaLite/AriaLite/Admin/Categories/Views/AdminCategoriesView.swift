@@ -29,8 +29,10 @@ struct AdminCategoriesView: View {
             .navigationTitle("Categories")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New category", systemImage: "plus") { viewModel.startCreating() }
+                if viewModel.canCreate {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("New category", systemImage: "plus") { viewModel.startCreating() }
+                    }
                 }
             }
             .searchable(text: $viewModel.query, prompt: Text("Name"))
@@ -56,26 +58,43 @@ struct AdminCategoriesView: View {
     private var content: some View {
         if let placeholder = viewModel.placeholder {
             AdminCategoriesPlaceholder(placeholder: placeholder,
+                                       canCreate: viewModel.canCreate,
                                        retry: { Task { await viewModel.refresh() } },
                                        clearFilters: { withAnimation(.snappy) { viewModel.clearFilters() } })
         } else {
             LazyVStack(spacing: 8) {
                 ForEach(viewModel.visibleCategories) { category in
-                    Button {
-                        viewModel.startEditing(category)
-                    } label: {
-                        AdminCategoryRow(category: category, plantName: viewModel.plantName(for: category))
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button("Edit", systemImage: "pencil") { viewModel.startEditing(category) }
-                        Button("Delete", systemImage: "trash", role: .destructive) { viewModel.askDelete(category) }
+                    if viewModel.canEdit || viewModel.canDelete {
+                        row(for: category)
+                            .contextMenu {
+                                if viewModel.canEdit {
+                                    Button("Edit", systemImage: "pencil") { viewModel.startEditing(category) }
+                                }
+                                if viewModel.canDelete {
+                                    Button("Delete", systemImage: "trash", role: .destructive) { viewModel.askDelete(category) }
+                                }
+                            }
+                    } else {
+                        row(for: category)
                     }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 24)
+        }
+    }
+
+    /// Con `edit` la riga apre il modulo; senza, è solo da guardare.
+    @ViewBuilder
+    private func row(for category: AdminCategory) -> some View {
+        let row = AdminCategoryRow(category: category, plantName: viewModel.plantName(for: category),
+                                   isEditable: viewModel.canEdit)
+        if viewModel.canEdit {
+            Button { viewModel.startEditing(category) } label: { row }
+                .buttonStyle(.plain)
+        } else {
+            row
         }
     }
 
