@@ -56,11 +56,13 @@ extension BackendTests {
             UserDefaults.standard.set("busy", forKey: "aria.availability_preference")
             let (_, store) = try await TestEnv.signedInStore()
             stubHome(availability: "busy")
+            // L'accesso legge già GET /v1/me (membership e diritti): conta solo quella della sincronizzazione.
+            let before = server.calls("GET /v1/me").count
 
             await store.sync()
 
             #expect(server.calls("PUT /v1/me/availability").isEmpty, "busy e off_duty non scadono: niente rinnovo")
-            #expect(server.calls("GET /v1/me").count == 1)
+            #expect(server.calls("GET /v1/me").count == before + 1)
             #expect(store.profile?.availability == .busy)
         }
 
@@ -75,9 +77,10 @@ extension BackendTests {
         @Test func pullToRefreshReloadsWithoutRenewingAvailability() async throws {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome(open: [TestEnv.orderJSON()])
+            let before = server.calls("GET /v1/me").count
             await store.refresh()
             #expect(server.calls("PUT /v1/me/availability").isEmpty)
-            #expect(server.calls("GET /v1/me").count == 1)
+            #expect(server.calls("GET /v1/me").count == before + 1)
             #expect(store.orders.count == 1)
         }
 

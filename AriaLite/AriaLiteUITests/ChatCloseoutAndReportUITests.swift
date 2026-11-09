@@ -19,7 +19,7 @@ final class ChatCloseoutAndReportUITests: AriaUITestCase {
     func testTheReportCanBeDownloadedAsAWordFileAndShared() throws {
         try startProcedureChat()
 
-        let report = element("options.report")
+        let report = reveal("options.report")
         XCTAssertTrue(report.waitForExistence(timeout: 10), "«Intervention report (Word)» non c'è: report non disponibile")
         report.tap()
 
@@ -31,7 +31,7 @@ final class ChatCloseoutAndReportUITests: AriaUITestCase {
     func testTheCloseoutProposalIsShownWithTheOperatorLimitsAndWritesNothing() throws {
         try startProcedureChat()
 
-        element("options.closeOut").tap()
+        reveal("options.closeOut").tap()
         let title = element("closeout.title")
         let error = element("closeout.error")
         let loaded = NSPredicate { _, _ in title.exists || error.exists }
@@ -56,7 +56,7 @@ final class ChatCloseoutAndReportUITests: AriaUITestCase {
         try XCTSkipUnless(writesEnabled, "Scrive un ordine vero in ARIA (e MaintainX): serve ARIA_LIVE_WRITE=1")
         try startProcedureChat()
 
-        element("options.closeOut").tap()
+        reveal("options.closeOut").tap()
         let confirm = element("closeout.confirm")
         XCTAssertTrue(element("closeout.title").waitForExistence(timeout: 60), "La proposta di closeout non arriva")
         XCTAssertTrue(confirm.isEnabled)

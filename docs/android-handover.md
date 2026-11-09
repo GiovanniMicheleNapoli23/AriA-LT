@@ -15,6 +15,9 @@ con i contratti col backend che servono a chi costruisce la versione Android.
 Come leggere lo stato: **[committato]** è in `main`; **[in lavorazione]** è nell'albero di lavoro, scritto ma
 non committato (la sync offline, sezione 7).
 
+I connettori Composio (consenso, ritorno https, `composio/complete`) hanno un handover a parte:
+[android-composio-connectors.md](android-composio-connectors.md).
+
 ---
 
 ## 1. Cos'è l'app

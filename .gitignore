@@ -48,3 +48,4 @@ GoogleService-Info.plist
 # Serena: cache e config locale per-macchina
 .serena/cache/
 .serena/project.local.yml
+.claude/worktrees/

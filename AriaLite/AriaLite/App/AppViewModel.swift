@@ -23,6 +23,34 @@ class AppViewModel {
     /// Notifiche push dei lavori assegnati.
     let notifications = AriaPushNotifications.shared
 
+    /// Sezioni della web: tutte per gli account della piattaforma, una parte per l'operatore (AriaSidebarSections).
+    let adminDocuments: AdminDocumentsViewModel
+    let adminAgentStudio: AdminAgentStudioViewModel
+    let adminMarketplace: AdminMarketplaceViewModel
+    let adminExtractionReview: AdminExtractionReviewViewModel
+    let adminLearnedKnowledge: AdminLearnedKnowledgeViewModel
+    let adminScenarioAnalysis: AdminScenarioAnalysisViewModel
+    let adminCrafted: AdminCraftedViewModel
+    let adminWorkOrders: AdminWorkOrdersViewModel
+    let adminMaintenance: AdminMaintenanceViewModel
+    let adminInspections: AdminInspectionsViewModel
+    let adminTaskboard: AdminTaskboardViewModel
+    let adminAssets: AdminAssetsViewModel
+    let adminSpareParts: AdminSparePartsViewModel
+    let adminPurchaseOrders: AdminPurchaseOrdersViewModel
+    let adminVendors: AdminVendorsViewModel
+    let adminAlarms: AdminAlarmsViewModel
+    let adminReports: AdminReportsViewModel
+    let adminLLMUsage: AdminLLMUsageViewModel
+    let adminPlants: AdminPlantsViewModel
+    let adminCategories: AdminCategoriesViewModel
+    let adminTeams: AdminTeamsViewModel
+    let adminMembers: AdminMembersViewModel
+    let adminMobileUsers: AdminMobileUsersViewModel
+
+    /// Operatore o account della piattaforma: decide le sezioni della sidebar.
+    var accountKind: AriaAccountKind { backend.accountKind }
+
     /// L'app chiusa a chiave con Face ID.
     enum SessionLock: Equatable {
         case none
@@ -54,6 +82,29 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        adminDocuments = AdminDocumentsViewModel(backend: backend)
+        adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
+        adminMarketplace = AdminMarketplaceViewModel(backend: backend)
+        adminExtractionReview = AdminExtractionReviewViewModel(backend: backend)
+        adminLearnedKnowledge = AdminLearnedKnowledgeViewModel(backend: backend)
+        adminScenarioAnalysis = AdminScenarioAnalysisViewModel(backend: backend)
+        adminCrafted = AdminCraftedViewModel(backend: backend)
+        adminWorkOrders = AdminWorkOrdersViewModel(backend: backend)
+        adminMaintenance = AdminMaintenanceViewModel(backend: backend)
+        adminInspections = AdminInspectionsViewModel(backend: backend)
+        adminTaskboard = AdminTaskboardViewModel(backend: backend)
+        adminAssets = AdminAssetsViewModel(backend: backend)
+        adminSpareParts = AdminSparePartsViewModel(backend: backend)
+        adminPurchaseOrders = AdminPurchaseOrdersViewModel(backend: backend)
+        adminVendors = AdminVendorsViewModel(backend: backend)
+        adminAlarms = AdminAlarmsViewModel(backend: backend)
+        adminReports = AdminReportsViewModel(backend: backend)
+        adminLLMUsage = AdminLLMUsageViewModel(backend: backend)
+        adminPlants = AdminPlantsViewModel(backend: backend)
+        adminCategories = AdminCategoriesViewModel(backend: backend)
+        adminTeams = AdminTeamsViewModel(backend: backend)
+        adminMembers = AdminMembersViewModel(backend: backend)
+        adminMobileUsers = AdminMobileUsersViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -72,6 +123,7 @@ class AppViewModel {
     /// Chiede Face ID (o il codice del telefono) e riapre l'app. Annullare lascia l'app chiusa.
     func unlock() async {
         guard lock != .none, !isUnlocking else { return }
+        AriaAuthTrace.step("unlock.start", "\(lock)")
         isUnlocking = true
         unlockError = nil
         defer { isUnlocking = false }
@@ -84,6 +136,7 @@ class AppViewModel {
         }
         // Sessione sparita dal Keychain: `backend.isSignedIn` è falso e ContentView torna al login.
         lock = .none
+        AriaAuthTrace.step("unlock.cleared")
     }
 
     /// Il primo prompt parte da solo appena l'app è in primo piano, una volta per chiusura.
@@ -110,19 +163,9 @@ class AppViewModel {
         case failure(String)
     }
 
-    /// Passo 1: manda il link di accesso all'email.
-    func sendLoginLink(email: String) async -> LoginResult {
-        AriaAuthTrace.step("login.sendLink", "server=\(backend.authURL.absoluteString)")
-        do {
-            try await backend.sendSignInLink(email: email)
-            return .success
-        } catch {
-            AriaAuthTrace.failure("login.sendLink.failed", error)
-            return AriaHTTP.isOffline(error) ? .offline : .failure(error.localizedDescription)
-        }
-    }
+    // Il passo 1 (l'invio dei link) è di LoginViewModel: qui solo ciò che apre la sessione.
 
-    /// Passo 2: il link incollato dall'operatore. È valido una volta sola e per 15 minuti.
+    /// Passo 2: il link incollato, dell'operatore (15') o della web (10'). Vale una volta sola.
     func completeLogin(with pasted: String) async -> LoginResult {
         guard let link = backend.magicLink(in: pasted) else {
             return .failure(String(localized: "This is not an Aria sign-in link. Copy the link from the email and try again."))
@@ -130,7 +173,8 @@ class AppViewModel {
         return await signIn(with: link)
     }
 
-    /// Passo 2, con il link aperto dal sistema (`aria://sign-in#token=…`, o un Universal Link se l'host lo permette).
+    /// Passo 2, con il link aperto dal sistema: il magic link della web (Universal Link: l'host lo apre nell'app
+    /// grazie a `callbackURL=/?from=aria-ios`), `aria://sign-in#token=…`, o `/m/sign-in` se l'host lo permette.
     func open(_ url: URL) {
         guard let link = backend.signInLink(from: url) else { return }
         // Con un accesso già aperto il link non serve: per cambiare account si esce prima.
@@ -148,7 +192,7 @@ class AppViewModel {
 
     #if DEBUG
     /// Solo sviluppo: il link arriva come argomento di avvio, perché gli appunti Mac ↔ simulatore
-    /// a volte non funzionano:
+    /// a volte non funzionano. Vale l'una o l'altra forma del link (operatore o web):
     /// xcrun simctl launch --terminate-running-process booted com.giovanniMichele.AriaLite -AriaMagicLink "<link>"
     func signInWithLaunchLink() async {
         guard loggedInUser == nil, let raw = UserDefaults.standard.string(forKey: "AriaMagicLink"),
@@ -216,6 +260,32 @@ class AppViewModel {
         AriaTaskProgressStore.shared.forgetAll()
         sessions.reset()
         ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
+        adminDocuments.reset()
+        adminAgentStudio.reset()
+        adminMarketplace.reset()
+        adminExtractionReview.reset()
+        adminLearnedKnowledge.reset()
+        adminScenarioAnalysis.reset()
+        adminCrafted.reset()
+        adminWorkOrders.reset()
+        adminMaintenance.reset()
+        adminInspections.reset()
+        adminTaskboard.reset()
+        adminAssets.reset()
+        adminSpareParts.reset()
+        adminPurchaseOrders.reset()
+        adminVendors.reset()
+        adminAlarms.reset()
+        adminReports.reset()
+        adminLLMUsage.reset()
+        adminPlants.reset()
+        adminCategories.reset()
+        adminTeams.reset()
+        adminMembers.reset()
+        adminMobileUsers.reset()
+        // File scaricati, report esportati e foto in cache non restano per chi entra dopo.
+        AriaLocalFiles.removeTemporaryDocuments()
+        URLCache.shared.removeAllCachedResponses()
         Task {
             // Il token si toglie finché la sessione vale ancora: dopo il server non lo accetterebbe.
             await notifications.unregister()

@@ -15,5 +15,13 @@ ARIA_WEB_HOST = app.ariaplt.com
 ARIA_VOICE_ENGINE_HOST = api.sinaura-group.com
 ARIA_VOICE_ENGINE_KEY =
 
+// Domini associati in Debug: l'AASA si legge direttamente dal sito e non dalla CDN di Apple, che sui
+// simulatori e telefoni di sviluppo può restare ferma a una copia vecchia (webcredentials negato, e il
+// consenso Composio finisce nel browser). Mai in Release: una build con mode=developer non si distribuisce.
+// Sul telefono vale solo con Impostazioni › Sviluppatore › Associated Domains Development: per questo
+// AriaLite.Debug.entitlements tiene anche le righe normali (CDN).
+ARIA_ASSOCIATED_DOMAINS_MODE =
+ARIA_ASSOCIATED_DOMAINS_MODE[config=Debug] = ?mode=developer
+
 // Opzionale: la build funziona anche senza il file (clone pulito, CI).
 #include? "Secrets.xcconfig"

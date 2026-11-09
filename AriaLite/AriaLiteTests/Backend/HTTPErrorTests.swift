@@ -119,6 +119,23 @@ struct HTTPErrorTests {
         #expect(AriaHTTP.isHostDown(r))
     }
 
+    /// Composio rifiuta un passo: il backend risponde 502 con `detail` e il messaggio va mostrato, non "server giù".
+    @Test func gatewayStatusWithBackendDetailIsNotHostDown() throws {
+        let body = Data(#"{"detail":{"code":"gateway_rejected","message":"Composio refused the sign-in."}}"#.utf8)
+        let r = response(502, ["Content-Type": "application/json"])
+        #expect(!AriaHTTP.isHostDown(r, body: body))
+        #expect(AriaHTTP.hostDownError(r, body: body) == nil)
+        let error = try #require(check(502, String(decoding: body, as: UTF8.self)))
+        guard case .http(502, let detail) = error else { Issue.record("atteso .http(502), trovato \(error)"); return }
+        #expect(detail == "Composio refused the sign-in.")
+    }
+
+    @Test func gatewayStatusWithHTMLBodyIsStillHostDown() {
+        let r = response(503, ["Content-Type": "text/html"])
+        #expect(AriaHTTP.isHostDown(r, body: Data("<html>503 Service Unavailable</html>".utf8)))
+        #expect(AriaHTTP.isHostDown(r, body: Data(#"{"message":"Service Unavailable"}"#.utf8)), "senza detail non è il backend")
+    }
+
     @Test func otherResponsesAreNeverHostDown() {
         #expect(AriaHTTP.hostDownError(response(401, ["Content-Type": "application/json"])) == nil)
         #expect(AriaHTTP.hostDownError(response(200, ["Content-Type": "text/html"])) == nil)

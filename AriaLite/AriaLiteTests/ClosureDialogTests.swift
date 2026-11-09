@@ -14,15 +14,15 @@ import Testing
 
 struct ClosureDialogTests {
     @Test func theLabelLeadsThenTheReasonCodeThenTheOperatorsWords() {
-        let answer = AriaElicitationPanel.closureAnswer(
+        let answer = AriaElicitationTurn.closureAnswer(
             label: "Yes, end the procedure", reason: "missing_parts", details: "  Manca il cuscinetto 6205 ")
         #expect(answer == "Yes, end the procedure. Reason: missing_parts. Details: Manca il cuscinetto 6205")
     }
 
     @Test func detailsAreOptionalAndATrailingDotOfTheLabelIsNotDoubled() {
-        #expect(AriaElicitationPanel.closureAnswer(label: "Yes, end the procedure.", reason: "shift_end", details: " ")
+        #expect(AriaElicitationTurn.closureAnswer(label: "Yes, end the procedure.", reason: "shift_end", details: " ")
                 == "Yes, end the procedure. Reason: shift_end")
-        #expect(AriaElicitationPanel.closureAnswer(label: "Yes, end the procedure", reason: "", details: "")
+        #expect(AriaElicitationTurn.closureAnswer(label: "Yes, end the procedure", reason: "", details: "")
                 == "Yes, end the procedure")
     }
 

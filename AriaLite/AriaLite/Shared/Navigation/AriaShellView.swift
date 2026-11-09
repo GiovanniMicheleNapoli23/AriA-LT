@@ -1,0 +1,399 @@
+//
+//  AriaShellView.swift
+//  AriaLite
+//
+//  Created by Giovanni Michele on 26/09/26.
+//
+//  Navigazione come Claude mobile: la chat è la schermata principale e tutte le
+//  sezioni (Chat, Task, Calendario, conversazioni fissate e recenti)
+//  stanno in una sidebar che si apre dal pulsante ☰ o trascinando dal bordo sinistro.
+//  Un account della piattaforma (admin) vede le sezioni della web al posto di Task e Calendario; l'operatore
+//  ha Task e Calendario più una parte di quelle sezioni (vedi AriaSidebarSections).
+//  Il pannello principale scivola a destra con gli angoli arrotondati.
+//
+
+import SwiftUI
+
+enum AriaDestination: Hashable {
+    case chat
+    case chats
+    // Operatore
+    case tasks
+    case calendar
+    // Sezioni della web (l'operatore ne vede una parte)
+    case adminDocuments
+    case adminAgentStudio
+    case adminMarketplace
+    case adminExtractionReview
+    case adminLearnedKnowledge
+    case adminScenarioAnalysis
+    case adminCrafted
+    case adminWorkOrders
+    case adminMaintenance
+    case adminInspections
+    case adminTaskboard
+    case assets
+    case spareParts
+    case adminAlarms
+    case adminPurchaseOrders
+    case adminVendors
+    case adminReports
+    case adminLLMUsage
+    case adminPlants
+    case adminCategories
+    case adminTeams
+    case adminMembers
+    case adminMobileUsers
+}
+
+/// Stato di apertura della sidebar: un modello osservabile al posto di una closure
+/// nell'ambiente, così le viste che leggono il controller non invalidano a ogni render.
+@MainActor
+@Observable
+final class AriaSidebarController {
+    private(set) var isOpen = false
+
+    func setOpen(_ open: Bool) {
+        if open {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+        withAnimation(.snappy(duration: 0.3)) { isOpen = open }
+    }
+}
+
+extension EnvironmentValues {
+    /// Apre la sidebar: il pulsante ☰ di ogni sezione lo legge da qui.
+    @Entry var sidebarController: AriaSidebarController?
+    /// Apre una conversazione nella chat principale (per id di sessione): le sezioni lo usano per "Apri la chat".
+    @Entry var openChatSession: AriaOpenChatSessionAction?
+}
+
+/// L'azione dietro `openChatSession`, come `OpenURLAction`: si chiama con l'id della sessione. Una closure
+/// nell'environment non si confronta e invaliderebbe chi la legge a ogni aggiornamento; questa fa sempre
+/// la stessa cosa (apre la sessione nella chat principale), quindi due istanze valgono come uguali.
+struct AriaOpenChatSessionAction: Equatable {
+    let open: @MainActor (String) -> Void
+
+    func callAsFunction(_ sessionId: String) { open(sessionId) }
+
+    static func == (lhs: Self, rhs: Self) -> Bool { true }
+}
+
+/// Pulsante ☰ da mettere in alto a sinistra nella toolbar di ogni sezione.
+struct AriaSidebarButton: View {
+    @Environment(\.sidebarController) private var sidebarController
+
+    var body: some View {
+        Button("Menu", systemImage: "line.3.horizontal") {
+            sidebarController?.setOpen(true)
+        }
+    }
+}
+
+struct AriaShellView: View {
+    let user: User
+    @Environment(AppViewModel.self) private var viewModel
+    @Environment(\.scenePhase) private var scenePhase
+
+    @State private var destination: AriaDestination = .chat
+    @State private var sidebar = AriaSidebarController()
+    @GestureState(resetTransaction: Transaction(animation: .snappy(duration: 0.3)))
+    private var dragX: CGFloat = 0
+    /// Cambia a ogni "Nuova chat" dalla sidebar: la chat riparte da capo (fonte, bozza, scroll).
+    @State private var chatID = UUID()
+    @State private var showSettings = false
+    @State private var showConnection = false
+    /// La ricerca della schermata Chat è attiva (la lente della sidebar la apre).
+    @State private var searchingChats = false
+
+    /// Da quanto vicino al bordo sinistro parte il trascinamento che apre la sidebar.
+    private let edgeWidth: CGFloat = 30
+
+    private var chat: AriaAgentChat { viewModel.mainChat }
+    private var store: AriaSessionStore { viewModel.sessions }
+    /// Task assegnati, disponibilità e notifiche dei lavori sono solo dell'operatore.
+    private var isOperator: Bool { viewModel.backend.usesOperatorLayout }
+    /// Le sezioni che la sidebar offre ora: cambiano coi diritti letti da GET /v1/me.
+    private var offered: Set<AriaDestination> {
+        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights)
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = min(geo.size.width * 0.82, 360)
+            let offset = min(max((sidebar.isOpen ? width : 0) + dragX, 0), width)
+            let progress = offset / width
+
+            ZStack(alignment: .leading) {
+                AriaSidebar(
+                    user: user,
+                    destination: destination,
+                    select: select,
+                    openSession: openSession,
+                    searchChats: searchChats,
+                    newChat: newChat,
+                    showSettings: { showSettings = true },
+                    showConnection: { showConnection = true }
+                )
+                .frame(width: width)
+                .offset(x: (progress - 1) * 60)
+                .opacity(0.3 + 0.7 * progress)
+
+                main(progress: progress, safeArea: geo.safeAreaInsets)
+                    // Il pannello disegna anche nell'area sicura a sinistra (notch in orizzontale):
+                    // scivola oltre anche quella, se no copre la sidebar.
+                    .offset(x: offset + progress * geo.safeAreaInsets.leading)
+            }
+            .simultaneousGesture(dragGesture(width: width))
+        }
+        .background(Color.liteSidebar.ignoresSafeArea())
+        .environment(\.sidebarController, sidebar)
+        .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
+        .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
+        .onAppear { AriaAuthTrace.step("shell.appear") }
+        .task(id: viewModel.backend.isReady) { await store.load() }
+        // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano. Anche quando il layout dell'operatore
+        // arriva dopo l'avvio (un membro entrato col link della web: `membership.restricted` letta dal bootstrap).
+        .task(id: isOperator) {
+            guard isOperator else { return }
+            await viewModel.notifications.enable()
+            await viewModel.ariaWorkOrders.sync()
+        }
+        // Il ruolo ridà `work_orders` (pausa finita): la coda rimasta sul telefono parte e le liste si rileggono.
+        .onChange(of: viewModel.backend.rights.has(.workOrders)) { _, granted in
+            guard isOperator, granted else { return }
+            Task { await viewModel.ariaWorkOrders.sync() }
+        }
+        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat.
+        .onChange(of: offered) { _, offered in
+            guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
+            select(.chat)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // A ogni ritorno si rileggono membership e diritti: niente nuovo accesso per un ruolo cambiato.
+            if phase == .active { Task { await viewModel.backend.refreshMembership() } }
+            guard isOperator else { return }
+            // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
+            if phase == .background {
+                Task { await viewModel.ariaWorkOrders.flushForBackground() }
+                return
+            }
+            guard phase == .active else { return }
+            Task {
+                await viewModel.notifications.clearBadge()
+                // Il permesso dato più tardi da Impostazioni, o un token cambiato da APNs.
+                await viewModel.notifications.enable()
+                await viewModel.ariaWorkOrders.sync()
+            }
+        }
+        // Notifica toccata (anche quella che ha aperto l'app): si va ai task e si apre il lavoro.
+        .onChange(of: viewModel.notifications.pendingWorkOrderId, initial: true) { _, id in
+            guard let id else { return }
+            viewModel.notifications.pendingWorkOrderId = nil
+            // Il ruolo non concede più i lavori: la notifica non apre niente.
+            guard offered.contains(.tasks) else { return }
+            viewModel.ariaWorkOrders.openRequest = id
+            select(.tasks)
+        }
+        // Lavoro arrivato con l'app aperta: la lista si aggiorna da sola.
+        .onChange(of: viewModel.notifications.lastArrival) { _, arrival in
+            guard arrival != nil else { return }
+            Task { await viewModel.ariaWorkOrders.refresh() }
+        }
+        .onChange(of: sidebar.isOpen) { _, open in
+            // Le recenti si aggiornano a ogni apertura: una chat appena iniziata prende il suo titolo.
+            if open { Task { await store.load() } }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet(user: user, viewModel: viewModel)
+        }
+        .sheet(isPresented: $showConnection) {
+            AriaConnectionSheet(backend: viewModel.backend)
+        }
+    }
+
+    // MARK: - Pannello principale
+
+    private func main(progress: CGFloat, safeArea: EdgeInsets) -> some View {
+        let shape = RoundedRectangle(cornerRadius: 44 * progress, style: .continuous)
+        return content
+            .overlay {
+                // A sidebar chiusa niente velo: non c'è un livello in più da comporre.
+                if progress > 0 {
+                    Color.litePanelVeil
+                        .opacity(0.45 * progress)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
+            }
+            // Ritaglio fin sotto la status bar: il pannello è tutto lo schermo. `clipShape` al posto di `mask`
+            // (niente passaggio offscreen sull'intera schermata); la forma esce dai bordi quanto l'area sicura.
+            .clipShape(AriaPanelShape(cornerRadius: 44 * progress, outsets: safeArea))
+            .background {
+                // L'ombra solo mentre il pannello scorre: a riposo basta lo sfondo.
+                if progress > 0 {
+                    shape
+                        .fill(Color.liteBackground)
+                        .shadow(color: .black.opacity(0.12 * progress), radius: 24, x: -4)
+                        .ignoresSafeArea()
+                } else {
+                    Color.liteBackground.ignoresSafeArea()
+                }
+            }
+            .overlay {
+                // Aperta la sidebar, il pannello non si usa: un tocco lo richiude.
+                if sidebar.isOpen {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .ignoresSafeArea()
+                        .onTapGesture { sidebar.setOpen(false) }
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch destination {
+        case .chat:
+            AIChatView()
+                .id(chatID)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if isOperator, viewModel.backend.rights.isPaused {
+                        AriaAccessPausedBanner()
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                    }
+                }
+        case .chats:
+            AriaChatHistoryView(chat: chat, store: store, backend: viewModel.backend,
+                                isSearching: $searchingChats, onOpen: openSession, onNewChat: newChat,
+                                onConnect: { showConnection = true })
+        case .calendar:
+            AriaCalendarView(store: viewModel.ariaWorkOrders)
+        case .tasks:
+            AriaWorkOrdersView(store: viewModel.ariaWorkOrders)
+        case .adminDocuments:
+            AdminDocumentsView(viewModel: viewModel.adminDocuments)
+        case .adminAgentStudio:
+            AdminAgentStudioView(viewModel: viewModel.adminAgentStudio)
+        case .adminMarketplace:
+            AdminMarketplaceView(viewModel: viewModel.adminMarketplace)
+        case .adminExtractionReview:
+            AdminExtractionReviewView(viewModel: viewModel.adminExtractionReview)
+        case .adminLearnedKnowledge:
+            AdminLearnedKnowledgeView(viewModel: viewModel.adminLearnedKnowledge)
+        case .adminScenarioAnalysis:
+            AdminScenarioAnalysisView(viewModel: viewModel.adminScenarioAnalysis)
+        case .adminCrafted:
+            AdminCraftedView(viewModel: viewModel.adminCrafted)
+        case .adminWorkOrders:
+            AdminWorkOrdersView(viewModel: viewModel.adminWorkOrders)
+        case .adminMaintenance:
+            AdminMaintenanceView(viewModel: viewModel.adminMaintenance)
+        case .adminInspections:
+            AdminInspectionsView(viewModel: viewModel.adminInspections)
+        case .adminTaskboard:
+            AdminTaskboardView(viewModel: viewModel.adminTaskboard)
+        case .assets:
+            AdminAssetsView(viewModel: viewModel.adminAssets)
+        case .spareParts:
+            AdminSparePartsView(viewModel: viewModel.adminSpareParts)
+        case .adminPurchaseOrders:
+            AdminPurchaseOrdersView(viewModel: viewModel.adminPurchaseOrders)
+        case .adminVendors:
+            AdminVendorsView(viewModel: viewModel.adminVendors)
+        case .adminAlarms:
+            AdminAlarmsView(viewModel: viewModel.adminAlarms)
+        case .adminReports:
+            AdminReportsView(viewModel: viewModel.adminReports)
+        case .adminLLMUsage:
+            AdminLLMUsageView(viewModel: viewModel.adminLLMUsage)
+        case .adminPlants:
+            AdminPlantsView(viewModel: viewModel.adminPlants)
+        case .adminCategories:
+            AdminCategoriesView(viewModel: viewModel.adminCategories)
+        case .adminTeams:
+            AdminTeamsView(viewModel: viewModel.adminTeams)
+        case .adminMembers:
+            AdminMembersView(viewModel: viewModel.adminMembers)
+        case .adminMobileUsers:
+            AdminMobileUsersView(viewModel: viewModel.adminMobileUsers)
+        }
+    }
+
+    // MARK: - Trascinamento
+
+    private func dragGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 14)
+            .updating($dragX) { value, state, _ in
+                guard isSidebarDrag(value) else { return }
+                state = value.translation.width
+            }
+            .onEnded { value in
+                guard isSidebarDrag(value) else { return }
+                let landing = (sidebar.isOpen ? width : 0) + value.predictedEndTranslation.width
+                sidebar.setOpen(landing > width / 2)
+            }
+    }
+
+    /// Orizzontale, e — a sidebar chiusa — partito dal bordo sinistro (lo scroll resta dei contenuti).
+    private func isSidebarDrag(_ value: DragGesture.Value) -> Bool {
+        guard abs(value.translation.width) > abs(value.translation.height) else { return false }
+        return sidebar.isOpen || value.startLocation.x < edgeWidth
+    }
+
+    // MARK: - Azioni
+
+    private func select(_ target: AriaDestination) {
+        destination = target
+        searchingChats = false
+        sidebar.setOpen(false)
+    }
+
+    private func searchChats() {
+        select(.chats)
+        searchingChats = true
+    }
+
+    private func openSession(_ session: AriaSessionSummary) {
+        openSession(id: session.sessionId)
+    }
+
+    private func openSession(id sessionId: String) {
+        destination = .chat
+        sidebar.setOpen(false)
+        guard sessionId != chat.sessionId || chat.messages.isEmpty else { return }
+        Task { await chat.open(sessionId: sessionId) }
+    }
+
+    private func newChat() {
+        chat.newConversation()
+        chatID = UUID()
+        destination = .chat
+        sidebar.setOpen(false)
+    }
+}
+
+/// Il rettangolo arrotondato del pannello, allargato dell'area sicura: come `shape.ignoresSafeArea()` ma
+/// utilizzabile in `clipShape`.
+nonisolated private struct AriaPanelShape: Shape {
+    var cornerRadius: CGFloat
+    var outsets: EdgeInsets
+
+    var animatableData: CGFloat {
+        get { cornerRadius }
+        set { cornerRadius = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let full = CGRect(x: rect.minX - outsets.leading, y: rect.minY - outsets.top,
+                          width: rect.width + outsets.leading + outsets.trailing,
+                          height: rect.height + outsets.top + outsets.bottom)
+        return Path(roundedRect: full, cornerRadius: cornerRadius, style: .continuous)
+    }
+}
+
+#Preview {
+    AriaShellView(user: User(id: UUID(), username: "operator@example.com", name: "Operator"))
+        .environment(AppViewModel())
+}
