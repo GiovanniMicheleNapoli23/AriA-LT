@@ -11,8 +11,8 @@
 import Foundation
 
 extension AdminAlarmsViewModel {
-    /// Lo stato mostrato ha bozze da approvare.
-    var canSelect: Bool { statusFilter.isPending && !alarms.isEmpty }
+    /// Lo stato mostrato ha bozze da approvare, e il ruolo può approvare.
+    var canSelect: Bool { statusFilter.isPending && !alarms.isEmpty && backend.rights.can(.approve, in: .alarms) }
 
     func startSelecting() {
         selection = []

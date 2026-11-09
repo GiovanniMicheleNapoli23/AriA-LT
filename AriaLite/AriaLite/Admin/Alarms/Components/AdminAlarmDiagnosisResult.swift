@@ -93,7 +93,7 @@ struct AdminAlarmDiagnosisResult: View {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
             }
             .font(.subheadline.weight(.semibold))
-        } else {
+        } else if viewModel.canCreateWorkOrder {
             Button { viewModel.startWorkOrder() } label: {
                 Label("Create work order", systemImage: "wrench.and.screwdriver")
             }

@@ -73,9 +73,11 @@ struct AdminSparePartFormView: View {
                     Text(verbatim: category.localized).tag(Optional(category))
                 }
             }
-            Picker("Status", selection: $viewModel.status) {
-                ForEach(viewModel.statusChoices, id: \.self) { status in
-                    Text(verbatim: status.localized).tag(status)
+            if viewModel.showsStatusPicker {
+                Picker("Status", selection: $viewModel.status) {
+                    ForEach(viewModel.statusChoices, id: \.self) { status in
+                        Text(verbatim: status.localized).tag(status)
+                    }
                 }
             }
         } footer: {
@@ -129,25 +131,27 @@ struct AdminSparePartFormView: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
             }
-            Picker("Vendor", selection: $viewModel.vendorId) {
-                Text("None").tag(String?.none)
-                ForEach(viewModel.vendors.sorted) { vendor in
-                    Text(verbatim: vendor.displayName).tag(Optional(vendor.id))
+            if viewModel.showsVendorPicker {
+                Picker("Vendor", selection: $viewModel.vendorId) {
+                    Text("None").tag(String?.none)
+                    ForEach(viewModel.vendors.sorted) { vendor in
+                        Text(verbatim: vendor.displayName).tag(Optional(vendor.id))
+                    }
+                    if viewModel.hasUnlistedVendor, let id = viewModel.vendorId {
+                        Text("Current vendor").tag(Optional(id))
+                    }
                 }
-                if viewModel.hasUnlistedVendor, let id = viewModel.vendorId {
-                    Text("Current vendor").tag(Optional(id))
-                }
-            }
-            if viewModel.vendors.isLoading && viewModel.vendors.vendors.isEmpty {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text("Loading vendors...").foregroundStyle(.secondary)
-                }
-                .font(.footnote)
-            } else if viewModel.vendors.failure != nil, viewModel.vendors.vendors.isEmpty {
-                Text("Vendors couldn't be loaded.")
+                if viewModel.vendors.isLoading && viewModel.vendors.vendors.isEmpty {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Loading vendors...").foregroundStyle(.secondary)
+                    }
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                } else if viewModel.vendors.failure != nil, viewModel.vendors.vendors.isEmpty {
+                    Text("Vendors couldn't be loaded.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

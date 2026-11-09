@@ -36,7 +36,7 @@ struct AdminMaintenanceDetailView: View {
                     AdminMaintenanceListCard(title: "Spare parts", systemImage: "shippingbox", items: viewModel.plan.spareParts,
                                              emptyText: "", numbered: false)
                 }
-                AdminMaintenanceWorkOrdersCard(viewModel: viewModel)
+                if viewModel.showsWorkOrders { AdminMaintenanceWorkOrdersCard(viewModel: viewModel) }
                 if let files = viewModel.files { AdminMaintenanceFilesCard(viewModel: files) }
                 if let history = viewModel.history { AdminMaintenanceHistoryCard(viewModel: history) }
                 detailsCard

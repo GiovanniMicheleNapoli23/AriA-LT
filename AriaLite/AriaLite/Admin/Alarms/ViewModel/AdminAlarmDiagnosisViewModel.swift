@@ -77,6 +77,9 @@ final class AdminAlarmDiagnosisViewModel {
 
     // MARK: Ordine di lavoro
 
+    /// Creare l'ordine da un allarme è un'operazione degli ordini di lavoro: il ruolo ne ha la sezione.
+    var canCreateWorkOrder: Bool { backend.rights.has(.workOrders) }
+
     func startWorkOrder() {
         guard let diagnosis else { return }
         workOrderForm = AdminAlarmWorkOrderFormViewModel(

@@ -19,7 +19,11 @@ final class AdminMaintenanceDetailViewModel {
     private(set) var plan: AdminMaintenancePlan
     /// Allegati e storico: senza id del server non c'è niente da chiedere.
     let files: AdminMaintenanceFilesViewModel?
-    let history: AdminMaintenanceHistoryViewModel?
+    private let historyModel: AdminMaintenanceHistoryViewModel?
+    /// Lo storico c'è solo se il ruolo ha `audit_log`: senza, la scheda non si mostra e la rotta non si chiama.
+    var history: AdminMaintenanceHistoryViewModel? { backend.rights.has(.auditLog) ? historyModel : nil }
+    /// Gli ordini generati sono ordini di lavoro: servono `work_orders`.
+    var showsWorkOrders: Bool { backend.rights.has(.workOrders) }
 
     private(set) var workOrders: [AdminMaintenanceWorkOrder] = []
     private(set) var workOrdersError: String?
@@ -35,7 +39,7 @@ final class AdminMaintenanceDetailViewModel {
         self.plan = plan
         self.onChange = onChange
         files = plan.serverId.map { AdminMaintenanceFilesViewModel(planId: $0, backend: backend) }
-        history = plan.serverId.map { AdminMaintenanceHistoryViewModel(planId: $0, backend: backend) }
+        historyModel = plan.serverId.map { AdminMaintenanceHistoryViewModel(planId: $0, backend: backend) }
     }
 
     /// Modifica e AI hanno bisogno dell'id del server.
@@ -78,7 +82,7 @@ final class AdminMaintenanceDetailViewModel {
     }
 
     private func loadWorkOrders() async {
-        guard let id = plan.serverId else { return }
+        guard let id = plan.serverId, showsWorkOrders else { return }
         do {
             let rows = try await backend.api.call(AdminMaintenanceAPI.workOrders(assetTag: plan.assetTag, plantId: plan.plantId))
             workOrders = rows.items

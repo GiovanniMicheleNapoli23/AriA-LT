@@ -50,8 +50,9 @@ final class AdminMaintenanceFormViewModel {
         name = plan?.name ?? ""
         frequency = plan?.frequency ?? AdminMaintenanceFrequency.monthly.rawValue
         // Un piano scritto a mano parte approvato: il default del server (draft) non si vedrebbe nella lista di
-        // default. Lo stato resta modificabile nel form.
-        status = plan?.status ?? AdminMaintenanceStatus.approved.rawValue
+        // default. Lo stato resta modificabile nel form. Senza il diritto `approve` parte bozza: approvare sarebbe rifiutato.
+        status = plan?.status
+            ?? (backend.rights.can(.approve, in: .maintenance) ? AdminMaintenanceStatus.approved : .draft).rawValue
         plantId = plan?.plantId ?? backend.activePlantId ?? backend.plants.first?.id
         assetTag = plan?.assetTag ?? ""
         relatedAssets = (plan?.relatedAssetTags ?? []).joined(separator: ", ")
@@ -80,9 +81,20 @@ final class AdminMaintenanceFormViewModel {
         return known.contains(frequency) ? known : known + [frequency]
     }
 
+    /// Il ruolo decide quali stati si possono scegliere (`AriaRights.canMove`): approvato (`approve`), rifiutato o
+    /// superato (`reject`) e, da un piano approvato, qualunque altro (`unapprove`). Lo stato attuale resta sempre scelto.
     var statusOptions: [String] {
-        let known = AdminMaintenanceStatus.allCases.map(\.rawValue)
+        let known = AdminMaintenanceStatus.allCases.map(\.rawValue).filter { $0 == status || canSetStatus($0) }
         return known.contains(status) ? known : known + [status]
+    }
+
+    /// Il picker dello stato c'è solo se offre una scelta: senza diritti di approvazione non resta che lo stato attuale.
+    var showsStatus: Bool { statusOptions.count > 1 }
+
+    /// Si legge contro lo stato salvato; un piano nuovo parte da bozza.
+    private func canSetStatus(_ raw: String) -> Bool {
+        let stored = original?.status ?? AdminMaintenanceStatus.draft.rawValue
+        return backend.rights.canMove(from: stored, to: raw, in: .maintenance)
     }
 
     func frequencyLabel(_ raw: String) -> String { AdminMaintenanceFrequency.label(for: raw) }
@@ -91,7 +103,8 @@ final class AdminMaintenanceFormViewModel {
     // MARK: Asset
 
     func loadAssets() async {
-        guard assets.isEmpty else { return }
+        // Gli asset sono del diritto `assets`: senza, nessuna chiamata e il tag si scrive a mano.
+        guard assets.isEmpty, backend.rights.has(.assets) else { return }
         if let rows = try? await backend.api.call(AdminMaintenanceAPI.assets()) { assets = rows.items }
     }
 

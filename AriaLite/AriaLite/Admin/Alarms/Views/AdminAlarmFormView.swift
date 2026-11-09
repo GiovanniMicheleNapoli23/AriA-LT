@@ -64,9 +64,11 @@ struct AdminAlarmFormView: View {
             LabeledContent("Code") { Text(verbatim: viewModel.alarm.code).font(.body.monospaced()) }
             TextField("Description", text: $viewModel.description, axis: .vertical)
                 .lineLimit(2...8)
-            Picker("Status", selection: $viewModel.statusKey) {
-                ForEach(viewModel.statusOptions, id: \.key) { option in
-                    Text(verbatim: option.label).tag(option.key)
+            if viewModel.showsStatusPicker {
+                Picker("Status", selection: $viewModel.statusKey) {
+                    ForEach(viewModel.statusOptions, id: \.key) { option in
+                        Text(verbatim: option.label).tag(option.key)
+                    }
                 }
             }
         } footer: {

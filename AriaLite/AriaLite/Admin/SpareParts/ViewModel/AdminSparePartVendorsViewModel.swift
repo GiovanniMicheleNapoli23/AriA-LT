@@ -26,6 +26,9 @@ final class AdminSparePartVendorsViewModel {
         self.backend = backend
     }
 
+    /// GET /v1/vendors è della sezione `vendors`: senza, non si chiama.
+    var isAvailable: Bool { backend.rights.has(.vendors) }
+
     var hasLoaded: Bool { loadedCompanyId == .some(backend.activeCompanyId) }
 
     /// In ordine alfabetico, per la scelta nel modulo.
@@ -39,11 +42,12 @@ final class AdminSparePartVendorsViewModel {
     }
 
     func loadIfNeeded() async {
-        guard !hasLoaded, !isLoading else { return }
+        guard isAvailable, !hasLoaded, !isLoading else { return }
         await load()
     }
 
     func load() async {
+        guard isAvailable else { return }
         let company = backend.activeCompanyId
         isLoading = true
         defer { isLoading = false }

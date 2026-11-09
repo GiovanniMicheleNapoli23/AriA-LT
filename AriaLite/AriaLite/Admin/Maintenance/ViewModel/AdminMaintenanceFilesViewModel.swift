@@ -71,8 +71,8 @@ final class AdminMaintenanceFilesViewModel {
     private func loadUsersIfNeeded() async {
         guard !hasLoadedUsers else { return }
         hasLoadedUsers = true
-        guard let users = try? await backend.api.call(AdminMaintenanceAPI.users()) else { return }
-        userNames = Dictionary(users.items.map { ($0.id, $0.displayName) }) { first, _ in first }
+        guard let users = try? await AdminMaintenanceAPI.people(api: backend.api, rights: backend.rights) else { return }
+        userNames = Dictionary(users.map { ($0.id, $0.displayName) }) { first, _ in first }
     }
 
     var rows: [AdminWorkOrderAttachmentRowItem] {

@@ -44,6 +44,13 @@ nonisolated enum AdminMaintenanceAPI {
         get("v1/users", ["active_only": "true"])
     }
 
+    /// Le persone per dare un nome agli id: un membro con ruolo non può chiamare /v1/users, legge l'anagrafica
+    /// (/v1/lookups/people); gli altri la rotta di sempre.
+    static func people(api: AriaAPIClient, rights: AriaRights) async throws -> [AdminWorkOrderUser] {
+        if rights.isRoleBased { return try await AdminLookupsAPI.people(api, fieldOnly: false).map(\.asUser) }
+        return try await api.call(users()).items
+    }
+
     /// Gli asset approvati, per scegliere quello del piano.
     static func assets() -> AriaEndpoint<AriaLossyArray<AdminWorkOrderAsset>> {
         get("v1/assets", ["status": "approved"])
@@ -51,9 +58,11 @@ nonisolated enum AdminMaintenanceAPI {
 
     /// GET /v1/work-orders. La rotta non ha un filtro per piano (ma ogni ordine ha `maintenance_plan_id`):
     /// si chiedono quelli dell'asset (o dello stabilimento), aperti e chiusi, e si filtra qui.
+    /// `scope=all`: gli ordini del piano sono di tutti, non dei soli propri (il server lo ignora se non serve).
     static func workOrders(assetTag: String?, plantId: String?) -> AriaEndpoint<AriaLossyArray<AdminMaintenanceWorkOrder>> {
         get("v1/work-orders", [
             "status_group": "all",
+            "scope": "all",
             "asset_tag": assetTag,
             "plant_id": plantId,
             "limit": "200",

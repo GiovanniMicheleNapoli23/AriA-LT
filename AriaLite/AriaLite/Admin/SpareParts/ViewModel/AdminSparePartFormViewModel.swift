@@ -90,9 +90,29 @@ final class AdminSparePartFormViewModel: Identifiable {
         category == .unknown ? AdminSparePartCategory.selectable + [.unknown] : AdminSparePartCategory.selectable
     }
 
-    var statusChoices: [AdminSparePartStatus] {
-        status == .unknown ? AdminSparePartStatus.selectable + [.unknown] : AdminSparePartStatus.selectable
+    /// Lo stato con cui il modulo si è aperto (un ricambio nuovo parte da bozza).
+    private var originalStatus: AdminSparePartStatus {
+        if case .edit(let part) = mode { part.status ?? .newPartDefault } else { .newPartDefault }
     }
+
+    /// Cambiare stato è un'azione del ruolo (`AriaRights.canMove`): approvare (approve), rifiutare o
+    /// superare (reject), togliere l'approvazione (unapprove). Lo stato di partenza resta sempre scelto.
+    var statusChoices: [AdminSparePartStatus] {
+        let rights = owner.backend.rights
+        let original = originalStatus
+        var choices = AdminSparePartStatus.selectable.filter {
+            rights.canMove(from: original.rawValue, to: $0.rawValue, in: .spareParts)
+        }
+        if status == .unknown { choices.append(.unknown) }
+        return choices
+    }
+
+    /// Con una sola scelta (lo stato attuale) il selettore non serve.
+    var showsStatusPicker: Bool { statusChoices.count > 1 }
+
+    /// L'elenco fornitori (GET /v1/vendors) vuole la sezione `vendors`: senza, il selettore non c'è e il
+    /// fornitore del ricambio resta com'è.
+    var showsVendorPicker: Bool { vendors.isAvailable }
 
     /// Il fornitore scelto non è nell'elenco (fornitore eliminato o di un altro stabilimento): resta scelto.
     var hasUnlistedVendor: Bool {

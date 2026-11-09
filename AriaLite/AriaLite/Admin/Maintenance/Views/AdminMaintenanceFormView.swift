@@ -105,9 +105,11 @@ struct AdminMaintenanceFormView: View {
                 }
                 AdminMaintenanceTextField(title: "Category", text: $viewModel.category, focus: $focused)
                 AdminMaintenanceTextField(title: "Zone", text: $viewModel.zone, focus: $focused)
-                AdminMaintenanceMenuRow(title: "Status", value: viewModel.statusLabel(viewModel.status)) {
-                    Picker("Status", selection: $viewModel.status) {
-                        ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
+                if viewModel.showsStatus {
+                    AdminMaintenanceMenuRow(title: "Status", value: viewModel.statusLabel(viewModel.status)) {
+                        Picker("Status", selection: $viewModel.status) {
+                            ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
+                        }
                     }
                 }
             }

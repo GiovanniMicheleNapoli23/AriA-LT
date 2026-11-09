@@ -100,8 +100,10 @@ struct AdminAssetFormView: View {
             Picker("Type", selection: $viewModel.assetType) {
                 ForEach(viewModel.typeOptions, id: \.self) { Text(viewModel.typeLabel($0)).tag($0) }
             }
-            Picker("Status", selection: $viewModel.status) {
-                ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
+            if viewModel.showsStatusPicker {
+                Picker("Status", selection: $viewModel.status) {
+                    ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
+                }
             }
             if !viewModel.plants.isEmpty {
                 Picker("Plant", selection: $viewModel.plantId) {

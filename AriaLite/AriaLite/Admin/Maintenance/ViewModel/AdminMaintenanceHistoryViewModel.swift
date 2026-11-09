@@ -39,7 +39,8 @@ final class AdminMaintenanceHistoryViewModel {
 
     /// Alla prima apertura della scheda e a ogni aggiornamento del dettaglio.
     func load() async {
-        guard !isLoading else { return }
+        // Il registro delle modifiche è del diritto `audit_log`: senza, nessuna chiamata.
+        guard !isLoading, backend.rights.has(.auditLog) else { return }
         isLoading = true
         defer { isLoading = false }
         await loadUsersIfNeeded()
@@ -57,7 +58,7 @@ final class AdminMaintenanceHistoryViewModel {
 
     /// Lo storico dopo l'ultima riga mostrata.
     func loadMore() async {
-        guard hasMore, !isLoadingMore else { return }
+        guard hasMore, !isLoadingMore, backend.rights.has(.auditLog) else { return }
         isLoadingMore = true
         defer { isLoadingMore = false }
         do {
@@ -80,8 +81,8 @@ final class AdminMaintenanceHistoryViewModel {
     private func loadUsersIfNeeded() async {
         guard !hasLoadedUsers else { return }
         hasLoadedUsers = true
-        guard let users = try? await backend.api.call(AdminMaintenanceAPI.users()) else { return }
-        userNames = Dictionary(users.items.map { ($0.id, $0.displayName) }) { first, _ in first }
+        guard let users = try? await AdminMaintenanceAPI.people(api: backend.api, rights: backend.rights) else { return }
+        userNames = Dictionary(users.map { ($0.id, $0.displayName) }) { first, _ in first }
     }
 
     // MARK: Righe

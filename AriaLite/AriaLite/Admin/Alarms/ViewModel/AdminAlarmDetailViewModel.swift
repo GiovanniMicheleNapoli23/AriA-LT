@@ -77,7 +77,9 @@ final class AdminAlarmDetailViewModel {
         return rows.compactMap { label, value in value.map { (label, $0) } }
     }
 
-    var canApprove: Bool { alarm.status?.isPending == true && !isApproving }
+    var canApprove: Bool {
+        alarm.status?.isPending == true && !isApproving && backend.rights.can(.approve, in: .alarms)
+    }
 
     // MARK: - Azioni
 

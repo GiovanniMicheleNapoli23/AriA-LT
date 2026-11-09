@@ -36,6 +36,8 @@ final class AdminAssetFormViewModel {
 
     private(set) var isSaving = false
     var errorMessage: String?
+    /// Lo stato di un asset nuovo all'apertura del modulo.
+    private let initialStatus: String
 
     init(backend: AriaBackend, editing asset: AdminAsset?) {
         self.backend = backend
@@ -44,8 +46,10 @@ final class AdminAssetFormViewModel {
         name = asset?.name ?? ""
         assetType = asset?.assetType ?? AdminAssetType.motor.rawValue
         // Un asset scritto a mano parte approvato: il default del server (draft) non si vedrebbe nella lista di
-        // default. Lo stato resta modificabile nel form.
-        status = asset?.status ?? AdminAssetStatus.approved.rawValue
+        // default. Lo stato resta modificabile nel form. Senza il diritto di approvare parte bozza.
+        let startStatus = (backend.rights.can(.approve, in: .assets) ? AdminAssetStatus.approved : .draft).rawValue
+        initialStatus = startStatus
+        status = asset?.status ?? startStatus
         plantId = asset?.plantId ?? backend.activePlantId ?? backend.plants.first?.id
         zone = asset?.zone ?? ""
         power = asset?.powerKw.map { $0.formatted(.number.precision(.fractionLength(0...3)).grouping(.never)) } ?? ""
@@ -68,10 +72,20 @@ final class AdminAssetFormViewModel {
         return known.contains(assetType) ? known : known + [assetType]
     }
 
+    /// Lo stato con cui il modulo si è aperto (un asset nuovo parte da `status` iniziale).
+    private var originalStatus: String { original?.status ?? initialStatus }
+
+    /// Cambiare stato è un'azione del ruolo (`AriaRights.canMove`): approvare (approve), rifiutare o
+    /// superare (reject), togliere l'approvazione (unapprove). Lo stato di partenza resta sempre scelto.
     var statusOptions: [String] {
-        let known = AdminAssetStatus.allCases.map(\.rawValue)
+        let rights = backend.rights
+        let start = originalStatus
+        let known = AdminAssetStatus.allCases.map(\.rawValue).filter { rights.canMove(from: start, to: $0, in: .assets) }
         return known.contains(status) ? known : known + [status]
     }
+
+    /// Con una sola scelta (lo stato attuale) il selettore non serve.
+    var showsStatusPicker: Bool { statusOptions.count > 1 }
 
     func typeLabel(_ raw: String) -> String { AdminAssetType.label(for: raw) }
     func statusLabel(_ raw: String) -> String { AdminAssetStatus.label(for: raw) }

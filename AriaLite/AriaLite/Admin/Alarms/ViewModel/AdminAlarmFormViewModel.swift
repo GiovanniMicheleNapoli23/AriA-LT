@@ -49,12 +49,18 @@ final class AdminAlarmFormViewModel: Identifiable {
 
     // MARK: - Presentazione
 
-    /// Gli stati fra cui scegliere; uno sconosciuto che l'allarme ha già resta nell'elenco.
+    /// Gli stati fra cui scegliere; uno sconosciuto che l'allarme ha già resta nell'elenco. Cambiare stato è
+    /// un'azione del ruolo (`AriaRights.canMove`): approvare (approve), rifiutare o superare (reject), togliere
+    /// l'approvazione (unapprove); lo stato attuale resta sempre.
     var statusOptions: [(key: String, label: String)] {
-        var options = AdminAlarmStatus.allCases.map { (key: $0.rawValue, label: $0.label) }
+        let rights = backend.rights
+        var options = AdminAlarmStatus.allCases.filter { rights.canMove(from: alarm.statusKey, to: $0.rawValue, in: .alarms) }.map { (key: $0.rawValue, label: $0.label) }
         if AdminAlarmStatus(rawValue: alarm.statusKey) == nil { options.append((alarm.statusKey, alarm.statusLabel)) }
         return options
     }
+
+    /// Con una sola scelta (lo stato attuale) il selettore non serve.
+    var showsStatusPicker: Bool { statusOptions.count > 1 }
 
     var canSave: Bool { !isSaving && hasChanges && !trimmed(description).isEmpty }
 
