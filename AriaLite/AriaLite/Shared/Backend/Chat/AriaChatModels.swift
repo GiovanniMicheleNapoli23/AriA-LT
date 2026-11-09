@@ -319,6 +319,40 @@ nonisolated struct AriaElicitation: Codable, Sendable, Identifiable, Hashable {
         reason = nil
     }
 
+    private init(copying other: AriaElicitation, steps: [AriaElicitationStep]?) {
+        id = other.id
+        question = other.question
+        mode = other.mode
+        allowCustom = other.allowCustom
+        options = other.options
+        self.steps = steps
+        assembly = other.assembly
+        topic = other.topic
+        submit = other.submit
+        reason = other.reason
+    }
+
+    /// La domanda di fine sessione senza "report e ordine di lavoro", per chi non ha la sezione `work_orders`:
+    /// restano solo report e "niente", e i passi che servono solo a un ordine (assegnatario, priorità e scadenza)
+    /// non si chiedono. Le altre domande passano com'erano.
+    func withoutWorkOrderCloseout() -> AriaElicitation {
+        guard let steps, steps.contains(where: { $0.key == "closeout" }) else { return self }
+        let kept = steps.compactMap { step -> AriaElicitationStep? in
+            switch step.key {
+            case "assignee", "priority_due":
+                return nil
+            case "closeout":
+                return AriaElicitationStep(id: step.id, question: step.question, mode: step.mode,
+                                           allowCustom: step.allowCustom,
+                                           options: step.options.filter { ($0.value ?? $0.id) != "report_wo" },
+                                           topic: step.topic, key: step.key, file: step.file)
+            default:
+                return step
+            }
+        }
+        return AriaElicitation(copying: self, steps: kept)
+    }
+
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(String.self, forKey: .id)
@@ -510,6 +544,20 @@ nonisolated enum AriaStreamEvent: Sendable {
     /// Eventi di pipeline della web (PIPELINE_EVENTS): passo di intent, retrieval, CMMS, azioni esterne.
     case pipeline(name: String, data: AriaJSON)
     case ignored
+
+    /// Un rifiuto del ruolo dentro lo stream: l'errore del modello che comincia con `permission_denied:`, o uno
+    /// strumento chiuso con lo stesso motivo. I diritti si rileggono (lo stream in corso non li ricontrolla).
+    var isRoleRefusal: Bool {
+        switch self {
+        case .failed(let message):
+            return message.hasPrefix("permission_denied")
+        case .toolCall(let call):
+            guard call.status == .error || call.status == .rejected else { return false }
+            return (call.error ?? call.resultPreview ?? "").hasPrefix("permission_denied")
+        default:
+            return false
+        }
+    }
 
     static let pipelineEvents: Set<String> = [
         "aria.intent_detected", "aria.retrieval_complete", "aria.query_rewritten", "aria.task_list",

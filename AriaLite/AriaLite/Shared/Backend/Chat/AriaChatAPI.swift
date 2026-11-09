@@ -251,10 +251,11 @@ nonisolated struct AriaChatAPI: Sendable {
     /// Senza `confirm` restituisce solo la proposta (niente scritto); con `confirm: true` scrive in ARIA
     /// (e MaintainX). Riprovare `confirm: true` dopo un errore a metà è sicuro: l'ordine già creato torna, non
     /// se ne crea un secondo. Per l'operatore il body passa da `limitedToOperator` (mai "shift", assegnatario
-    /// solo sé stesso): il server risponderebbe 422.
+    /// solo sé stesso): il server risponderebbe 422. `followsRole`: la sessione segue il ruolo e la chiusura è
+    /// quella della web, senza quei limiti.
     func closeout(companyId: String, sessionId: String, _ request: AriaCloseoutRequest,
-                  operatorId: String? = nil) async throws -> AriaCloseoutResult {
-        let body = isOperator ? request.limitedToOperator(operatorId) : request
+                  operatorId: String? = nil, followsRole: Bool = false) async throws -> AriaCloseoutResult {
+        let body = isOperator && !followsRole ? request.limitedToOperator(operatorId) : request
         return try await api.call(.post("\(sessionPath(companyId, sessionId))/closeout", body: body))
     }
 

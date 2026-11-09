@@ -31,7 +31,13 @@ final class AriaCloseoutViewModel {
 
     init(chat: AriaAgentChat, choice: AriaCloseoutChoice) {
         self.chat = chat
-        self.choice = choice
+        // Senza `work_orders` resta solo il report (anche se la scelta arrivava da una domanda già aperta).
+        var allowed = choice
+        if allowed.workOrder, !chat.canFileWorkOrder {
+            allowed.workOrder = false
+            allowed.report = true
+        }
+        self.choice = allowed
     }
 
     // MARK: - Derived
@@ -41,7 +47,7 @@ final class AriaCloseoutViewModel {
     /// Solo il report non ha niente da approvare: si archivia alla conferma.
     var isReportOnly: Bool { !choice.workOrder }
     var isLoadingPreview: Bool { choice.workOrder && proposal == nil && error == nil && !isDone }
-    var isOperator: Bool { chat.isOperator }
+    var isOperator: Bool { chat.hasOperatorLimits }
 
     var categoryOptions: [String]? {
         guard let options = validChoices["category"] ?? proposal?.categoryOptions, !options.isEmpty else { return nil }
@@ -61,7 +67,7 @@ final class AriaCloseoutViewModel {
 
     /// Un operatore non vede gli ordini dei colleghi (la lista arriva vuota) e non può spostarli.
     var conflicts: [AriaCloseoutProposal.Conflict]? {
-        guard !chat.isOperator, let conflicts = proposal?.conflicts, !conflicts.isEmpty else { return nil }
+        guard !chat.hasOperatorLimits, let conflicts = proposal?.conflicts, !conflicts.isEmpty else { return nil }
         return conflicts
     }
 
@@ -69,12 +75,12 @@ final class AriaCloseoutViewModel {
 
     /// L'operatore può solo prendere il lavoro per sé: la preselezione della proposta, se è un altro.
     var proposedAssigneeName: String? {
-        guard chat.isOperator, let me = chat.operatorId, let preselected = proposal?.assignee?.selected,
+        guard chat.hasOperatorLimits, let me = chat.operatorId, let preselected = proposal?.assignee?.selected,
               preselected != me else { return nil }
         return assigneeCandidates.first(where: { $0.id == preselected })?.name
     }
 
-    var canAssignToMe: Bool { chat.isOperator && chat.operatorId != nil }
+    var canAssignToMe: Bool { chat.hasOperatorLimits && chat.operatorId != nil }
 
     var assignedToMe: Bool {
         get { request.assigneeId != nil && request.assigneeId == chat.operatorId }
@@ -125,7 +131,7 @@ final class AriaCloseoutViewModel {
             body.category = p.category
             body.dueDate = choice.dueDate ?? p.dueDate
             body.assigneeId = choice.assigneeId ?? p.assignee?.selected
-            if chat.isOperator, body.assigneeId != chat.operatorId { body.assigneeId = nil }
+            if chat.hasOperatorLimits, body.assigneeId != chat.operatorId { body.assigneeId = nil }
             body.startDate = p.startDate
             body.recurrenceType = p.recurrenceType
             body.recurrenceInterval = p.recurrenceInterval

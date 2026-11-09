@@ -130,7 +130,8 @@ final class AriaAgentChat {
         guard !isStreaming, let last = messages.last, last.role == .assistant, last.finished,
               last.interrupt == nil, let question = last.elicitation,
               !answeredElicitations.contains(question.id) else { return nil }
-        return (last.id, question)
+        // Senza `work_orders` non si offre "report e ordine di lavoro" (il server lo rifiuterebbe).
+        return (last.id, canFileWorkOrder ? question : question.withoutWorkOrderCloseout())
     }
 
     /// Domanda del Real-time Learning da porre (resolveActiveValidationRequest della web): quella riaperta
@@ -767,13 +768,19 @@ final class AriaAgentChat {
     var canConfirmMemory: Bool { backend.isAvailable(.memoryConfirm) }
     /// Accesso col link: closeout con i limiti dell'operatore.
     var isOperator: Bool { api.isOperator }
+    /// I limiti dell'operatore nella chiusura (solo sé stesso come assegnatario, niente conflitti da spostare):
+    /// valgono finché la sessione non segue il ruolo, poi la chiusura è quella della web.
+    var hasOperatorLimits: Bool { isOperator && !backend.rights.followsRole }
+    /// Il ruolo ha la sezione `work_orders`: solo allora la chiusura può aprire un ordine di lavoro.
+    var canFileWorkOrder: Bool { backend.rights.has(.workOrders) }
     /// L'operatore collegato: l'unico assegnatario che può scegliere nel closeout.
     var operatorId: String? { backend.mobileAccount?.id }
 
     func closeout(_ request: AriaCloseoutRequest) async throws -> AriaCloseoutResult {
         guard let companyId = backend.activeCompanyId else { throw AriaError.missingCompany }
         do {
-            return try await api.closeout(companyId: companyId, sessionId: sessionId, request, operatorId: operatorId)
+            return try await api.closeout(companyId: companyId, sessionId: sessionId, request, operatorId: operatorId,
+                                          followsRole: backend.rights.followsRole)
         } catch {
             noteSessionToolFailure(error, feature: .closeout)
             throw error
@@ -1073,6 +1080,8 @@ final class AriaAgentChat {
     /// Quello che esce in un tick si applica insieme: un solo ridisegno.
     private func show(_ events: [AriaStreamEvent], in messageId: String) {
         guard !events.isEmpty else { return }
+        // Uno strumento rifiutato dal ruolo: i diritti possono essere cambiati, si rileggono.
+        if events.contains(where: \.isRoleRefusal) { backend.accessMayHaveChanged() }
         update(messageId) { m in
             for event in events { m.apply(event) }
         }
