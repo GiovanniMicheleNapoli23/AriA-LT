@@ -30434,6 +30434,16 @@
         }
       }
     },
+    "Your access is paused. Ask your admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo accesso è in pausa. Chiedi al tuo admin."
+          }
+        }
+      }
+    },
     "Your account is connected" : {
       "localizations" : {
         "it" : {
@@ -30634,6 +30644,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo ruolo non può creare ordini di lavoro. Chiedi a un proprietario o amministratore dell'azienda."
+          }
+        }
+      }
+    },
+    "Your role doesn't allow this." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non lo consente."
           }
         }
       }

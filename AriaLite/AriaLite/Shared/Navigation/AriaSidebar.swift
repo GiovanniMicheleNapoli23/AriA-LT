@@ -34,8 +34,14 @@ struct AriaSidebar: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
+                if viewModel.backend.usesOperatorLayout, viewModel.backend.rights.isPaused {
+                    AriaAccessPausedBanner()
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 10)
+                }
                 navRow(Text("Chats"), icon: "bubble.left.and.bubble.right", target: .chats)
-                ForEach(AriaSidebarSections.groups(for: viewModel.accountKind)) { group in
+                ForEach(AriaSidebarSections.groups(operatorLayout: viewModel.backend.usesOperatorLayout,
+                                                   rights: viewModel.backend.rights)) { group in
                     if let title = group.title { sectionTitle(Text(title)) }
                     ForEach(group.items) { navRow(Text($0.title), icon: $0.icon, target: $0.target) }
                 }

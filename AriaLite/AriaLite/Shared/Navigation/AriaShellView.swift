@@ -112,7 +112,11 @@ struct AriaShellView: View {
     private var chat: AriaAgentChat { viewModel.mainChat }
     private var store: AriaSessionStore { viewModel.sessions }
     /// Task assegnati, disponibilità e notifiche dei lavori sono solo dell'operatore.
-    private var isOperator: Bool { viewModel.accountKind == .operator }
+    private var isOperator: Bool { viewModel.backend.usesOperatorLayout }
+    /// Le sezioni che la sidebar offre ora: cambiano coi diritti letti da GET /v1/me.
+    private var offered: Set<AriaDestination> {
+        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights)
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -148,18 +152,27 @@ struct AriaShellView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .onAppear { AriaAuthTrace.step("shell.appear") }
         .task(id: viewModel.backend.isReady) { await store.load() }
-        // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano.
-        .task {
+        // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano. Anche quando il layout dell'operatore
+        // arriva dopo l'avvio (un membro entrato col link della web: `membership.restricted` letta dal bootstrap).
+        .task(id: isOperator) {
             guard isOperator else { return }
             await viewModel.notifications.enable()
             await viewModel.ariaWorkOrders.sync()
         }
+        // Il ruolo ridà `work_orders` (pausa finita): la coda rimasta sul telefono parte e le liste si rileggono.
+        .onChange(of: viewModel.backend.rights.has(.workOrders)) { _, granted in
+            guard isOperator, granted else { return }
+            Task { await viewModel.ariaWorkOrders.sync() }
+        }
+        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat.
+        .onChange(of: offered) { _, offered in
+            guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
+            select(.chat)
+        }
         .onChange(of: scenePhase) { _, phase in
-            // Account della piattaforma: a ogni ritorno si rilegge se l'accesso è ancora pieno.
-            guard isOperator else {
-                if phase == .active { Task { await viewModel.backend.refreshMembership() } }
-                return
-            }
+            // A ogni ritorno si rileggono membership e diritti: niente nuovo accesso per un ruolo cambiato.
+            if phase == .active { Task { await viewModel.backend.refreshMembership() } }
+            guard isOperator else { return }
             // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
             if phase == .background {
                 Task { await viewModel.ariaWorkOrders.flushForBackground() }
@@ -177,6 +190,8 @@ struct AriaShellView: View {
         .onChange(of: viewModel.notifications.pendingWorkOrderId, initial: true) { _, id in
             guard let id else { return }
             viewModel.notifications.pendingWorkOrderId = nil
+            // Il ruolo non concede più i lavori: la notifica non apre niente.
+            guard offered.contains(.tasks) else { return }
             viewModel.ariaWorkOrders.openRequest = id
             select(.tasks)
         }
@@ -242,6 +257,13 @@ struct AriaShellView: View {
         case .chat:
             AIChatView()
                 .id(chatID)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if isOperator, viewModel.backend.rights.isPaused {
+                        AriaAccessPausedBanner()
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                    }
+                }
         case .chats:
             AriaChatHistoryView(chat: chat, store: store, backend: viewModel.backend,
                                 isSearching: $searchingChats, onOpen: openSession, onNewChat: newChat,
