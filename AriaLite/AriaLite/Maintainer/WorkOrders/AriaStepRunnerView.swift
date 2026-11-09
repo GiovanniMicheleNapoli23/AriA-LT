@@ -126,7 +126,7 @@ struct AriaStepRunnerView: View {
                                     if !isReadOnly || note(of: step) != nil || photoCount(of: step) > 0 {
                                         HStack(spacing: 12) {
                                             noteCard(step)
-                                            photoCard(step)
+                                            if store.canManagePhotos { photoCard(step) }
                                         }
                                     }
                                     photoStrip(step)
@@ -525,7 +525,8 @@ struct AriaStepRunnerView: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel(Text("Photo"))
         .overlay(alignment: .topTrailing) {
-            if !isReadOnly {
+            // Togliere una foto è un'azione `step_photos` come aggiungerla.
+            if !isReadOnly, store.canManagePhotos {
                 Button(action: remove) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.title3)
@@ -665,16 +666,18 @@ struct AriaStepRunnerView: View {
                 .disabled(isBusy)
                 .ariaGlassEffectID("main-action", in: glassNamespace)
             } else {
-                Button { Task { await undo(step) } } label: {
-                    actionLabel("Undo", systemImage: "arrow.uturn.backward")
-                        .frame(maxWidth: .infinity, minHeight: 46)
+                if store.canClearReport(step: step.id, of: order.id) {
+                    Button { Task { await undo(step) } } label: {
+                        actionLabel("Undo", systemImage: "arrow.uturn.backward")
+                            .frame(maxWidth: .infinity, minHeight: 46)
+                    }
+                    .ariaGlassButtonStyle()
+                    .disabled(isBusy)
                 }
-                .ariaGlassButtonStyle()
-                .disabled(isBusy)
 
                 if let next = nextTarget {
                     nextButton(next)
-                } else {
+                } else if store.canComplete {
                     Button { showComplete = true } label: {
                         actionLabel("Complete task", systemImage: "checkmark.seal.fill")
                             .frame(maxWidth: .infinity, minHeight: 46)

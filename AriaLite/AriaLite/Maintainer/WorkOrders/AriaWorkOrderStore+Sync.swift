@@ -29,7 +29,9 @@ extension AriaWorkOrderStore {
     func flush() async {
         flushTask?.cancel()
         flushTask = nil
-        guard !isSyncingChanges, network.isOnline, let account, !offline.queue(accountId: account).isEmpty,
+        // Senza `work_orders` (ruolo tolto o in pausa) la coda resta sul telefono: partirebbe solo per essere
+        // rifiutata e scartata. Parte quando il ruolo torna.
+        guard !isSyncingChanges, network.isOnline, hasWorkOrders, let account, !offline.queue(accountId: account).isEmpty,
               await prepare() else { return }
         isSyncingChanges = true
         defer { isSyncingChanges = false }
@@ -164,6 +166,16 @@ extension AriaWorkOrderStore {
             // La foto non è arrivata o lo storage è giù: si riprova, non è un rifiuto.
             if code == .photoNotUploaded || code == .storageUnavailable { return .retryLater }
             return .rejected(code.localized)
+        case AriaError.permissionDenied(let denial)
+            where denial.pausesAccess || (denial.reason == "no_section" && denial.section == AriaSection.workOrders.rawValue):
+            // Ruolo in pausa o tolto, o `work_orders` tolta al ruolo: l'admin può ridarli, e scartare vorrebbe dire
+            // perdere il lavoro fatto. La modifica resta in coda; i diritti si rileggono da soli (client HTTP) e
+            // senza `work_orders` la coda non riparte (`flush`).
+            return .retryLater
+        case AriaError.permissionDenied:
+            // Il ruolo non ha l'azione: riprovare darebbe sempre lo stesso 403 e bloccherebbe la coda. Si scarta
+            // come ogni rifiuto definitivo.
+            return .rejected(error.localizedDescription)
         case AriaError.http(let status, _) where status == 404:
             return .orderGone
         case AriaError.http(let status, _) where status == 429 || status >= 500:

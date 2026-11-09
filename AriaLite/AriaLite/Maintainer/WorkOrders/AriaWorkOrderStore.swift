@@ -135,6 +135,34 @@ final class AriaWorkOrderStore {
 
     var isOffline: Bool { !network.isOnline }
 
+    /// La disponibilità è dell'operatore mobile (PUT /v1/me/availability risponde col profilo operatore): un membro
+    /// entrato col link della web ha il layout dell'operatore ma non la imposta (Impostazioni non la mostrano).
+    private var setsAvailability: Bool { backend.accountKind == .operator }
+
+    /// Il ruolo concede la sezione `work_orders`: senza, niente liste né invio della coda (risponderebbero 403).
+    var hasWorkOrders: Bool { backend.rights.has(.workOrders) }
+
+    /// Aggiungere, confermare o togliere una foto di un passo: serve l'azione `step_photos` del ruolo. Senza,
+    /// niente "Aggiungi foto" (la fotocamera non si apre mai); le foto già caricate restano visibili.
+    var canManagePhotos: Bool { backend.rights.can(.stepPhotos, in: .workOrders) }
+
+    /// Annullare il risultato di un passo che ha foto le toglie: serve anche `step_photos`. Senza, il server
+    /// rifiuta (403) e tiene passo e foto, quindi "Annulla" non c'è.
+    func canClearReport(step stepId: String, of orderId: String) -> Bool {
+        guard !canManagePhotos else { return true }
+        let step = current(orderId)?.procedure?.steps.first { $0.id == stepId }
+        return (step?.report?.photos.isEmpty ?? true) && pendingPhotos(step: stepId, of: orderId).isEmpty
+    }
+
+    /// Chiudere un ordine: serve l'azione `complete` del ruolo. Senza, il pulsante non c'è.
+    var canComplete: Bool { backend.rights.can(.complete, in: .workOrders) }
+
+    /// Il rifiuto locale di un'azione che il ruolo non ha: lo stesso testo del 403 del server.
+    private static func notAllowed(_ action: AriaSectionAction) -> Change {
+        .failed(AriaError.permissionDenied(AriaPermissionDenial(reason: "no_action", section: AriaSection.workOrders.rawValue,
+                                                                action: action.rawValue)).localizedDescription)
+    }
+
     /// L'account dei dati locali: senza, niente copia né coda.
     var account: String? {
         backend.isSignedIn ? backend.mobileAccount?.id : nil
@@ -152,6 +180,7 @@ final class AriaWorkOrderStore {
         guard network.isOnline, await prepare() else { return }
         await flush()
         await syncAvailability()
+        guard hasWorkOrders else { return }
         if let lastUpdated, Date.now.timeIntervalSince(lastUpdated) < Self.listFreshness { return }
         await reloadLists()
     }
@@ -170,13 +199,16 @@ final class AriaWorkOrderStore {
         restoreIfNeeded()
         guard network.isOnline, await prepare() else { return }
         await flush()
-        await run {
-            if UserDefaults.standard.bool(forKey: Self.availabilityPendingKey) {
-                try await self.putAvailability(self.preferredAvailability)
-            } else {
-                try await self.getProfile()
+        if setsAvailability {
+            await run {
+                if UserDefaults.standard.bool(forKey: Self.availabilityPendingKey) {
+                    try await self.putAvailability(self.preferredAvailability)
+                } else {
+                    try await self.getProfile()
+                }
             }
         }
+        guard hasWorkOrders else { return }
         await reloadLists()
     }
 
@@ -282,11 +314,13 @@ final class AriaWorkOrderStore {
 
     /// Annulla il risultato di un passo (e le sue foto).
     func clearReport(step stepId: String, of orderId: String) async -> Change {
-        await enqueue(.clearReport(stepId: stepId), orderId: orderId)
+        guard canClearReport(step: stepId, of: orderId) else { return Self.notAllowed(.stepPhotos) }
+        return await enqueue(.clearReport(stepId: stepId), orderId: orderId)
     }
 
     /// Aggiunge una foto (JPEG) a un passo che ha già un risultato. Resta sul telefono finché non parte.
     func addPhoto(jpeg: Data, step stepId: String, of orderId: String) async -> Change {
+        guard canManagePhotos else { return Self.notAllowed(.stepPhotos) }
         guard jpeg.count <= 10 * 1024 * 1024 else { return .failed(AriaServerCode.photoTooLarge.localized) }
         if let order = current(orderId), let step = order.procedure?.steps.first(where: { $0.id == stepId }) {
             guard step.report != nil else { return .failed(AriaServerCode.stepNotReported.localized) }
@@ -313,6 +347,7 @@ final class AriaWorkOrderStore {
     /// Chiude l'ordine: è la fine della procedura, quindi parte subito tutto il lotto.
     /// Online gli errori del server (es. `steps_incomplete`) arrivano qui; offline la chiusura aspetta in coda.
     func complete(_ orderId: String, resolutionNotes: String) async -> Change {
+        guard canComplete else { return Self.notAllowed(.complete) }
         let notes = resolutionNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !notes.isEmpty else { return .failed(AriaServerCode.resolutionNotesRequired.localized) }
         if let procedure = current(orderId)?.procedure, !procedure.isFullyReported {
@@ -446,6 +481,7 @@ final class AriaWorkOrderStore {
 
     /// Rinnova `available` (12 ore) o manda la scelta fatta offline; altrimenti legge solo il profilo.
     private func syncAvailability() async {
+        guard setsAvailability else { return }
         await run {
             if self.preferredAvailability == .available || UserDefaults.standard.bool(forKey: Self.availabilityPendingKey) {
                 try await self.putAvailability(self.preferredAvailability)

@@ -163,7 +163,7 @@ struct AriaWorkOrderDetailView: View {
     /// Un pulsante sempre in vista: parte, riprende, chiude o rivede.
     private var actionBar: some View {
         Button {
-            if order.isClosed || nextStep != nil {
+            if !offersComplete {
                 if let step = nextStep ?? steps.first { runner = RunnerTarget(id: step.id) }
             } else {
                 showComplete = true
@@ -173,23 +173,27 @@ struct AriaWorkOrderDetailView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, minHeight: 50)
         }
-        .ariaProminentGlassButtonStyle(tint: !order.isClosed && allReported ? .green : Color.liteAccent,
-                                       foreground: !order.isClosed && allReported ? .white : Color.liteOnAccent)
+        .ariaProminentGlassButtonStyle(tint: offersComplete ? .green : Color.liteAccent,
+                                       foreground: offersComplete ? .white : Color.liteOnAccent)
         .ariaReadableWidth()
         .padding(.horizontal, 20)
         .padding(.top, 10)
         .padding(.bottom, 8)
     }
 
+    /// Il pulsante chiude l'ordine: a procedura finita, e solo se il ruolo ha l'azione `complete`.
+    /// Altrimenti riapre i passi (rivederli o riprendere da quello che manca).
+    private var offersComplete: Bool { !order.isClosed && allReported && store.canComplete }
+
     private var actionTitle: LocalizedStringKey {
-        if order.isClosed { "Review steps" }
+        if order.isClosed || (allReported && !store.canComplete) { "Review steps" }
         else if allReported { "Complete task" }
         else if reportedCount == 0 { "Start" }
         else { "Continue" }
     }
 
     private var actionIcon: String {
-        if order.isClosed { "list.bullet.clipboard" }
+        if order.isClosed || (allReported && !store.canComplete) { "list.bullet.clipboard" }
         else if allReported { "checkmark.seal.fill" }
         else { "play.fill" }
     }
@@ -529,15 +533,17 @@ struct AriaWorkOrderDetailView: View {
             Label("This task has no procedure steps.", systemImage: "list.bullet.clipboard")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Button { showComplete = true } label: {
-                Label("Complete task", systemImage: "checkmark.seal.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 50)
+            if store.canComplete {
+                Button { showComplete = true } label: {
+                    Label("Complete task", systemImage: "checkmark.seal.fill")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .tint(Color.liteAccent)
+                .foregroundStyle(Color.liteOnAccent)
             }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
-            .tint(Color.liteAccent)
-            .foregroundStyle(Color.liteOnAccent)
         }
         .padding(16)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
