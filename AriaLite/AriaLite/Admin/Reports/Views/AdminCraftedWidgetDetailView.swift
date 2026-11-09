@@ -88,6 +88,11 @@ struct AdminCraftedWidgetDetailView: View {
     private var content: some View {
         if let message = viewModel.errorMessage {
             AdminSectionNotice(text: message, isError: true)
+            if viewModel.canRetry {
+                Button("Try again") { Task { await viewModel.load() } }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isLoading)
+            }
         }
         switch viewModel.render {
         case .artifact(let artifact)?:

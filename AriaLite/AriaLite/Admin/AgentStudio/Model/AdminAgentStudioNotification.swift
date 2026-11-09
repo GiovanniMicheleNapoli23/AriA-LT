@@ -40,6 +40,9 @@ nonisolated struct AdminAgentStudioNotification: AdminAgentStudioJSONModel, Iden
 
     var systemImage: String {
         let kind = (kind ?? "").lowercased()
+        // Un workflow fermato dal ruolo (`workflow_blocked`) o con passi che non hanno potuto leggere (`workflow_unread`).
+        if kind == "workflow_blocked" { return "hand.raised" }
+        if kind == "workflow_unread" { return "eye.slash" }
         if kind.contains("approval") || approvalId != nil { return "person.badge.shield.checkmark" }
         if kind.contains("fail") || kind.contains("error") { return "exclamationmark.triangle" }
         if kind.contains("run") || runId != nil { return "play.circle" }

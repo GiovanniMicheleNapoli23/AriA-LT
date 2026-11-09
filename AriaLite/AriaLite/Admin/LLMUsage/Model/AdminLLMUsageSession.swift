@@ -14,6 +14,8 @@ nonisolated struct AdminLLMUsageSession: Decodable, Sendable, Equatable, Identif
     let id: String
     let title: String?
     let status: String
+    /// Di chi è la sessione (`user_id`): serve a distinguere la propria da quella di un collega.
+    let userId: String?
     let provider: String?
     let model: String?
     let startedAt: Date?
@@ -32,6 +34,7 @@ nonisolated struct AdminLLMUsageSession: Decodable, Sendable, Equatable, Identif
         id = try c.decode(String.self, forKey: .id)
         title = try c.decodeIfPresent(String.self, forKey: .title)
         status = try c.decodeIfPresent(String.self, forKey: .status) ?? "active"
+        userId = try c.decodeIfPresent(String.self, forKey: .userId)
         provider = try c.decodeIfPresent(String.self, forKey: .provider)
         model = try c.decodeIfPresent(String.self, forKey: .model)
         startedAt = try c.decodeIfPresent(Date.self, forKey: .startedAt)
@@ -42,6 +45,6 @@ nonisolated struct AdminLLMUsageSession: Decodable, Sendable, Equatable, Identif
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, status, provider, model, startedAt, endedAt, lastActivityAt, durationS, totals
+        case id, title, status, userId, provider, model, startedAt, endedAt, lastActivityAt, durationS, totals
     }
 }

@@ -29,6 +29,7 @@ struct AdminLLMUsageSessionsSection: View {
                 ForEach(viewModel.sessions) { session in
                     AdminLLMUsageSessionRow(
                         session: session,
+                        showsStop: viewModel.showsStop(session),
                         canStop: viewModel.canStop(session),
                         isStopping: viewModel.stoppingSessionId == session.id,
                         onStop: { viewModel.requestStop(session) }

@@ -11,9 +11,17 @@
 import Foundation
 
 extension AdminLLMUsageViewModel {
-    /// Stop è disponibile solo per le sessioni ancora attive e una alla volta.
+    /// Il pulsante c'è per le sessioni ancora attive che il ruolo può fermare: la propria basta la sezione, quella
+    /// di un altro vuole l'azione `stop_session`.
+    func showsStop(_ session: AdminLLMUsageSession) -> Bool {
+        guard session.isActive else { return false }
+        if let own = backend.mobileAccount?.id, session.userId == own { return true }
+        return backend.rights.can(.stopSession, in: .llmUsage)
+    }
+
+    /// Stop è disponibile solo per le sessioni che lo mostrano e una alla volta.
     func canStop(_ session: AdminLLMUsageSession) -> Bool {
-        session.isActive && stoppingSessionId == nil
+        showsStop(session) && stoppingSessionId == nil
     }
 
     /// Apre la conferma: nessuna chiamata finché non si conferma.

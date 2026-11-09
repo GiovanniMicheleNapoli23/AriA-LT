@@ -21,6 +21,9 @@ final class AdminCraftedWidgetDetailViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     private(set) var renderedAt: Date?
+    /// Il render è stato rifiutato dai diritti (403 `permission_denied`) o i diritti non si potevano controllare
+    /// (503 `access_unavailable`): si offre "Riprova".
+    private(set) var canRetry = false
 
     init(backend: AriaBackend, widget: AdminCraftedWidget) {
         self.backend = backend
@@ -85,9 +88,14 @@ final class AdminCraftedWidgetDetailViewModel {
             render = AdminCraftedRender.read(json, widget: widget)
             renderedAt = .now
             errorMessage = nil
+            canRetry = false
         } catch {
             guard let message = AdminCraftedFailure.message(for: error, backend: backend) else { return }
             errorMessage = message
+            switch error as? AriaError {
+            case .permissionDenied?, .http(503, _)?: canRetry = true
+            default: canRetry = false
+            }
         }
     }
 }

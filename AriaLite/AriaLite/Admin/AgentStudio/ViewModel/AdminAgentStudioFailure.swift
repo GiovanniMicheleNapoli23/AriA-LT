@@ -21,12 +21,21 @@ enum AdminAgentStudioFailure {
             return error.localizedDescription
         case .http(let status, _)? where status == 403:
             return roleMessage
-        case .notOnPhone?:
+        case .notOnPhone?, .permissionDenied?:
             return roleMessage
         case .http(let status, _)? where status == 404:
             return String(localized: "Not found. It may have been deleted or renamed.")
         default:
             return error.localizedDescription
+        }
+    }
+
+    /// Il ruolo non ha più l'accesso (403, `permission_denied`, `operation_forbidden`, sessione chiusa): ripetere
+    /// la richiesta darebbe lo stesso rifiuto.
+    static func isAccessLoss(_ error: any Error) -> Bool {
+        switch error as? AriaError {
+        case .signedOut?, .notOnPhone?, .permissionDenied?, .http(403, _)?: true
+        default: false
         }
     }
 

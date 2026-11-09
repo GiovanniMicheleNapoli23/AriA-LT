@@ -125,11 +125,19 @@ final class AdminAgentStudioRunViewModel {
     private func start(_ body: AdminAgentStudioRunBody) async {
         var failure: (any Error)?
         do {
-            for try await line in AdminAgentStudioAPI.runLines(body, api: backend.api) { ingest(line) }
+            for try await line in AdminAgentStudioAPI.runLines(body, api: backend.api) {
+                try await checkAccess(line)
+                ingest(line)
+            }
         } catch {
             failure = error
         }
         guard !Task.isCancelled, pending.isActive else { return }
+        // L'accesso è stato tolto: non si prosegue con gli eventi, che direbbero lo stesso 403.
+        if let failure, AdminAgentStudioFailure.isAccessLoss(failure) {
+            fail(failure)
+            return
+        }
         // Lo stream è caduto (o finito) senza che il run abbia detto di essere finito.
         guard let runId = pending.runId else {
             if let failure, !(failure is URLError) {
@@ -185,6 +193,7 @@ final class AdminAgentStudioRunViewModel {
             var dropped = false
             do {
                 for try await line in AdminAgentStudioAPI.eventLines(runId: runId, after: pending.lastSeq, api: backend.api) {
+                    try await checkAccess(line)
                     ingest(line)
                 }
             } catch {
@@ -192,6 +201,11 @@ final class AdminAgentStudioRunViewModel {
                 if Task.isCancelled { return true }
                 if case .signedOut? = error as? AriaError {
                     _ = AdminAgentStudioFailure.message(for: error, backend: backend)
+                    return false
+                }
+                // Un ruolo che non può più: riconnettersi ripeterebbe lo stesso rifiuto.
+                if AdminAgentStudioFailure.isAccessLoss(error) {
+                    fail(error)
                     return false
                 }
             }
@@ -258,6 +272,23 @@ final class AdminAgentStudioRunViewModel {
         flushTask = nil
         live = pending
         lastPublish = .now
+    }
+
+    /// Un'ultima riga `permission_denied` dello stream: l'accesso è stato tolto a run aperto. Si tratta come il
+    /// 403 corrispondente: `permission_denied` e `operation_forbidden` fanno rileggere i diritti; `not_a_member`
+    /// chiude la sessione di un operatore come fa il client (checkMembership). Poi l'errore segue il percorso solito.
+    private func checkAccess(_ line: AriaJSON) async throws {
+        guard let error = AdminAgentStudioAPI.accessError(in: line) else { return }
+        switch error {
+        case .permissionDenied, .notOnPhone:
+            backend.accessMayHaveChanged()
+        case .http(_, "not_a_member") where backend.api.auth.isMobileSession:
+            await backend.api.auth.discardSession()
+            throw AriaError.signedOut
+        default:
+            break
+        }
+        throw error
     }
 
     private func fail(_ error: any Error) {

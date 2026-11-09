@@ -17,7 +17,7 @@ extension AdminCraftedViewModel {
 
     /// Tutto quello che c'è, senza filtri: gli artifact del dispositivo e i rapporti del server.
     var items: [AdminCraftedItem] {
-        (store?.list ?? []).map(AdminCraftedItem.artifact) + reviews.map(AdminCraftedItem.report)
+        (store?.list ?? []).map(AdminCraftedItem.artifact) + (showsReviews ? reviews.map(AdminCraftedItem.report) : [])
     }
 
     /// Per la ricerca contano il titolo e, quando c'è, il codice allarme o la richiesta fatta ad Aria.
@@ -77,7 +77,7 @@ extension AdminCraftedViewModel {
 
     private func emptyState(hasItems: Bool, selected: AdminCraftedCategory?) -> AdminCraftedEmptyState {
         // I rapporti ancora in arrivo: non si dice "niente" a chi ne ha cinquanta.
-        if backend.activeCompanyId != nil, !reviewsLoaded, reviewsNote == nil { return .loading }
+        if showsReviews, backend.activeCompanyId != nil, !reviewsLoaded, reviewsNote == nil { return .loading }
         if isSearching, hasItems { return .noMatch(query: query, category: selected?.label) }
         switch reviewsNote {
         case .restricted?: return .restricted

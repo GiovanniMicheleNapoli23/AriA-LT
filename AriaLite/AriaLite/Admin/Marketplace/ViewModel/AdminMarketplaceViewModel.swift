@@ -75,13 +75,14 @@ final class AdminMarketplaceViewModel {
 
     // MARK: Ruolo
 
-    /// Owner e admin gestiscono i connettori. Lo dice `membership.restricted` di /v1/me per l'azienda attiva:
-    /// senza `membership` (non ancora letta, o un backend precedente) niente connettori, come vuole il contratto.
-    /// Una sessione ristretta (operatore) non chiama mai le loro rotte: le risponderebbero 403.
+    /// Owner e admin gestiscono i connettori (anche con i ruoli: la sezione `marketplace` di un ruolo non li dà).
+    /// Lo dice `access.admin` di /v1/me; senza il blocco `access` vale `membership.restricted`, e senza nemmeno
+    /// `membership` (non ancora letta, o un backend precedente) niente connettori, come vuole il contratto.
+    /// Una sessione ristretta non chiama mai le loro rotte: le risponderebbero 403.
     var canManage: Bool { AdminMarketplaceViewModel.canManage(backend) }
 
     static func canManage(_ backend: AriaBackend) -> Bool {
-        backend.membership?.restricted == false
+        backend.rights.isCompanyAdmin ?? (backend.membership?.restricted == false)
     }
 
     // MARK: Catalogo

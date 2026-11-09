@@ -59,6 +59,19 @@ nonisolated enum AdminAgentStudioAPI {
         return api.ndjson("POST", "v1/agent-studio/workflow-runs", body: data)
     }
 
+    /// L'ultima riga di uno stream aperto con un accesso poi tolto: `{"type": "permission_denied", "detail":
+    /// {"code": …}}`. Diventa l'errore del 403 corrispondente (così passa dal percorso d'errore già esistente);
+    /// `nil` per ogni altra riga. `not_a_member` esce come 403 generico: chi consuma decide se è la fine della sessione.
+    static func accessError(in line: AriaJSON) -> AriaError? {
+        guard line["type"]?.stringValue == "permission_denied" else { return nil }
+        switch line["detail"]?["code"]?.stringValue {
+        case "not_a_member": return .http(status: 403, detail: "not_a_member")
+        case "membership_suspended": return .http(status: 403, detail: "membership_suspended")
+        case "operation_forbidden": return .notOnPhone
+        default: return .permissionDenied(AriaPermissionDenial(line) ?? AriaPermissionDenial())
+        }
+    }
+
     /// GET workflow-runs/{id}/events: le righe con `seq` > `after`, poi quelle nuove finché il run è vivo.
     static func eventLines(runId: String, after: Int = 0, api: AriaAPIClient) -> AsyncThrowingStream<AriaJSON, any Error> {
         api.ndjson("GET", "v1/agent-studio/workflow-runs/\(runId)/events",

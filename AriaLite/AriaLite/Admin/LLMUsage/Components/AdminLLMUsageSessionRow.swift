@@ -11,6 +11,7 @@ import SwiftUI
 
 struct AdminLLMUsageSessionRow: View {
     let session: AdminLLMUsageSession
+    let showsStop: Bool
     let canStop: Bool
     let isStopping: Bool
     let onStop: () -> Void
@@ -37,7 +38,7 @@ struct AdminLLMUsageSessionRow: View {
                 }
             }
             Spacer(minLength: 8)
-            if session.isActive {
+            if showsStop {
                 Button(role: .destructive, action: onStop) {
                     if isStopping {
                         ProgressView()

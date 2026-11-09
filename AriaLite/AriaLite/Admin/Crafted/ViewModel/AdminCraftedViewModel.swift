@@ -56,8 +56,12 @@ final class AdminCraftedViewModel {
         // Gli store (artifacts.json, report-versions.json) si aprono al primo load(), non all'avvio dell'app.
     }
 
-    /// Cambia quando va richiesto tutto di nuovo: azienda o stabilimento.
-    var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(backend.activePlantId ?? "-")" }
+    /// Cambia quando va richiesto tutto di nuovo: azienda, stabilimento o il diritto sui rapporti.
+    var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(backend.activePlantId ?? "-")|\(showsReviews)" }
+
+    /// L'elenco dei rapporti (session-reviews) vuole la sezione `scenario_analysis`: senza, non si chiama e non
+    /// si mostra, né errore né avviso. Gli artifact del dispositivo restano.
+    var showsReviews: Bool { backend.rights.has(.scenarioAnalysis) }
 
     // MARK: Azienda
 
@@ -98,6 +102,10 @@ final class AdminCraftedViewModel {
             loadedKey = key
         }
         guard let companyId = backend.activeCompanyId else { return }
+        guard showsReviews else {
+            clearReviews()
+            return
+        }
         isLoading = true
         defer { isLoading = false }
         do {
@@ -120,6 +128,12 @@ final class AdminCraftedViewModel {
             reviewsNote = .restricted
         } else if case .notOnPhone? = error as? AriaError {
             reviewsNote = .restricted
+        } else if case .permissionDenied? = error as? AriaError {
+            // Il ruolo ha perso il diritto: i diritti si rileggono e l'elenco sparisce senza dire niente.
+            reviews = []
+            reviewsLoaded = true
+            reviewsNote = nil
+            return
         } else if let message = AdminCraftedFailure.message(for: error, backend: backend) {
             reviewsNote = .failed(message)
         } else {
