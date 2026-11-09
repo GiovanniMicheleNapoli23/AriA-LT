@@ -133,6 +133,9 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// Funzione non ancora aperta all'operatore: 403 `operation_forbidden` (backend senza la rotta).
     /// L'app nasconde la funzione invece di riprovare.
     case notOnPhone
+    /// 403 `permission_denied`: il ruolo non ha la sezione o l'azione (o è in pausa, o non c'è). L'azienda resta
+    /// scelta; i diritti si rileggono da GET /v1/me (AriaBackend) e ciò che non è più concesso sparisce.
+    case permissionDenied(AriaPermissionDenial)
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
     case decoding(String)
@@ -166,6 +169,10 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .missingCompany: String(localized: "No company selected.")
         case .missingPlant: String(localized: "Select a plant before using the chat.")
         case .notOnPhone: String(localized: "This isn't available on the phone yet.")
+        case .permissionDenied(let denial):
+            denial.pausesAccess
+                ? String(localized: "Your access is paused. Ask your admin.")
+                : String(localized: "Your role doesn't allow this.")
         case .invalidChoice(_, _, let message): message
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
@@ -278,6 +285,9 @@ nonisolated enum AriaHTTP {
         }
         if http.statusCode == 403, code(from: data) == "operation_forbidden" {
             throw AriaError.notOnPhone
+        }
+        if http.statusCode == 403, let denial = AriaPermissionDenial(data) {
+            throw AriaError.permissionDenied(denial)
         }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)

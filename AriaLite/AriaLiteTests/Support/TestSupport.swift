@@ -151,6 +151,34 @@ enum TestEnv {
         return (backend, AriaWorkOrderStore(backend: backend, network: network, offline: offline))
     }
 
+    /// Il blocco `access` di GET /v1/me (ruoli e diritti). Di partenza: un ruolo attivo che segue l'app, con
+    /// `work_orders` (solo l'azione `complete`) e senza `assets`.
+    static func accessJSON(model: String = "rbac", admin: Bool = false,
+                           role: String? = #"{"id":"r1","name":"Technician","set":"low","enabled":true}"#,
+                           sections: String = #"{"work_orders":{"granted":true,"actions":["complete"]},"assets":{"granted":false,"actions":[]}}"#,
+                           followsRole: Bool = true, version: String = "v1") -> String {
+        #"{"model":"\#(model)","role":\#(role ?? "null"),"admin":\#(admin),"sections":\#(sections),"canManageRoles":false,"version":"\#(version)","appFollowsRole":\#(followsRole)}"#
+    }
+
+    /// Dà al backend collegato i diritti di `access` (JSON di `accessJSON`), come li legge GET /v1/me: la sessione
+    /// dell'app di un membro (`restricted`). `nil` = un backend senza il blocco `access`.
+    static func grant(_ access: String?, to backend: AriaBackend, restricted: Bool = true) async {
+        let block = access.map { #","access":\#($0)"# } ?? ""
+        StubServer.shared.route("GET /v1/me", .json(#"{"id":"u1","membership":{"role":"member","restricted":\#(restricted)}\#(block)}"#))
+        await backend.refreshMembership()
+    }
+
+    /// Come `waitUntil`, con una condizione asincrona (un actor da leggere).
+    static func waitUntilAsync(_ timeout: Duration = .seconds(3), _ condition: () async -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        while !(await condition()) {
+            if clock.now > deadline { return false }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return true
+    }
+
     /// Aspetta che una condizione diventi vera (lavoro partito da solo, es. al ritorno della rete).
     static func waitUntil(_ timeout: Duration = .seconds(3), _ condition: () -> Bool) async -> Bool {
         let clock = ContinuousClock()

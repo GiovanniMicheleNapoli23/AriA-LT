@@ -27,8 +27,10 @@ nonisolated struct AriaMe: Decodable, Sendable {
     let operatorProfile: AriaMobileProfile?
     /// Solo con `Company-Id`: il ruolo nell'azienda e se la sessione dell'app è ristretta (operatore).
     let membership: AriaMeMembership?
+    /// Solo con `Company-Id`: ruolo e diritti nell'azienda (AriaAccess). `nil` su un backend precedente.
+    let access: AriaAccess?
 
-    private enum CodingKeys: String, CodingKey { case id, name, email, operatorProfile, membership }
+    private enum CodingKeys: String, CodingKey { case id, name, email, operatorProfile, membership, access }
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -38,6 +40,7 @@ nonisolated struct AriaMe: Decodable, Sendable {
         operatorProfile = try c.decodeIfPresent(AriaMobileProfile.self, forKey: .operatorProfile)
         // Un backend senza il campo, o con una forma nuova, non rompe l'accesso.
         membership = try? c.decodeIfPresent(AriaMeMembership.self, forKey: .membership)
+        access = try? c.decodeIfPresent(AriaAccess.self, forKey: .access)
     }
 
     /// L'account come lo ricorda l'app: per un operatore valgono nome ed email del profilo operatore.
@@ -49,8 +52,8 @@ nonisolated struct AriaMe: Decodable, Sendable {
     }
 }
 
-/// `membership` di GET /v1/me per l'azienda di `Company-Id`. Dall'app `restricted` è vero per un operatore e
-/// falso per un owner o un admin: decide la modalità piena (connettori compresi).
+/// `membership` di GET /v1/me per l'azienda di `Company-Id`. Dall'app `restricted` è vero per un operatore (ogni
+/// membro, anche quando la sessione segue il ruolo) e falso per un owner o un admin: decide il layout dell'operatore.
 nonisolated struct AriaMeMembership: Decodable, Sendable, Equatable {
     let role: String?
     let restricted: Bool

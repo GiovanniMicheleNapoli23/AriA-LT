@@ -37,6 +37,45 @@ actor AriaContext {
     }
 
     func snapshot() -> Snapshot { Snapshot(companyId: companyId, plantId: plantId, locale: locale) }
+
+    // MARK: Diritti
+
+    /// I diritti tenuti dall'app sono forse vecchi: AriaBackend rilegge GET /v1/me. Ne resta in attesa al più uno.
+    nonisolated let accessSignals: AsyncStream<Void>
+    private nonisolated let accessSignal: AsyncStream<Void>.Continuation
+    /// `access.version` dell'ultima GET /v1/me letta per l'azienda attiva.
+    private var accessVersion: String?
+    /// L'ultima versione diversa già segnalata: ogni versione nuova fa rileggere una volta sola.
+    private var signaledVersion: String?
+    /// La sessione segue il ruolo: un `operation_forbidden` può voler dire che il server ha spento l'interruttore.
+    private var followsRole = false
+
+    init() {
+        (accessSignals, accessSignal) = AsyncStream.makeStream(bufferingPolicy: .bufferingNewest(1))
+    }
+
+    /// Dopo ogni GET /v1/me (o all'uscita, con `nil`).
+    func setAccess(version: String?, followsRole: Bool) {
+        accessVersion = version
+        signaledVersion = nil
+        self.followsRole = followsRole
+    }
+
+    /// Ogni risposta dell'host dei dati: `X-Access-Version` diverso da quello tenuto, un 403 `permission_denied`, o
+    /// un `operation_forbidden` mentre la sessione segue il ruolo, fanno rileggere i diritti.
+    func observe(status: Int, version: String?, code: String?) {
+        if let version, !version.isEmpty, version != accessVersion, version != signaledVersion {
+            signaledVersion = version
+            accessSignal.yield()
+        } else if status == 403, code == "permission_denied" || (code == "operation_forbidden" && followsRole) {
+            accessSignal.yield()
+        }
+    }
+
+    /// Dall'esterno (un evento `permission_denied` di uno stream, un errore della chat che lo cita).
+    nonisolated func accessMayHaveChanged() {
+        accessSignal.yield()
+    }
 }
 
 /// Rete e decodifica JSON girano fuori dal main thread (`@concurrent`).
@@ -102,6 +141,7 @@ nonisolated final class AriaAPIClient: Sendable {
                 continue
             }
             if let offline = AriaHTTP.hostDownError(response, body: data) { throw offline }
+            await observeAccess(response, data)
             try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
             guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
@@ -151,6 +191,7 @@ nonisolated final class AriaAPIClient: Sendable {
                 continue
             }
             if status == 503 { return nil }
+            await observeAccess(response, data)
             try await checkMembership(response, data)
             try AriaHTTP.check(response, data)
             do { return try JSONDecoder().decode(AriaTranscription.self, from: data).text }
@@ -191,9 +232,11 @@ nonisolated final class AriaAPIClient: Sendable {
                                 if errorBody.count >= 16_384 { break }
                             }
                             if AriaHTTP.isHostDown(response, body: errorBody) { throw AriaError.serverOffline }
+                            await self.observeAccess(response, errorBody)
                             try await self.checkMembership(response, errorBody)
                             try AriaHTTP.check(response, errorBody)
                         }
+                        await self.observeAccess(response, nil)
                         var parser = AriaSSEParser()
                         AriaStreamTrace.event("open", "status", bytes: status)
                         if let id = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "X-Response-ID"), !id.isEmpty {
@@ -245,9 +288,11 @@ nonisolated final class AriaAPIClient: Sendable {
                                 if errorBody.count >= 16_384 { break }
                             }
                             if AriaHTTP.isHostDown(response, body: errorBody) { throw AriaError.serverOffline }
+                            await self.observeAccess(response, errorBody)
                             try await self.checkMembership(response, errorBody)
                             try AriaHTTP.check(response, errorBody)
                         }
+                        await self.observeAccess(response, nil)
                         var splitter = AriaNDJSONSplitter()
                         for try await byte in bytes {
                             if let line = splitter.consume(byte) { continuation.yield(line) }
@@ -265,6 +310,14 @@ nonisolated final class AriaAPIClient: Sendable {
     }
 
     // MARK: Private
+
+    /// `X-Access-Version` e i 403 dei diritti, per AriaContext.observe.
+    private func observeAccess(_ response: URLResponse, _ data: Data?) async {
+        guard let http = response as? HTTPURLResponse else { return }
+        let code = http.statusCode == 403 ? data.flatMap(AriaHTTP.code(from:)) : nil
+        await context.observe(status: http.statusCode, version: http.value(forHTTPHeaderField: "X-Access-Version"),
+                              code: code)
+    }
 
     /// Operatore disabilitato a sessione aperta: il backend risponde 403 `not_a_member` ("Not a member of this
     /// company" sui backend precedenti).

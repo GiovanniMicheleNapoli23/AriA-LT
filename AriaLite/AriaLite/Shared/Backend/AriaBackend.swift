@@ -53,20 +53,25 @@ final class AriaBackend {
     var lastError: String?
     /// L'operatore collegato; `nil` da scollegati.
     private(set) var mobileAccount: AriaMobileAccount?
-    /// `membership` di GET /v1/me per l'azienda attiva, solo per un account della piattaforma: `restricted == false`
-    /// è un owner o un admin con i diritti pieni. `nil`: non ancora letta, o un backend senza il campo.
+    /// `membership` di GET /v1/me per l'azienda attiva: `restricted == false` è un owner o un admin con i diritti
+    /// pieni, `true` la sessione dell'app di un membro. `nil`: non ancora letta, o un backend senza il campo.
     private(set) var membership: AriaMeMembership?
+    /// `access` di GET /v1/me per l'azienda attiva: ruolo, sezioni e azioni. `nil`: non ancora letto, o un backend
+    /// precedente ai ruoli (vale tutto come prima).
+    private(set) var access: AriaAccess?
     /// Email a cui è stato mandato il link di accesso, finché il link è valido (15').
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
 
     /// Funzioni a cui il backend ha risposto 403 `operation_forbidden` (release senza la rotta per l'operatore):
-    /// si nascondono fino al prossimo avvio, senza riprovare.
+    /// si nascondono fino al prossimo avvio, senza riprovare, o finché la sessione non comincia a seguire il ruolo.
     private(set) var unavailableFeatures: Set<AriaServerFeature> = []
     /// Capacità della dettatura e vocabolario dell'azienda: si chiedono una volta per sessione.
     @ObservationIgnored private var dictationSupport: Task<AriaDictationSupport, Never>?
 
     @ObservationIgnored private var didBootstrap = false
+    /// Rilegge i diritti quando il client li segnala vecchi (AriaContext.observe).
+    @ObservationIgnored private var accessListener: Task<Void, Never>?
 
     init() {
         let api = Self.makeClient(.current)
@@ -91,6 +96,7 @@ final class AriaBackend {
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {
             pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
         }
+        listenForAccessChanges()
     }
 
     private static let linkEmailKey = "aria.magic_link_email"
@@ -133,6 +139,13 @@ final class AriaBackend {
     /// Operatore (task e calendario) o account della piattaforma (le sezioni della web).
     var accountKind: AriaAccountKind { mobileAccount?.kind ?? .operator }
     var isAdmin: Bool { accountKind == .admin }
+
+    /// Il layout dell'operatore (Task, Calendario, Chat): un operatore, o la sessione dell'app di un membro
+    /// (`membership.restricted`, vero per ogni membro anche quando la sessione segue il ruolo).
+    var usesOperatorLayout: Bool { accountKind == .operator || membership?.restricted == true }
+
+    /// Cosa può fare nell'azienda attiva: senza blocco `access`, in un'azienda "legacy" e per owner e admin, tutto.
+    var rights: AriaRights { AriaRights(access: access) }
 
     /// Chi ha fatto l'accesso, secondo il backend (GET /v1/me, aperta a tutti gli account).
     func me() async throws -> AriaMe {
@@ -315,6 +328,8 @@ final class AriaBackend {
         didBootstrap = false
         setMobileAccount(nil)
         membership = nil
+        access = nil
+        await api.context.setAccess(version: nil, followsRole: false)
         companies = []
         plants = []
         activeCompanyId = nil
@@ -344,6 +359,7 @@ final class AriaBackend {
         guard !isSignedIn else { return }
         AriaConfig.saveServers(api: apiURL, auth: authURL)
         api = Self.makeClient(.current)
+        listenForAccessChanges()
     }
     #endif
 
@@ -391,26 +407,54 @@ final class AriaBackend {
     /// 403 `operation_forbidden`: l'accesso a quest'azienda è cambiato (guida "one account", §11). Si rileggono
     /// le aziende, quella persa sparisce e se ne sceglie un'altra, poi `membership`; un operatore senza aziende
     /// esce come in `bootstrap`.
-    func refreshAccess() async {
+    func reloadCompanies() async {
         guard isSignedIn, !isLoading else { return }
         await bootstrap()
     }
 
-    /// Rilegge `membership` per l'azienda attiva (all'avvio, al cambio di azienda e al ritorno in primo piano):
-    /// chi ha perso l'accesso pieno lo vede subito. Senza rete resta l'ultima letta; un rifiuto la toglie.
+    /// Rilegge `membership` e `access` per l'azienda attiva (all'avvio, al cambio di azienda, al ritorno in primo
+    /// piano e quando il client segnala diritti vecchi): chi ha perso un diritto lo vede subito, senza rifare
+    /// l'accesso. Senza rete restano gli ultimi letti; un rifiuto li toglie.
     func refreshMembership() async {
-        guard isSignedIn, isAdmin, let companyId = activeCompanyId else {
+        guard isSignedIn, let companyId = activeCompanyId else {
             membership = nil
+            access = nil
+            await api.context.setAccess(version: nil, followsRole: false)
             return
         }
         do {
             let me: AriaMe = try await api.get("v1/me")
             guard companyId == activeCompanyId else { return }
+            let followed = rights.followsRole
             membership = me.membership
+            access = me.access
+            // La sessione ha cominciato (o smesso) a seguire il ruolo: le funzioni nascoste per un
+            // `operation_forbidden` dell'operatore si riprovano con i limiti nuovi.
+            if rights.followsRole != followed { unavailableFeatures = [] }
+            await api.context.setAccess(version: me.access?.version, followsRole: rights.followsRole)
         } catch {
             guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
             AriaAuthTrace.failure("me.membership.failed", error)
             membership = nil
+            access = nil
+            // Il client non si riarma: la stessa versione nuova non fa ripartire una lettura che fallisce.
+        }
+    }
+
+    /// Un segnale da fuori del client (l'ultimo evento `permission_denied` di uno stream, un errore della chat che
+    /// comincia con `permission_denied:`): i diritti si rileggono come dopo un 403.
+    func accessMayHaveChanged() {
+        api.context.accessMayHaveChanged()
+    }
+
+    private func listenForAccessChanges() {
+        accessListener?.cancel()
+        let signals = api.context.accessSignals
+        accessListener = Task { [weak self] in
+            for await _ in signals {
+                guard let self else { return }
+                await self.refreshMembership()
+            }
         }
     }
 
@@ -429,6 +473,8 @@ final class AriaBackend {
         if companyId != activeCompanyId {
             dictationSupport = nil
             membership = nil
+            access = nil
+            await api.context.setAccess(version: nil, followsRole: false)
         }
         await api.context.setCompany(companyId)
         activeCompanyId = companyId

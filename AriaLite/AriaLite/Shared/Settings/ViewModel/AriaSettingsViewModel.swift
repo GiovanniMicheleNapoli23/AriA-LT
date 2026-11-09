@@ -50,8 +50,10 @@ final class AriaSettingsViewModel {
 
     var isAdmin: Bool { backend.isAdmin }
 
-    /// Per un admin il ruolo nell'azienda attiva ("Owner", "Admin"), se il server lo dice.
+    /// Il ruolo nell'azienda attiva: quello dei diritti per chi ne ha uno ("Technician"), altrimenti per un admin
+    /// "Owner" o "Admin", se il server lo dice.
     var roleLabel: String {
+        if backend.rights.isRoleBased, let role = backend.access?.role?.name, !role.isEmpty { return role }
         guard isAdmin else { return String(localized: "Operator") }
         switch activeCompany?.myRole?.lowercased() {
         case "owner": return String(localized: "Owner")
