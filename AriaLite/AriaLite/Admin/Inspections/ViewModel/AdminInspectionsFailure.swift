@@ -21,7 +21,7 @@ enum AdminInspectionsFailure {
             return error.localizedDescription
         case .http(let status, _)? where status == 403:
             return roleMessage
-        case .notOnPhone?:
+        case .notOnPhone?, .permissionDenied?:
             return roleMessage
         case .http(let status, _)? where status == 404:
             return String(localized: "Not found. The inspection may have been deleted.")

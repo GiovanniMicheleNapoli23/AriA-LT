@@ -26,7 +26,7 @@ struct AdminPlantsFailure: Equatable {
         switch error as? AriaError {
         case .signedOut?:
             backend.handle(error)
-        case .notOnPhone?, .http(403, _)?:
+        case .notOnPhone?, .http(403, _)?, .permissionDenied?:
             let message = switch action {
             case .read:
                 String(localized: "Your role doesn't have access to plants. Ask an owner or admin of your company.")

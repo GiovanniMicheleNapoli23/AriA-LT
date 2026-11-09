@@ -22,7 +22,10 @@ enum AdminMarketplaceFailure {
             backend.handle(error)
             return error.localizedDescription
         case .http(403, _)?, .notOnPhone?:
-            Task { await backend.refreshAccess() }
+            Task { await backend.reloadCompanies() }
+            return roleMessage
+        case .permissionDenied?:
+            // Il client rilegge già /v1/me; l'azienda resta scelta.
             return roleMessage
         case .http(404, _)?:
             return String(localized: "This connector no longer exists. Pull to refresh the list.")

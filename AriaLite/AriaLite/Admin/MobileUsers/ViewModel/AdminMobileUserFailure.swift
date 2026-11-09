@@ -22,7 +22,7 @@ enum AdminMobileUserFailure {
             return error.localizedDescription
         case .http(let status, _)? where status == 403:
             return roleMessage
-        case .notOnPhone?:
+        case .notOnPhone?, .permissionDenied?:
             return roleMessage
         case .http(let status, _)? where status == 404:
             return String(localized: "This operator no longer exists. Refresh the list.")

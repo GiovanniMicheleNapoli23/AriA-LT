@@ -19,7 +19,7 @@ enum AdminLLMUsageFailure {
         case .signedOut?:
             backend.handle(error)
             return nil
-        case .notOnPhone?, .http(403, _)?:
+        case .notOnPhone?, .permissionDenied?, .http(403, _)?:
             return String(localized: "Your role doesn't have access to this. Ask an owner or admin of your company.")
         default:
             return error.localizedDescription

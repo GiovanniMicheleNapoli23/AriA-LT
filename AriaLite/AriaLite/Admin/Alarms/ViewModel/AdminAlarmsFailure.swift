@@ -27,7 +27,7 @@ struct AdminAlarmsFailure: Equatable {
         switch error as? AriaError {
         case .signedOut?:
             backend.handle(error)
-        case .notOnPhone?, .http(403, _)?:
+        case .notOnPhone?, .permissionDenied?, .http(403, _)?:
             let message = switch action {
             case .read:
                 String(localized: "Your role doesn't have access to alarms. Ask an owner or admin of your company.")

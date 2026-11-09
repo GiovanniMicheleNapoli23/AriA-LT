@@ -20,7 +20,7 @@ enum AdminWorkOrderFailure {
     /// 403 del server: il ruolo dell'account non ha questa operazione.
     static func isForbidden(_ error: any Error) -> Bool {
         switch error as? AriaError {
-        case .notOnPhone?: true
+        case .notOnPhone?, .permissionDenied?: true
         case .http(let status, _)?: status == 403
         default: false
         }

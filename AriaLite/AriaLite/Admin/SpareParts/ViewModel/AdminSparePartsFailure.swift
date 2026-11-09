@@ -24,7 +24,7 @@ struct AdminSparePartsFailure: Equatable {
         switch error as? AriaError {
         case .signedOut?:
             backend.handle(error)
-        case .notOnPhone?, .http(403, _)?:
+        case .notOnPhone?, .permissionDenied?, .http(403, _)?:
             let message = switch action {
             case .read: String(localized: "Your role doesn't have access to spare parts. Ask an owner or admin of your company.")
             case .write: String(localized: "Your role can't change spare parts. Ask an owner or admin of your company.")
