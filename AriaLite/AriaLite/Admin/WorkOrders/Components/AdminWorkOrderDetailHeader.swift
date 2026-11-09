@@ -57,36 +57,48 @@ struct AdminWorkOrderDetailHeader: View {
         }
     }
 
-    /// Il pulsante in evidenza: colore dello stato, tocco = menu dei cambi di stato.
+    /// Il pulsante in evidenza: colore dello stato, tocco = menu dei cambi di stato. Se il ruolo non ne ha nessuno
+    /// resta la sola pillola, senza menu.
+    @ViewBuilder
     private var statusButton: some View {
         let status = viewModel.status ?? .unknown
         let tint = status == .planned ? Color.gray : status.tint
-        return Menu {
-            Section("Change status") {
-                AdminWorkOrderStatusMenuItems(choices: viewModel.statusChoices, onSelect: viewModel.changeStatus)
-            }
-        } label: {
-            HStack(spacing: 6) {
-                if viewModel.isChangingStatus {
-                    ProgressView().controlSize(.small).tint(.white)
-                } else {
-                    Image(systemName: status.systemImage)
+        if viewModel.canChangeStatus {
+            Menu {
+                Section("Change status") {
+                    AdminWorkOrderStatusMenuItems(choices: viewModel.statusChoices, onSelect: viewModel.changeStatus)
                 }
-                Text(status.localized)
-                Image(systemName: "chevron.down").font(.caption.weight(.bold))
+            } label: {
+                statusPill(status, tint: tint, showsChevron: true)
             }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 34)
-            .background(tint, in: Capsule())
-            .fixedSize()
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+            .disabled(viewModel.isChangingStatus)
+            .accessibilityLabel(Text("Status: \(status.localized)"))
+            .accessibilityHint(Text("Changes the status"))
+        } else {
+            statusPill(status, tint: tint, showsChevron: false)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("Status: \(status.localized)"))
         }
-        .menuIndicator(.hidden)
-        .buttonStyle(.plain)
-        .disabled(viewModel.isChangingStatus)
-        .accessibilityLabel(Text("Status: \(status.localized)"))
-        .accessibilityHint(Text("Changes the status"))
+    }
+
+    private func statusPill(_ status: AdminWorkOrderStatus, tint: Color, showsChevron: Bool) -> some View {
+        HStack(spacing: 6) {
+            if viewModel.isChangingStatus {
+                ProgressView().controlSize(.small).tint(.white)
+            } else {
+                Image(systemName: status.systemImage)
+            }
+            Text(status.localized)
+            if showsChevron { Image(systemName: "chevron.down").font(.caption.weight(.bold)) }
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .frame(minHeight: 34)
+        .background(tint, in: Capsule())
+        .fixedSize()
     }
 
     // MARK: Fatti

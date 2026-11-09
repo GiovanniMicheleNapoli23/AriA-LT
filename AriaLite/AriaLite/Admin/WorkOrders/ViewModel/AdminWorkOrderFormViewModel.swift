@@ -175,6 +175,8 @@ final class AdminWorkOrderFormViewModel: Identifiable {
     var usersUnavailable: Bool { directory.unavailable.contains(.users) && directory.unavailable.contains(.operators) }
     var teamsUnavailable: Bool { directory.unavailable.contains(.teams) }
     var assetsUnavailable: Bool { directory.unavailable.contains(.assets) }
+    /// Il ruolo concede gli asset: senza, la riga dell'asset non c'è (l'ordine tiene quello che ha).
+    var canChooseAsset: Bool { directory.canChooseAssets }
 
     func loadChoices() async {
         await directory.loadIfNeeded()

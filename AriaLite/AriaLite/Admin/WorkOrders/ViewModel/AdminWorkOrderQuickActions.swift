@@ -66,11 +66,28 @@ final class AdminWorkOrderQuickActions {
     // MARK: Scelte
 
     /// Gli stati in cui si può portare l'ordine: tutti tranne quello attuale. "Verified" solo dopo il completamento.
+    /// Un membro con ruolo non vede gli stati la cui azione il ruolo non ha (completare, verificare, annullare, riaprire).
     func statusChoices(for order: AdminWorkOrder) -> [AdminWorkOrderStatus] {
         AdminWorkOrderStatus.known.filter { status in
-            status != order.status && (status != .verified || order.status == .completed)
+            status != order.status && (status != .verified || order.status == .completed) && canChange(order, to: status)
         }
     }
+
+    /// Il ruolo ha l'azione dietro quel cambio di stato: "Completed" è `complete`, "Verified" `verify`, "Cancelled"
+    /// `cancel`; da un ordine chiuso a uno aperto è `reopen`. Gli altri passaggi non hanno un'azione.
+    private func canChange(_ order: AdminWorkOrder, to status: AdminWorkOrderStatus) -> Bool {
+        let rights = backend.rights
+        switch status {
+        case .completed: return rights.can(.complete, in: .workOrders)
+        case .verified: return rights.can(.verify, in: .workOrders)
+        case .cancelled: return rights.can(.cancel, in: .workOrders)
+        case .unknown: return false
+        default: return !order.isClosed || rights.can(.reopen, in: .workOrders)
+        }
+    }
+
+    /// L'assegnazione automatica è un'azione del ruolo (`auto_assign`).
+    var canAutoAssign: Bool { backend.rights.can(.autoAssign, in: .workOrders) }
 
     /// Swipe da sinistra: "Start" per un ordine non iniziato, "Hold" per uno in corso.
     func leadingSwipe(for order: AdminWorkOrder) -> AdminWorkOrderStatus? {
@@ -87,12 +104,13 @@ final class AdminWorkOrderQuickActions {
     }
 
     /// Swipe da destra: "Complete" per un ordine aperto.
-    func canComplete(_ order: AdminWorkOrder) -> Bool { !order.isClosed }
+    func canComplete(_ order: AdminWorkOrder) -> Bool { !order.isClosed && backend.rights.can(.complete, in: .workOrders) }
 
     // MARK: Azioni
 
     /// Il punto d'ingresso di ogni cambio di stato: "Completed" chiede le note, "Cancelled" la conferma.
     func change(_ order: AdminWorkOrder, to status: AdminWorkOrderStatus) {
+        guard canChange(order, to: status) else { return }
         switch status {
         case .completed: startCompleting(order)
         case .cancelled: cancelling = order
@@ -120,7 +138,7 @@ final class AdminWorkOrderQuickActions {
     }
 
     func setStatus(_ order: AdminWorkOrder, _ status: AdminWorkOrderStatus) async {
-        guard !isBusy(order), status != .unknown else { return }
+        guard !isBusy(order), canChange(order, to: status) else { return }
         busyIds.insert(order.id)
         defer { busyIds.remove(order.id) }
         do {
@@ -132,7 +150,7 @@ final class AdminWorkOrderQuickActions {
     }
 
     func autoAssign(_ order: AdminWorkOrder) async {
-        guard !isBusy(order) else { return }
+        guard !isBusy(order), canAutoAssign else { return }
         busyIds.insert(order.id)
         defer { busyIds.remove(order.id) }
         do {

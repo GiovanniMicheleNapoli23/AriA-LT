@@ -75,7 +75,7 @@ final class AdminTaskboardViewModel {
         quickActions.onUpdated = { [weak self] order in self?.didUpdate(order) }
     }
 
-    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api) }
+    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api, rights: backend.rights) }
     var directory: AdminWorkOrderDirectory { workOrders.directory }
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
@@ -137,7 +137,8 @@ final class AdminTaskboardViewModel {
             for page in 0..<Self.maxPages {
                 let query = AdminWorkOrderQuery(statusGroup: .all, plantId: plantId, limit: Self.pageSize,
                                                 offset: page * Self.pageSize)
-                let chunk = try await api.list(query)
+                // `scope=all`: la bacheca è di tutti gli ordini, non dei soli propri (il server lo ignora se non serve).
+                let chunk = try await api.list(query, scope: "all")
                 guard current == generation else { return }
                 let known = Set(rows.map(\.id))
                 rows += chunk.filter { !known.contains($0.id) }
@@ -158,9 +159,15 @@ final class AdminTaskboardViewModel {
     }
 
     /// Persone, squadre e asset per i nomi; i membri per il filtro. Facoltativi: se mancano resta quel che c'è.
+    /// Un membro con ruolo non può leggere /v1/members: il filtro usa le persone dell'anagrafica (`memberChoices`).
     private func startLoadingLookups() {
         Task { await workOrders.directory.loadIfNeeded() }
         membersTask?.cancel()
+        guard !backend.rights.isRoleBased else {
+            membersTask = nil
+            members = []
+            return
+        }
         let backend = backend
         membersTask = Task {
             let rows = try? await backend.api.call(AdminTaskboardAPI.members())

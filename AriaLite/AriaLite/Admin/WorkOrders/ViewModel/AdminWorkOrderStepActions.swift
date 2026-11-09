@@ -60,10 +60,16 @@ final class AdminWorkOrderStepActions {
         }
     }
 
-    func confirmClear(_ step: AdminWorkOrderStepRowItem) { clearing = step }
+    /// Cancellare il risultato di un passo con foto toglie anche le foto: serve `step_photos`. Senza, il server
+    /// rifiuta (403) e tiene passo e foto.
+    func canClear(_ step: AdminWorkOrderStepRowItem) -> Bool {
+        step.status != nil && (step.photoCount == 0 || backend.rights.can(.stepPhotos, in: .workOrders))
+    }
+
+    func confirmClear(_ step: AdminWorkOrderStepRowItem) { clearing = canClear(step) ? step : nil }
 
     func clear() {
-        guard let step = clearing else { return }
+        guard let step = clearing, canClear(step) else { return }
         clearing = nil
         run(step) { api, orderId in try await api.clearStep(orderId, step: step.id) }
     }

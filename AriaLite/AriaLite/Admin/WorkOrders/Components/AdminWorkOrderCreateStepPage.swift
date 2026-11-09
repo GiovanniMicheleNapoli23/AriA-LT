@@ -142,13 +142,15 @@ struct AdminWorkOrderCreateStepPage: View {
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }
             }
-            AdminWorkOrderFormChoiceLink(title: "Asset", value: viewModel.assetLabel,
-                                         unavailable: viewModel.assetsUnavailable) {
-                AdminWorkOrderChoiceList(title: String(localized: "Asset"), choices: viewModel.assetChoices,
-                                         selection: viewModel.draft.assetTag, onSelect: viewModel.selectAsset)
+            if viewModel.canChooseAsset {
+                AdminWorkOrderFormChoiceLink(title: "Asset", value: viewModel.assetLabel,
+                                             unavailable: viewModel.assetsUnavailable) {
+                    AdminWorkOrderChoiceList(title: String(localized: "Asset"), choices: viewModel.assetChoices,
+                                             selection: viewModel.draft.assetTag, onSelect: viewModel.selectAsset)
+                }
             }
         } footer: {
-            Text("Choosing an asset fills in its zone.")
+            if viewModel.canChooseAsset { Text("Choosing an asset fills in its zone.") }
         }
         Section {
             AdminWorkOrderFormTextRow(title: "Zone", text: $viewModel.draft.zone, focus: focused, field: .zone)

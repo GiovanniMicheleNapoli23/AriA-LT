@@ -13,13 +13,19 @@ import Foundation
 
 nonisolated struct AdminWorkOrdersAPI: Sendable {
     let api: AriaAPIClient
+    /// Chi ha fatto l'accesso: un membro con ruolo legge persone, squadre e operatori dalle anagrafiche
+    /// (/v1/lookups/*) e gli asset solo se il ruolo li concede. Senza (default) le rotte sono quelle di sempre.
+    var rights: AriaRights = .unrestricted
 
     let root = "v1/work-orders"
 
     // MARK: Ordini
 
-    func list(_ query: AdminWorkOrderQuery) async throws -> [AdminWorkOrder] {
-        let page: AriaLossyArray<AdminWorkOrder> = try await api.call(AriaEndpoint(method: "GET", path: root, query: query.items).snakeCased())
+    /// `scope`: "all" per la Taskboard (tutti gli ordini, non solo i propri); il server lo ignora se la sessione non segue il ruolo.
+    func list(_ query: AdminWorkOrderQuery, scope: String? = nil) async throws -> [AdminWorkOrder] {
+        var items = query.items
+        if let scope { items.append(URLQueryItem(name: "scope", value: scope)) }
+        let page: AriaLossyArray<AdminWorkOrder> = try await api.call(AriaEndpoint(method: "GET", path: root, query: items).snakeCased())
         return page.items
     }
 
@@ -99,17 +105,21 @@ nonisolated struct AdminWorkOrdersAPI: Sendable {
     // MARK: Anagrafiche per il form
 
     func users() async throws -> [AdminWorkOrderUser] {
+        if rights.isRoleBased { return try await AdminLookupsAPI.people(api, fieldOnly: false).map(\.asUser) }
         let rows: AriaLossyArray<AdminWorkOrderUser> = try await api.call(.get("v1/users", query: ["active_only": "true"]).snakeCased())
         return rows.items
     }
 
     func teams(plantId: String?) async throws -> [AdminWorkOrderTeam] {
+        if rights.isRoleBased { return try await AdminLookupsAPI.teams(api, plantId: plantId).map(\.asTeam) }
         let query = plantId.map { [URLQueryItem(name: "plant_id", value: $0)] } ?? []
         let rows: AriaLossyArray<AdminWorkOrderTeam> = try await api.call(AriaEndpoint(method: "GET", path: "v1/teams", query: query).snakeCased())
         return rows.items
     }
 
+    /// Senza il diritto `assets` il ruolo non può leggerli: nessuna chiamata, e il form non offre la scelta.
     func assets() async throws -> [AdminWorkOrderAsset] {
+        if rights.isRoleBased, !rights.has(.assets) { return [] }
         let rows: AriaLossyArray<AdminWorkOrderAsset> = try await api.call(.get("v1/assets").snakeCased())
         return rows.items
     }

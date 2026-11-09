@@ -139,6 +139,11 @@ final class AdminWorkOrderDetailViewModel {
 
     func autoAssign() async { await actions.autoAssign(order) }
 
+    /// Il ruolo ha `auto_assign`: senza, il pulsante non c'è.
+    var canAutoAssign: Bool { actions.canAutoAssign }
+    /// Gli stati offerti dipendono dal ruolo: se non ne resta nessuno, lo stato si legge e basta.
+    var canChangeStatus: Bool { !statusChoices.isEmpty }
+
     // MARK: Traduzione
 
     /// Le lingue offerte, col nome nella lingua dell'app; quella dell'app per prima.
@@ -336,9 +341,13 @@ final class AdminWorkOrderDetailViewModel {
         list.didUpdate(updated)
     }
 
-    func confirmDelete() { isConfirmingDelete = true }
+    /// Eliminare vuole quello che serve ad annullare (`cancel`), niente di più se l'ordine è già annullato.
+    var canDelete: Bool { backend.rights.canDeleteWorkOrder(status: order.status?.rawValue ?? "") }
+
+    func confirmDelete() { isConfirmingDelete = canDelete }
 
     func delete() async {
+        guard canDelete else { return }
         isDeleting = true
         errorMessage = nil
         defer { isDeleting = false }

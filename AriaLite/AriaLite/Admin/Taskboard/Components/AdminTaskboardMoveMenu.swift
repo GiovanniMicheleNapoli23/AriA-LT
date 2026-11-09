@@ -14,6 +14,11 @@ struct AdminTaskboardMoveMenu: View {
     let onSelect: (AdminWorkOrderStatus) -> Void
 
     var body: some View {
+        // Il ruolo può non avere nessuna delle azioni dietro i cambi di colonna: allora il menu non c'è.
+        if !choices.isEmpty { menu }
+    }
+
+    private var menu: some View {
         Menu {
             ForEach(choices, id: \.self) { status in
                 Button(role: status == .cancelled ? .destructive : nil) {

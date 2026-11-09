@@ -128,7 +128,7 @@ struct AdminWorkOrdersView: View {
                 } label: {
                     Label("Change status", systemImage: "arrow.triangle.2.circlepath")
                 }
-                if !item.order.isClosed {
+                if !item.order.isClosed, viewModel.canAutoAssign {
                     Button("Auto-assign", systemImage: "person.crop.circle.badge.checkmark") { viewModel.autoAssign(item) }
                 }
             }

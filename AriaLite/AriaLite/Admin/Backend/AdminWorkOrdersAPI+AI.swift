@@ -28,7 +28,16 @@ extension AdminWorkOrdersAPI {
     // MARK: Operatori
 
     /// GET /v1/mobile-operators. Niente `.snakeCased()`: la risposta è già in camelCase.
+    /// Un membro con ruolo non può chiamarla: legge i candidati all'assegnazione (/v1/lookups/dispatch-candidates) e,
+    /// se quella rotta manca o non risponde come previsto, chi lavora sul campo dalle persone.
     func mobileOperators() async throws -> [AdminWorkOrderFormOperator] {
+        if rights.isRoleBased {
+            do {
+                return try await AdminLookupsAPI.dispatchCandidates(api).map(\.asOperator)
+            } catch AriaError.http(let status, _) where status != 403 {
+                return try await AdminLookupsAPI.people(api, fieldOnly: true).map(\.asOperator)
+            }
+        }
         let rows: AriaLossyArray<AdminWorkOrderFormOperator> = try await api.call(.get("v1/mobile-operators"))
         return rows.items
     }

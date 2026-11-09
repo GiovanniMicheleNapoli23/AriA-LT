@@ -287,6 +287,7 @@ final class AdminWorkOrdersViewModel {
     func leadingSwipe(for item: AdminWorkOrderRowItem) -> AdminWorkOrderStatus? { actions.leadingSwipe(for: item.order) }
     func canComplete(_ item: AdminWorkOrderRowItem) -> Bool { actions.canComplete(item.order) }
     func changeStatus(_ item: AdminWorkOrderRowItem, to status: AdminWorkOrderStatus) { actions.change(item.order, to: status) }
+    var canAutoAssign: Bool { actions.canAutoAssign }
     func autoAssign(_ item: AdminWorkOrderRowItem) { Task { await actions.autoAssign(item.order) } }
 
     // MARK: Schermate figlie

@@ -99,17 +99,21 @@ struct AdminWorkOrderDetailView: View {
                 Label("Translate", systemImage: "translate")
             }
             .disabled(viewModel.isTranslating)
-            Button("Auto-assign", systemImage: "person.crop.circle.badge.checkmark") {
-                Task { await viewModel.autoAssign() }
+            if viewModel.canAutoAssign {
+                Button("Auto-assign", systemImage: "person.crop.circle.badge.checkmark") {
+                    Task { await viewModel.autoAssign() }
+                }
+                .disabled(viewModel.isChangingStatus || viewModel.order.isClosed)
             }
-            .disabled(viewModel.isChangingStatus || viewModel.order.isClosed)
 
             if viewModel.translation != nil {
                 Button("Show original", systemImage: "arrow.uturn.backward") { viewModel.clearTranslation() }
             }
 
-            Section {
-                Button("Delete", systemImage: "trash", role: .destructive) { viewModel.confirmDelete() }
+            if viewModel.canDelete {
+                Section {
+                    Button("Delete", systemImage: "trash", role: .destructive) { viewModel.confirmDelete() }
+                }
             }
         } label: {
             Label("Actions", systemImage: "ellipsis.circle")

@@ -46,7 +46,10 @@ final class AdminWorkOrderDirectory {
         self.backend = backend
     }
 
-    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api) }
+    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api, rights: backend.rights) }
+
+    /// Il ruolo concede gli asset: senza, il form non offre la scelta (e la lista non si chiede).
+    var canChooseAssets: Bool { backend.rights.has(.assets) }
 
     func reset() {
         users = []

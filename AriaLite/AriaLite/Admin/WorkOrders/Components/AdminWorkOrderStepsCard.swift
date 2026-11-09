@@ -111,7 +111,7 @@ struct AdminWorkOrderStepsCard: View {
         Menu {
             Button("Done…", systemImage: "checkmark.circle") { actions.startReport(step, status: .done) }
             Button("Not done…", systemImage: "xmark.circle") { actions.startReport(step, status: .notDone) }
-            if step.status != nil {
+            if actions.canClear(step) {
                 Divider()
                 Button("Clear result", systemImage: "trash", role: .destructive) { actions.confirmClear(step) }
             }

@@ -44,7 +44,7 @@ final class AdminWorkOrderActivityViewModel {
         self.backend = backend
     }
 
-    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api) }
+    private var api: AdminWorkOrdersAPI { AdminWorkOrdersAPI(api: backend.api, rights: backend.rights) }
 
     // MARK: Caricamento
 
