@@ -101,7 +101,7 @@ final class AdminMarketplaceViewModel {
         return .forSale
     }
 
-    /// Una riga del server in stato collegato.
+    /// Una riga del server collegata per chi guarda (per un connettore personale, il suo account).
     func isConnected(_ provider: String) -> Bool { connector(for: provider)?.knownStatus == .connected }
 
     func hasServerConnector(_ provider: String) -> Bool { connector(for: provider) != nil }
@@ -111,9 +111,9 @@ final class AdminMarketplaceViewModel {
         index.connectorItems[provider]?.name ?? connector(for: provider)?.name ?? AdminConnector.prettyName(provider)
     }
 
-    /// Lo stato grezzo della riga del server per un connettore del catalogo; nil per ogni altro elemento.
+    /// Lo stato grezzo per chi guarda (`viewerStatus`) di un connettore del catalogo; nil per ogni altro elemento.
     func serverStatus(for item: AdminMarketplaceItem) -> String? {
-        item.kind == .connector ? connector(for: item.sourceId)?.status : nil
+        item.kind == .connector ? connector(for: item.sourceId)?.viewerStatus : nil
     }
 
     /// Un connettore con integrazione dietro non si compra mai (è "in arrivo"); gli altri solo se in vendita.

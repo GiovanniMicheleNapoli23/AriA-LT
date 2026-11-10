@@ -48,7 +48,13 @@ nonisolated struct AdminConnector: Decodable, Sendable, Identifiable, Hashable {
 
     var isMaintainX: Bool { provider == AdminConnector.maintainXProvider }
     var isPerMember: Bool { connectionScope == "user" }
-    var knownStatus: AdminConnectorStatus { AdminConnectorStatus(raw: status) }
+    /// Lo stato per chi guarda: di un connettore personale conta solo la sua connessione (la riga dell'azienda è
+    /// `configured` e non dice niente di lui), come `connectorStatuses` della web.
+    var viewerStatus: String {
+        guard isPerMember else { return status }
+        return myGrant?.status ?? "not_connected"
+    }
+    var knownStatus: AdminConnectorStatus { AdminConnectorStatus(raw: viewerStatus) }
 
     /// OAuth: non c'è una chiave da incollare, si passa dal consenso nel browser.
     var usesOAuth: Bool {
@@ -67,8 +73,8 @@ nonisolated struct AdminConnector: Decodable, Sendable, Identifiable, Hashable {
         var parts: [String] = []
         if toolCount > 0 { parts.append(String(localized: "\(toolCount) tools")) }
         if isPerMember {
-            parts.append(myGrant == nil ? String(localized: "Your account isn't connected")
-                                        : String(localized: "Your account is connected"))
+            parts.append(knownStatus == .connected ? String(localized: "Your account is connected")
+                                                   : String(localized: "Your account isn't connected"))
         } else if isMaintainX {
             parts.append(String(localized: "Built-in"))
         }

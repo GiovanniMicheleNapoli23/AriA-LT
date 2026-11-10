@@ -39,7 +39,7 @@ struct AriaExternalAction: Equatable {
     }
 
     /// "gmail-personal GMAIL_SEND_EMAIL returned id …" → "GMAIL_SEND_EMAIL".
-    private static func toolName(in summary: String) -> String? {
+    private nonisolated static func toolName(in summary: String) -> String? {
         summary.split(whereSeparator: \.isWhitespace).lazy.map(String.init).first { word in
             word.count > 3 && word.contains("_") && word == word.uppercased() && word.allSatisfy { $0.isLetter || $0.isNumber || $0 == "_" }
         }

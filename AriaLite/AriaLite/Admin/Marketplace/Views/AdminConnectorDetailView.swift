@@ -108,7 +108,7 @@ struct AdminConnectorDetailView: View {
                 Text(viewModel.subtitle)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                AdminConnectorStatusBadge(status: viewModel.connector.status)
+                AdminConnectorStatusBadge(status: viewModel.connector.viewerStatus)
             }
             Spacer(minLength: 0)
         }

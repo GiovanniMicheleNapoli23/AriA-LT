@@ -57,7 +57,7 @@ final class AdminDocumentUploadCenter {
         guard !didStart else { return }
         didStart = true
         session.setListener { [weak self] event in
-            Task { @MainActor in self?.handle(event) }
+            Task { @MainActor [weak self] in self?.handle(event) }
         }
         store.sweepOrphans()
         let saved = store.jobs()

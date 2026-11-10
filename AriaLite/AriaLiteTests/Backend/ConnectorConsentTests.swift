@@ -67,4 +67,20 @@ struct ConnectorConsentTests {
         let odd = try JSONDecoder().decode(AriaMe.self, from: Data(#"{"id":"u1","membership":{"role":"admin"}}"#.utf8))
         #expect(odd.membership == nil, "una forma inattesa non rompe /v1/me")
     }
+
+    /// Un connettore personale è collegato per chi guarda solo con il suo account: la riga dell'azienda
+    /// (`configured`) non conta, come sulla web.
+    @Test func perMemberConnectorFollowsTheViewersGrant() throws {
+        func connector(_ json: String) throws -> AdminConnector {
+            try JSONDecoder().decode(AdminConnector.self, from: Data(json.utf8))
+        }
+        let mine = try connector(#"{"provider":"gmail-personal","status":"configured","connectionScope":"user","myGrant":{"status":"connected"}}"#)
+        #expect(mine.knownStatus == .connected)
+        let notYet = try connector(#"{"provider":"gmail-personal","status":"configured","connectionScope":"user"}"#)
+        #expect(notYet.knownStatus == .disconnected)
+        let expired = try connector(#"{"provider":"gmail-personal","status":"configured","connectionScope":"user","myGrant":{"status":"expired"}}"#)
+        #expect(expired.knownStatus == .attention)
+        let shared = try connector(#"{"provider":"hubspot","status":"connected","connectionScope":"company","myGrant":{"status":"expired"}}"#)
+        #expect(shared.knownStatus == .connected, "un connettore dell'azienda segue la sua riga")
+    }
 }
