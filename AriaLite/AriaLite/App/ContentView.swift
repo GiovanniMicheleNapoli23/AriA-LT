@@ -24,8 +24,15 @@ struct ContentView: View {
                     // Navigazione come Claude mobile: chat al centro, sezioni nella sidebar.
                     AriaShellView(user: user)
                 }
+            } else if viewModel.showsOnboarding {
+                // Primo avvio: cosa si può fare con l'app, poi il login.
+                AriaOnboardingView(origin: .firstLaunch) {
+                    withAnimation(.smooth) { viewModel.finishOnboarding() }
+                }
+                .transition(.opacity)
             } else {
                 LoginView(viewModel: viewModel)
+                    .transition(.opacity)
             }
         }
         // Link di accesso toccato nell'email (Universal Link) o dal pulsante della pagina web (aria://).

@@ -17,6 +17,8 @@ final class LoginLayoutUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // Senza sessione il primo avvio mostra la presentazione prima del login.
+        app.launchArguments += ["-AriaOnboardingSeen", "YES"]
         app.launch()
     }
 

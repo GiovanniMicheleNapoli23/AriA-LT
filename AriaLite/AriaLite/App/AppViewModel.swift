@@ -72,6 +72,10 @@ class AppViewModel {
     /// …e l'esito, che poi azzera.
     var openedLinkResult: LoginResult?
 
+    /// La presentazione dell'app prima del login (AriaOnboardingView): solo finché non la si è vista una volta.
+    private(set) var showsOnboarding = false
+    @ObservationIgnored private let onboarding = AriaOnboardingProgress()
+
     init() {
         let backend = AriaBackend()
         self.backend = backend
@@ -116,6 +120,17 @@ class AppViewModel {
         }
         // La sessione salvata si apre con Face ID prima di mostrare l'app.
         if loggedInUser != nil, backend.needsUnlock { lock = .launch }
+        // Chi aveva già un accesso conosce l'app: uscendo non si ritrova la presentazione.
+        if loggedInUser != nil { onboarding.markSeen() }
+        showsOnboarding = !onboarding.isSeen
+    }
+
+    // MARK: - Presentazione
+
+    /// Finita, saltata o superata da un accesso: non torna più da sola, si rivede dal profilo.
+    func finishOnboarding() {
+        onboarding.markSeen()
+        showsOnboarding = false
     }
 
     // MARK: - Face ID
@@ -221,6 +236,7 @@ class AppViewModel {
             return
         }
         loggedInUser = User(account)
+        finishOnboarding()
     }
     #endif
 
@@ -237,6 +253,8 @@ class AppViewModel {
         }
         AriaAuthTrace.step("login.ok", "azienda=\(backend.activeCompanyId ?? "-") stabilimento=\(backend.activePlantId ?? "-")")
         loggedInUser = User(account)
+        // Un link toccato nell'email mentre la presentazione è aperta la chiude.
+        finishOnboarding()
         return .success
     }
 

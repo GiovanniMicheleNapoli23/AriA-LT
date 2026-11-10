@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 20/03/26.
 //
 //  Il profilo: chi è entrato e con che ruolo, azienda e impianto, disponibilità (solo operatori),
-//  server Aria e uscita.
+//  server Aria, la presentazione dell'app (a schermo intero) e uscita.
 //
 
 import SwiftUI
@@ -33,6 +33,7 @@ struct SettingsSheet: View {
                             AriaAvailabilityRow(store: viewModel.app.ariaWorkOrders)
                         }
                         serverCard
+                        tourCard
                         logoutButton
                     }
                     .padding(.horizontal, 20)
@@ -48,6 +49,9 @@ struct SettingsSheet: View {
         .sheet(isPresented: $viewModel.showsConnection) {
             AriaConnectionSheet(backend: viewModel.app.backend)
         }
+        .fullScreenCover(isPresented: $viewModel.showsOnboarding) {
+            AriaOnboardingView(origin: .profile) { viewModel.showsOnboarding = false }
+        }
         .alert("Log out with unsynced changes?", isPresented: $viewModel.confirmingLogout) {
             Button("Log out anyway", role: .destructive) { viewModel.logout() }
             Button("Cancel", role: .cancel) {}
@@ -55,7 +59,7 @@ struct SettingsSheet: View {
             Text("\(viewModel.unsyncedChanges) changes haven't reached the server yet. If you log out now, they will be lost.")
         }
         // Un admin non ha la disponibilità: il foglio parte più basso. Si può sempre allargare.
-        .presentationDetents([.fraction(viewModel.showsAvailability ? 0.65 : 0.6), .large])
+        .presentationDetents([.fraction(viewModel.showsAvailability ? 0.72 : 0.67), .large])
         .presentationDragIndicator(.visible)
     }
 
@@ -139,6 +143,21 @@ struct SettingsSheet: View {
             .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: Presentazione
+
+    private var tourCard: some View {
+        Button {
+            viewModel.showsOnboarding = true
+        } label: {
+            AriaSettingsRow(title: "App tour", systemImage: "sparkles.rectangle.stack", showsChevron: true) {
+                EmptyView()
+            }
+            .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("settings.tour")
     }
 
     // MARK: Uscita

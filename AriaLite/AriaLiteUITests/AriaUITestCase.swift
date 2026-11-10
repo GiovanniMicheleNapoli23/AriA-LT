@@ -43,6 +43,8 @@ class AriaUITestCase: XCTestCase {
         app = XCUIApplication()
         // Lingua fissa: i suggerimenti arrivano nella lingua dell'app (Accept-Language) e i testi si leggono uguali.
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // La presentazione del primo avvio non si mette davanti mentre la sessione si apre.
+        app.launchArguments += ["-AriaOnboardingSeen", "YES"]
         app.launchEnvironment["ARIA_UITEST_SESSION"] = session
         app.launch()
         allowSystemAlerts()

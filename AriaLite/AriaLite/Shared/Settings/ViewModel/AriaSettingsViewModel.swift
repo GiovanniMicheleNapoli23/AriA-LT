@@ -20,6 +20,8 @@ final class AriaSettingsViewModel {
 
     var showsConnection = false
     var confirmingLogout = false
+    /// La presentazione dell'app, rivista dal profilo.
+    var showsOnboarding = false
 
     init(user: User, app: AppViewModel) {
         self.user = user

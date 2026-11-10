@@ -10,7 +10,7 @@
 import SwiftUI
 
 struct LoginPrimaryButton: View {
-    let title: LocalizedStringKey
+    let title: LocalizedStringResource
     let isEnabled: Bool
     let isBusy: Bool
     let action: () -> Void
