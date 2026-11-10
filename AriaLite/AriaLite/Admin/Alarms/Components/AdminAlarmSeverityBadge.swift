@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La gravità della diagnosi come capsula. Il testo è quello del server (low, medium, high, critical…),
-//  con la prima lettera maiuscola; il colore segue la gravità.
+//  con la prima lettera maiuscola; il colore segue la gravità
+//  (bassa o sconosciuta in grigio).
 //
 
 import SwiftUI
@@ -25,9 +26,8 @@ struct AdminAlarmSeverityBadge: View {
 
     private var tint: Color {
         switch severity.lowercased() {
-        case "critical", "high": .red
-        case "medium", "moderate": .orange
-        case "low", "minor": .green
+        case "critical", "high": .liteDanger
+        case "medium", "moderate": .liteWarning
         default: .secondary
         }
     }

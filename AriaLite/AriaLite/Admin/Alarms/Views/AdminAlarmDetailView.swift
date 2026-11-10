@@ -4,9 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un allarme (pagina /alarms/{id} della web): intestazione, approvazione se è una bozza,
-//  scheda, cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo; l'AI è il blob di
-//  Aria in basso a destra, come nel dettaglio di un ordine.
+//  Il dettaglio di un allarme (pagina /alarms/{id} della web): intestazione con i fatti, approvazione se è
+//  una bozza, cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo; l'AI è il blob di
+//  Aria in basso a destra, come nel dettaglio di un ordine (e le sezioni vuote offrono di completarle).
 //
 
 import SwiftUI
@@ -23,18 +23,18 @@ struct AdminAlarmDetailView: View {
         @Bindable var diagnosis = viewModel.diagnosis
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                AdminAlarmHeader(alarm: viewModel.alarm)
+                AdminAlarmHeader(viewModel: viewModel)
                 if let failure = viewModel.failure { AdminAlarmFailureNote(failure: failure) }
                 if viewModel.canApprove || viewModel.isApproving {
                     AdminAlarmApproveBanner(isApproving: viewModel.isApproving) {
                         viewModel.showsApproveConfirmation = true
                     }
                 }
-                if !viewModel.infoRows.isEmpty { AdminAlarmInfoCard(rows: viewModel.infoRows) }
                 AdminAlarmLinesCard(title: "Typical causes", systemImage: "questionmark.diamond",
-                                    lines: viewModel.alarm.typicalCauses)
+                                    lines: viewModel.alarm.typicalCauses, fillIn: { viewModel.startImproving() })
                 AdminAlarmLinesCard(title: "Resolution steps", systemImage: "list.number",
-                                    lines: viewModel.alarm.resolutionSteps, isNumbered: true)
+                                    lines: viewModel.alarm.resolutionSteps, isNumbered: true,
+                                    fillIn: { viewModel.startImproving() })
                 AdminAlarmDiagnoseCard(viewModel: diagnosis)
             }
             .padding(20)

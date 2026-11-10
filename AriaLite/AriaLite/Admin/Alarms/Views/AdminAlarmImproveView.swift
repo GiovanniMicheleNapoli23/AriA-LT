@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  "Improve with AI" in un foglio: le richieste possibili, il caricamento, l'errore (con i valori di
+//  "Improve with AI" in un foglio: un Form di sistema con le richieste possibili, l'errore (con i valori di
 //  `action` validi, se il server li dice) e la proposta da applicare o scartare. La logica sta nel view model.
 //
 
@@ -20,26 +20,23 @@ struct AdminAlarmImproveView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Working on").font(.caption).foregroundStyle(.secondary)
-                        Text(verbatim: viewModel.alarm.code).font(.headline.monospaced())
-                    }
-                    AdminAlarmImproveActions(viewModel: viewModel)
-                    if viewModel.isRunning {
-                        ProgressView("Asking the assistant…").frame(maxWidth: .infinity).padding(.vertical, 8)
-                    }
-                    if let failure = viewModel.failure { failureCard(failure) }
-                    if let proposal = viewModel.proposal {
-                        AdminAlarmProposalCard(viewModel: viewModel, proposal: proposal)
+            Form {
+                Section {
+                    LabeledContent("Alarm") {
+                        Text(verbatim: viewModel.alarm.code).font(.body.monospaced())
                     }
                 }
-                .padding(20)
-                .ariaReadableWidth()
+                AdminAlarmImproveActions(viewModel: viewModel)
+                if let failure = viewModel.failure { failureSection(failure) }
+                if let proposal = viewModel.proposal {
+                    AdminAlarmProposalSections(viewModel: viewModel, proposal: proposal)
+                }
             }
+            .scrollContentBackground(.hidden)
             .scrollDismissesKeyboard(.interactively)
             .liteBackground()
+            .animation(.default, value: viewModel.proposal?.changes.map(\.field))
+            .animation(.default, value: viewModel.failure?.message)
             .navigationTitle("Improve with AI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -52,22 +49,23 @@ struct AdminAlarmImproveView: View {
         .onDisappear { viewModel.cancel() }
     }
 
-    private func failureCard(_ failure: AdminAlarmAssistFailure) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(failure.message, systemImage: "exclamationmark.triangle")
-                .font(.footnote)
+    private func failureSection(_ failure: AdminAlarmAssistFailure) -> some View {
+        Section {
+            Label(failure.message, systemImage: "exclamationmark.triangle.fill")
+                .font(.subheadline)
                 .foregroundStyle(.orange)
-            if !failure.validActions.isEmpty {
-                Text("Valid actions").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                ForEach(failure.validActions, id: \.self) { action in
-                    Button(action) { viewModel.retry(with: action) }
-                        .font(.footnote.weight(.semibold))
-                        .disabled(viewModel.isRunning)
+            ForEach(failure.validActions, id: \.self) { action in
+                Button { viewModel.retry(with: action) } label: {
+                    HStack {
+                        Text(verbatim: action)
+                        Spacer()
+                        if viewModel.runningAction == action { ProgressView() }
+                    }
                 }
+                .disabled(viewModel.isRunning)
             }
+        } header: {
+            if !failure.validActions.isEmpty { Text("Valid actions") }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
     }
 }

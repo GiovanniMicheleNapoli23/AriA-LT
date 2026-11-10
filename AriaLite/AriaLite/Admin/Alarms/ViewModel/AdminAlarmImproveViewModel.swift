@@ -21,7 +21,8 @@ final class AdminAlarmImproveViewModel: Identifiable {
 
     var customPrompt = ""
 
-    private(set) var isRunning = false
+    /// L'azione in corso (valore mandato al server): una alla volta.
+    private(set) var runningAction: String?
     private(set) var proposal: AdminAlarmProposal?
     private(set) var failure: AdminAlarmAssistFailure?
     /// I campi della proposta da applicare.
@@ -37,6 +38,10 @@ final class AdminAlarmImproveViewModel: Identifiable {
         self.backend = backend
         self.onApplied = onApplied
     }
+
+    var isRunning: Bool { runningAction != nil }
+
+    func isRunning(_ action: AdminAlarmImproveAction) -> Bool { runningAction == action.rawValue }
 
     var canAskCustom: Bool { !customPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isRunning }
 
@@ -54,14 +59,15 @@ final class AdminAlarmImproveViewModel: Identifiable {
     private func start(_ rawAction: String, isCustom: Bool) {
         guard !isRunning else { return }
         task?.cancel()
+        // Subito, non nel task: un secondo tocco prima che parta non manda un'altra richiesta.
+        runningAction = rawAction
         task = Task { await ask(rawAction, isCustom: isCustom) }
     }
 
     private func ask(_ rawAction: String, isCustom: Bool) async {
-        isRunning = true
         failure = nil
         applyError = nil
-        defer { isRunning = false }
+        defer { runningAction = nil }
         let prompt = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         let body = AdminAlarmImproveRequest(action: rawAction,
                                             customPrompt: isCustom && !prompt.isEmpty ? prompt : nil,

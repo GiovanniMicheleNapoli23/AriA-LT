@@ -50,7 +50,6 @@ struct AdminAlarmWorkOrderFormView: View {
                 if viewModel.stepCount > 0 {
                     Section {
                         Toggle("Use the repair steps as the procedure", isOn: $viewModel.includesSteps)
-                            .tint(Color.liteAccent)
                     } footer: {
                         Text("\(viewModel.stepCount) steps from the diagnosis.")
                     }

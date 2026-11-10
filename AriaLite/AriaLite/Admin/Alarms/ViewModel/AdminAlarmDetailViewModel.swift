@@ -61,20 +61,34 @@ final class AdminAlarmDetailViewModel {
         }
     }
 
-    // MARK: - Scheda
+    // MARK: - Intestazione
 
-    /// Le righe etichetta-valore della scheda; quelle vuote non si mostrano.
-    var infoRows: [(label: String, value: String)] {
-        var rows: [(String, String?)] = [
-            (String(localized: "Asset"), alarm.assetTag),
-            (String(localized: "Category"), alarm.category),
-            (String(localized: "Zone"), alarm.zone),
-            (String(localized: "HMI page"), alarm.hmiPage),
-            (String(localized: "Extraction confidence"), alarm.confidencePercent.map { "\($0)%" }),
+    /// I fatti dell'intestazione, nella griglia; quelli vuoti non si mostrano.
+    var facts: [AdminAlarmFact] {
+        let all: [(String, String, String?, String)] = [
+            ("asset", String(localized: "Asset"), alarm.assetTag, "gearshape.2"),
+            ("zone", String(localized: "Zone"), alarm.zone, "mappin.and.ellipse"),
+            ("category", String(localized: "Category"), alarm.category, "tag"),
+            ("hmi", String(localized: "HMI page"), alarm.hmiPage, "display"),
         ]
-        rows.append((String(localized: "Created"), alarm.createdAt?.formatted(date: .abbreviated, time: .shortened)))
-        rows.append((String(localized: "Updated"), alarm.updatedAt?.formatted(date: .abbreviated, time: .shortened)))
-        return rows.compactMap { label, value in value.map { (label, $0) } }
+        return all.compactMap { id, label, value, icon in
+            value.map { AdminAlarmFact(id: id, label: label, value: $0, systemImage: icon) }
+        }
+    }
+
+    /// Fiducia dell'estrazione (0…1) per il misuratore, se c'è.
+    var confidenceFraction: Double? { alarm.confidencePercent.map { Double($0) / 100 } }
+
+    /// "Edited 2 days ago · Created on 12 Oct 2026", le date che ci sono.
+    var timestampLine: String? {
+        var parts: [String] = []
+        if let updated = alarm.updatedAt {
+            parts.append(String(localized: "Edited \(updated.formatted(.relative(presentation: .named)))"))
+        }
+        if let created = alarm.createdAt {
+            parts.append(String(localized: "Created on \(created.formatted(date: .abbreviated, time: .omitted))"))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     var canApprove: Bool {

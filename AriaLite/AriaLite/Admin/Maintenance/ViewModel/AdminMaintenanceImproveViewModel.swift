@@ -56,6 +56,16 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
         "\(index + 1). \(plan.tasks[index])"
     }
 
+    /// La richiesta in corso è questa: la sua riga mostra la rotella.
+    func isRunning(_ action: AdminMaintenanceImproveAction) -> Bool {
+        isRunning && lastAction == action.rawValue
+    }
+
+    /// La richiesta in corso è uno dei valori validi indicati dal server.
+    func isRunning(rawAction: String) -> Bool {
+        isRunning && lastAction == rawAction
+    }
+
     // MARK: Richiesta
 
     func run(_ action: AdminMaintenanceImproveAction) {
@@ -158,6 +168,14 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
         } catch {
             applyError = AdminMaintenanceFailure.message(for: error, backend: backend)
         }
+    }
+
+    /// Scarta la proposta: il piano resta com'è.
+    func discard() {
+        proposal = nil
+        failure = nil
+        applyError = nil
+        didApply = false
     }
 
     /// Alla chiusura del foglio: la richiesta in corso non serve più.

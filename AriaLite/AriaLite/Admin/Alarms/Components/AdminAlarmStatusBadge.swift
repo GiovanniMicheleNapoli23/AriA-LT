@@ -4,7 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Lo stato di un allarme come capsula: icona e testo (il colore da solo non basta), e un colore per stato.
+//  Lo stato di un allarme come capsula: icona e testo (il colore da solo non basta), e un colore per stato
+//  (in attesa di revisione in ambra, approvato nel colore dell'app, scartato o sostituito in grigio).
 //
 
 import SwiftUI
@@ -24,11 +25,10 @@ struct AdminAlarmStatusBadge: View {
 
     private var tint: Color {
         switch alarm.status {
-        case .approved?: .green
-        case .draft?: .orange
-        case .staged?: .blue
-        case .rejected?: .red
-        case .superseded?, nil: .secondary
+        // Positivo nel colore dell'app, negativo in grigio: il rosso resta per gli errori.
+        case .approved?: .liteAccent
+        case .draft?, .staged?: .liteWarning
+        case .rejected?, .superseded?, nil: .secondary
         }
     }
 }
