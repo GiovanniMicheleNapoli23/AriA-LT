@@ -145,7 +145,6 @@ struct AdminInspectionFormView: View {
         AdminCard(title: "Due date", systemImage: "calendar") {
             VStack(alignment: .leading, spacing: 8) {
                 Toggle("Set a due date", isOn: $viewModel.hasDueDate.animation(.snappy))
-                    .tint(Color.liteAccent)
                 if viewModel.hasDueDate {
                     DatePicker("Due", selection: $viewModel.dueDate, displayedComponents: [.date])
                         .datePickerStyle(.compact)

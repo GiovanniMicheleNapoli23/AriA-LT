@@ -159,6 +159,8 @@ private struct AriaComposerPlusMenu: View {
                 Toggle(isOn: $model.webSearch) {
                     Label("Web search", systemImage: "globe")
                 }
+                // Nel menu resta la spunta di sistema, non l'interruttore verde dell'app.
+                .toggleStyle(.automatic)
             }
         } label: {
             // Il limite sta sull'etichetta, non sul Menu: le voci del menu seguono il testo di sistema.

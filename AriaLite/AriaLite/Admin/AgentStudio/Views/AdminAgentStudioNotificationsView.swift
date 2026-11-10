@@ -27,7 +27,9 @@ struct AdminAgentStudioNotificationsView: View {
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu("Options", systemImage: "ellipsis.circle") {
+                            // Nel menu resta la spunta di sistema, non l'interruttore verde dell'app.
                             Toggle("Unread only", isOn: $viewModel.showsUnreadOnly)
+                                .toggleStyle(.automatic)
                             Button("Mark all as read", systemImage: "checkmark.circle") {
                                 Task { await viewModel.markAllRead() }
                             }

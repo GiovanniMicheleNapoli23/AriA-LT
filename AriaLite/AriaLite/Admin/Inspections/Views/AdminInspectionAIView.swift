@@ -166,7 +166,6 @@ struct AdminInspectionAIView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Toggle("Replace the notes with this text", isOn: $viewModel.appliesNotes)
                 .font(.subheadline)
-                .tint(Color.liteAccent)
         }
     }
 

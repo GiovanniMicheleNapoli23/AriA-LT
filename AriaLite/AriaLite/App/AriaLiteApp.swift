@@ -16,6 +16,7 @@ struct WorkOrderApp: App {
         WindowGroup {
             ContentView()
                 .environment(viewModel)
+                .toggleStyle(.ariaSwitch)
                 #if DEBUG
                 .task {
                     await viewModel.signInWithLaunchLink()
