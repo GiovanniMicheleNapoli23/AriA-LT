@@ -447,6 +447,20 @@ final class AriaBackend {
         api.context.accessMayHaveChanged()
     }
 
+    /// Ogni quanto si rileggono i diritti con l'app aperta: 30", come la web e il contratto Roles & Rights del 10/11.
+    nonisolated static let accessWatchInterval: Duration = .seconds(30)
+
+    /// Rilegge i diritti a intervalli finché il task che la chiama non finisce (AriaShellView, solo con l'app attiva).
+    /// L'header `X-Access-Version` e i 403 arrivano solo con una chiamata: su una schermata ferma un diritto tolto
+    /// o ridato dall'admin non si vedrebbe fino al ritorno in primo piano.
+    func watchAccess(every interval: Duration = AriaBackend.accessWatchInterval) async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: interval)
+            guard !Task.isCancelled else { return }
+            await refreshMembership()
+        }
+    }
+
     private func listenForAccessChanges() {
         accessListener?.cancel()
         let signals = api.context.accessSignals
