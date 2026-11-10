@@ -413,6 +413,7 @@
       }
     },
     "%@: %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2344,6 +2345,16 @@
         }
       }
     },
+    "A notification when a new job arrives" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una notifica quando arriva un nuovo lavoro"
+          }
+        }
+      }
+    },
     "A part is low on stock when its quantity drops to the minimum." : {
       "localizations" : {
         "it" : {
@@ -3222,6 +3233,16 @@
         }
       }
     },
+    "Agents that run on a schedule or when something happens" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agenti che partono a orario o quando succede qualcosa"
+          }
+        }
+      }
+    },
     "Agrees with documents" : {
       "localizations" : {
         "it" : {
@@ -3268,6 +3289,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Confidenza AI %@"
+          }
+        }
+      }
+    },
+    "AI diagnosis with the likely cause and repair steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnosi AI con la causa probabile e i passi di riparazione"
           }
         }
       }
@@ -3902,6 +3933,16 @@
         }
       }
     },
+    "App tour" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Presentazione dell'app"
+          }
+        }
+      }
+    },
     "Applied" : {
       "localizations" : {
         "it" : {
@@ -4034,6 +4075,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approva selezionati"
+          }
+        }
+      }
+    },
+    "Approve the assets, alarms, plans and parts Aria found in them" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva asset, allarmi, piani e ricambi che Aria ci ha trovato"
           }
         }
       }
@@ -4306,6 +4357,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aria modifica la versione salvata, non le tue modifiche non salvate."
+          }
+        }
+      }
+    },
+    "Aria guides you through the job one step at a time and stops to check before anything risky." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria ti guida nel lavoro un passo alla volta e si ferma a verificare prima di ogni operazione a rischio."
           }
         }
       }
@@ -5072,6 +5133,16 @@
         }
       }
     },
+    "Assets, parts and purchases" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asset, ricambi e acquisti"
+          }
+        }
+      }
+    },
     "Assign" : {
       "localizations" : {
         "it" : {
@@ -5202,6 +5273,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Assegnazione"
+          }
+        }
+      }
+    },
+    "Attach photos and files" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allega foto e file"
           }
         }
       }
@@ -6398,6 +6479,16 @@
         }
       }
     },
+    "Changes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifiche"
+          }
+        }
+      }
+    },
     "Changes appear on the page. Nothing is saved until you accept." : {
       "localizations" : {
         "it" : {
@@ -6454,6 +6545,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grafici"
+          }
+        }
+      }
+    },
+    "Chat with Aria, by text or voice" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat con Aria, scritta o a voce"
           }
         }
       }
@@ -6598,6 +6699,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modelli di checklist"
+          }
+        }
+      }
+    },
+    "Checklists for rounds and checks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checklist per giri e controlli"
           }
         }
       }
@@ -7080,6 +7191,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiudi intervento"
+          }
+        }
+      }
+    },
+    "Close the job" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiudi l'intervento"
           }
         }
       }
@@ -7585,6 +7706,7 @@
       }
     },
     "Confidence %lld%%" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7722,6 +7844,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Collega dal web"
+          }
+        }
+      }
+    },
+    "Connect the tools you already use, like MaintainX, and add skills, agents and knowledge packs." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega gli strumenti che usi già, come MaintainX, e aggiungi skill, agenti e pacchetti di conoscenza."
           }
         }
       }
@@ -8812,12 +8944,38 @@
         }
       }
     },
+    "Create, assign and track jobs, with help from AI" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea, assegna e segui i lavori, con l'aiuto dell'AI"
+          }
+        }
+      }
+    },
     "Created" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Creato"
+          }
+        }
+      }
+    },
+    "Created on %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created on %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creato il %@"
           }
         }
       }
@@ -9366,6 +9524,16 @@
         }
       }
     },
+    "Describe a fault, a machine or a step you're stuck on: Aria answers from your plant's manuals and history." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descrivi un guasto, una macchina o un passaggio su cui sei bloccato: Aria risponde con i manuali e lo storico del tuo impianto."
+          }
+        }
+      }
+    },
     "Describe the chart, table or plan you need…" : {
       "localizations" : {
         "en" : {
@@ -9862,6 +10030,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Documenti"
+          }
+        }
+      }
+    },
+    "Documents and pages Aria creates for you" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Documenti e pagine che Aria crea per te"
           }
         }
       }
@@ -10508,6 +10686,22 @@
         }
       }
     },
+    "Edited %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edited %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modificato %@"
+          }
+        }
+      }
+    },
     "Editing" : {
       "localizations" : {
         "en" : {
@@ -10859,6 +11053,16 @@
         }
       }
     },
+    "Even without signal" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anche senza campo"
+          }
+        }
+      }
+    },
     "Event" : {
       "localizations" : {
         "it" : {
@@ -10970,6 +11174,16 @@
         }
       }
     },
+    "Every section from the sidebar" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni sezione dalla sidebar"
+          }
+        }
+      }
+    },
     "Every step goes back to unchecked." : {
       "localizations" : {
         "it" : {
@@ -11042,6 +11256,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutto per una macchina: agente, skill, conoscenza e workflow."
+          }
+        }
+      }
+    },
+    "Everything in the plant, and everything it needs." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutto quello che c'è nell'impianto, e tutto quello che gli serve."
           }
         }
       }
@@ -11444,6 +11668,16 @@
         }
       }
     },
+    "Field work: chat with Aria, your jobs and guided procedures." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavoro in campo: chat con Aria, i tuoi lavori e le procedure guidate."
+          }
+        }
+      }
+    },
     "Field-proven facts, filed as pending so someone who knows the machine approves them first." : {
       "localizations" : {
         "it" : {
@@ -11532,6 +11766,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci il titolo e scegli uno stabilimento."
+          }
+        }
+      }
+    },
+    "Fill in with AI" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa con l'AI"
           }
         }
       }
@@ -12153,6 +12397,26 @@
         }
       }
     },
+    "Groups of people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gruppi di persone"
+          }
+        }
+      }
+    },
+    "Guided questions to pin down the fault" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domande guidate per individuare il guasto"
+          }
+        }
+      }
+    },
     "Header name" : {
       "localizations" : {
         "it" : {
@@ -12463,6 +12727,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quanto dura il lavoro"
+          }
+        }
+      }
+    },
+    "How much AI your company uses" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quanta AI usa la tua azienda"
           }
         }
       }
@@ -13147,6 +13421,16 @@
         }
       }
     },
+    "Invite your technicians to this app" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invita i tuoi tecnici in questa app"
+          }
+        }
+      }
+    },
     "Invited" : {
       "localizations" : {
         "it" : {
@@ -13783,6 +14067,16 @@
         }
       }
     },
+    "Let the team know you're available, from your profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dal profilo fai sapere al team se sei disponibile"
+          }
+        }
+      }
+    },
     "License" : {
       "localizations" : {
         "it" : {
@@ -14185,6 +14479,16 @@
         }
       }
     },
+    "Lockout/tagout (LOTO) confirmation" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conferma di lockout/tagout (LOTO)"
+          }
+        }
+      }
+    },
     "Log" : {
       "localizations" : {
         "it" : {
@@ -14459,6 +14763,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Macchina"
+          }
+        }
+      }
+    },
+    "Machines, their details and downtime" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Macchine, dettagli e fermi"
           }
         }
       }
@@ -16182,6 +16496,16 @@
         }
       }
     },
+    "No description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna descrizione"
+          }
+        }
+      }
+    },
     "No details yet." : {
       "localizations" : {
         "it" : {
@@ -16474,6 +16798,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ancora nessun messaggio."
+          }
+        }
+      }
+    },
+    "No network in the plant? Keep working: your changes stay on the phone and are sent as soon as you're back online." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niente rete in reparto? Continua a lavorare: le modifiche restano sul telefono e partono appena torni online."
           }
         }
       }
@@ -18144,6 +18478,26 @@
         }
       }
     },
+    "Only the selected fields are written to the alarm." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo i campi selezionati vengono scritti nell'allarme."
+          }
+        }
+      }
+    },
+    "Only the selected parts are written to the plan." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nel piano si scrivono solo le parti scelte."
+          }
+        }
+      }
+    },
     "Open" : {
       "localizations" : {
         "en" : {
@@ -18749,6 +19103,16 @@
         }
       }
     },
+    "Orders to your vendors" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli ordini ai fornitori"
+          }
+        }
+      }
+    },
     "Organization" : {
       "localizations" : {
         "it" : {
@@ -19009,6 +19373,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pagina %lld"
+          }
+        }
+      }
+    },
+    "Page %lld of %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pagina %1$lld di %2$lld"
           }
         }
       }
@@ -19462,6 +19836,16 @@
         }
       }
     },
+    "Photos on each step" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto su ogni passo"
+          }
+        }
+      }
+    },
     "Photos upload when you mark the step." : {
       "localizations" : {
         "en" : {
@@ -19568,6 +19952,16 @@
         }
       }
     },
+    "Pinned and recent conversations in the sidebar" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conversazioni fissate e recenti nella sidebar"
+          }
+        }
+      }
+    },
     "Pipeline run" : {
       "localizations" : {
         "it" : {
@@ -19584,6 +19978,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Piano"
+          }
+        }
+      }
+    },
+    "Plan the work and follow it until it's done." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pianifica il lavoro e seguilo fino alla fine."
           }
         }
       }
@@ -19854,6 +20258,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preventiva"
+          }
+        }
+      }
+    },
+    "Preventive maintenance plans" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I piani di manutenzione preventiva"
           }
         }
       }
@@ -20435,6 +20849,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In coda"
+          }
+        }
+      }
+    },
+    "Quick, secure access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso rapido e sicuro"
           }
         }
       }
@@ -22502,6 +22926,16 @@
         }
       }
     },
+    "Saved widgets with today's data" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widget salvati con i dati di oggi"
+          }
+        }
+      }
+    },
     "Saving" : {
       "localizations" : {
         "it" : {
@@ -22574,6 +23008,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gli scenari compaiono man mano che Aria gestisce allarmi e procedure. Esegui un backfill per ricavarli dalle sessioni passate."
+          }
+        }
+      }
+    },
+    "Scenarios, session reviews and procedure closures" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scenari, revisione delle sessioni e chiusure di procedura"
           }
         }
       }
@@ -22880,6 +23324,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vedi modifiche"
+          }
+        }
+      }
+    },
+    "See how the plant, and Aria, are doing." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda come vanno l'impianto e Aria."
           }
         }
       }
@@ -23292,6 +23746,16 @@
         }
       }
     },
+    "Set up the company and the people who work in it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura l'azienda e le persone che ci lavorano."
+          }
+        }
+      }
+    },
     "Settings" : {
       "localizations" : {
         "en" : {
@@ -23671,6 +24135,26 @@
         }
       }
     },
+    "Sign in with an email link, locked with Face ID" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso con un link via email, protetto da Face ID"
+          }
+        }
+      }
+    },
+    "Sign in with the link we email you, no password needed. Face ID locks the app whenever you leave it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entri con il link che ti mandiamo via email, senza password. Face ID blocca l'app ogni volta che la lasci."
+          }
+        }
+      }
+    },
     "Sign-in" : {
       "localizations" : {
         "en" : {
@@ -23847,6 +24331,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skill che installa (%lld)"
+          }
+        }
+      }
+    },
+    "Skip" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salta"
           }
         }
       }
@@ -24147,6 +24641,16 @@
         }
       }
     },
+    "Start a voice conversation and keep your hands on the job: Aria listens and answers out loud." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia una conversazione a voce e tieni le mani sul lavoro: Aria ascolta e ti risponde a voce."
+          }
+        }
+      }
+    },
     "Start inspection" : {
       "localizations" : {
         "it" : {
@@ -24409,6 +24913,16 @@
         }
       }
     },
+    "Step-by-step procedures" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procedure passo passo"
+          }
+        }
+      }
+    },
     "steps" : {
       "localizations" : {
         "it" : {
@@ -24549,6 +25063,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giacenza"
+          }
+        }
+      }
+    },
+    "Stock and low-stock warnings" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Giacenze e avvisi di scorta bassa"
           }
         }
       }
@@ -24863,6 +25387,16 @@
         }
       }
     },
+    "Suggestions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggerimenti"
+          }
+        }
+      }
+    },
     "Summarize" : {
       "localizations" : {
         "it" : {
@@ -25111,6 +25645,16 @@
         }
       }
     },
+    "Talk hands-free" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parla a mani libere"
+          }
+        }
+      }
+    },
     "Tap + to add the first category." : {
       "localizations" : {
         "it" : {
@@ -25259,6 +25803,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I task compaiono qui dopo che il telefono è stato online almeno una volta."
+          }
+        }
+      }
+    },
+    "Tasks lists the work orders assigned to you and Calendar shows them day by day. Open one and work through its steps." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Attività trovi gli ordini di lavoro assegnati a te, in Calendario li vedi giorno per giorno. Aprine uno e completa i passi."
+          }
+        }
+      }
+    },
+    "Teach Aria how your plant works and let it work for you." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insegna ad Aria come funziona il tuo impianto e lascia che lavori per te."
           }
         }
       }
@@ -25565,12 +26129,32 @@
         }
       }
     },
+    "The assistant proposes the changes: you choose which ones to apply." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente propone le modifiche: scegli tu quali applicare."
+          }
+        }
+      }
+    },
     "The assistant returned an empty answer." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'assistente ha restituito una risposta vuota."
+          }
+        }
+      }
+    },
+    "The categories that keep your data in order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le categorie che tengono in ordine i dati"
           }
         }
       }
@@ -26418,6 +27002,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutto il documento"
+          }
+        }
+      }
+    },
+    "The whole platform, on your phone" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutta la piattaforma, sul telefono"
+          }
+        }
+      }
+    },
+    "The whole platform: documents, agents, assets, reports and team." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutta la piattaforma: documenti, agenti, asset, report e team."
+          }
+        }
+      }
+    },
+    "The work in columns, like a board" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il lavoro in colonne, come su una lavagna"
           }
         }
       }
@@ -27808,6 +28422,16 @@
         }
       }
     },
+    "Type or dictate" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi o detta"
+          }
+        }
+      }
+    },
     "Type your answer…" : {
       "localizations" : {
         "it" : {
@@ -28462,6 +29086,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Caricamento non riuscito: %@"
+          }
+        }
+      }
+    },
+    "Upload manuals and procedures for Aria to read" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carica manuali e procedure da far leggere ad Aria"
           }
         }
       }
@@ -29307,6 +29941,16 @@
         }
       }
     },
+    "Welcome to AriaPLT Mobile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ti diamo il benvenuto in AriaPLT Mobile"
+          }
+        }
+      }
+    },
     "What are we working on?" : {
       "localizations" : {
         "en" : {
@@ -29329,6 +29973,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cosa può fare Aria su questa macchina"
+          }
+        }
+      }
+    },
+    "What Aria has learned from the field, to review" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quello che Aria ha imparato dal campo, da rivedere"
           }
         }
       }
@@ -29563,6 +30217,16 @@
         }
       }
     },
+    "What you manage on AriaPLT web is here too, grouped in the sidebar as on the web. You only see what your role allows." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quello che gestisci su AriaPLT web è anche qui, diviso nella sidebar come sulla web. Vedi solo quello che il tuo ruolo consente."
+          }
+        }
+      }
+    },
     "What's happening on the plant?" : {
       "localizations" : {
         "en" : {
@@ -29647,6 +30311,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quando o dove vale"
+          }
+        }
+      }
+    },
+    "When you're done, Aria writes the report and files the work order, in MaintainX too if your company uses it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando hai finito, Aria scrive il report e registra l'ordine di lavoro, anche in MaintainX se la tua azienda lo usa."
           }
         }
       }
@@ -29786,6 +30460,16 @@
         }
       }
     },
+    "Who are you? We'll show you what you can do with the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi sei? Ti mostriamo cosa puoi fare con l'app."
+          }
+        }
+      }
+    },
     "Who does it, and when?" : {
       "localizations" : {
         "it" : {
@@ -29802,6 +30486,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chi configura"
+          }
+        }
+      }
+    },
+    "Who uses the web platform" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi usa la piattaforma web"
           }
         }
       }
@@ -30408,6 +31102,16 @@
         }
       }
     },
+    "You can see this tour again from your profile." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi rivedere questa presentazione dal tuo profilo."
+          }
+        }
+      }
+    },
     "You haven't connected your account yet." : {
       "localizations" : {
         "it" : {
@@ -30532,12 +31236,32 @@
         }
       }
     },
+    "Your jobs" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi lavori"
+          }
+        }
+      }
+    },
     "Your outcome replaces Aria's verdict and updates the scenario's counts." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo esito sostituisce il verdetto di Aria e aggiorna i conteggi dello scenario."
+          }
+        }
+      }
+    },
+    "Your progress is saved as you go" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I progressi restano salvati mentre lavori"
           }
         }
       }
@@ -30764,6 +31488,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo ruolo non consente questa operazione. Chiedi a un owner o admin dell'azienda."
+          }
+        }
+      }
+    },
+    "Your sites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I tuoi stabilimenti"
+          }
+        }
+      }
+    },
+    "Your suppliers' details" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'anagrafica dei fornitori"
           }
         }
       }
