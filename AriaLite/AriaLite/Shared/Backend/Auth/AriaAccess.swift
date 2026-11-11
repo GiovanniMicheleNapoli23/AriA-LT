@@ -177,6 +177,26 @@ nonisolated struct AriaRights: Sendable, Equatable {
         }
     }
 
+    /// Eliminare un asset, un allarme, un ricambio o un piano vuole quello che servirebbe a rifiutarlo (`reject`, più
+    /// `unapprove` se è approvato); niente oltre la sezione se è già rifiutato.
+    func canDelete(stored: String, in section: AriaSection) -> Bool {
+        has(section) && canMove(from: stored, to: "rejected", in: section)
+    }
+
+    /// Portare un lavoro da `from` (`nil`: lo si sta creando) a `to`. Il ciclo di vita prima (409 qualunque sia il
+    /// ruolo): un ordine verificato o annullato esce solo verso "proposed", con `reopen`; uno completato non si
+    /// annulla. Poi l'azione: "completed" `complete`, "verified" `verify`, "cancelled" `cancel`; il resto nessuna.
+    func canMoveWorkOrder(from: String?, to: String) -> Bool {
+        guard from != to else { return true }
+        if from == "verified" || from == "cancelled" { return to == "proposed" && can(.reopen, in: .workOrders) }
+        switch to {
+        case "completed": return can(.complete, in: .workOrders)
+        case "verified": return can(.verify, in: .workOrders)
+        case "cancelled": return from != "completed" && can(.cancel, in: .workOrders)
+        default: return true
+        }
+    }
+
     /// Eliminare un lavoro vuole quello che serve ad annullarlo: niente di più se è già annullato.
     func canDeleteWorkOrder(status: String) -> Bool {
         status == "cancelled" || can(.cancel, in: .workOrders)

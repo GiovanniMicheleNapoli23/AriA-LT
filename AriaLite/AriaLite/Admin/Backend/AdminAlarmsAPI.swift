@@ -42,6 +42,11 @@ nonisolated struct AdminAlarmsAPI: Sendable {
         let _: AriaJSON = try await api.call(.post("\(alarms)/bulk-approve", body: AdminAlarmBulkApproveBody(ids: ids)))
     }
 
+    /// DELETE /v1/alarms/{id}: la risposta non serve.
+    func delete(id: String) async throws {
+        let _: AriaNoContent = try await api.call(AriaEndpoint<AriaNoContent>.delete("\(alarms)/\(id)").snakeCased())
+    }
+
     /// POST /v1/agents/diagnostic.
     func diagnose(_ body: AdminAlarmDiagnosticRequest) async throws -> AdminAlarmDiagnosis {
         try await api.call(.post("v1/agents/diagnostic", body: body).snakeCased())

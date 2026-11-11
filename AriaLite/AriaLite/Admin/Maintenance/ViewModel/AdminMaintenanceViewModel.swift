@@ -182,11 +182,18 @@ final class AdminMaintenanceViewModel {
         if plan.status == nil || plan.status == statusFilter.rawValue { plans.append(plan) }
     }
 
+    /// Un piano eliminato dal dettaglio: esce dalla lista.
+    func remove(_ plan: AdminMaintenancePlan) {
+        plans.removeAll { $0.id == plan.id }
+    }
+
     /// `plant_id` è obbligatorio alla creazione.
     var canCreate: Bool { backend.activePlantId != nil || !backend.plants.isEmpty }
 
     func makeDetailViewModel(for plan: AdminMaintenancePlan) -> AdminMaintenanceDetailViewModel {
-        AdminMaintenanceDetailViewModel(backend: backend, plan: plan) { [weak self] in self?.apply($0) }
+        AdminMaintenanceDetailViewModel(backend: backend, plan: plan,
+                                        onChange: { [weak self] in self?.apply($0) },
+                                        onDelete: { [weak self] in self?.remove($0) })
     }
 
     func makeFormViewModel() -> AdminMaintenanceFormViewModel {

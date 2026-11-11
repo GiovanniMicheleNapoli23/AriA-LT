@@ -68,6 +68,8 @@ final class AriaAgentChat {
     private(set) var factTranslations: [String: String] = [:]
 
     @ObservationIgnored private var streamTask: Task<Void, Never>?
+    /// Lo stato dei piani di riassegnazione, per messaggio e artifact: la lista pigra ricrea le viste, loro restano.
+    @ObservationIgnored private var reassignmentPlans: [String: AriaReassignmentPlanViewModel] = [:]
     @ObservationIgnored private let backend: AriaBackend
     /// Contesto locale (work order / step in manutenzione): viaggia col primo turno.
     @ObservationIgnored private let context: String?
@@ -288,12 +290,23 @@ final class AriaAgentChat {
         send(question, requestId: messages[index].errorIsOffline ? messages[index].requestId : nil)
     }
 
+    // MARK: - Piani di riassegnazione
+
+    func reassignmentPlan(messageId: String, artifact: AriaArtifact) -> AriaReassignmentPlanViewModel {
+        let key = "\(messageId)#\(artifact.id)"
+        if let model = reassignmentPlans[key] { return model }
+        let model = AriaReassignmentPlanViewModel(plan: AriaReassignmentPlan(data: artifact.data), backend: backend)
+        reassignmentPlans[key] = model
+        return model
+    }
+
     // MARK: - Nuova conversazione / storico
 
     func newConversation() {
         detach()
         sessionId = AriaNanoID.make()
         messages = []
+        reassignmentPlans = [:]
         contextItems = []
         resetTaskProgress()
         answeredElicitations = []
@@ -318,6 +331,7 @@ final class AriaAgentChat {
         detach()
         self.sessionId = sessionId
         messages = []
+        reassignmentPlans = [:]
         contextItems = []
         resetSessionTools()
         resetTaskProgress()

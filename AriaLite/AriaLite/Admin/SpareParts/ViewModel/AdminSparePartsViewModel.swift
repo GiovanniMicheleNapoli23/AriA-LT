@@ -187,6 +187,12 @@ final class AdminSparePartsViewModel {
         }
     }
 
+    /// Un ricambio eliminato: esce dall'elenco e dalla scorta bassa.
+    func didDelete(id: String) {
+        allParts.removeAll { $0.id == id }
+        lowStockParts.removeAll { $0.id == id }
+    }
+
     /// Un ricambio modificato (modulo o quantità): si aggiorna dov'è; entra o esce dalla scorta bassa.
     func didSave(_ part: AdminSparePart) {
         if let index = allParts.firstIndex(where: { $0.id == part.id }) { allParts[index] = part }

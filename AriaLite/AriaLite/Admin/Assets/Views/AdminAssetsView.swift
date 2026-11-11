@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Gli asset dello stabilimento, come la pagina /assets della web: filtri (stato, tipo, zona), ricerca,
-//  trascina per aggiornare, "+" per un asset nuovo. Il dettaglio è in AdminAssetDetailView.
+//  trascina per aggiornare, "+" per un asset nuovo. "Select" sulle bozze permette di approvarne più d'una
+//  insieme (con conferma). Il dettaglio è in AdminAssetDetailView.
 //
 
 import SwiftUI
@@ -22,6 +23,7 @@ struct AdminAssetsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     filters
                     errorPill
+                    notice
                     content
                 }
                 .padding(.top, 4)
@@ -37,11 +39,32 @@ struct AdminAssetsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isSelecting {
+                        Button("Done") { withAnimation(.snappy) { viewModel.endSelecting() } }
+                    } else if viewModel.canSelect {
+                        Button("Select") { withAnimation(.snappy) { viewModel.startSelecting() } }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("New asset", systemImage: "plus") { isCreating = true }
-                        .disabled(!viewModel.canCreate)
+                        .disabled(!viewModel.canCreate || viewModel.isSelecting)
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Tag, name, manufacturer, model"))
+            .ariaBottomBar {
+                if viewModel.isSelecting { AdminAssetSelectionBar(viewModel: viewModel) }
+            }
+            .alert(viewModel.approveConfirmationTitle, isPresented: $viewModel.showsApproveConfirmation) {
+                Button("Approve") { Task { await viewModel.approveSelected() } }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(verbatim: viewModel.approveConfirmationMessage)
+            }
+            .alert("Couldn't approve the assets", isPresented: $viewModel.isShowingApproveError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(verbatim: viewModel.approveError ?? "")
+            }
             .sheet(isPresented: $isCreating) {
                 AdminAssetFormView(viewModel: viewModel.makeFormViewModel()) { created in
                     viewModel.apply(created)
@@ -143,11 +166,8 @@ struct AdminAssetsView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
             ForEach(viewModel.visibleAssets) { asset in
-                NavigationLink(value: asset) {
-                    AdminAssetRow(asset: asset)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
+                row(asset)
+                    .padding(.horizontal, 20)
             }
             if let updated = viewModel.lastUpdated {
                 Text("Updated \(updated.formatted(date: .omitted, time: .shortened))")
@@ -156,6 +176,35 @@ struct AdminAssetsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 12)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func row(_ asset: AdminAsset) -> some View {
+        if viewModel.isSelecting {
+            Button { viewModel.toggle(asset) } label: {
+                AdminAssetRow(asset: asset, isSelected: viewModel.selection.contains(asset.id))
+            }
+            .buttonStyle(.plain)
+        } else {
+            NavigationLink(value: asset) {
+                AdminAssetRow(asset: asset)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// L'esito dell'ultima approvazione in blocco.
+    @ViewBuilder
+    private var notice: some View {
+        if let notice = viewModel.notice {
+            Label(notice, systemImage: "checkmark.circle.fill")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.green)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .ariaGlass(in: Capsule())
+                .frame(maxWidth: .infinity)
         }
     }
 

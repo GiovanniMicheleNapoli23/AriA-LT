@@ -97,12 +97,52 @@
         }
       }
     },
+    "“%@” will be removed from your alarms. This can't be undone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” sarà rimosso dai tuoi allarmi. L'operazione non si può annullare."
+          }
+        }
+      }
+    },
+    "“%@” will be removed from your assets. This can't be undone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” verrà rimosso dai tuoi asset. L'operazione non si può annullare."
+          }
+        }
+      }
+    },
+    "“%@” will be removed from your spare parts. This can't be undone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” verrà rimosso dai tuoi ricambi. L'operazione non si può annullare."
+          }
+        }
+      }
+    },
     "“%@” will be removed from your vendors. This can't be undone." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "“%@” sarà rimosso dai tuoi fornitori. L'operazione non si può annullare."
+          }
+        }
+      }
+    },
+    "“%@” will be removed, with its history. This can't be undone." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” verrà rimosso, insieme al suo storico. L'operazione non si può annullare."
           }
         }
       }
@@ -2110,6 +2150,7 @@
       }
     },
     "%lld. %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -2295,12 +2336,32 @@
         }
       }
     },
+    "99+" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "99+"
+          }
+        }
+      }
+    },
     "A chain that runs on a schedule or a plant event." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una catena che parte a orario o su un evento d'impianto."
+          }
+        }
+      }
+    },
+    "A more logical, efficient order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un ordine più logico ed efficiente"
           }
         }
       }
@@ -2411,6 +2472,16 @@
         }
       }
     },
+    "A whole new procedure, in place of the current one" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una procedura tutta nuova, al posto di quella attuale"
+          }
+        }
+      }
+    },
     "A whole persona: rules, vocabulary and the skills of a role." : {
       "localizations" : {
         "it" : {
@@ -2437,6 +2508,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Piano per le assenze"
+          }
+        }
+      }
+    },
+    "Accept" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accetta"
           }
         }
       }
@@ -2972,6 +3053,7 @@
       }
     },
     "Add what the alarm is missing" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -3355,6 +3437,26 @@
         }
       }
     },
+    "Alarm events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eventi di allarme"
+          }
+        }
+      }
+    },
+    "Alarm events you've marked as read show up here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli eventi di allarme che hai segnato come letti compaiono qui."
+          }
+        }
+      }
+    },
     "Alarm raised" : {
       "localizations" : {
         "it" : {
@@ -3523,6 +3625,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti i passi registrati"
+          }
+        }
+      }
+    },
+    "All suggestions dismissed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti i suggerimenti sono stati scartati"
           }
         }
       }
@@ -3973,6 +4085,26 @@
         }
       }
     },
+    "Applied: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applicati: %lld"
+          }
+        }
+      }
+    },
+    "Applied: %lld, failed: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applicati: %lld, non riusciti: %lld"
+          }
+        }
+      }
+    },
     "Apply" : {
       "localizations" : {
         "it" : {
@@ -3993,7 +4125,18 @@
         }
       }
     },
+    "Apply all (%lld)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applica tutto (%lld)"
+          }
+        }
+      }
+    },
     "Apply selected changes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -4099,7 +4242,18 @@
         }
       }
     },
+    "Approve the selected assets?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approvare gli asset selezionati?"
+          }
+        }
+      }
+    },
     "Approve this alarm to add it to the knowledge base the assistant draws on." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -4110,11 +4264,22 @@
       }
     },
     "Approve this alarm?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approvare questo allarme?"
+          }
+        }
+      }
+    },
+    "Approve this asset to add it to your plant's asset list." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva questo asset per aggiungerlo all'elenco degli asset del tuo stabilimento."
           }
         }
       }
@@ -4125,6 +4290,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approvare questo ordine?"
+          }
+        }
+      }
+    },
+    "Approve this plan to make it active, or reject it if it isn't right." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva questo piano per renderlo attivo, oppure rifiutalo se non va bene."
+          }
+        }
+      }
+    },
+    "Approve this spare part to make it available to work orders." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva questo ricambio per renderlo disponibile agli ordini di lavoro."
           }
         }
       }
@@ -5007,7 +5192,18 @@
         }
       }
     },
+    "Ask something else" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiedi altro"
+          }
+        }
+      }
+    },
     "Ask something specific" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5048,6 +5244,7 @@
       }
     },
     "Asking the assistant…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5063,6 +5260,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiede prima di eseguire"
+          }
+        }
+      }
+    },
+    "Asks the assistant for a proposal" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiede una proposta all'assistente"
           }
         }
       }
@@ -5129,6 +5336,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asset"
+          }
+        }
+      }
+    },
+    "Assets approved: %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asset approvati: %lld"
           }
         }
       }
@@ -5523,6 +5740,16 @@
         }
       }
     },
+    "Back to draft" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torna in bozza"
+          }
+        }
+      }
+    },
     "Backfill complete" : {
       "localizations" : {
         "it" : {
@@ -5605,6 +5832,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prompt di base"
+          }
+        }
+      }
+    },
+    "Based on the last %lld days" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basato sugli ultimi %lld giorni"
           }
         }
       }
@@ -5953,6 +6190,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile caricare i prompt degli agenti"
+          }
+        }
+      }
+    },
+    "Can't load alarm events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare gli eventi di allarme"
           }
         }
       }
@@ -6886,6 +7133,7 @@
       }
     },
     "Choose asset" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -6957,6 +7205,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scegli cosa può fare Aria in questo sistema. Lo approvi nel browser."
+          }
+        }
+      }
+    },
+    "Choose what the assistant should do with this alarm. Nothing changes until you apply its proposal." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli cosa deve fare l'assistente con questo allarme. Non cambia niente finché non applichi la sua proposta."
+          }
+        }
+      }
+    },
+    "Choose what the assistant should do with this plan. Nothing changes until you apply its proposal." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli cosa deve fare l'assistente con questo piano. Non cambia nulla finché non applichi la sua proposta."
           }
         }
       }
@@ -7087,6 +7355,16 @@
         }
       }
     },
+    "Clear steps, in the right order" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passi chiari, nell'ordine giusto"
+          }
+        }
+      }
+    },
     "Clear this step's result?" : {
       "localizations" : {
         "it" : {
@@ -7097,7 +7375,18 @@
         }
       }
     },
+    "Clearer and more precise" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più chiara e precisa"
+          }
+        }
+      }
+    },
     "Clearer description, causes and steps" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7653,6 +7942,16 @@
         }
       }
     },
+    "Computed %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calcolato il %@"
+          }
+        }
+      }
+    },
     "Computing analytics" : {
       "localizations" : {
         "en" : {
@@ -8068,6 +8367,16 @@
         }
       }
     },
+    "Connectors we're still building." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connettori a cui stiamo ancora lavorando."
+          }
+        }
+      }
+    },
     "Consumables" : {
       "localizations" : {
         "it" : {
@@ -8383,6 +8692,7 @@
       }
     },
     "Couldn't approve the alarm" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -8398,6 +8708,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile approvare gli allarmi"
+          }
+        }
+      }
+    },
+    "Couldn't approve the assets" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile approvare gli asset"
           }
         }
       }
@@ -8462,6 +8782,26 @@
         }
       }
     },
+    "Couldn't delete the alarm" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare l'allarme"
+          }
+        }
+      }
+    },
+    "Couldn't delete the asset" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare l'asset"
+          }
+        }
+      }
+    },
     "Couldn't delete the category" : {
       "localizations" : {
         "it" : {
@@ -8482,12 +8822,32 @@
         }
       }
     },
+    "Couldn't delete the plan" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare il piano"
+          }
+        }
+      }
+    },
     "Couldn't delete the plant" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile eliminare lo stabilimento"
+          }
+        }
+      }
+    },
+    "Couldn't delete the spare part" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile eliminare il ricambio"
           }
         }
       }
@@ -8618,6 +8978,16 @@
         }
       }
     },
+    "Couldn't reassign %@. Try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile riassegnare %@. Riprova."
+          }
+        }
+      }
+    },
     "Couldn't refresh" : {
       "localizations" : {
         "en" : {
@@ -8720,6 +9090,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile aggiornare il fermo"
+          }
+        }
+      }
+    },
+    "Couldn't update the alarm events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile aggiornare gli eventi di allarme"
           }
         }
       }
@@ -9038,6 +9418,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Credenziale salvata e verificata."
+          }
+        }
+      }
+    },
+    "Critical" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Critico"
           }
         }
       }
@@ -9364,6 +9754,26 @@
         }
       }
     },
+    "Delete this alarm?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo allarme?"
+          }
+        }
+      }
+    },
+    "Delete this asset?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo asset?"
+          }
+        }
+      }
+    },
     "Delete this cost?" : {
       "localizations" : {
         "it" : {
@@ -9434,12 +9844,32 @@
         }
       }
     },
+    "Delete this plan?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo piano?"
+          }
+        }
+      }
+    },
     "Delete this plant?" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eliminare questo stabilimento?"
+          }
+        }
+      }
+    },
+    "Delete this spare part?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare questo ricambio?"
           }
         }
       }
@@ -9624,6 +10054,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descrizione (facoltativa)"
+          }
+        }
+      }
+    },
+    "Description, typical causes and resolution steps together." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descrizione, cause tipiche e passi di risoluzione insieme."
           }
         }
       }
@@ -10369,6 +10809,7 @@
       }
     },
     "e.g. Monthly bearing check" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -11226,6 +11667,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti i controlli suggeriti sono già nella checklist."
+          }
+        }
+      }
+    },
+    "Every unread event of the current plant will be marked as read." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti gli eventi non letti dell'impianto attuale saranno segnati come letti."
           }
         }
       }
@@ -12397,6 +12848,16 @@
         }
       }
     },
+    "Grade %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voto %@"
+          }
+        }
+      }
+    },
     "Groups of people" : {
       "localizations" : {
         "it" : {
@@ -12427,6 +12888,16 @@
         }
       }
     },
+    "Health score" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Punteggio di salute"
+          }
+        }
+      }
+    },
     "Helpful" : {
       "localizations" : {
         "it" : {
@@ -12443,6 +12914,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Risposte utili"
+          }
+        }
+      }
+    },
+    "Here is the proposal: keep the fields you want and tap Apply." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ecco la proposta: tieni i campi che vuoi e tocca Applica."
+          }
+        }
+      }
+    },
+    "Here is the proposal: keep the parts you want and tap Apply." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ecco la proposta: tieni le parti che vuoi e tocca Applica."
           }
         }
       }
@@ -12943,6 +13434,16 @@
         }
       }
     },
+    "Improve everything" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Migliora tutto"
+          }
+        }
+      }
+    },
     "Improve one step" : {
       "localizations" : {
         "it" : {
@@ -13057,6 +13558,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nell'email, tieni premuto il pulsante di accesso, scegli Copia link e incollalo qui. Non aprirlo nel browser: il link funziona una volta sola e scade dopo 15 minuti."
+          }
+        }
+      }
+    },
+    "In use. Unapprove sends it back to draft; Reject takes it out of use." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In uso. Annulla approvazione lo rimanda in bozza; Rifiuta lo toglie dall'uso."
           }
         }
       }
@@ -13499,6 +14010,16 @@
         }
       }
     },
+    "It goes back to draft and waits for review." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Torna in bozza e resta in attesa di revisione."
+          }
+        }
+      }
+    },
     "It is not safe to continue right now" : {
       "localizations" : {
         "en" : {
@@ -13536,6 +14057,7 @@
       }
     },
     "It will be added to the knowledge base the assistant draws on." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -13585,12 +14107,33 @@
         }
       }
     },
+    "It will no longer be used by the assistant until it is approved again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente non lo userà più finché non verrà approvato di nuovo."
+          }
+        }
+      }
+    },
     "It won't be added to the plant's knowledge." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non verrà aggiunto alla conoscenza dello stabilimento."
+          }
+        }
+      }
+    },
+    "It won't generate work orders." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non genererà ordini di lavoro."
           }
         }
       }
@@ -14981,12 +15524,32 @@
         }
       }
     },
+    "Mark all alarm events as read?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segnare tutti gli eventi di allarme come letti?"
+          }
+        }
+      }
+    },
     "Mark all as read" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Segna tutte come lette"
+          }
+        }
+      }
+    },
+    "Mark all read" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segna tutti come letti"
           }
         }
       }
@@ -15515,6 +16078,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Altre azioni"
+          }
+        }
+      }
+    },
+    "More complete and specific" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più complete e specifiche"
           }
         }
       }
@@ -16292,6 +16865,16 @@
         }
       }
     },
+    "No alarm events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun evento di allarme"
+          }
+        }
+      }
+    },
     "No alarm has the status “%@”." : {
       "localizations" : {
         "it" : {
@@ -16608,6 +17191,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ancora nessuna risposta valutata."
+          }
+        }
+      }
+    },
+    "No health score yet" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Punteggio di salute non ancora calcolato"
           }
         }
       }
@@ -17088,6 +17681,16 @@
         }
       }
     },
+    "No read events" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun evento letto"
+          }
+        }
+      }
+    },
     "No results" : {
       "localizations" : {
         "en" : {
@@ -17494,6 +18097,16 @@
         }
       }
     },
+    "No work order needs to change team right now." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Per ora nessun ordine di lavoro deve cambiare squadra."
+          }
+        }
+      }
+    },
     "No work orders" : {
       "localizations" : {
         "it" : {
@@ -17778,6 +18391,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non presente nei documenti"
+          }
+        }
+      }
+    },
+    "Not in use. Back to draft reopens it for review; Approve puts it back in use." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non in uso. Torna in bozza lo riapre per la revisione; Approva lo rimette in uso."
           }
         }
       }
@@ -18403,6 +19026,7 @@
       }
     },
     "One step" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -19005,6 +19629,16 @@
         }
       }
     },
+    "Or ask in your own words" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oppure chiedilo con parole tue"
+          }
+        }
+      }
+    },
     "Or paste the link here" : {
       "localizations" : {
         "en" : {
@@ -19149,6 +19783,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Altri connettori"
+          }
+        }
+      }
+    },
+    "Other requests" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altre richieste"
           }
         }
       }
@@ -21275,6 +21919,16 @@
         }
       }
     },
+    "Recommendations" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raccomandazioni"
+          }
+        }
+      }
+    },
     "Recommended actions" : {
       "localizations" : {
         "en" : {
@@ -21379,6 +22033,16 @@
         }
       }
     },
+    "Refresh health score" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricalcola il punteggio di salute"
+          }
+        }
+      }
+    },
     "Refresh status" : {
       "localizations" : {
         "it" : {
@@ -21467,6 +22131,27 @@
         }
       }
     },
+    "Reject it?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifiutarlo?"
+          }
+        }
+      }
+    },
+    "Reject this alarm?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifiutare questo allarme?"
+          }
+        }
+      }
+    },
     "Reject this fact?" : {
       "localizations" : {
         "it" : {
@@ -21493,6 +22178,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rifiutare questo ordine?"
+          }
+        }
+      }
+    },
+    "Reject this plan?" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifiutare questo piano?"
           }
         }
       }
@@ -21529,6 +22225,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Asset correlati"
+          }
+        }
+      }
+    },
+    "Related assets: tags separated by commas." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Asset correlati: tag separati da virgole."
           }
         }
       }
@@ -21771,6 +22477,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riordina"
+          }
+        }
+      }
+    },
+    "Reorder the steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riordina i passi"
           }
         }
       }
@@ -22437,6 +23153,26 @@
         }
       }
     },
+    "Rewrite the description" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrivi la descrizione"
+          }
+        }
+      }
+    },
+    "Rewrite the resolution steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrivi i passi di risoluzione"
+          }
+        }
+      }
+    },
     "Rewrite the step you pick" : {
       "localizations" : {
         "it" : {
@@ -22448,11 +23184,42 @@
       }
     },
     "Rewrite the texts in your language" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riscrive i testi nella tua lingua"
+          }
+        }
+      }
+    },
+    "Rewrite the typical causes" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrivi le cause tipiche"
+          }
+        }
+      }
+    },
+    "Rewrites the texts in the chosen language" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riscrive i testi nella lingua scelta"
+          }
+        }
+      }
+    },
+    "Risk factors" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fattori di rischio"
           }
         }
       }
@@ -23048,6 +23815,16 @@
         }
       }
     },
+    "Score %@ out of 100" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Punteggio %@ su 100"
+          }
+        }
+      }
+    },
     "Scroll to the latest message" : {
       "localizations" : {
         "it" : {
@@ -23462,6 +24239,16 @@
         }
       }
     },
+    "Selected: %lld. Approved assets become part of your plant's asset list." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selezionati: %lld. Gli asset approvati entrano nell'elenco degli asset del tuo stabilimento."
+          }
+        }
+      }
+    },
     "Send" : {
       "localizations" : {
         "en" : {
@@ -23782,6 +24569,16 @@
         }
       }
     },
+    "Severity %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gravità %lld"
+          }
+        }
+      }
+    },
     "Share" : {
       "localizations" : {
         "it" : {
@@ -23875,6 +24672,7 @@
       }
     },
     "Shorter and easier to follow" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24203,6 +25001,16 @@
         }
       }
     },
+    "Signals" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segnali"
+          }
+        }
+      }
+    },
     "Signed in %@" : {
       "localizations" : {
         "it" : {
@@ -24230,6 +25038,7 @@
       }
     },
     "Simplify" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24970,6 +25779,7 @@
       }
     },
     "Steps and parts" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25388,6 +26198,7 @@
       }
     },
     "Suggestions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25626,6 +26437,7 @@
       }
     },
     "Tags separated by commas" : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -25843,6 +26655,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bacheca del team"
+          }
+        }
+      }
+    },
+    "Team load" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carico delle squadre"
           }
         }
       }
@@ -26119,12 +26941,32 @@
         }
       }
     },
+    "The assistant couldn't complete the request." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente non è riuscito a completare la richiesta."
+          }
+        }
+      }
+    },
     "The assistant didn't suggest any change." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'assistente non ha suggerito modifiche."
+          }
+        }
+      }
+    },
+    "The assistant doesn't support this request." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente non supporta questa richiesta."
           }
         }
       }
@@ -26145,6 +26987,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'assistente ha restituito una risposta vuota."
+          }
+        }
+      }
+    },
+    "The assistant won't use it." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'assistente non lo userà."
           }
         }
       }
@@ -26549,6 +27402,16 @@
         }
       }
     },
+    "The plant hasn't raised any alarm yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'impianto non ha ancora generato allarmi."
+          }
+        }
+      }
+    },
     "The policy refused this run" : {
       "localizations" : {
         "it" : {
@@ -26663,6 +27526,7 @@
       }
     },
     "The server accepts these actions. Tap one to try it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -26892,6 +27756,16 @@
         }
       }
     },
+    "The teams are balanced" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le squadre sono bilanciate"
+          }
+        }
+      }
+    },
     "The text is split and indexed again, so Aria can cite it in answers. It takes a few minutes." : {
       "localizations" : {
         "it" : {
@@ -27052,6 +27926,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poi"
+          }
+        }
+      }
+    },
+    "There are no unread alarm events." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ci sono eventi di allarme non letti."
           }
         }
       }
@@ -28448,6 +29332,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cause tipiche"
+          }
+        }
+      }
+    },
+    "Unapprove" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla approvazione"
+          }
+        }
+      }
+    },
+    "Unapprove it?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullare l'approvazione?"
           }
         }
       }
@@ -30145,6 +31049,16 @@
         }
       }
     },
+    "What should the assistant do?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa deve fare l'assistente?"
+          }
+        }
+      }
+    },
     "What the operator does, in order." : {
       "localizations" : {
         "it" : {
@@ -30910,6 +31824,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scrivi prima un titolo"
+          }
+        }
+      }
+    },
+    "Write new steps" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrivi nuovi passi"
           }
         }
       }

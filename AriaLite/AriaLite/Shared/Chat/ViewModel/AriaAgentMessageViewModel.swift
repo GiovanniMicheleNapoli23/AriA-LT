@@ -95,11 +95,12 @@ final class AriaAgentMessageViewModel {
     }
 
     /// Le card mandano domande, comandi rapidi e link.
-    func artifactActions(open: @escaping (URL) -> Void) -> AriaArtifactActions {
+    func artifactActions(messageId: String, open: @escaping (URL) -> Void) -> AriaArtifactActions {
         AriaArtifactActions(
             ask: { [chat] in chat.send($0) },
             quick: { [chat] in chat.sendQuick(label: $0, tool: $1, args: $2) },
-            open: { [weak self] path in if let url = self?.url(for: path) { open(url) } }
+            open: { [weak self] path in if let url = self?.url(for: path) { open(url) } },
+            reassignmentPlan: { [chat] in chat.reassignmentPlan(messageId: messageId, artifact: $0) }
         )
     }
 

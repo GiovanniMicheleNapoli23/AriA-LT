@@ -53,6 +53,11 @@ nonisolated struct AdminSparePartsAPI: Sendable {
         try await api.call(.patch("\(parts)/\(id)", body: body).snakeCased())
     }
 
+    /// DELETE /v1/spare-parts/{id}: la risposta non serve.
+    func delete(id: String) async throws {
+        let _: AriaNoContent = try await api.call(AriaEndpoint<AriaNoContent>.delete("\(parts)/\(id)").snakeCased())
+    }
+
     // MARK: Fornitori
 
     /// Tutti i fornitori dell'azienda: un ricambio può avere un fornitore che non è dello stabilimento.

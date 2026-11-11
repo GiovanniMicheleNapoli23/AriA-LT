@@ -119,6 +119,18 @@ final class AdminMaintenanceFormViewModel {
         if let asset, trimmed(zone).isEmpty, let assetZone = asset.zone { zone = assetZone }
     }
 
+    /// La selezione del picker "Asset": "" è nessuno; sceglierne uno passa da `chooseAsset` (che copia la zona).
+    var selectedAssetTag: String {
+        get { assetTag }
+        set { chooseAsset(assetChoices.first { $0.tag == newValue }) }
+    }
+
+    /// Un tag che non è tra le scelte (scritto a mano prima, o di un altro stabilimento) resta scelto finché non si cambia.
+    var unlistedAssetTag: String? {
+        let tag = trimmed(assetTag)
+        return tag.isEmpty || assetChoices.contains { $0.tag == assetTag } ? nil : assetTag
+    }
+
     // MARK: Lettura dei campi
 
     private func trimmed(_ value: String) -> String { value.trimmingCharacters(in: .whitespacesAndNewlines) }

@@ -73,4 +73,10 @@ nonisolated struct AdminAlarm: Decodable, Sendable, Identifiable, Hashable {
         let parts = [zone, category].compactMap { $0 }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
+
+    /// La riga sotto il titolo nella lista: "Codice 1 · PUMP-01 · Zona A · safety".
+    var rowSummary: String {
+        [String(localized: "Code \(code)"), assetTag, placeSummary]
+            .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+    }
 }

@@ -17,6 +17,7 @@ struct AdminMarketplaceView: View {
     @State private var path: [AdminMarketplaceRoute] = []
     @ScaledMetric(relativeTo: .body) private var tileWidth: CGFloat = 160
     @ScaledMetric(relativeTo: .body) private var statWidth: CGFloat = 130
+    @ScaledMetric(relativeTo: .body) private var upcomingWidth: CGFloat = 150
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -224,17 +225,41 @@ struct AdminMarketplaceView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
-                ForEach(shelf.items) { item in
-                    NavigationLink(value: viewModel.route(for: item)) {
-                        AdminMarketplaceItemCard(item: item, ownership: viewModel.ownership(of: item),
-                                                 serverStatus: viewModel.serverStatus(for: item))
+            if !shelf.items.isEmpty || !shelf.extraConnectors.isEmpty {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: tileWidth), spacing: 12)], spacing: 12) {
+                    ForEach(shelf.items) { item in
+                        NavigationLink(value: viewModel.route(for: item)) {
+                            AdminMarketplaceItemCard(item: item, ownership: viewModel.ownership(of: item),
+                                                     serverStatus: viewModel.serverStatus(for: item))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    ForEach(shelf.extraConnectors) { connector in
+                        NavigationLink(value: AdminMarketplaceRoute.connector(connector.provider)) {
+                            AdminConnectorTile(connector: connector)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                ForEach(shelf.extraConnectors) { connector in
-                    NavigationLink(value: AdminMarketplaceRoute.connector(connector.provider)) {
-                        AdminConnectorTile(connector: connector)
+                if !shelf.upcoming.isEmpty {
+                    Label("Coming soon", systemImage: "clock")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                }
+            }
+            upcomingGrid(shelf.upcoming)
+        }
+    }
+
+    /// I connettori "in arrivo": schede compatte, più colonne di quelle normali.
+    @ViewBuilder
+    private func upcomingGrid(_ items: [AdminMarketplaceItem]) -> some View {
+        if !items.isEmpty {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: upcomingWidth), spacing: 8)], spacing: 8) {
+                ForEach(items) { item in
+                    NavigationLink(value: viewModel.route(for: item)) {
+                        AdminMarketplaceUpcomingCard(item: item)
                     }
                     .buttonStyle(.plain)
                 }

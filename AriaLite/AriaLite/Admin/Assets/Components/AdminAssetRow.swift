@@ -4,18 +4,27 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La scheda di un asset nella lista: tag, nome, tipo e zona, stato a destra.
+//  La scheda di un asset nella lista: tag, nome, tipo e zona, stato a destra. Durante la selezione delle
+//  bozze ha un cerchio a sinistra, pieno se la riga è scelta.
 //
 
 import SwiftUI
 
 struct AdminAssetRow: View {
     let asset: AdminAsset
+    /// `nil` fuori dalla selezione; altrimenti se la riga è scelta.
+    var isSelected: Bool?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
+            if let isSelected {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? Color.liteAccent : .secondary)
+                    .accessibilityHidden(true)
+            }
             // Testo enorme: l'icona ruberebbe spazio al nome.
             if !dynamicTypeSize.isAccessibilitySize {
                 AdminAssetTypeIcon(assetType: asset.assetType)
@@ -44,5 +53,6 @@ struct AdminAssetRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+        .accessibilityAddTraits(isSelected == true ? .isSelected : [])
     }
 }

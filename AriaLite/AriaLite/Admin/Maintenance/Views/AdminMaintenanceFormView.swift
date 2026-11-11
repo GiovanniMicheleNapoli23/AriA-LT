@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il foglio per creare o modificare un piano: una sola scroll view di schede (piano, programmazione,
-//  passi, ricambi, descrizione). "Save" sta sempre in alto: va bene anche in orizzontale con la tastiera aperta.
+//  Il foglio per creare o modificare un piano. Un Form di sistema come gli altri moduli (asset, allarme):
+//  piano, dove si trova, programmazione, date, passi, ricambi, descrizione. Tiene il campo attivo sopra la
+//  tastiera anche in orizzontale e "Save" sta sempre in alto.
 //
 
 import SwiftUI
@@ -25,22 +26,26 @@ struct AdminMaintenanceFormView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    identityCard
-                    AdminMaintenanceFormScheduleCard(viewModel: viewModel, focus: $focused)
-                    AdminMaintenanceFormListsCard(viewModel: viewModel, focus: $focused)
-                    if let message = viewModel.errorMessage {
-                        AdminSectionNotice(text: message, isError: true)
-                    } else if let message = viewModel.validationMessage {
-                        AdminSectionNotice(text: message, systemImage: "info.circle")
+            Form {
+                if let message = viewModel.errorMessage {
+                    Section {
+                        Label(message, systemImage: "exclamationmark.triangle.fill")
+                            .font(.footnote)
+                            .foregroundStyle(.red)
                     }
                 }
-                .padding(20)
-                .ariaReadableWidth()
+                plan
+                location
+                AdminMaintenanceFormScheduleSections(viewModel: viewModel, focus: $focused)
+                if let message = viewModel.validationMessage {
+                    Section {
+                        Label(message, systemImage: "info.circle")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .scrollDismissesKeyboard(.interactively)
-            .liteBackground()
             .navigationTitle(viewModel.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -73,51 +78,58 @@ struct AdminMaintenanceFormView: View {
         }
     }
 
-    // MARK: Schede
+    // MARK: Sezioni
 
-    private var identityCard: some View {
-        AdminCard(title: "Plan", systemImage: "calendar.badge.clock") {
-            VStack(alignment: .leading, spacing: 12) {
-                AdminMaintenanceTextField(title: "Name", text: $viewModel.name, prompt: "e.g. Monthly bearing check",
-                                          focus: $focused)
-                AdminMaintenanceTextField(title: "Asset tag", text: $viewModel.assetTag, prompt: "e.g. M-101",
-                                          isMonospaced: true, focus: $focused)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
-                if !viewModel.assetChoices.isEmpty {
-                    AdminMaintenanceMenuRow(title: "Choose asset", value: viewModel.assetTag.isEmpty ? "—" : viewModel.assetTag) {
-                        Button("None") { viewModel.chooseAsset(nil) }
-                        ForEach(viewModel.assetChoices) { asset in
-                            Button("\(asset.tag) · \(asset.name)") { viewModel.chooseAsset(asset) }
-                        }
-                    }
-                }
-                AdminMaintenanceTextField(title: "Related assets", text: $viewModel.relatedAssets,
-                                          prompt: "Tags separated by commas", focus: $focused)
-                    .autocorrectionDisabled()
-                if !viewModel.plants.isEmpty {
-                    AdminMaintenanceMenuRow(title: "Plant", value: plantName) {
-                        Picker("Plant", selection: $viewModel.plantId) {
-                            if viewModel.plantId == nil { Text("Select").tag(String?.none) }
-                            ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
-                        }
-                    }
-                }
-                AdminMaintenanceTextField(title: "Category", text: $viewModel.category, focus: $focused)
-                AdminMaintenanceTextField(title: "Zone", text: $viewModel.zone, focus: $focused)
-                if viewModel.showsStatus {
-                    AdminMaintenanceMenuRow(title: "Status", value: viewModel.statusLabel(viewModel.status)) {
-                        Picker("Status", selection: $viewModel.status) {
-                            ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
-                        }
-                    }
+    private var plan: some View {
+        Section("Plan") {
+            TextField("Name", text: $viewModel.name)
+                .focused($focused)
+            TextField("Category", text: $viewModel.category)
+                .focused($focused)
+            if viewModel.showsStatus {
+                Picker("Status", selection: $viewModel.status) {
+                    ForEach(viewModel.statusOptions, id: \.self) { Text(viewModel.statusLabel($0)).tag($0) }
                 }
             }
         }
+        .tint(Color.liteAccent)
     }
 
-    private var plantName: String {
-        guard let id = viewModel.plantId else { return String(localized: "Select") }
-        return viewModel.plants.first { $0.id == id }?.name ?? id
+    /// Stabilimento prima dell'asset: le scelte dell'asset sono quelle dello stabilimento.
+    /// Senza l'elenco degli asset (niente diritto o niente risposta) il tag si scrive a mano.
+    private var location: some View {
+        Section {
+            if !viewModel.plants.isEmpty {
+                Picker("Plant", selection: $viewModel.plantId) {
+                    if viewModel.plantId == nil { Text("Select").tag(String?.none) }
+                    ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
+                }
+            }
+            if viewModel.assetChoices.isEmpty {
+                TextField("Asset tag", text: $viewModel.assetTag)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .font(.body.monospaced())
+                    .focused($focused)
+            } else {
+                Picker("Asset", selection: $viewModel.selectedAssetTag) {
+                    Text("None").tag("")
+                    if let tag = viewModel.unlistedAssetTag { Text(verbatim: tag).tag(tag) }
+                    ForEach(viewModel.assetChoices) { asset in
+                        Text(verbatim: "\(asset.tag) · \(asset.name)").tag(asset.tag)
+                    }
+                }
+            }
+            TextField("Zone", text: $viewModel.zone)
+                .focused($focused)
+            TextField("Related assets", text: $viewModel.relatedAssets)
+                .autocorrectionDisabled()
+                .focused($focused)
+        } header: {
+            Text("Where")
+        } footer: {
+            Text("Related assets: tags separated by commas.")
+        }
+        .tint(Color.liteAccent)
     }
 }

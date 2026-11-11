@@ -44,7 +44,9 @@ final class AdminTaskboardCreateViewModel: Identifiable {
 
     init(backend: AriaBackend, status: AdminWorkOrderStatus, onCreated: @escaping (AdminWorkOrder) -> Void) {
         self.backend = backend
-        self.status = status
+        // Nascere in una colonna chiusa vuole l'azione di quello stato (`complete`, `verify`, `cancel`): senza, si
+        // parte da Planned.
+        self.status = backend.rights.canMoveWorkOrder(from: nil, to: status.rawValue) ? status : .planned
         self.onCreated = onCreated
     }
 

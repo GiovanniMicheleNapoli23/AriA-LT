@@ -4,9 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  L'intestazione del dettaglio, come quella di un asset: icona, codice e stato, la descrizione come titolo;
-//  sotto, i fatti principali (asset, zona, categoria, pagina HMI) in una griglia con la fiducia
-//  dell'estrazione, e in fondo le date.
+//  L'intestazione del dettaglio: la descrizione come titolo e, su una riga sotto, lo stato e il codice.
+//  Sotto, i fatti principali (asset, zona, categoria, pagina HMI) in una
+//  griglia con la fiducia dell'estrazione, e in fondo le date.
 //
 
 import SwiftUI
@@ -15,20 +15,16 @@ struct AdminAlarmHeader: View {
     let viewModel: AdminAlarmDetailViewModel
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var iconSide: CGFloat = 52
 
     private var alarm: AdminAlarm { viewModel.alarm }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 14) {
-                if !dynamicTypeSize.isAccessibilitySize { icon }
-                VStack(alignment: .leading, spacing: 6) {
-                    codeLine
-                    title
-                }
-                Spacer(minLength: 0)
+            VStack(alignment: .leading, spacing: 8) {
+                title
+                metaLine
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             let facts = viewModel.facts
             if !facts.isEmpty || viewModel.confidenceFraction != nil {
                 factsCard(facts)
@@ -41,27 +37,18 @@ struct AdminAlarmHeader: View {
         }
     }
 
-    private var icon: some View {
-        Image(systemName: "bell.badge")
-            .font(.title2.weight(.semibold))
-            .foregroundStyle(Color.liteAccent)
-            .frame(width: iconSide, height: iconSide)
-            .background(Color.liteAccent.opacity(0.08),
-                        in: RoundedRectangle(cornerRadius: iconSide * 0.28, style: .continuous))
-            .accessibilityHidden(true)
-    }
-
-    private var codeLine: some View {
+    /// Stato e codice su una riga; uno sotto l'altro solo se non ci stanno (testo molto grande).
+    private var metaLine: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) { codeText; AdminAlarmStatusBadge(alarm: alarm) }
-            VStack(alignment: .leading, spacing: 6) { codeText; AdminAlarmStatusBadge(alarm: alarm) }
+            HStack(spacing: 8) { AdminAlarmStatusBadge(alarm: alarm); codeText }
+            VStack(alignment: .leading, spacing: 6) { AdminAlarmStatusBadge(alarm: alarm); codeText }
         }
     }
 
     private var codeText: some View {
-        Text(verbatim: alarm.code)
-            .font(.subheadline.weight(.bold).monospaced())
-            .foregroundStyle(Color.liteAccent)
+        Text("Code \(alarm.code)")
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
             .textSelection(.enabled)
     }
 
@@ -69,11 +56,11 @@ struct AdminAlarmHeader: View {
     private var title: some View {
         if alarm.description.isEmpty {
             Text("No description")
-                .font(.title3.weight(.semibold))
+                .font(.title2.weight(.semibold))
                 .foregroundStyle(.secondary)
         } else {
             Text(verbatim: alarm.description)
-                .font(.title3.weight(.bold))
+                .font(.title2.weight(.bold))
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
         }

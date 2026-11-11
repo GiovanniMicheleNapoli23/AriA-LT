@@ -426,8 +426,10 @@ final class AriaBackend {
             let me: AriaMe = try await api.get("v1/me")
             guard companyId == activeCompanyId else { return }
             let followed = rights.followsRole
+            let changed = me.access != access || me.membership != membership
             membership = me.membership
             access = me.access
+            if changed { traceRights() }
             // La sessione ha cominciato (o smesso) a seguire il ruolo: le funzioni nascoste per un
             // `operation_forbidden` dell'operatore si riprovano con i limiti nuovi.
             if rights.followsRole != followed { unavailableFeatures = [] }
@@ -439,6 +441,15 @@ final class AriaBackend {
             access = nil
             // Il client non si riarma: la stessa versione nuova non fa ripartire una lettura che fallisce.
         }
+    }
+
+    /// Solo DEBUG: sezioni, switch e pulsanti nella console (categoria "rights").
+    private func traceRights() {
+        #if DEBUG
+        let sidebar = AriaSidebarSections.groups(operatorLayout: usesOperatorLayout, rights: rights)
+            .flatMap { $0.items.map { String(localized: $0.title) } }
+        AriaRightsTrace.dump(rights, operatorLayout: usesOperatorLayout, sidebar: sidebar)
+        #endif
     }
 
     /// Un segnale da fuori del client (l'ultimo evento `permission_denied` di uno stream, un errore della chat che

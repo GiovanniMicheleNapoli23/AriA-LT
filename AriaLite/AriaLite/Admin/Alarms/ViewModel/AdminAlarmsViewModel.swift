@@ -48,6 +48,15 @@ final class AdminAlarmsViewModel {
     /// L'esito dell'ultima approvazione, per un avviso in cima all'elenco.
     var notice: String?
 
+    /// L'inbox degli eventi di allarme, creata alla prima richiesta (vedi AdminAlarmEventsViewModel).
+    @ObservationIgnored private var storedEvents: AdminAlarmEventsViewModel?
+    var events: AdminAlarmEventsViewModel {
+        if let storedEvents { return storedEvents }
+        let created = AdminAlarmEventsViewModel(backend: backend)
+        storedEvents = created
+        return created
+    }
+
     init(backend: AriaBackend) {
         self.backend = backend
     }
@@ -67,6 +76,7 @@ final class AdminAlarmsViewModel {
         isApproving = false
         approveError = nil
         notice = nil
+        storedEvents?.reset()
     }
 
     // MARK: - Caricamento
@@ -101,6 +111,7 @@ final class AdminAlarmsViewModel {
         } catch {
             if let failure = AdminAlarmsFailure.from(error, action: .read, backend: backend) { self.failure = failure }
         }
+        Task { await events.refreshUnreadCount() }
     }
 
     // MARK: - Filtri
@@ -149,4 +160,17 @@ final class AdminAlarmsViewModel {
             alarmsByStatus[status]?.append(alarm)
         }
     }
+
+    /// Un allarme eliminato dal dettaglio: esce da ogni elenco (e dalla selezione).
+    func didDelete(id: String) {
+        for status in alarmsByStatus.keys {
+            alarmsByStatus[status]?.removeAll { $0.id == id }
+        }
+        selection.remove(id)
+    }
+}
+
+extension AdminAlarmsViewModel {
+    /// Cambia quando il conteggio dei non letti è da rileggere: azienda o impianto.
+    var inboxKey: String { "\(backend.activeCompanyId ?? "-")|\(backend.activePlantId ?? "-")" }
 }

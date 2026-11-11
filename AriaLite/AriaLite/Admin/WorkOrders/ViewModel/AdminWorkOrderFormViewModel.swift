@@ -70,6 +70,18 @@ final class AdminWorkOrderFormViewModel: Identifiable {
 
     var hasChanges: Bool { draft != original }
 
+    /// Gli stati del selettore: quello di partenza e quelli in cui ciclo di vita e ruolo lasciano portare l'ordine
+    /// (`AriaRights.canMoveWorkOrder`). Creando non c'è uno stato salvato.
+    var statusOptions: [AdminWorkOrderStatus] {
+        let stored = isCreating ? nil : original.status.rawValue
+        return AdminWorkOrderStatus.known.filter {
+            $0 == original.status || backend.rights.canMoveWorkOrder(from: stored, to: $0.rawValue)
+        }
+    }
+
+    /// Con il solo stato di partenza il selettore non serve.
+    var showsStatusPicker: Bool { statusOptions.count > 1 }
+
     // MARK: Controlli
 
     var trimmedTitle: String { draft.title.trimmingCharacters(in: .whitespacesAndNewlines) }

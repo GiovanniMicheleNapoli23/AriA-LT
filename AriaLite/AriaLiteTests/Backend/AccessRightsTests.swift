@@ -114,6 +114,53 @@ extension BackendTests {
             #expect(canCancel.canDeleteWorkOrder(status: "open"))
         }
 
+        @Test func deletingAReviewedRecordNeedsWhatRejectingItWould() throws {
+            let none = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":[]}}"#))
+            #expect(!none.canDelete(stored: "draft", in: .alarms))
+            #expect(none.canDelete(stored: "rejected", in: .alarms), "già rifiutato: basta la sezione")
+            #expect(!none.canDelete(stored: "rejected", in: .assets), "senza la sezione niente")
+
+            let reject = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":["reject"]}}"#))
+            #expect(reject.canDelete(stored: "draft", in: .alarms) && reject.canDelete(stored: "staged", in: .alarms))
+            #expect(!reject.canDelete(stored: "approved", in: .alarms), "un approvato vuole anche unapprove")
+
+            let both = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":["reject","unapprove"]}}"#))
+            #expect(both.canDelete(stored: "approved", in: .alarms))
+            #expect(AriaRights.unrestricted.canDelete(stored: "approved", in: .maintenance))
+        }
+
+        @Test func reviewDecisionsFollowTheStoredStatusAndTheSwitches() throws {
+            let all = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":["approve","reject","unapprove"]}}"#))
+            #expect(AdminReviewAction.available(from: "draft", in: .alarms, rights: all) == [.reject, .approve])
+            #expect(AdminReviewAction.available(from: "staged", in: .alarms, rights: all) == [.reject, .approve])
+            #expect(AdminReviewAction.available(from: "approved", in: .alarms, rights: all) == [.reject, .unapprove])
+            #expect(AdminReviewAction.available(from: "rejected", in: .alarms, rights: all) == [.backToDraft, .approve])
+
+            let reject = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":["reject"]}}"#))
+            #expect(AdminReviewAction.available(from: "approved", in: .alarms, rights: reject).isEmpty,
+                    "da approvato Reject vuole anche unapprove")
+            #expect(AdminReviewAction.available(from: "rejected", in: .alarms, rights: reject) == [.backToDraft])
+
+            let none = try Self.rights(Self.access(sections: #"{"alarms":{"granted":true,"actions":[]}}"#))
+            #expect(AdminReviewAction.available(from: "draft", in: .alarms, rights: none).isEmpty)
+            #expect(AdminReviewAction.available(from: "approved", in: .assets, rights: .unrestricted) == [.reject, .unapprove])
+        }
+
+        @Test func workOrderMovesFollowTheLifecycleThenTheSwitch() throws {
+            let none = try Self.rights(Self.access(sections: #"{"work_orders":{"granted":true,"actions":[]}}"#))
+            #expect(none.canMoveWorkOrder(from: "completed", to: "planned"), "da completato basta la sezione")
+            #expect(!none.canMoveWorkOrder(from: "assigned", to: "completed"))
+            #expect(none.canMoveWorkOrder(from: nil, to: "planned"))
+            #expect(!none.canMoveWorkOrder(from: nil, to: "verified"), "nascere verificato vuole verify")
+
+            let all = try Self.rights(Self.access(sections: #"{"work_orders":{"granted":true,"actions":["verify","cancel","reopen","complete"]}}"#))
+            #expect(all.canMoveWorkOrder(from: "verified", to: "proposed"))
+            #expect(!all.canMoveWorkOrder(from: "cancelled", to: "in_progress"), "409 qualunque sia il ruolo")
+            #expect(!all.canMoveWorkOrder(from: "completed", to: "cancelled"), "409 qualunque sia il ruolo")
+            #expect(all.canMoveWorkOrder(from: "in_progress", to: "verified"))
+            #expect(!AriaRights.unrestricted.canMoveWorkOrder(from: "verified", to: "planned"))
+        }
+
         @Test func lookOnlySectionsHideTheirSwitches() throws {
             let rights = try Self.rights(Self.access(sections: #"{"vendors":{"granted":true,"actions":["edit"]}}"#))
             #expect(rights.has(.vendors))

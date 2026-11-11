@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Le pastiglie colorate di un piano: lo stato (approvato verde, bozza arancio…) e la scadenza
-//  (scaduto rosso, in scadenza arancio).
+//  Le pastiglie colorate di un piano: lo stato, come quello di un allarme (icona e testo; approvato nel
+//  colore dell'app, bozza in ambra, scartato in grigio), e la scadenza (scaduto rosso, in scadenza arancio).
 //
 
 import SwiftUI
@@ -13,23 +13,25 @@ import SwiftUI
 struct AdminMaintenanceStatusBadge: View {
     let status: String
 
+    private var known: AdminMaintenanceStatus? { AdminMaintenanceStatus(rawValue: status) }
+
     private var color: Color {
-        switch AdminMaintenanceStatus(rawValue: status) {
-        case .approved: .green
-        case .draft: .orange
-        case .staged: .blue
-        case .rejected: .red
-        case .superseded, nil: .secondary
+        switch known {
+        // Positivo nel colore dell'app, negativo in grigio: il rosso resta per gli errori.
+        case .approved: .liteAccent
+        case .draft, .staged: .liteWarning
+        case .rejected, .superseded, nil: .secondary
         }
     }
 
     var body: some View {
-        Text(AdminMaintenanceStatus.label(for: status))
+        Label(AdminMaintenanceStatus.label(for: status), systemImage: known?.systemImage ?? "questionmark.circle")
             .font(.caption2.weight(.bold))
             .foregroundStyle(color)
+            .lineLimit(1)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(color.opacity(0.14), in: Capsule())
+            .background(color.opacity(0.12), in: Capsule())
             .fixedSize()
     }
 }

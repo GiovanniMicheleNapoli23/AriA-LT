@@ -32,6 +32,11 @@ nonisolated enum AdminMaintenanceAPI {
         AriaEndpoint.patch("v1/maintenance-plans/\(id)", body: changes.fields).snakeCased()
     }
 
+    /// DELETE /v1/maintenance-plans/{id}: la risposta non serve.
+    static func delete(id: String) -> AriaEndpoint<AriaNoContent> {
+        AriaEndpoint<AriaNoContent>.delete("v1/maintenance-plans/\(id)").snakeCased()
+    }
+
     /// POST …/ai-improve. Risposta non documentata (`{}`): si legge libera, vedi AdminMaintenanceProposal.
     static func aiImprove(id: String, _ body: AdminMaintenanceImproveRequest) -> AriaEndpoint<AriaJSON> {
         AriaEndpoint.post("v1/maintenance-plans/\(id)/ai-improve", body: body).snakeCased()

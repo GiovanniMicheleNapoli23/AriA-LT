@@ -4,14 +4,16 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un allarme (pagina /alarms/{id} della web): intestazione con i fatti, approvazione se è
-//  una bozza, cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo; l'AI è il blob di
-//  Aria in basso a destra, come nel dettaglio di un ordine (e le sezioni vuote offrono di completarle).
+//  Il dettaglio di un allarme (pagina /alarms/{id} della web): intestazione con i fatti, stato di revisione
+//  (le decisioni nella barra in basso), cause tipiche, passi di risoluzione e diagnosi. "Edit" apre il modulo;
+//  l'AI è il blob di Aria in basso a destra, sopra la barra, come nel dettaglio di un ordine (e le sezioni vuote
+//  offrono di completarle).
 //
 
 import SwiftUI
 
 struct AdminAlarmDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel: AdminAlarmDetailViewModel
 
     init(alarm: AdminAlarm, owner: AdminAlarmsViewModel) {
@@ -25,11 +27,6 @@ struct AdminAlarmDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 AdminAlarmHeader(viewModel: viewModel)
                 if let failure = viewModel.failure { AdminAlarmFailureNote(failure: failure) }
-                if viewModel.canApprove || viewModel.isApproving {
-                    AdminAlarmApproveBanner(isApproving: viewModel.isApproving) {
-                        viewModel.showsApproveConfirmation = true
-                    }
-                }
                 AdminAlarmLinesCard(title: "Typical causes", systemImage: "questionmark.diamond",
                                     lines: viewModel.alarm.typicalCauses, fillIn: { viewModel.startImproving() })
                 AdminAlarmLinesCard(title: "Resolution steps", systemImage: "list.number",
@@ -49,12 +46,32 @@ struct AdminAlarmDetailView: View {
                 .padding(.bottom, 12)
                 .ignoresSafeArea(.keyboard)
         }
+        .ariaBottomBar {
+            if viewModel.showsReview {
+                AdminReviewDecisionBar(actions: viewModel.reviewActions, running: viewModel.reviewing,
+                                       error: viewModel.reviewError, perform: { viewModel.requestReview($0) })
+            }
+        }
         .liteBackground()
-        .navigationTitle(Text(verbatim: viewModel.alarm.code))
+        // Il codice è già nell'intestazione: il titolo dice solo dove si è.
+        .navigationTitle("Alarm")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { viewModel.startEditing() }
+                    .disabled(viewModel.isDeleting)
+            }
+            // L'azione distruttiva non sta accanto a Edit: va nel menu, come negli altri dettagli.
+            if viewModel.canDelete || viewModel.isDeleting {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isDeleting {
+                        ProgressView()
+                    } else {
+                        Menu("More", systemImage: "ellipsis.circle") {
+                            Button("Delete", systemImage: "trash", role: .destructive) { viewModel.showsDeleteConfirmation = true }
+                        }
+                    }
+                }
             }
         }
         .refreshable { await viewModel.load() }
@@ -69,16 +86,21 @@ struct AdminAlarmDetailView: View {
         .sheet(item: $diagnosis.workOrderForm) { form in
             AdminAlarmWorkOrderFormView(viewModel: form)
         }
-        .alert("Approve this alarm?", isPresented: $viewModel.showsApproveConfirmation) {
-            Button("Approve") { Task { await viewModel.approve() } }
+        .adminReviewConfirmation(isPresented: $viewModel.isConfirmingReview, action: viewModel.confirmingReview) { action in
+            Task { await viewModel.review(action) }
+        }
+        .alert("Delete this alarm?", isPresented: $viewModel.showsDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { if await viewModel.delete() { dismiss() } }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("It will be added to the knowledge base the assistant draws on.")
+            Text("“\(viewModel.alarm.code)” will be removed from your alarms. This can't be undone.")
         }
-        .alert("Couldn't approve the alarm", isPresented: $viewModel.isShowingApproveError) {
+        .alert("Couldn't delete the alarm", isPresented: $viewModel.isShowingDeleteError) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(verbatim: viewModel.approveError ?? "")
+            Text(verbatim: viewModel.deleteError ?? "")
         }
     }
 }

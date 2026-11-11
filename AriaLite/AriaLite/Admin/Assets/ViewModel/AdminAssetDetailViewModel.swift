@@ -23,10 +23,14 @@ final class AdminAssetDetailViewModel {
 
     private(set) var stats: AdminDowntimeStats?
     private(set) var statsError: String?
+    /// La scheda dei fermi resta nascosta (e la lista non si chiede) finché l'API dei fermi non è collegata.
+    static let showsDowntime = false
     private(set) var downtimes: [AdminDowntime] = []
     private(set) var downtimesError: String?
     private(set) var workOrders: [AdminAssetWorkOrder] = []
     private(set) var workOrdersError: String?
+    /// Il punteggio di salute: ha la sua rotta e il suo stato.
+    let health: AdminAssetHealthViewModel
 
     private(set) var isLoading = false
     private(set) var hasLoaded = false
@@ -48,13 +52,38 @@ final class AdminAssetDetailViewModel {
         set { if !newValue { downtimeToDelete = nil } }
     }
 
-    @ObservationIgnored private let onAssetChanged: (AdminAsset) -> Void
+    /// "Eliminare questo asset?" (conferma) e l'eliminazione in corso; la logica è in AdminAssetDetailViewModel+Delete.
+    var showsAssetDeleteConfirmation = false
+    var isDeletingAsset = false
+    var assetDeleteError: String?
 
-    init(backend: AriaBackend, asset: AdminAsset, onAssetChanged: @escaping (AdminAsset) -> Void = { _ in }) {
+    var isShowingAssetDeleteError: Bool {
+        get { assetDeleteError != nil }
+        set { if !newValue { assetDeleteError = nil } }
+    }
+
+    /// La decisione di revisione in corso, l'errore dell'ultima e quella che aspetta conferma; la logica è in
+    /// AdminAssetDetailViewModel+Review.
+    var reviewing: AdminReviewAction?
+    var reviewError: String?
+    var confirmingReview: AdminReviewAction?
+
+    var isConfirmingReview: Bool {
+        get { confirmingReview != nil }
+        set { if !newValue { confirmingReview = nil } }
+    }
+
+    @ObservationIgnored private let onAssetChanged: (AdminAsset) -> Void
+    @ObservationIgnored let onAssetDeleted: (AdminAsset) -> Void
+
+    init(backend: AriaBackend, asset: AdminAsset, onAssetChanged: @escaping (AdminAsset) -> Void = { _ in },
+         onAssetDeleted: @escaping (AdminAsset) -> Void = { _ in }) {
         self.backend = backend
         self.tag = asset.tag
         self.asset = asset
+        self.health = AdminAssetHealthViewModel(backend: backend, tag: asset.tag)
         self.onAssetChanged = onAssetChanged
+        self.onAssetDeleted = onAssetDeleted
     }
 
     // MARK: Scheda
@@ -123,9 +152,14 @@ final class AdminAssetDetailViewModel {
         let api = backend.api
         let tag = tag
         let plantId = asset.plantId
+        // Il punteggio di salute parte insieme alle altre richieste (ha il suo stato).
+        let health = health
+        let healthLoad = Task { await health.load() }
         async let assetResult = Self.result { try await api.call(AdminAssetsAPI.asset(tag: tag)) }
         async let statsResult = Self.result { try await api.call(AdminAssetsAPI.downtimeStats(assetTag: tag)) }
-        async let downtimeResult = Self.result { try await api.call(AdminAssetsAPI.downtimes(assetTag: tag, plantId: plantId)) }
+        async let downtimeResult = Self.result {
+            await Self.showsDowntime ? try await api.call(AdminAssetsAPI.downtimes(assetTag: tag, plantId: plantId)).items : []
+        }
         async let ordersResult = Self.result { try await api.call(AdminAssetsAPI.workOrders(assetTag: tag)) }
 
         switch await assetResult {
@@ -141,7 +175,7 @@ final class AdminAssetDetailViewModel {
         case .failure(let error): statsError = AdminAssetsFailure.message(for: error, backend: backend)
         }
         switch await downtimeResult {
-        case .success(let rows): downtimes = rows.items; downtimesError = nil
+        case .success(let rows): downtimes = rows; downtimesError = nil
         case .failure(let error): downtimesError = AdminAssetsFailure.message(for: error, backend: backend)
         }
         switch await ordersResult {
@@ -149,6 +183,7 @@ final class AdminAssetDetailViewModel {
         case .failure(let error): workOrdersError = AdminAssetsFailure.message(for: error, backend: backend)
         }
         hasLoaded = true
+        await healthLoad.value
     }
 
     nonisolated private static func result<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, any Error> {

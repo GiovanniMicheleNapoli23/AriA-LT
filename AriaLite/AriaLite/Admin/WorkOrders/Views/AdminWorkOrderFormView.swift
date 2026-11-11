@@ -81,8 +81,10 @@ struct AdminWorkOrderFormView: View {
         Section {
             segmentedRow("Priority", selection: $viewModel.draft.priority, options: AdminWorkOrderPriority.known) { $0.localized }
             segmentedRow("Type", selection: $viewModel.draft.type, options: AdminWorkOrderType.known) { $0.localized }
-            Picker("Status", selection: $viewModel.draft.status) {
-                ForEach(AdminWorkOrderStatus.known, id: \.self) { Text($0.localized).tag($0) }
+            if viewModel.showsStatusPicker {
+                Picker("Status", selection: $viewModel.draft.status) {
+                    ForEach(viewModel.statusOptions, id: \.self) { Text($0.localized).tag($0) }
+                }
             }
             TextField("Category", text: $viewModel.draft.category)
                 .focused($focused, equals: .category)

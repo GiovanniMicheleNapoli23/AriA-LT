@@ -32,6 +32,16 @@ nonisolated enum AdminAssetsAPI {
         AriaEndpoint.patch("v1/assets/\(assetId)", body: changes.fields).snakeCased()
     }
 
+    /// DELETE /v1/assets/{asset_id}: risponde 200 con un corpo che non serve.
+    static func delete(assetId: String) -> AriaEndpoint<AriaNoContent> {
+        AriaEndpoint.delete("v1/assets/\(assetId)").snakeCased()
+    }
+
+    /// POST /v1/assets/bulk-approve: gli id che non esistono si saltano, `approved` dice quanti sono passati.
+    static func bulkApprove(ids: [String]) -> AriaEndpoint<AdminAssetBulkApproveResult> {
+        AriaEndpoint.post("v1/assets/bulk-approve", body: AdminAssetBulkApproveBody(ids: ids)).snakeCased()
+    }
+
     // MARK: Fermi
 
     /// Statistiche degli ultimi 30 giorni: forma non documentata, si legge libera (AdminDowntimeStats).

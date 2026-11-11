@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 10/11/26.
 //
 //  Cosa si può chiedere all'AI per un piano, come sezioni di un Form (come "Improve with AI" di un allarme):
-//  le scorciatoie (una riga ciascuna, con la rotella su quella in corso), un passo da riscrivere e una
-//  richiesta libera col pulsante d'invio accanto al campo.
+//  un solo elenco di azioni (una riga ciascuna, con la rotella su quella in corso; "Improve one step" e
+//  "Translate" aprono un menu, coi passi o le lingue, e partono appena si sceglie) e una richiesta libera col
+//  pulsante d'invio accanto al campo.
 //
 
 import SwiftUI
@@ -16,59 +17,59 @@ struct AdminMaintenanceImproveActions: View {
     @FocusState private var promptFocused: Bool
 
     var body: some View {
-        Section("Suggestions") {
-            ForEach(AdminMaintenanceImproveAction.shortcuts) { action in
-                actionRow(action, subtitle: action.subtitle) { viewModel.run(action) }
+        Section("What should the assistant do?") {
+            ForEach(AdminMaintenanceImproveAction.shortcuts(hasSteps: hasSteps)) { action in
+                AdminAIActionRow(title: action.title, subtitle: action.subtitle, systemImage: action.systemImage,
+                                 isRunning: viewModel.isRunning(action)) {
+                    viewModel.run(action)
+                }
+                .disabled(viewModel.isRunning)
+            }
+            if hasSteps {
+                stepMenu
+                translateMenu
             }
         }
-        if !viewModel.plan.tasks.isEmpty { stepSection }
         customSection
     }
 
-    // MARK: Righe
+    private var hasSteps: Bool { !viewModel.plan.tasks.isEmpty }
 
-    private func actionRow(_ action: AdminMaintenanceImproveAction, subtitle: String?,
-                           run: @escaping () -> Void) -> some View {
-        Button(action: run) {
-            HStack {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: action.title).foregroundStyle(.primary)
-                        if let subtitle {
-                            Text(verbatim: subtitle)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                } icon: {
-                    Image(systemName: action.systemImage).foregroundStyle(Color.liteAccent)
+    // MARK: Menu
+
+    /// "Improve one step": il menu elenca i passi, sceglierne uno fa partire la richiesta.
+    private var stepMenu: some View {
+        Menu {
+            ForEach(viewModel.plan.tasks.indices, id: \.self) { index in
+                Button { viewModel.improveStep(at: index) } label: {
+                    Text(verbatim: viewModel.stepLabel(index))
                 }
-                Spacer(minLength: 8)
-                if viewModel.isRunning(action) { ProgressView() }
             }
-            .contentShape(Rectangle())
+        } label: {
+            menuLabel(.improveStep)
         }
         .disabled(viewModel.isRunning)
+        .adminAIActionRow()
     }
 
-    // MARK: Un passo
-
-    private var stepSection: some View {
-        Section {
-            Picker("Step", selection: $viewModel.stepIndex) {
-                ForEach(viewModel.plan.tasks.indices, id: \.self) { index in
-                    Text(verbatim: viewModel.stepLabel(index)).tag(index)
+    /// "Translate": il menu elenca le lingue, sceglierne una fa partire la richiesta.
+    private var translateMenu: some View {
+        Menu {
+            ForEach(viewModel.translationLanguages, id: \.code) { language in
+                Button { viewModel.translate(to: language.code) } label: {
+                    Text(verbatim: language.name)
                 }
             }
-            .pickerStyle(.navigationLink)
-            .disabled(viewModel.isRunning)
-            actionRow(.improveStep, subtitle: nil) { viewModel.run(.improveStep) }
-                .disabled(!viewModel.canImproveStep)
-        } header: {
-            Text("One step")
-        } footer: {
-            Text(verbatim: AdminMaintenanceImproveAction.improveStep.subtitle)
+        } label: {
+            menuLabel(.translate)
         }
+        .disabled(viewModel.isRunning)
+        .adminAIActionRow()
+    }
+
+    private func menuLabel(_ action: AdminMaintenanceImproveAction) -> some View {
+        AdminAIActionLabel(title: action.title, subtitle: action.subtitle, systemImage: action.systemImage,
+                           isRunning: viewModel.isRunning(action), isMenu: true)
     }
 
     // MARK: Richiesta libera
@@ -82,9 +83,7 @@ struct AdminMaintenanceImproveActions: View {
                 sendButton
             }
         } header: {
-            Text(verbatim: AdminMaintenanceImproveAction.custom.title)
-        } footer: {
-            Text("The assistant proposes the changes: you choose which ones to apply.")
+            Text("Or ask in your own words")
         }
     }
 

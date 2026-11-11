@@ -7,10 +7,12 @@
 //  Il dettaglio di un ricambio (pagina /spare-parts/{id} della web): scheda aggiornata dal server,
 //  storico dei prezzi, nome del fornitore, foto e la correzione rapida della quantità a magazzino.
 //  I tocchi su +/− si sommano e partono insieme dopo una breve pausa (un PATCH solo, non uno per tocco).
+//  Le decisioni di revisione (Approve, Unapprove, Reject, Back to draft) si prendono da qui in ogni stato.
 //
 
 import Foundation
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -57,6 +59,24 @@ final class AdminSparePartDetailViewModel {
     var quantityInput = ""
     /// Il modulo di modifica aperto (sheet).
     var editForm: AdminSparePartFormViewModel?
+    /// La decisione di revisione in corso e l'errore dell'ultima (si mostra nel riquadro di revisione).
+    private(set) var reviewing: AdminReviewAction?
+    private(set) var reviewError: String?
+    /// La decisione che aspetta la conferma (Reject, Unapprove).
+    var confirmingReview: AdminReviewAction?
+    var isConfirmingReview: Bool {
+        get { confirmingReview != nil }
+        set { if !newValue { confirmingReview = nil } }
+    }
+    private(set) var isDeleting = false
+    /// "Eliminare questo ricambio?" (conferma).
+    var showsDeleteConfirmation = false
+    /// Errore dell'eliminazione (alert).
+    var deleteError: String?
+    var isShowingDeleteError: Bool {
+        get { deleteError != nil }
+        set { if !newValue { deleteError = nil } }
+    }
 
     private var stockTask: Task<Void, Never>?
     /// Pausa dopo l'ultimo tocco su +/− prima di salvare.
@@ -238,6 +258,78 @@ final class AdminSparePartDetailViewModel {
         editForm = AdminSparePartFormViewModel(mode: .edit(part), owner: owner) { [weak self] saved in
             self?.part = saved
         }
+    }
+
+    // MARK: - Revisione
+
+    private var storedStatus: String { part.status?.rawValue ?? AdminSparePartStatus.draft.rawValue }
+
+    var reviewStage: AdminReviewStage { AdminReviewStage(stored: storedStatus) }
+
+    /// Le decisioni possibili ora (restano mentre una è in corso, ferme): nessuna mentre l'eliminazione è in corso.
+    var reviewActions: [AdminReviewAction] {
+        guard !isDeleting else { return [] }
+        return AdminReviewAction.available(from: storedStatus, in: .spareParts, rights: backend.rights)
+    }
+
+    var reviewMessage: LocalizedStringKey {
+        switch reviewStage {
+        case .pending: "Approve this spare part to make it available to work orders."
+        case .approved: "In use. Unapprove sends it back to draft; Reject takes it out of use."
+        case .rejected: "Not in use. Back to draft reopens it for review; Approve puts it back in use."
+        }
+    }
+
+    /// Il riquadro di revisione: almeno una decisione, o una in corso.
+    var showsReview: Bool { !reviewActions.isEmpty || reviewing != nil }
+
+    /// Reject e Unapprove chiedono conferma; le altre partono subito.
+    func requestReview(_ action: AdminReviewAction) {
+        if action.needsConfirmation {
+            confirmingReview = action
+        } else {
+            Task { await review(action) }
+        }
+    }
+
+    func review(_ action: AdminReviewAction) async {
+        guard reviewing == nil, reviewActions.contains(action) else { return }
+        reviewing = action
+        reviewError = nil
+        defer { reviewing = nil }
+        do {
+            let saved = try await api.update(id: part.id, AdminSparePartUpdate(fields: [.status: .string(action.target)]))
+            part = saved
+            owner.didSave(saved)
+        } catch {
+            if let failure = AdminSparePartsFailure.from(error, action: .write, backend: backend) {
+                reviewError = failure.message
+            }
+        }
+    }
+
+    // MARK: - Eliminazione
+
+    /// Il cestino c'è solo se il ruolo ha quello che servirebbe a rifiutarlo (vedi `AriaRights.canDelete`).
+    var canDelete: Bool {
+        reviewing == nil && backend.rights.canDelete(stored: storedStatus, in: .spareParts)
+    }
+
+    /// `true` se eliminato: la schermata si chiude.
+    func delete() async -> Bool {
+        guard canDelete, !isDeleting else { return false }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await api.delete(id: part.id)
+        } catch {
+            if let failure = AdminSparePartsFailure.from(error, action: .write, backend: backend) {
+                deleteError = failure.message
+            }
+            return false
+        }
+        owner.didDelete(id: part.id)
+        return true
     }
 
     // MARK: - Formati

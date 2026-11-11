@@ -35,6 +35,13 @@ struct AdminAlarmsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        AdminAlarmEventsView(viewModel: viewModel.events)
+                    } label: {
+                        AdminAlarmEventsBellLabel(unreadCount: viewModel.events.unreadCount)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     if viewModel.isSelecting {
                         Button("Done") { withAnimation(.snappy) { viewModel.endSelecting() } }
                     } else if viewModel.canSelect {
@@ -59,6 +66,7 @@ struct AdminAlarmsView: View {
             }
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
+        .task(id: viewModel.inboxKey) { await viewModel.events.refreshUnreadCount() }
     }
 
     @ViewBuilder

@@ -243,6 +243,14 @@ extension BackendTests {
             }
         }
 
+        @Test func aNewAssetReadsItsRightsFromDraftEvenWhenItStartsApproved() async throws {
+            let backend = try await connected()
+            await become(.role(sections("assets", "approve")), backend)
+            let form = AdminAssetFormViewModel(backend: backend, editing: nil)
+            #expect(form.status == "approved")
+            #expect(form.statusOptions == ["approved", "draft", "staged"], "creare in bozza non vuole `unapprove`")
+        }
+
         @Test func assetStatusPickerOffersOnlyTheChangesTheRoleAllows() async throws {
             let backend = try await connected()
             let draft = try decode(AdminAsset.self, #"{"id":"a1","tag":"M1","name":"Motor","status":"draft"}"#)
@@ -251,11 +259,11 @@ extension BackendTests {
             // Una bozza: senza approve né reject restano le scelte che non toccano l'approvazione.
             await become(.role(sections("assets")), backend)
             var form = AdminAssetFormViewModel(backend: backend, editing: draft)
-            #expect(form.statusOptions == ["draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["draft", "staged"])
             #expect(form.showsStatusPicker)
             await become(.role(sections("assets", "approve")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: draft)
-            #expect(form.statusOptions == ["approved", "draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["approved", "draft", "staged"])
             await become(.role(sections("assets", "reject")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: draft)
             #expect(form.statusOptions == ["draft", "staged", "rejected", "superseded"])
@@ -267,7 +275,7 @@ extension BackendTests {
             #expect(!form.showsStatusPicker)
             await become(.role(sections("assets", "unapprove")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: approved)
-            #expect(form.statusOptions == ["approved", "draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["approved", "draft", "staged"])
 
             // Senza ruolo (admin, legacy, backend precedente) tutte le scelte.
             for who in [Who.admin, .legacy, .noBlock] {
@@ -287,7 +295,7 @@ extension BackendTests {
             // Un ricambio nuovo parte bozza: senza approve non si può approvare.
             await become(.role(sections("spare_parts")), backend)
             var form = AdminSparePartFormViewModel(mode: .create, owner: owner)
-            #expect(form.statusChoices == [.staged, .draft, .superseded])
+            #expect(form.statusChoices == [.staged, .draft])
             await become(.role(sections("spare_parts", "approve", "reject")), backend)
             form = AdminSparePartFormViewModel(mode: .create, owner: owner)
             #expect(form.statusChoices == [.staged, .draft, .approved, .rejected, .superseded])
@@ -299,7 +307,7 @@ extension BackendTests {
             #expect(!form.showsStatusPicker)
             await become(.role(sections("spare_parts", "unapprove")), backend)
             form = AdminSparePartFormViewModel(mode: .edit(approved), owner: owner)
-            #expect(form.statusChoices == [.staged, .draft, .approved, .superseded])
+            #expect(form.statusChoices == [.staged, .draft, .approved])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
@@ -348,9 +356,9 @@ extension BackendTests {
             let approved = try alarm(status: "approved", id: "a2")
 
             await become(.role(sections("alarms")), backend)
-            #expect(keys(draft) == ["draft", "staged", "superseded"])
+            #expect(keys(draft) == ["draft", "staged"])
             await become(.role(sections("alarms", "approve")), backend)
-            #expect(keys(draft) == ["approved", "draft", "staged", "superseded"])
+            #expect(keys(draft) == ["approved", "draft", "staged"])
             await become(.role(sections("alarms", "reject")), backend)
             #expect(keys(draft) == ["draft", "staged", "rejected", "superseded"])
 
@@ -359,7 +367,7 @@ extension BackendTests {
             let form = AdminAlarmFormViewModel(alarm: approved, backend: backend, onSaved: { _ in })
             #expect(!form.showsStatusPicker, "una sola scelta: il selettore non serve")
             await become(.role(sections("alarms", "unapprove")), backend)
-            #expect(keys(approved) == ["approved", "draft", "staged", "superseded"])
+            #expect(keys(approved) == ["approved", "draft", "staged"])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
@@ -367,22 +375,47 @@ extension BackendTests {
             }
         }
 
-        @Test func alarmDetailCanApproveOnlyAPendingAlarmWithTheApproveRight() async throws {
+        @Test func alarmDetailOffersTheDecisionsOfItsStatusThatTheRoleHolds() async throws {
             let backend = try await connected()
             let owner = AdminAlarmsViewModel(backend: backend)
-            let draft = try alarm(status: "draft")
-            let approved = try alarm(status: "approved", id: "a2")
+            let draft = AdminAlarmDetailViewModel(alarm: try alarm(status: "draft"), owner: owner)
+            let approved = AdminAlarmDetailViewModel(alarm: try alarm(status: "approved", id: "a2"), owner: owner)
+            let rejected = AdminAlarmDetailViewModel(alarm: try alarm(status: "rejected", id: "a3"), owner: owner)
 
             await become(.role(sections("alarms")), backend)
-            #expect(!AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
+            #expect(draft.reviewActions.isEmpty && !draft.showsReview, "senza diritti niente avviso")
             await become(.role(sections("alarms", "approve")), backend)
-            #expect(AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
-            #expect(!AdminAlarmDetailViewModel(alarm: approved, owner: owner).canApprove, "già approvato")
+            #expect(draft.reviewActions == [.approve] && draft.showsReview)
+            #expect(approved.reviewActions.isEmpty, "già approvato: Approve non c'è")
+            await become(.role(sections("alarms", "reject")), backend)
+            #expect(draft.reviewActions == [.reject])
+            #expect(approved.reviewActions.isEmpty, "rifiutare un approvato vuole anche unapprove")
+            #expect(rejected.reviewActions == [.backToDraft])
+            await become(.role(sections("alarms", "reject", "unapprove")), backend)
+            #expect(approved.reviewActions == [.reject, .unapprove])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
-                #expect(AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
+                #expect(draft.reviewActions == [.reject, .approve])
+                #expect(rejected.reviewActions == [.backToDraft, .approve])
             }
+        }
+
+        @Test func rejectingAnAlarmPatchesOnlyItsStatus() async throws {
+            let backend = try await connected()
+            await become(.role(sections("alarms", "reject")), backend)
+            server.route("PATCH /v1/alarms/a1", .json(#"{"id":"a1","code":"E-a1","description":"Overload","status":"rejected"}"#))
+            let detail = AdminAlarmDetailViewModel(alarm: try alarm(status: "draft"), owner: AdminAlarmsViewModel(backend: backend))
+
+            detail.requestReview(.reject)
+            #expect(detail.confirmingReview == .reject, "Reject chiede conferma")
+            #expect(server.calls("PATCH /v1/alarms/a1").isEmpty)
+            await detail.review(.reject)
+
+            let body = server.calls("PATCH /v1/alarms/a1").first?.json
+            #expect(body?["status"] as? String == "rejected" && body?.count == 1)
+            #expect(detail.alarm.status == .rejected && detail.reviewError == nil)
+            #expect(detail.reviewActions == [.backToDraft], "da rifiutato si torna in bozza")
         }
 
         @Test func alarmListSelectsDraftsOnlyWithTheApproveRight() async throws {
