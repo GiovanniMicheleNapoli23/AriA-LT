@@ -2974,6 +2974,16 @@
         }
       }
     },
+    "Add more files" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi altri file"
+          }
+        }
+      }
+    },
     "Add note" : {
       "localizations" : {
         "it" : {
@@ -4574,6 +4584,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aria risponde usando i dati dello stabilimento selezionato."
+          }
+        }
+      }
+    },
+    "Aria can find and cite the document in chat." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria può trovare e citare il documento in chat."
           }
         }
       }
@@ -7273,22 +7293,22 @@
         }
       }
     },
+    "Choose files" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli i file"
+          }
+        }
+      }
+    },
     "Choose from assets" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scegli tra gli asset"
-          }
-        }
-      }
-    },
-    "Choose from Files" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli da File"
           }
         }
       }
@@ -13928,16 +13948,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Indicizzazione per le risposte"
-          }
-        }
-      }
-    },
-    "Indexing lets Aria cite the document. Extraction proposes assets, spare parts and procedures for review." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'indicizzazione permette ad Aria di citare il documento. L'estrazione propone asset, ricambi e procedure da revisionare."
           }
         }
       }
@@ -20663,6 +20673,16 @@
         }
       }
     },
+    "PDF, Word, Excel, PowerPoint, text or images" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF, Word, Excel, PowerPoint, testo o immagini"
+          }
+        }
+      }
+    },
     "Pending" : {
       "localizations" : {
         "en" : {
@@ -21685,6 +21705,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Proposto il"
+          }
+        }
+      }
+    },
+    "Proposes assets, spare parts and procedures for you to review." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Propone asset, ricambi e procedure da revisionare."
           }
         }
       }
@@ -29830,6 +29860,16 @@
         }
       }
     },
+    "Turn on at least one to upload." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attivane almeno una per caricare."
+          }
+        }
+      }
+    },
     "type" : {
       "localizations" : {
         "it" : {
@@ -30540,6 +30580,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Carica"
+          }
+        }
+      }
+    },
+    "Upload %lld files" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Upload %lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Upload %lld files"
+                }
+              }
+            }
+          }
+        },
+        "it" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Carica %lld file"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Carica %lld file"
+                }
+              }
+            }
           }
         }
       }
