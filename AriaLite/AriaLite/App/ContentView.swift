@@ -20,6 +20,10 @@ struct ContentView: View {
                 if viewModel.lock == .launch {
                     // La sessione è ancora nel Keychain: l'app si costruisce dopo Face ID.
                     AriaLockView(viewModel: viewModel)
+                } else if viewModel.backend.isSigningUp {
+                    // Appena iscritto: Profilo, Azienda, Stabilimento e Piano prima dell'app.
+                    AriaSignUpView(app: viewModel)
+                        .transition(.opacity)
                 } else {
                     // Navigazione come Claude mobile: chat al centro, sezioni nella sidebar.
                     AriaShellView(user: user)

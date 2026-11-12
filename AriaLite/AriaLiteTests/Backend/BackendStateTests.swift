@@ -113,6 +113,8 @@ extension BackendTests {
 
         @Test func accountWithoutCompaniesIsSignedOutAgain() async throws {
             TestEnv.stubSignIn(companies: "[]")
+            // Onboarding finito ma nessuna azienda attiva: nell'app non resta niente da usare.
+            server.route("GET /v1/onboarding/status", .json(#"{"profileComplete":true,"companyCreated":true,"planSelected":true,"onboardingComplete":true}"#))
             let backend = AriaBackend()
             try await TestEnv.requestLink(backend)
             try await backend.completeSignIn(with: AriaSignInLink(token: "t"))

@@ -71,23 +71,42 @@ struct AriaChatErrorBanner: View {
 /// PlantGuardBanner della web: senza stabilimento il backend non risponde.
 struct AriaPlantGuardBanner: View {
     let backend: AriaBackend
+    let state: AriaPlantGuard
+    /// Apre "Nuovo stabilimento" (`state == .create`).
+    var onCreate: () -> Void
 
     var body: some View {
         HStack {
-            Label("Select a plant before chatting.", systemImage: "building.2")
+            Label(message, systemImage: "building.2")
                 .font(.footnote.weight(.medium))
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            Menu {
-                ForEach(backend.plants) { plant in
-                    Button(plant.name) { Task { await backend.selectPlant(plant.id) } }
+            switch state {
+            case .choose:
+                Menu {
+                    ForEach(backend.plants) { plant in
+                        Button(plant.name) { Task { await backend.selectPlant(plant.id) } }
+                    }
+                } label: {
+                    Text("Choose").font(.footnote.weight(.semibold))
                 }
-            } label: {
-                Text("Choose").font(.footnote.weight(.semibold))
+            case .create:
+                Button("Add plant", action: onCreate)
+                    .font(.footnote.weight(.semibold))
+            case .askAdmin:
+                EmptyView()
             }
-            .disabled(backend.plants.isEmpty)
         }
         .padding(12)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous), tint: Color.orange.opacity(0.14))
         .task { await backend.bootstrapIfNeeded() }
+    }
+
+    private var message: LocalizedStringKey {
+        switch state {
+        case .choose: "Select a plant before chatting."
+        case .create: "Add your first plant to start chatting."
+        case .askAdmin: "No plants yet. Ask an owner or admin of your company to add one."
+        }
     }
 }

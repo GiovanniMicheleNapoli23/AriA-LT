@@ -240,6 +240,14 @@ class AppViewModel {
     }
     #endif
 
+    // MARK: - Iscrizione
+
+    /// Profilo, Azienda, Stabilimento e Piano fatti (o già fatti sulla web): la shell, col nome scritto al passo Profilo.
+    func signUpFinished() {
+        guard !backend.isSigningUp, let account = backend.mobileAccount else { return }
+        loggedInUser = User(account)
+    }
+
     private func signIn(with link: AriaSignInLink) async -> LoginResult {
         do {
             try await backend.completeSignIn(with: link)

@@ -33,6 +33,10 @@ struct AriaChatDock: View {
             withAnimation(.spring(duration: 0.45, bounce: 0.12)) { model.panel = new }
         }
         .onAppear { model.panel = model.wantedPanel }
+        // Qui e non sull'avviso: salvato lo stabilimento l'avviso sparisce, il foglio deve potersi chiudere da sé.
+        .sheet(item: Bindable(model).plantForm) { form in
+            AdminPlantFormView(viewModel: form)
+        }
     }
 
     /// In orizzontale con la tastiera restano ~150pt: gli avvisi scorrono in un quarto della chat
@@ -95,6 +99,8 @@ struct AriaChatDock: View {
 private struct AriaChatDockNotices: View {
     let model: AriaAgentChatViewModel
     let inputFocused: FocusState<Bool>.Binding
+    /// L'elenco della sezione Plants: lo stabilimento creato dalla chat compare anche lì.
+    @Environment(AppViewModel.self) private var app: AppViewModel?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -103,7 +109,10 @@ private struct AriaChatDockNotices: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if model.needsPlant {
-                AriaPlantGuardBanner(backend: model.backend)
+                AriaPlantGuardBanner(backend: model.backend, state: model.plantGuard) {
+                    inputFocused.wrappedValue = false
+                    if let app { model.startCreatingPlant(in: app.adminPlants) }
+                }
             }
             if let notice = model.notice {
                 AriaChatNoticeBanner(notice: notice) { model.dismissNotice() }

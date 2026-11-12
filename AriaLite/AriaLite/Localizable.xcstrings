@@ -2306,6 +2306,16 @@
         }
       }
     },
+    "1–10 people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1–10 persone"
+          }
+        }
+      }
+    },
     "7 days" : {
       "localizations" : {
         "it" : {
@@ -2316,12 +2326,32 @@
         }
       }
     },
+    "11–50 people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "11–50 persone"
+          }
+        }
+      }
+    },
     "30 days" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "30 giorni"
+          }
+        }
+      }
+    },
+    "51–200 people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "51–200 persone"
           }
         }
       }
@@ -2342,6 +2372,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "99+"
+          }
+        }
+      }
+    },
+    "201–1000 people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "201–1000 persone"
           }
         }
       }
@@ -2436,6 +2476,16 @@
         }
       }
     },
+    "A short code your team recognises, e.g. MAIN or NAPLES-1." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un codice breve che il tuo team riconosce, ad es. MAIN o NAPOLI-1."
+          }
+        }
+      }
+    },
     "A step can have at most 3 photos." : {
       "localizations" : {
         "en" : {
@@ -2498,6 +2548,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Informazioni"
+          }
+        }
+      }
+    },
+    "About you" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi sei"
           }
         }
       }
@@ -2986,6 +3046,16 @@
         }
       }
     },
+    "Add plant" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi stabilimento"
+          }
+        }
+      }
+    },
     "Add row" : {
       "localizations" : {
         "en" : {
@@ -3069,6 +3139,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Indica chi ha svolto il lavoro."
+          }
+        }
+      }
+    },
+    "Add your first plant to start chatting." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi il tuo primo stabilimento per iniziare a chattare."
           }
         }
       }
@@ -3733,6 +3813,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connettori ammessi"
+          }
+        }
+      }
+    },
+    "Already have an account?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai già un account?"
           }
         }
       }
@@ -4932,6 +5022,16 @@
         }
       }
     },
+    "Aria works plant by plant: add the first one to start chatting. You can add more later." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aria lavora stabilimento per stabilimento: aggiungi il primo per iniziare a chattare. Potrai aggiungerne altri in seguito."
+          }
+        }
+      }
+    },
     "Aria writes it and files it on this page." : {
       "localizations" : {
         "en" : {
@@ -5494,6 +5594,16 @@
         }
       }
     },
+    "At least 2 letters or numbers." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Almeno 2 lettere o numeri."
+          }
+        }
+      }
+    },
     "Attach photos and files" : {
       "localizations" : {
         "it" : {
@@ -5608,6 +5718,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Automatica"
+          }
+        }
+      }
+    },
+    "Automotive" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automotive"
           }
         }
       }
@@ -7255,6 +7375,16 @@
         }
       }
     },
+    "Choose your role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli il tuo ruolo"
+          }
+        }
+      }
+    },
     "Choosing an asset fills in its zone." : {
       "localizations" : {
         "it" : {
@@ -7832,6 +7962,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Completa task"
+          }
+        }
+      }
+    },
+    "Complete the security check below, then try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa il controllo di sicurezza qui sotto, poi riprova."
           }
         }
       }
@@ -8627,6 +8767,16 @@
         }
       }
     },
+    "Could not finish onboarding. Try again in a moment." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non è stato possibile completare la configurazione. Riprova tra poco."
+          }
+        }
+      }
+    },
     "Could not save the review." : {
       "localizations" : {
         "en" : {
@@ -8758,6 +8908,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile controllare i duplicati: %@"
+          }
+        }
+      }
+    },
+    "Couldn't check the short name." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile controllare il nome breve."
           }
         }
       }
@@ -9262,6 +9422,56 @@
         }
       }
     },
+    "Create account" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea account"
+          }
+        }
+      }
+    },
+    "Create an account" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea un account"
+          }
+        }
+      }
+    },
+    "Create company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea azienda"
+          }
+        }
+      }
+    },
+    "Create plant" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea stabilimento"
+          }
+        }
+      }
+    },
+    "Create the company your team will work in." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea l'azienda in cui lavorerà il tuo team."
+          }
+        }
+      }
+    },
     "Create the first inspection with the + button." : {
       "localizations" : {
         "it" : {
@@ -9320,6 +9530,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crea ordine di lavoro"
+          }
+        }
+      }
+    },
+    "Create your company first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prima crea la tua azienda."
+          }
+        }
+      }
+    },
+    "Create your company on the web" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea la tua azienda sul web"
           }
         }
       }
@@ -11292,6 +11522,16 @@
         }
       }
     },
+    "Energy" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energia"
+          }
+        }
+      }
+    },
     "Enter a cost of 0 or more, or leave it empty." : {
       "localizations" : {
         "it" : {
@@ -11388,6 +11628,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci il nome del piano."
+          }
+        }
+      }
+    },
+    "Enter your work email: we'll send you a link to create your account in the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci la tua email di lavoro: ti mandiamo un link per creare il tuo account nell'app."
           }
         }
       }
@@ -12472,6 +12722,16 @@
         }
       }
     },
+    "Food & beverage" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alimentare e bevande"
+          }
+        }
+      }
+    },
     "Forbidden capabilities" : {
       "localizations" : {
         "it" : {
@@ -12498,6 +12758,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Formato"
+          }
+        }
+      }
+    },
+    "Free demo" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demo gratuita"
           }
         }
       }
@@ -13682,6 +13952,16 @@
         }
       }
     },
+    "Industry (optional)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settore (facoltativo)"
+          }
+        }
+      }
+    },
     "Inferred by Aria" : {
       "localizations" : {
         "it" : {
@@ -14144,6 +14424,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elemento non trovato"
+          }
+        }
+      }
+    },
+    "Job role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruolo"
           }
         }
       }
@@ -15022,6 +15312,16 @@
         }
       }
     },
+    "Location (optional)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posizione (facoltativa)"
+          }
+        }
+      }
+    },
     "Lockout/tagout (LOTO) confirmation" : {
       "localizations" : {
         "it" : {
@@ -15376,6 +15676,16 @@
         }
       }
     },
+    "Maintenance engineer" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingegnere di manutenzione"
+          }
+        }
+      }
+    },
     "Maintenance plan" : {
       "localizations" : {
         "en" : {
@@ -15520,6 +15830,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Produttore"
+          }
+        }
+      }
+    },
+    "Manufacturing" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manifattura"
           }
         }
       }
@@ -16092,6 +16412,16 @@
         }
       }
     },
+    "More than 1000 people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più di 1000 persone"
+          }
+        }
+      }
+    },
     "More WOs on %@" : {
       "localizations" : {
         "en" : {
@@ -16632,6 +16962,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuovo modello"
+          }
+        }
+      }
+    },
+    "New to AriaPLT?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo su AriaPLT?"
           }
         }
       }
@@ -17581,6 +17921,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuno stabilimento"
+          }
+        }
+      }
+    },
+    "No plants yet. Ask an owner or admin of your company to add one." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessuno stabilimento. Chiedi a un owner o a un admin della tua azienda di aggiungerne uno."
           }
         }
       }
@@ -19511,6 +19861,16 @@
         }
       }
     },
+    "Operations lead" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile operativo"
+          }
+        }
+      }
+    },
     "Operator" : {
       "localizations" : {
         "en" : {
@@ -20041,6 +20401,16 @@
         }
       }
     },
+    "Paid plans are coming soon." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I piani a pagamento arriveranno presto."
+          }
+        }
+      }
+    },
     "Paragraph" : {
       "localizations" : {
         "en" : {
@@ -20386,12 +20756,32 @@
         }
       }
     },
+    "Pharma" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Farmaceutico"
+          }
+        }
+      }
+    },
     "Phone" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Telefono"
+          }
+        }
+      }
+    },
+    "Phone (optional)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Telefono (facoltativo)"
           }
         }
       }
@@ -20684,6 +21074,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stabilimento"
+          }
+        }
+      }
+    },
+    "Plant manager" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile di stabilimento"
+          }
+        }
+      }
+    },
+    "Plant name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome dello stabilimento"
           }
         }
       }
@@ -24661,6 +25071,16 @@
         }
       }
     },
+    "Short name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome breve"
+          }
+        }
+      }
+    },
     "Shortcuts" : {
       "localizations" : {
         "it" : {
@@ -24953,6 +25373,16 @@
         }
       }
     },
+    "Sign out" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esci"
+          }
+        }
+      }
+    },
     "Sign-in" : {
       "localizations" : {
         "en" : {
@@ -25017,6 +25447,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accesso il %@"
+          }
+        }
+      }
+    },
+    "Signed in as %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso come %@"
           }
         }
       }
@@ -25100,6 +25540,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dimensione"
+          }
+        }
+      }
+    },
+    "Size (optional)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimensione (facoltativa)"
           }
         }
       }
@@ -25244,6 +25694,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qualcosa è andato storto"
+          }
+        }
+      }
+    },
+    "Something went wrong. Try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa è andato storto. Riprova."
           }
         }
       }
@@ -25476,6 +25936,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Avvia simulazione"
+          }
+        }
+      }
+    },
+    "Start the free demo" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizia la demo gratuita"
+          }
+        }
+      }
+    },
+    "Start with the free demo. You can change plan later." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inizia con la demo gratuita. Potrai cambiare piano in seguito."
           }
         }
       }
@@ -26765,6 +27245,16 @@
         }
       }
     },
+    "Tell us who you are, so Aria can help you the right way." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dicci chi sei, così Aria può aiutarti nel modo giusto."
+          }
+        }
+      }
+    },
     "Templates" : {
       "localizations" : {
         "it" : {
@@ -27515,12 +28005,32 @@
         }
       }
     },
+    "The security check didn't pass. Complete it and try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il controllo di sicurezza non è andato a buon fine. Completalo e riprova."
+          }
+        }
+      }
+    },
     "The security check for web accounts wasn't ready. If no email arrives, send the link again." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il controllo di sicurezza per gli account web non era pronto. Se non arriva nessuna email, rimanda il link."
+          }
+        }
+      }
+    },
+    "The security check isn't ready yet. Try again in a moment." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il controllo di sicurezza non è ancora pronto. Riprova tra un attimo."
           }
         }
       }
@@ -27992,6 +28502,16 @@
         }
       }
     },
+    "This account has no access to AriaPLT Mobile. Contact your company administrator." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo account non ha accesso ad AriaPLT Mobile. Contatta l'amministratore della tua azienda."
+          }
+        }
+      }
+    },
     "This account is disabled. Contact your company administrator." : {
       "localizations" : {
         "en" : {
@@ -28334,6 +28854,16 @@
         }
       }
     },
+    "This plan isn't available yet. Choose the free demo." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo piano non è ancora disponibile. Scegli la demo gratuita."
+          }
+        }
+      }
+    },
     "This plant" : {
       "localizations" : {
         "it" : {
@@ -28395,6 +28925,16 @@
         }
       }
     },
+    "This server doesn't support creating an account from the app yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo server non permette ancora di creare un account dall'app."
+          }
+        }
+      }
+    },
     "This server doesn't support signing in with an email link. Ask your company administrator." : {
       "localizations" : {
         "en" : {
@@ -28407,6 +28947,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo server non supporta l'accesso con un link via email. Chiedi all'amministratore della tua azienda."
+          }
+        }
+      }
+    },
+    "This short name is already taken." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo nome breve è già in uso."
+          }
+        }
+      }
+    },
+    "This short name is already taken. Choose another one." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo nome breve è già in uso. Scegline un altro."
           }
         }
       }
@@ -29235,6 +29795,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riprova"
+          }
+        }
+      }
+    },
+    "Try AriaPLT with your team, free. No payment details needed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prova AriaPLT con il tuo team, gratis. Nessun dato di pagamento richiesto."
           }
         }
       }
@@ -32036,6 +32606,16 @@
         }
       }
     },
+    "You can't create a company from the app with this account. Create it on the AriaPLT website, then sign in again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con questo account non puoi creare un'azienda dall'app. Creala sul sito di AriaPLT, poi accedi di nuovo."
+          }
+        }
+      }
+    },
     "You haven't connected your account yet." : {
       "localizations" : {
         "it" : {
@@ -32128,6 +32708,36 @@
         }
       }
     },
+    "Your company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua azienda"
+          }
+        }
+      }
+    },
+    "Your company's short name in addresses: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il nome breve della tua azienda negli indirizzi: %@"
+          }
+        }
+      }
+    },
+    "Your first plant" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo primo stabilimento"
+          }
+        }
+      }
+    },
     "Your first report will appear here" : {
       "localizations" : {
         "en" : {
@@ -32176,6 +32786,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo esito sostituisce il verdetto di Aria e aggiorna i conteggi dello scenario."
+          }
+        }
+      }
+    },
+    "Your plan" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo piano"
           }
         }
       }

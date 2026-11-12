@@ -27,6 +27,8 @@ final class AriaAgentChatViewModel {
     let greeting = AriaChatCopy.greeting()
     /// I chip di partenza (GET /v1/chat/suggestions): vuoti = nessun chip.
     private(set) var suggestions: [String] = []
+    /// "Nuovo stabilimento" aperto dall'avviso (sheet): salvato, l'elenco si rilegge e la chat lo sceglie da sola.
+    var plantForm: AdminPlantFormViewModel?
     /// Altezza libera della chat vuota (senza barra, composer e tastiera): decide il layout.
     var emptyHeight: CGFloat = 700
     /// La domanda guidata è stata ridotta a pillola (si legge o si scrive liberamente).
@@ -124,6 +126,18 @@ final class AriaAgentChatViewModel {
     var isOnline: Bool { AriaNetworkMonitor.shared.isOnline }
     /// Senza stabilimento il backend non risponde: lo si chiede prima di scrivere.
     var needsPlant: Bool { backend.activePlantId == nil }
+
+    /// Un'azienda appena creata non ha stabilimenti: "Scegli" non avrebbe niente da offrire.
+    var plantGuard: AriaPlantGuard {
+        if !backend.plants.isEmpty { return .choose }
+        return backend.usesOperatorLayout ? .askAdmin : .create
+    }
+
+    /// Lo stesso modulo della sezione Plants, con il suo elenco: anche lì il nuovo stabilimento compare subito.
+    func startCreatingPlant(in plants: AdminPlantsViewModel) {
+        guard plantGuard == .create else { return }
+        plantForm = AdminPlantFormViewModel(mode: .create, owner: plants)
+    }
     var canRetry: Bool { failedTurn != nil }
 
     /// La chat con Aria non funziona offline (lavori e calendario sì): lo si dice prima che fallisca

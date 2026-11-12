@@ -62,6 +62,9 @@ final class AriaBackend {
     /// Email a cui è stato mandato il link di accesso, finché il link è valido (15').
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
+    /// La persona si è appena iscritta e non ha finito Profilo, Azienda e Piano: ContentView mostra l'iscrizione
+    /// al posto della shell. Resta salvato, così un riavvio a metà non mostra la shell nemmeno per un istante.
+    private(set) var isSigningUp = false
 
     /// Funzioni a cui il backend ha risposto 403 `operation_forbidden` (release senza la rotta per l'operatore):
     /// si nascondono fino al prossimo avvio, senza riprovare, o finché la sessione non comincia a seguire il ruolo.
@@ -96,12 +99,14 @@ final class AriaBackend {
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {
             pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
         }
+        isSigningUp = isSignedIn && UserDefaults.standard.bool(forKey: Self.signingUpKey)
         listenForAccessChanges()
     }
 
     private static let linkEmailKey = "aria.magic_link_email"
     private static let linkSentAtKey = "aria.magic_link_sent_at"
     private static let linkLifetime: TimeInterval = 15 * 60
+    private static let signingUpKey = "aria.signing_up"
 
     /// Chiave nuova: il profilo salvato dalle versioni con l'username ha un'altra forma.
     /// Sta nel Keychain (nome ed email non vanno nei backup), senza Face ID: serve all'avvio.
@@ -218,9 +223,25 @@ final class AriaBackend {
         }
     }
 
+    /// Iscrizione: il link dell'app all'email scritta qui, dietro il captcha (POST /api/auth/mobile/sign-up-link).
+    /// Arriva anche a chi non ha ancora un account, e a chi si è fermato prima di creare l'azienda (request-link a
+    /// loro non manda nulla). Poi è il passo 2 di sempre: il link vale solo per questa email.
+    func sendSignUpLink(email: String, captcha: String) async throws {
+        let email = Self.normalized(email)
+        try await api.auth.requestSignUpLink(email: email, captcha: captcha)
+        setPendingLink(email)
+        AriaAuthTrace.step("signUpLink.sent")
+    }
+
     /// Torna al passo dell'email (per chiedere un nuovo link).
     func cancelPendingLink() {
         setPendingLink(nil)
+    }
+
+    private func setSigningUp(_ value: Bool) {
+        guard isSigningUp != value else { return }
+        isSigningUp = value
+        UserDefaults.standard.set(value, forKey: Self.signingUpKey)
     }
 
     private func setPendingLink(_ email: String?) {
@@ -244,10 +265,10 @@ final class AriaBackend {
     /// lo dice GET /v1/me.
     /// Il link vale solo per l'email a cui l'accesso è stato chiesto da questo dispositivo: senza
     /// questo vincolo un link con il token di un altro account (`aria://` lo apre chiunque) farebbe
-    /// entrare l'utente nell'account di chi lo manda.
+    /// entrare l'utente nell'account di chi lo manda. Vale anche per il link d'iscrizione (`sendSignUpLink`).
     func completeSignIn(with link: AriaSignInLink) async throws {
         // Nessuna richiesta da qui: si rifiuta senza chiamare il server, il token non si consuma.
-        guard let requested = pendingLinkEmail else { throw AriaSignInError.noPendingRequest }
+        guard pendingLinkEmail != nil else { throw AriaSignInError.noPendingRequest }
         let account: AriaMobileAccount
         switch link {
         case .mobile:
@@ -263,7 +284,8 @@ final class AriaBackend {
                 throw error
             }
         }
-        guard Self.normalized(account.email) == Self.normalized(requested) else {
+        let requested = pendingLinkEmail.map(Self.normalized)
+        guard requested == Self.normalized(account.email) else {
             // Account diverso: la sessione appena aperta si chiude sul server e la richiesta resta in attesa.
             await api.auth.signOut()
             throw AriaSignInError.accountMismatch
@@ -327,6 +349,7 @@ final class AriaBackend {
         isSignedIn = false
         didBootstrap = false
         setMobileAccount(nil)
+        setSigningUp(false)
         membership = nil
         access = nil
         await api.context.setAccess(version: nil, followsRole: false)
@@ -380,6 +403,15 @@ final class AriaBackend {
             let listed: [AriaCompany] = try await api.get("v1/companies", companyScoped: false)
             // Solo quelle aperte all'app; un backend senza `appAccess` le lascia tutte.
             companies = listed.filter { $0.appAccess != false }
+            // Iscrizione a metà: niente stabilimenti né diritti finché l'azienda non ha il suo piano.
+            let signingUp = try await needsSignUpSteps(listed)
+            setSigningUp(signingUp)
+            if signingUp {
+                didBootstrap = true
+                lastError = nil
+                AriaAuthTrace.step("bootstrap.signUp", "aziende=\(listed.count)")
+                return
+            }
             // Operatore senza aziende: la membership non è più attiva, è come essere scollegati.
             if companies.isEmpty, api.auth.isMobileSession {
                 await api.auth.discardSession()
@@ -397,6 +429,37 @@ final class AriaBackend {
             AriaAuthTrace.failure("bootstrap.failed", error)
             handle(error)
         }
+    }
+
+    /// Chi deve ancora fare Profilo, Azienda o Piano (contratto "Onboarding in the app", §3). Lo stato si legge solo
+    /// quando può servire: nessuna azienda attiva (chi si è appena iscritto ne ha zero), o un'azienda propria con
+    /// l'onboarding a metà. Chi è entrato in un'azienda altrui non lo legge: su un backend che non conosce ancora
+    /// le sessioni dell'app risulterebbe a metà anche lui.
+    /// Nessuna azienda e onboarding finito: si esce come prima (il chiamante). 404: l'account non c'è più.
+    /// Senza risposta, con aziende si va avanti; senza aziende si resta collegati e la schermata dell'iscrizione
+    /// riprova da sé: una rete che cade non deve buttare fuori chi si è appena iscritto.
+    private func needsSignUpSteps(_ listed: [AriaCompany]) async throws -> Bool {
+        let unfinished = listed.contains { $0.myRole == "owner" && $0.onboardingCompleted == false }
+        guard listed.isEmpty || unfinished else { return false }
+        do {
+            return try await !AriaSignUpAPI(api: api).status().onboardingComplete
+        } catch AriaError.http(let status, _) where status == 404 {
+            await api.auth.discardSession()
+            throw AriaError.signedOut
+        } catch AriaError.signedOut {
+            throw AriaError.signedOut
+        } catch {
+            AriaAuthTrace.failure("bootstrap.signUpStatus.failed", error)
+            return listed.isEmpty
+        }
+    }
+
+    /// Il passo Profilo ha salvato (PATCH /v1/me): il nome nuovo vale da subito, anche nella shell dopo.
+    func profileSaved(_ me: AriaMe) {
+        guard let current = mobileAccount else { return }
+        let updated = me.account
+        setMobileAccount(AriaMobileAccount(id: current.id, name: updated.name.isEmpty ? current.name : updated.name,
+                                           email: current.email, kind: updated.kind))
     }
 
     func selectCompany(_ id: String?) async {
@@ -426,6 +489,15 @@ final class AriaBackend {
             let me: AriaMe = try await api.get("v1/me")
             guard companyId == activeCompanyId else { return }
             let followed = rights.followsRole
+            // Operatore o no lo dice GET /v1/me, non il link usato: chi entra col link dell'app (un owner, o chi si è
+            // appena iscritto) parte da `.operator`. Un membro ristretto senza profilo operatore resta com'è: il suo
+            // layout è comunque quello dell'operatore.
+            let kind: AriaAccountKind? = me.operatorProfile != nil ? .operator
+                : me.membership?.restricted == false ? .admin : nil
+            if let kind, let account = mobileAccount, account.kind != kind {
+                setMobileAccount(AriaMobileAccount(id: account.id, name: account.name, email: account.email, kind: kind))
+                AriaAuthTrace.step("me.kind", "\(kind)")
+            }
             let changed = me.access != access || me.membership != membership
             membership = me.membership
             access = me.access
@@ -560,6 +632,7 @@ final class AriaBackend {
             isSignedIn = false
             didBootstrap = false
             setMobileAccount(nil)
+            setSigningUp(false)
         }
         lastError = error.localizedDescription
     }

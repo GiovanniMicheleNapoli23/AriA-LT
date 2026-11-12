@@ -265,6 +265,26 @@ actor AriaAuth {
         }
     }
 
+    /// Iscrizione dall'app, come il form della web: l'email col link dell'app (`/m/sign-in#token=…`, 15', una volta)
+    /// anche a un indirizzo che non ha ancora un account; l'account nasce alla verifica. Risponde `202 {}` a ogni
+    /// indirizzo, quindi un esito positivo non dice niente sull'account. Il captcha è obbligatorio e vale una volta.
+    func requestSignUpLink(email: String, captcha: String) async throws {
+        // Niente cookie: con un cookie la web controllerebbe anche l'Origin.
+        var req = webRequest("api/auth/mobile/sign-up-link", method: "POST")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(captcha, forHTTPHeaderField: "x-captcha-response")
+        // La lingua dell'email; senza, la web usa Accept-Language.
+        req.setValue(AriaContext.appLocale, forHTTPHeaderField: "x-aria-locale")
+        req.httpBody = try JSONEncoder().encode(["email": email])
+        AriaAuthTrace.step("signUpLink.request", req.url?.absoluteString ?? "-")
+        let (data, response) = try await send(req, response: "signUpLink.request.response", network: "signUpLink.request.network")
+        do { try Self.checkSignUpLink(response, data) }
+        catch {
+            AriaAuthTrace.failure("signUpLink.request.rejected", error)
+            throw error
+        }
+    }
+
     /// Estrae il link di accesso da un testo incollato. Solo link del nostro host.
     nonisolated func magicLink(in text: String) -> AriaSignInLink? {
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
@@ -430,6 +450,60 @@ actor AriaAuth {
         clear()
     }
 
+    // MARK: Onboarding
+
+    private nonisolated struct FinishResponse: Decodable, Sendable {
+        let alreadyDone: Bool?
+    }
+
+    /// Ultimo passo dell'iscrizione, sulla web (POST /api/auth/onboarding/finish): piano sull'azienda di cui si è
+    /// owner (la prima volta parte la prova di 14 giorni), persona segnata come onboarded, email di benvenuto.
+    /// Con la sessione, non con il JWT. Una chiamata alla volta: due insieme manderebbero due email.
+    /// Restituisce `alreadyDone`: era già finito (dalla web o da una chiamata precedente), vale come riuscito.
+    func finishOnboarding(plan: String) async throws -> Bool {
+        guard let credential = loadCredential(context: nil) else { throw AriaError.signedOut }
+        var req = switch credential {
+        case .mobile(let token): request("api/auth/onboarding/finish", method: "POST", bearer: token)
+        case .webCookie(let cookie): webRequest("api/auth/onboarding/finish", method: "POST", cookie: cookie)
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONEncoder().encode(["plan": plan])
+        AriaAuthTrace.step("onboarding.finish", "piano=\(plan)")
+        let (data, response) = try await send(req, response: "onboarding.finish.response", network: "onboarding.finish.network")
+        do {
+            try Self.checkFinish(response, data)
+        } catch AriaError.signedOut {
+            // 401: la sessione è finita, si rifà l'accesso.
+            clear()
+            throw AriaError.signedOut
+        }
+        return (try? JSONDecoder().decode(FinishResponse.self, from: data))?.alreadyDone ?? false
+    }
+
+    /// Errori della chiamata finale (better-auth: `{"code", "message"}`). Il codice si guarda prima del controllo
+    /// "host giù": il 502 `backend_error` non ha `detail` e passerebbe per un server spento.
+    private static func checkFinish(_ response: URLResponse, _ data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
+        let code = AriaHTTP.code(from: data)
+        switch http.statusCode {
+        case 200..<300:
+            return
+        case 401:
+            throw AriaError.signedOut
+        case 409 where code == "no_company":
+            throw AriaSignUpError.noCompany
+        case 422 where code == "plan_not_allowed":
+            throw AriaSignUpError.planNotAllowed
+        case 502 where code == "backend_error":
+            throw AriaSignUpError.finishFailed
+        case 429:
+            throw tooManyAttempts(http)
+        default:
+            if let offline = AriaHTTP.hostDownError(response) { throw offline }
+            try AriaHTTP.check(response, data)
+        }
+    }
+
     /// Dimentica la sessione senza chiamare il server: la sessione è già finita
     /// (operatore disabilitato, membership non più attiva) o non va tenuta (accesso non completato).
     func discardSession() {
@@ -593,6 +667,9 @@ actor AriaAuth {
             throw AriaError.linkExpired
         case 403 where code == "ACCOUNT_DISABLED":
             throw AriaError.stream(String(localized: "This account is disabled. Contact your company administrator."))
+        case 403 where code == "not_app_eligible":
+            // L'account c'è, non è una nuova iscrizione e non ha l'app (es. è entrato come membro dopo l'email).
+            throw AriaError.stream(String(localized: "This account has no access to AriaPLT Mobile. Contact your company administrator."))
         case 404:
             // Rotta assente sull'host di accesso: il server non è quello giusto.
             throw AriaError.linkSignInUnavailable
@@ -614,6 +691,26 @@ actor AriaAuth {
             return
         case 400 where code == "MISSING_RESPONSE", 403 where code == "VERIFICATION_FAILED":
             throw AriaError.captchaRejected
+        case 429:
+            throw tooManyAttempts(http)
+        default:
+            try AriaHTTP.check(response, data)
+        }
+    }
+
+    /// Errori del link d'iscrizione: captcha mancante o rifiutato, iscrizione spenta o rotta assente, troppi tentativi
+    /// (10 ogni 10' per IP). Il 403 dice due cose diverse: si distingue dal code.
+    private static func checkSignUpLink(_ response: URLResponse, _ data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
+        if let offline = AriaHTTP.hostDownError(response) { throw offline }
+        let code = AriaHTTP.code(from: data)
+        switch http.statusCode {
+        case 200..<300:
+            return
+        case 400 where code == "MISSING_RESPONSE", 403 where code == "VERIFICATION_FAILED":
+            throw AriaError.signUpCheckFailed
+        case 403 where code == "SIGN_UP_DISABLED", 404:
+            throw AriaError.signUpUnavailable
         case 429:
             throw tooManyAttempts(http)
         default:

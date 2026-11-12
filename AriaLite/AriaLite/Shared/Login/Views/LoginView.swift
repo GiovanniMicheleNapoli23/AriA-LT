@@ -11,6 +11,7 @@
 //  Solo email, niente password, un solo campo per operatori e account della web:
 //  1) si scrive l'email e si mandano i link (il captcha della web lavora in silenzio sotto la card);
 //  2) si tocca il link nell'email (AppViewModel.open) o lo si incolla qui.
+//  "Crea un account" usa lo stesso campo per il link d'iscrizione; il captcha allora è obbligatorio.
 //  Tutta la logica è in LoginViewModel; qui restano il fuoco dei campi, lo scorrimento e le animazioni.
 //
 
@@ -123,6 +124,14 @@ struct LoginView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 8)
+            } else if model.isCreatingAccount {
+                Text("Enter your work email: we'll send you a link to create your account in the app.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 8)
+                    .transition(.opacity)
             }
 
             VStack(spacing: 0) {
@@ -142,11 +151,27 @@ struct LoginView: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            LoginPrimaryButton(title: model.sentTo == nil ? "Send sign-in link" : "Sign in",
-                               isEnabled: model.isPrimaryEnabled, isBusy: model.isBusy, action: primaryAction)
+            LoginPrimaryButton(title: primaryTitle, isEnabled: model.isPrimaryEnabled, isBusy: model.isBusy,
+                               action: primaryAction)
                 .id(Self.primaryID)
 
-            if model.sentTo != nil {
+            if !model.awaitsLink {
+                HStack(spacing: 4) {
+                    Text(model.isCreatingAccount ? "Already have an account?" : "New to AriaPLT?")
+                        .foregroundStyle(.secondary)
+                    Button(model.isCreatingAccount ? "Sign in" : "Create an account") {
+                        model.setCreatingAccount(!model.isCreatingAccount)
+                        focus = .email
+                    }
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Color.liteAccent)
+                    .accessibilityIdentifier(model.isCreatingAccount ? "login.signIn" : "login.createAccount")
+                }
+                .font(.footnote)
+                .multilineTextAlignment(.center)
+            }
+
+            if model.awaitsLink {
                 VStack(spacing: 10) {
                     Text("Copy the link from the email and paste it here. With Universal Clipboard you can copy it on your Mac. Don't open it in the browser: it works once and expires in 10 minutes.")
                         .font(.caption)
@@ -161,14 +186,20 @@ struct LoginView: View {
         }
         .animation(.snappy(duration: 0.25), value: model.errorMessage)
         .animation(.snappy(duration: 0.25), value: model.isOffline)
-        .animation(.snappy(duration: 0.25), value: model.sentTo)
+        .animation(.snappy(duration: 0.25), value: model.awaitsLink)
         .animation(.snappy(duration: 0.25), value: model.notice)
         .animation(.snappy(duration: 0.25), value: model.captchaNeedsInteraction)
+        .animation(.snappy(duration: 0.25), value: model.isCreatingAccount)
+    }
+
+    private var primaryTitle: LocalizedStringResource {
+        if model.awaitsLink { return "Sign in" }
+        return model.isCreatingAccount ? "Create account" : "Send sign-in link"
     }
 
     private var card: some View {
         VStack(spacing: 0) {
-            if model.sentTo == nil { emailRow } else { linkRow }
+            if !model.awaitsLink { emailRow } else { linkRow }
         }
         .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
@@ -217,7 +248,7 @@ struct LoginView: View {
         }
     }
 
-    /// Captcha della web per il magic link: invisibile finché Turnstile non chiede un tocco.
+    /// Captcha della web per il magic link e per l'iscrizione: invisibile finché Turnstile non chiede un tocco.
     /// Un token nuovo dopo ogni invio (`captchaGeneration`).
     private var captcha: some View {
         AriaTurnstileView(siteKey: model.turnstileSiteKey, origin: model.turnstileOrigin) { event in
