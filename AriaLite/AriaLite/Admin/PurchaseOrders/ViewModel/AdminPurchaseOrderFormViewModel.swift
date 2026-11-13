@@ -174,7 +174,7 @@ final class AdminPurchaseOrderFormViewModel: Identifiable {
         guard !isSaving else { return false }
         errorMessage = nil
         guard canSave else {
-            errorMessage = dateError ?? String(localized: "Fill in the title and choose a plant.")
+            errorMessage = dateError ?? String(localized: "Fill in the title and choose a site.")
             return false
         }
         let api = AdminPurchaseOrdersAPI(api: backend.api)

@@ -104,7 +104,7 @@ final class AdminLearnedKnowledgeViewModel {
     }
 
     var statusFilterLabel: String { statusFilter?.label ?? String(localized: "All") }
-    var plantFilterLabel: String { plantName(plantFilter) ?? String(localized: "All plants") }
+    var plantFilterLabel: String { plantName(plantFilter) ?? String(localized: "All sites") }
     var authorFilterLabel: String {
         guard let key = authorFilter else { return String(localized: "Anyone") }
         return authors.first { $0.key == key }?.name ?? key

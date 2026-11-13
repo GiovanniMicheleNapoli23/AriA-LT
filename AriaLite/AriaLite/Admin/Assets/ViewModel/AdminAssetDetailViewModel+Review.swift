@@ -24,7 +24,7 @@ extension AdminAssetDetailViewModel {
 
     var reviewMessage: LocalizedStringKey {
         switch reviewStage {
-        case .pending: "Approve this asset to add it to your plant's asset list."
+        case .pending: "Approve this asset to add it to your site's asset list."
         case .approved: "In use. Unapprove sends it back to draft; Reject takes it out of use."
         case .rejected: "Not in use. Back to draft reopens it for review; Approve puts it back in use."
         }

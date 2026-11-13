@@ -89,8 +89,8 @@ final class AdminCategoryFormViewModel: Identifiable {
 
     /// Nome dello stabilimento scelto, o "tutti".
     func plantLabel(_ id: String?) -> String {
-        guard let id else { return String(localized: "All plants") }
-        return plants.first { $0.id == id }?.name ?? String(localized: "Unknown plant")
+        guard let id else { return String(localized: "All sites") }
+        return plants.first { $0.id == id }?.name ?? String(localized: "Unknown site")
     }
 
     // MARK: - Lettura dei campi
@@ -120,7 +120,7 @@ final class AdminCategoryFormViewModel: Identifiable {
             )
         }
         if !isEditing, plantId == nil {
-            throw InvalidField(message: String(localized: "Choose a plant for the new category."))
+            throw InvalidField(message: String(localized: "Choose a site for the new category."))
         }
     }
 

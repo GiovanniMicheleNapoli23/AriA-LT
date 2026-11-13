@@ -29,13 +29,13 @@ struct AdminPlantsFailure: Equatable {
         case .notOnPhone?, .http(403, _)?, .permissionDenied?:
             let message = switch action {
             case .read:
-                String(localized: "Your role doesn't have access to plants. Ask an owner or admin of your company.")
+                String(localized: "Your role doesn't have access to sites. Ask an owner or admin of your company.")
             case .write:
-                String(localized: "Your role can't change plants. Ask an owner or admin of your company.")
+                String(localized: "Your role can't change sites. Ask an owner or admin of your company.")
             }
             return Self(message: message, isForbidden: true, isNotFound: false)
         case .http(404, _)?:
-            let message = String(localized: "This plant no longer exists.")
+            let message = String(localized: "This site no longer exists.")
             return Self(message: message, isForbidden: false, isNotFound: true)
         case .http(_, let detail)?:
             let message = detail.isEmpty ? error.localizedDescription : detail

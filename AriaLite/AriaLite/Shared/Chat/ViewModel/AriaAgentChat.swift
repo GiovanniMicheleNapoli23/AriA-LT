@@ -718,7 +718,7 @@ final class AriaAgentChat {
         let id = "validation-\(messageId)"
         guard let message = messages.first(where: { $0.id == messageId }) else { return }
         guard let companyId = backend.activeCompanyId, let plantId = backend.activePlantId else {
-            lastError = String(localized: "Select a plant before answering — this is saved to the plant's knowledge.")
+            lastError = String(localized: "Select a site before answering — this is saved to the site's knowledge.")
             return
         }
         let feedback = feedback.trimmingCharacters(in: .whitespacesAndNewlines)

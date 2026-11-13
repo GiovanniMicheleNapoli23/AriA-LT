@@ -22,7 +22,7 @@ nonisolated enum AriaJobRole: String, CaseIterable, Identifiable, Sendable {
 
     var title: LocalizedStringResource {
         switch self {
-        case .plantManager: "Plant manager"
+        case .plantManager: "Site manager"
         case .maintenanceEngineer: "Maintenance engineer"
         case .technician: "Technician"
         case .operationsLead: "Operations lead"

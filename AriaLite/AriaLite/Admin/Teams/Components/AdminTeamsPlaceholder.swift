@@ -43,7 +43,7 @@ struct AdminTeamsPlaceholder: View {
             case .noMatches:
                 VStack(spacing: 14) {
                     ContentUnavailableView("No matching teams", systemImage: "line.3.horizontal.decrease.circle",
-                                           description: Text("No team matches this plant."))
+                                           description: Text("No team matches this site."))
                     Button("Clear filters", action: clearFilters)
                         .ariaGlassButtonStyle()
                 }

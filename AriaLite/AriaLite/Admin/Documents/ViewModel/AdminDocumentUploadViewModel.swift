@@ -73,7 +73,7 @@ final class AdminDocumentUploadViewModel {
 
     var conflictMessage: String {
         let count = conflicts.count
-        return String(localized: "\(count) files already exist in this plant. Replace them, or upload only the new ones?")
+        return String(localized: "\(count) files already exist on this site. Replace them, or upload only the new ones?")
     }
 
     // MARK: File

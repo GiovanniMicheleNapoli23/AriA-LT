@@ -62,7 +62,7 @@ struct AdminScenarioClosuresTab: View {
                 if viewModel.isSearching {
                     ContentUnavailableView.search(text: viewModel.searchText)
                 } else {
-                    AdminSectionNotice(text: String(localized: "No closures for this plant in the rows loaded so far."))
+                    AdminSectionNotice(text: String(localized: "No closures for this site in the rows loaded so far."))
                         .padding(.vertical, 12)
                 }
             }

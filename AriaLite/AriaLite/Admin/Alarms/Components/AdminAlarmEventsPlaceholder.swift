@@ -38,7 +38,7 @@ struct AdminAlarmEventsPlaceholder: View {
                 switch filter {
                 case .all:
                     ContentUnavailableView("No alarm events", systemImage: "bell.slash",
-                                           description: Text("The plant hasn't raised any alarm yet."))
+                                           description: Text("The site hasn't raised any alarm yet."))
                 case .unread:
                     ContentUnavailableView("All caught up", systemImage: "checkmark.circle",
                                            description: Text("There are no unread alarm events."))

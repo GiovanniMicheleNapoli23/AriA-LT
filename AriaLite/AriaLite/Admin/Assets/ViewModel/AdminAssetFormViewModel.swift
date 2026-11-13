@@ -105,7 +105,7 @@ final class AdminAssetFormViewModel {
         if trimmed(tag).isEmpty { return String(localized: "Enter the asset tag.") }
         if trimmed(name).isEmpty { return String(localized: "Enter the asset name.") }
         if parsedPower == nil { return String(localized: "Power must be a positive number in kW.") }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site.") }
         return nil
     }
 

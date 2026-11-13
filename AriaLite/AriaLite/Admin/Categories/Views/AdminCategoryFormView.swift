@@ -109,10 +109,10 @@ struct AdminCategoryFormView: View {
 
     private var plant: some View {
         Section {
-            Picker("Plant", selection: $viewModel.plantId) {
+            Picker("Site", selection: $viewModel.plantId) {
                 // In creazione lo stabilimento è obbligatorio: "tutti" non si può scegliere.
                 if viewModel.isEditing {
-                    Text("All plants").tag(String?.none)
+                    Text("All sites").tag(String?.none)
                 }
                 ForEach(viewModel.plants) { plant in
                     Text(plant.name).tag(Optional(plant.id))
@@ -120,8 +120,8 @@ struct AdminCategoryFormView: View {
             }
         } footer: {
             Text(viewModel.isEditing
-                ? "Choose which plant the category belongs to."
-                : "A new category belongs to one plant.")
+                ? "Choose which site the category belongs to."
+                : "A new category belongs to one site.")
         }
     }
 }

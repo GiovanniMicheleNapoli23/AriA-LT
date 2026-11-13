@@ -626,7 +626,7 @@ nonisolated enum AdminMarketplaceSetDestination: String, CaseIterable, Identifia
         switch self {
         case .agentStudio: String(localized: "Agent Studio")
         case .learnedKnowledge: String(localized: "Learned knowledge")
-        case .plantRecords: String(localized: "Plant records")
+        case .plantRecords: String(localized: "Site records")
         case .documents: String(localized: "Documents")
         case .policies: String(localized: "Company policies")
         }

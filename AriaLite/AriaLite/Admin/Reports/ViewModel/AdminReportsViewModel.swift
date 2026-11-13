@@ -44,7 +44,7 @@ final class AdminReportsViewModel {
 
     var plants: [AriaPlant] { backend.plants }
     var plantFilterLabel: String {
-        plants.first { $0.id == plantFilterId }?.name ?? String(localized: "All plants")
+        plants.first { $0.id == plantFilterId }?.name ?? String(localized: "All sites")
     }
 
     var isLoading: Bool { overview.isLoading || workOrders.isLoading || assets.isLoading || widgets.isLoading }

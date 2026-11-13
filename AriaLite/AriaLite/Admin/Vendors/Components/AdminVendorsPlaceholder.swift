@@ -36,7 +36,7 @@ struct AdminVendorsPlaceholder: View {
                 }
             case .empty:
                 ContentUnavailableView("No vendors", systemImage: "building.2",
-                                       description: Text("Vendors of this plant appear here."))
+                                       description: Text("Vendors of this site appear here."))
             case .noResults(let query):
                 ContentUnavailableView.search(text: query)
             case .noMatches:

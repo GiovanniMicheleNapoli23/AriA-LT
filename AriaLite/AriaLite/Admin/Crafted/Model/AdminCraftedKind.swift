@@ -93,7 +93,7 @@ nonisolated enum AdminCraftedKind {
         case "table": String(localized: "Spare parts below minimum stock, with supplier and lead time")
         case "kpi-grid": String(localized: "OEE, scrap and downtime minutes for the night shift")
         case "maintenance-plan-card": String(localized: "Monthly lubrication of the line 1 conveyors")
-        case "dashboard": String(localized: "Availability, MTBF and open work orders for the plant, by line")
+        case "dashboard": String(localized: "Availability, MTBF and open work orders for the site, by line")
         case "wo-card": String(localized: "Replace the bearings on pump P-101 by Friday")
         case "triage-plan": String(localized: "Three alarms active on the packaging line: where do I start?")
         case "team-kanban": String(localized: "The electrical team's jobs for this week")

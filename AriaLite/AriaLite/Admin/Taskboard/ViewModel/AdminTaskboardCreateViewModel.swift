@@ -65,7 +65,7 @@ final class AdminTaskboardCreateViewModel: Identifiable {
     func create() async {
         guard canCreate else { return }
         guard let plantId = backend.activePlantId else {
-            errorMessage = String(localized: "Choose a plant first.")
+            errorMessage = String(localized: "Choose a site first.")
             return
         }
         isSaving = true

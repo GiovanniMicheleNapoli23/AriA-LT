@@ -177,7 +177,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .wafBlocked: String(localized: "Request blocked by the firewall (body over 8 KB).")
         case .bodyTooLarge(let bytes, let limit): String(localized: "Message too long (\(bytes) bytes, limit \(limit)).")
         case .missingCompany: String(localized: "No company selected.")
-        case .missingPlant: String(localized: "Select a plant before using the chat.")
+        case .missingPlant: String(localized: "Select a site before using the chat.")
         case .notOnPhone: String(localized: "This isn't available on the phone yet.")
         case .permissionDenied(let denial):
             denial.pausesAccess

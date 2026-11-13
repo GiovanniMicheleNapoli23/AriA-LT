@@ -64,7 +64,7 @@ final class AdminDowntimeFormViewModel {
     var validationMessage: String? {
         if startedAt > .now.addingTimeInterval(60) { return String(localized: "The start can't be in the future.") }
         if !isOngoing, endedAt < startedAt { return String(localized: "The end must come after the start.") }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant before logging downtime.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site before logging downtime.") }
         return nil
     }
 

@@ -51,7 +51,7 @@ final class AdminInspectionsViewModel {
     var plants: [AriaPlant] { backend.plants }
 
     /// Lo stabilimento filtrato (`nil` = tutti). Di default è quello attivo dell'app, come Assets e Documents.
-    /// "All plants" scelto dall'utente resta; uno stabilimento scelto vale finché lo stabilimento attivo non cambia.
+    /// "All sites" scelto dall'utente resta; uno stabilimento scelto vale finché lo stabilimento attivo non cambia.
     var plantFilter: String? {
         get {
             guard hasChosenPlant, chosenPlant == nil || activePlantAtChoice == backend.activePlantId else {
@@ -144,7 +144,7 @@ final class AdminInspectionsViewModel {
     }
 
     var statusFilterLabel: String { statusFilter.map(AdminInspectionStatus.label(for:)) ?? String(localized: "All") }
-    var plantFilterLabel: String { plantFilter.map(plantName) ?? String(localized: "All plants") }
+    var plantFilterLabel: String { plantFilter.map(plantName) ?? String(localized: "All sites") }
     var assetFilterLabel: String { assetFilter ?? String(localized: "All assets") }
     var zoneFilterLabel: String { zoneFilter ?? String(localized: "All areas") }
 

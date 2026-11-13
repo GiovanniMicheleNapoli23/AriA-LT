@@ -48,7 +48,7 @@ final class AdminMaintenanceViewModel {
     // MARK: Filtri
 
     var plants: [AriaPlant] { backend.plants }
-    /// Senza scelta esplicita vale lo stabilimento attivo. "All plants" (`nil`) resta finché non si azzera;
+    /// Senza scelta esplicita vale lo stabilimento attivo. "All sites" (`nil`) resta finché non si azzera;
     /// uno stabilimento scelto vale finché lo stabilimento attivo non cambia (poi si torna al nuovo attivo).
     var plantFilter: String? {
         get {
@@ -120,7 +120,7 @@ final class AdminMaintenanceViewModel {
     }
 
     var plantFilterLabel: String {
-        guard let plantFilter else { return String(localized: "All plants") }
+        guard let plantFilter else { return String(localized: "All sites") }
         return plants.first { $0.id == plantFilter }?.name ?? plantFilter
     }
     var assetFilterLabel: String { assetFilter ?? String(localized: "All assets") }

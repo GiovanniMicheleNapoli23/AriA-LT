@@ -48,10 +48,10 @@ nonisolated enum AdminMarketplaceKind: String, Decodable, Sendable, CaseIterable
 
     var blurb: String {
         switch self {
-        case .skill: String(localized: "One job, done the way your plant does it.")
+        case .skill: String(localized: "One job, done the way your site does it.")
         case .connector: String(localized: "The systems Aria can read and write.")
         case .plugin: String(localized: "Several skills and the connectors they assume, in one move.")
-        case .workflow: String(localized: "A chain that runs on a schedule or a plant event.")
+        case .workflow: String(localized: "A chain that runs on a schedule or a site event.")
         case .agentPack: String(localized: "A whole persona: rules, vocabulary and the skills of a role.")
         case .knowledgePack: String(localized: "The vocabulary and written procedure of a discipline.")
         case .fullSet: String(localized: "Everything for one machine — agent, skills, knowledge and workflows.")

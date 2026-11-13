@@ -106,7 +106,7 @@ final class AdminAssetDetailViewModel {
         add(String(localized: "Type"), asset.typeLabel)
         add(String(localized: "Status"), asset.statusLabel)
         add(String(localized: "Zone"), asset.zone)
-        add(String(localized: "Plant"), plantName)
+        add(String(localized: "Site"), plantName)
         add(String(localized: "Manufacturer"), asset.manufacturer)
         add(String(localized: "Model"), asset.model)
         add(String(localized: "Serial number"), asset.serialNumber)

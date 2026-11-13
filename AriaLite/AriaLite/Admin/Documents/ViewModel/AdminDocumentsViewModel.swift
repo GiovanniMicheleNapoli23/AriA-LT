@@ -89,8 +89,8 @@ final class AdminDocumentsViewModel {
     var plants: [AriaPlant] { backend.plants }
 
     var plantFilterLabel: String {
-        guard let plantId else { return String(localized: "All plants") }
-        return plants.first { $0.id == plantId }?.name ?? String(localized: "This plant")
+        guard let plantId else { return String(localized: "All sites") }
+        return plants.first { $0.id == plantId }?.name ?? String(localized: "This site")
     }
 
     /// Lo stabilimento filtrato non è quello attivo dell'app: il filtro si evidenzia.

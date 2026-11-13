@@ -97,7 +97,7 @@ final class AdminWorkOrderFormViewModel: Identifiable {
     /// Il primo problema che impedisce di salvare.
     var validationMessage: String? {
         if trimmedTitle.isEmpty { return String(localized: "Add a title.") }
-        if isCreating, draft.plantId == nil { return String(localized: "Choose a plant.") }
+        if isCreating, draft.plantId == nil { return String(localized: "Choose a site.") }
         if !minutesAreValid { return String(localized: "The estimated duration must be a whole number of minutes.") }
         return nil
     }

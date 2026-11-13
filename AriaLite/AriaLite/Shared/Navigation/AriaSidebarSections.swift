@@ -85,7 +85,7 @@ enum AriaSidebarSections {
             llmUsage,
         ]),
         AriaSidebarGroup(title: "Configuration", items: [
-            AriaSidebarItem(title: "Plants", icon: "building.columns", target: .adminPlants),
+            AriaSidebarItem(title: "Sites", icon: "building.columns", target: .adminPlants),
             categories,
             AriaSidebarItem(title: "Teams", icon: "person.3", target: .adminTeams),
             AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers),

@@ -112,7 +112,7 @@ struct SettingsSheet: View {
                 Divider().padding(.leading, 54)
             }
             if let plant = viewModel.plantName {
-                AriaSettingsRow(title: "Plant", systemImage: "gearshape.2") {
+                AriaSettingsRow(title: "Site", systemImage: "gearshape.2") {
                     valueText(plant)
                 }
             }

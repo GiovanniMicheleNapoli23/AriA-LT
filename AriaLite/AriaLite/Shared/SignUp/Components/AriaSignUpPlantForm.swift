@@ -21,7 +21,7 @@ struct AriaSignUpPlantForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 VStack(spacing: 0) {
                     LoginCardRow(icon: "building") {
-                        TextField("Plant name", text: $model.plantName)
+                        TextField("Site name", text: $model.plantName)
                             .submitLabel(.next)
                             .focused($focus, equals: .name)
                             .onSubmit { focus = .code }
@@ -51,7 +51,7 @@ struct AriaSignUpPlantForm: View {
                     .padding(.horizontal, 4)
             }
 
-            LoginPrimaryButton(title: "Create plant", isEnabled: model.canCreatePlant, isBusy: model.isSaving) {
+            LoginPrimaryButton(title: "Create site", isEnabled: model.canCreatePlant, isBusy: model.isSaving) {
                 focus = nil
                 Task { await model.createPlant() }
             }

@@ -31,9 +31,9 @@ struct AdminTeamFormView: View {
                 } footer: {
                     Text("Name is required.")
                 }
-                Section("Plant") {
-                    Picker("Plant", selection: $viewModel.plantId) {
-                        Text("No plant").tag(String?.none)
+                Section("Site") {
+                    Picker("Site", selection: $viewModel.plantId) {
+                        Text("No site").tag(String?.none)
                         ForEach(viewModel.plants) { plant in
                             Text(verbatim: plant.name).tag(Optional(plant.id))
                         }

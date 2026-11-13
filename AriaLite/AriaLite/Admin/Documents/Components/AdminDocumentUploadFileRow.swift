@@ -27,7 +27,7 @@ struct AdminDocumentUploadFileRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if isConflicting {
-                    Label("Already in this plant", systemImage: "doc.on.doc")
+                    Label("Already on this site", systemImage: "doc.on.doc")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.orange)
                 }

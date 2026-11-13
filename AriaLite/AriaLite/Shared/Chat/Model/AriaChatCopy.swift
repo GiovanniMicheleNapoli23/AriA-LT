@@ -17,7 +17,7 @@ enum AriaChatCopy {
 
     static func toolLabel(_ name: String) -> String {
         switch name {
-        case "kpi_overview": String(localized: "Plant overview")
+        case "kpi_overview": String(localized: "Site overview")
         case "work_orders_by_status": String(localized: "Work orders by status")
         case "alarm_diagnostic": String(localized: "Alarm diagnostic")
         case "list_work_orders": String(localized: "Searching work orders")
@@ -63,7 +63,7 @@ enum AriaChatCopy {
         case 0..<5, 22...23:
             pool = [String(localized: "Still on the line at this hour?"), String(localized: "Quiet hours, anything to check?")]
         case 5..<12:
-            pool = [String(localized: "First coffee of the day?"), String(localized: "How does the plant look this morning?"),
+            pool = [String(localized: "First coffee of the day?"), String(localized: "How does the site look this morning?"),
                     String(localized: "What's on the plan today?")]
         case 12..<18:
             pool = [String(localized: "How's the shift going?"), String(localized: "What are we working on?"),
@@ -75,11 +75,11 @@ enum AriaChatCopy {
         switch weekday {
         case 2: pool += [String(localized: "New week — where do we start?"), String(localized: "How did the weekend leave the line?")]
         case 6: pool.append(String(localized: "Closing out the week?"))
-        case 1, 7: pool += [String(localized: "Weekend shift?"), String(localized: "Quiet weekend on the plant?")]
+        case 1, 7: pool += [String(localized: "Weekend shift?"), String(localized: "Quiet weekend on site?")]
         default: break
         }
         pool += [String(localized: "How can I help you today?"), String(localized: "Where would you like to start?"),
-                 String(localized: "What's happening on the plant?"), String(localized: "Which machine do we start from?")]
+                 String(localized: "What's happening on site?"), String(localized: "Which machine do we start from?")]
 
         // Mai la stessa frase due volte di fila.
         let last = UserDefaults.standard.string(forKey: "aria.chat.last_greeting")
@@ -117,7 +117,7 @@ enum AriaChatCopy {
         case "inspections": return String(localized: "Open inspections")
         case "taskboard", "board": return String(localized: "Open board")
         case "reports": return String(localized: "Open reports")
-        case "plants": return String(localized: "Open plants")
+        case "plants": return String(localized: "Open sites")
         default: return String(localized: "Open")
         }
     }

@@ -56,7 +56,7 @@ extension AdminAssetsViewModel {
     }
 
     var approveConfirmationMessage: String {
-        String(localized: "Selected: \(selectedCount). Approved assets become part of your plant's asset list.")
+        String(localized: "Selected: \(selectedCount). Approved assets become part of your site's asset list.")
     }
 
     var isShowingApproveError: Bool {

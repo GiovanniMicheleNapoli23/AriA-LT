@@ -98,7 +98,7 @@ struct AriaLearningOutcomePanel: View {
 
     private var subtitle: LocalizedStringKey {
         switch model.phase(outcome) {
-        case .saving: "Saving your answer to the plant's knowledge."
+        case .saving: "Saving your answer to the site's knowledge."
         case .learned: "Added to the company's learned knowledge."
         case .proposed: "Filed as a proposal — it needs approval before use."
         }

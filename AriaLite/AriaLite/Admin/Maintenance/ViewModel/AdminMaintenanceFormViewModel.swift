@@ -169,7 +169,7 @@ final class AdminMaintenanceFormViewModel {
     /// Il primo problema da correggere, mostrato nella scheda; `nil` se si può salvare.
     var validationMessage: String? {
         if trimmed(name).isEmpty { return String(localized: "Enter the plan name.") }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site.") }
         if parsedHours == nil { return String(localized: "The interval must be a positive number of hours.") }
         if parsedDuration == nil { return String(localized: "The duration must be a whole number of minutes.") }
         if let startsOn, let endsOn, endsOn < startsOn { return String(localized: "The end date is before the start date.") }

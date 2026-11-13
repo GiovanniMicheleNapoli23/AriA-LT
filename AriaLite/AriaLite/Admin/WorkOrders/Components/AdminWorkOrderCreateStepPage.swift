@@ -135,9 +135,9 @@ struct AdminWorkOrderCreateStepPage: View {
     private var location: some View {
         Section {
             if viewModel.plants.isEmpty {
-                LabeledContent("Plant", value: viewModel.plantLabel)
+                LabeledContent("Site", value: viewModel.plantLabel)
             } else {
-                Picker("Plant", selection: $viewModel.draft.plantId) {
+                Picker("Site", selection: $viewModel.draft.plantId) {
                     if viewModel.draft.plantId == nil { Text("None").tag(String?.none) }
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }

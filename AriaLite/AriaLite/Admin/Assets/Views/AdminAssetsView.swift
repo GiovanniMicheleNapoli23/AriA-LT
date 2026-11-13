@@ -149,7 +149,7 @@ struct AdminAssetsView: View {
                 ContentUnavailableView.search(text: viewModel.searchText)
             } else {
                 ContentUnavailableView("No assets", systemImage: "gearshape.2",
-                                       description: Text("No assets match these filters in this plant."))
+                                       description: Text("No assets match these filters on this site."))
                     .padding(.top, 40)
             }
         } else {

@@ -49,7 +49,7 @@ struct AdminTeamsView: View {
                         .disabled(!viewModel.hasLoaded)
                 }
             }
-            .searchable(text: $viewModel.query, prompt: Text("Name, description or plant"))
+            .searchable(text: $viewModel.query, prompt: Text("Name, description or site"))
             .sheet(item: $viewModel.newTeamForm) { form in
                 AdminTeamFormView(viewModel: form)
             }

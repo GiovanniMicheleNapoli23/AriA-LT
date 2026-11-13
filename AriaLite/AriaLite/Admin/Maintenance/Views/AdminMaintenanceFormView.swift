@@ -100,7 +100,7 @@ struct AdminMaintenanceFormView: View {
     private var location: some View {
         Section {
             if !viewModel.plants.isEmpty {
-                Picker("Plant", selection: $viewModel.plantId) {
+                Picker("Site", selection: $viewModel.plantId) {
                     if viewModel.plantId == nil { Text("Select").tag(String?.none) }
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }

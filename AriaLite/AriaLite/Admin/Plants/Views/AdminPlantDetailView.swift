@@ -80,7 +80,7 @@ struct AdminPlantDetailView: View {
         .sheet(item: $viewModel.editForm) { form in
             AdminPlantFormView(viewModel: form)
         }
-        .alert("Delete this plant?", isPresented: $viewModel.showsDeleteConfirmation) {
+        .alert("Delete this site?", isPresented: $viewModel.showsDeleteConfirmation) {
             Button("Delete", role: .destructive) {
                 Task { if await viewModel.delete() { dismiss() } }
             }
@@ -88,11 +88,11 @@ struct AdminPlantDetailView: View {
         } message: {
             Text("""
                 “\(viewModel.plant.name)” will be removed. \
-                Data linked to this plant can block the deletion. \
+                Data linked to this site can block the deletion. \
                 This can't be undone.
                 """)
         }
-        .alert("Couldn't delete the plant", isPresented: $viewModel.isShowingDeleteError) {
+        .alert("Couldn't delete the site", isPresented: $viewModel.isShowingDeleteError) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(verbatim: viewModel.deleteError ?? "")

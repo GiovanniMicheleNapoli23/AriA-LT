@@ -110,9 +110,9 @@ struct AdminDocumentUploadView: View {
     }
 
     private var destination: some View {
-        AdminCard(title: "Plant", systemImage: "building.2") {
+        AdminCard(title: "Site", systemImage: "building.2") {
             Menu {
-                Picker("Plant", selection: $viewModel.plantId) {
+                Picker("Site", selection: $viewModel.plantId) {
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }
             } label: {
@@ -121,7 +121,7 @@ struct AdminDocumentUploadView: View {
                         if let name = viewModel.plantName {
                             Text(verbatim: name).foregroundStyle(Color.liteText)
                         } else {
-                            Text("Choose a plant").foregroundStyle(.secondary)
+                            Text("Choose a site").foregroundStyle(.secondary)
                         }
                     }
                     .font(.body.weight(.medium))
@@ -138,7 +138,7 @@ struct AdminDocumentUploadView: View {
             }
             .buttonStyle(.plain)
             .disabled(viewModel.isUploading)
-            caption("Documents are shared with everyone in this plant.")
+            caption("Documents are shared with everyone on this site.")
         }
     }
 
@@ -204,7 +204,7 @@ struct AdminDocumentUploadView: View {
     @ViewBuilder
     private var filesFooter: some View {
         if viewModel.isCheckingConflicts {
-            caption("Checking for files already in this plant…")
+            caption("Checking for files already on this site…")
         } else if let message = viewModel.conflictCheckError {
             caption("Couldn't check for duplicates: \(message)")
         } else if !viewModel.files.isEmpty {

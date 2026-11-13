@@ -146,7 +146,7 @@ final class AdminTeamsViewModel {
     var showsPlantFilter: Bool { plantOptions.count > 1 || plantFilter != nil }
 
     var plantFilterTitle: String {
-        plantFilter.flatMap(plantName(for:)) ?? String(localized: "All plants")
+        plantFilter.flatMap(plantName(for:)) ?? String(localized: "All sites")
     }
 
     var visibleTeams: [AdminTeam] {

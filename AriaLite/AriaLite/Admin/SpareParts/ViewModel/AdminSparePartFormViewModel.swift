@@ -272,7 +272,7 @@ final class AdminSparePartFormViewModel: Identifiable {
             switch mode {
             case .create:
                 guard let plantId = owner.backend.activePlantId else {
-                    errorMessage = String(localized: "Select a plant before adding spare parts.")
+                    errorMessage = String(localized: "Select a site before adding spare parts.")
                     return false
                 }
                 let created = try await api.create(createBody(values, plantId: plantId))

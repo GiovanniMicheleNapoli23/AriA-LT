@@ -91,7 +91,7 @@ struct AriaPlantGuardBanner: View {
                     Text("Choose").font(.footnote.weight(.semibold))
                 }
             case .create:
-                Button("Add plant", action: onCreate)
+                Button("Add site", action: onCreate)
                     .font(.footnote.weight(.semibold))
             case .askAdmin:
                 EmptyView()
@@ -104,9 +104,9 @@ struct AriaPlantGuardBanner: View {
 
     private var message: LocalizedStringKey {
         switch state {
-        case .choose: "Select a plant before chatting."
-        case .create: "Add your first plant to start chatting."
-        case .askAdmin: "No plants yet. Ask an owner or admin of your company to add one."
+        case .choose: "Select a site before chatting."
+        case .create: "Add your first site to start chatting."
+        case .askAdmin: "No sites yet. Ask an owner or admin of your company to add one."
         }
     }
 }

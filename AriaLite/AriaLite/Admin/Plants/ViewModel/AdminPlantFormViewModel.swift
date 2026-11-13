@@ -49,7 +49,7 @@ final class AdminPlantFormViewModel: Identifiable {
 
     var isEditing: Bool { if case .edit = mode { true } else { false } }
 
-    var title: String { isEditing ? String(localized: "Edit plant") : String(localized: "New plant") }
+    var title: String { isEditing ? String(localized: "Edit site") : String(localized: "New site") }
 
     /// Nome e codice sono obbligatori: senza, Save resta spento.
     var canSave: Bool { !isSaving && !trimmed(name).isEmpty && !trimmed(code).isEmpty }

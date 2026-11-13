@@ -22,7 +22,7 @@ struct AdminPlantsPlaceholder: View {
                     .padding(.top, 60)
             case .failed(let failure):
                 VStack(spacing: 14) {
-                    let title: LocalizedStringKey = failure.isForbidden ? "No access" : "Can't load plants"
+                    let title: LocalizedStringKey = failure.isForbidden ? "No access" : "Can't load sites"
                     ContentUnavailableView(title,
                                            systemImage: failure.isForbidden ? "lock" : "wifi.exclamationmark",
                                            description: Text(verbatim: failure.message))
@@ -34,8 +34,8 @@ struct AdminPlantsPlaceholder: View {
                     }
                 }
             case .empty:
-                ContentUnavailableView("No plants", systemImage: "building.columns",
-                                       description: Text("Plants of this company appear here."))
+                ContentUnavailableView("No sites", systemImage: "building.columns",
+                                       description: Text("Sites of this company appear here."))
             case .noResults(let query):
                 ContentUnavailableView.search(text: query)
             }

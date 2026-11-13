@@ -38,7 +38,7 @@ nonisolated enum AriaSignUpStep: Int, CaseIterable, Sendable, Identifiable {
         switch self {
         case .profile: "About you"
         case .company: "Your company"
-        case .plant: "Your first plant"
+        case .plant: "Your first site"
         case .plan: "Your plan"
         }
     }
@@ -47,7 +47,7 @@ nonisolated enum AriaSignUpStep: Int, CaseIterable, Sendable, Identifiable {
         switch self {
         case .profile: "Tell us who you are, so Aria can help you the right way."
         case .company: "Create the company your team will work in."
-        case .plant: "Aria works plant by plant: add the first one to start chatting. You can add more later."
+        case .plant: "Aria works site by site: add the first one to start chatting. You can add more later."
         case .plan: "Start with the free demo. You can change plan later."
         }
     }

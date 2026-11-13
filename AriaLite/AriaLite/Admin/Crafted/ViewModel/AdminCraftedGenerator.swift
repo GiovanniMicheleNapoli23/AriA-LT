@@ -49,7 +49,7 @@ final class AdminCraftedGenerator {
 
     /// Perché adesso non si può creare niente (nessuno stabilimento), altrimenti `nil`.
     var blockedReason: String? {
-        backend.activePlantId == nil ? String(localized: "Pick a plant to ask Aria to make something.") : nil
+        backend.activePlantId == nil ? String(localized: "Pick a site to ask Aria to make something.") : nil
     }
 
     // MARK: Azioni

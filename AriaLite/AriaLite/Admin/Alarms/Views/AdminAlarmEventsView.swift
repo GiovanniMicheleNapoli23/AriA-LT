@@ -56,7 +56,7 @@ struct AdminAlarmEventsView: View {
             Button("Mark all read") { Task { await viewModel.markAllRead() } }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Every unread event of the current plant will be marked as read.")
+            Text("Every unread event of the current site will be marked as read.")
         }
         .alert("Couldn't update the alarm events", isPresented: $viewModel.isShowingActionError) {
             Button("OK", role: .cancel) {}

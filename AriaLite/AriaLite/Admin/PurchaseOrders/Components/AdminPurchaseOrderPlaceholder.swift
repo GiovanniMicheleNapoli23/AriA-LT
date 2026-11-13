@@ -36,11 +36,11 @@ struct AdminPurchaseOrderPlaceholder: View {
                     }
                 }
             case .noPlant:
-                ContentUnavailableView("No plant selected", systemImage: "building.2",
-                                       description: Text("Choose a plant to see its purchase orders."))
+                ContentUnavailableView("No site selected", systemImage: "building.2",
+                                       description: Text("Choose a site to see its purchase orders."))
             case .empty:
                 ContentUnavailableView("No purchase orders", systemImage: "cart",
-                                       description: Text("Purchase orders of this plant appear here. Tap + to create one."))
+                                       description: Text("Purchase orders of this site appear here. Tap + to create one."))
             case .noResults(let query):
                 ContentUnavailableView.search(text: query)
             case .noMatches:

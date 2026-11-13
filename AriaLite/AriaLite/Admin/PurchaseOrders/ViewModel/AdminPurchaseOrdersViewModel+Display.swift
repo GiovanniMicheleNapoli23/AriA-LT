@@ -92,6 +92,6 @@ extension AdminPurchaseOrdersViewModel {
 
     /// Perché il "+" è spento.
     var createDisabledReason: String? {
-        canCreate ? nil : String(localized: "Choose a plant to create purchase orders.")
+        canCreate ? nil : String(localized: "Choose a site to create purchase orders.")
     }
 }

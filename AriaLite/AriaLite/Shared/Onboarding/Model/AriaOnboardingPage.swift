@@ -34,7 +34,7 @@ nonisolated extension AriaOnboardingPage {
     static let technician: [AriaOnboardingPage] = [
         AriaOnboardingPage(
             id: "chat", symbol: "bubble.left.and.text.bubble.right", title: "Ask Aria",
-            message: "Describe a fault, a machine or a step you're stuck on: Aria answers from your plant's manuals and history.",
+            message: "Describe a fault, a machine or a step you're stuck on: Aria answers from your site's manuals and history.",
             highlights: [
                 Highlight(symbol: "mic", title: "Type or dictate"),
                 Highlight(symbol: "paperclip", title: "Attach photos and files"),
@@ -61,7 +61,7 @@ nonisolated extension AriaOnboardingPage {
             ]),
         AriaOnboardingPage(
             id: "offline", symbol: "wifi.slash", title: "Even without signal",
-            message: "No network in the plant? Keep working: your changes stay on the phone and are sent as soon as you're back online."),
+            message: "No network on site? Keep working: your changes stay on the phone and are sent as soon as you're back online."),
         AriaOnboardingPage(
             id: "closeout", symbol: "checkmark.seal", title: "Close the job",
             message: "When you're done, Aria writes the report and files the work order, in MaintainX too if your company uses it."),
@@ -86,7 +86,7 @@ nonisolated extension AriaOnboardingPage {
             ]),
         AriaOnboardingPage(
             id: "intelligence", symbol: "brain.head.profile", title: "Intelligence",
-            message: "Teach Aria how your plant works and let it work for you.",
+            message: "Teach Aria how your site works and let it work for you.",
             highlights: [
                 Highlight(symbol: "doc.text", title: "Documents", detail: "Upload manuals and procedures for Aria to read"),
                 Highlight(symbol: "text.viewfinder", title: "Extraction Review",
@@ -111,7 +111,7 @@ nonisolated extension AriaOnboardingPage {
             ]),
         AriaOnboardingPage(
             id: "resources", symbol: "shippingbox", title: "Assets, parts and purchases",
-            message: "Everything in the plant, and everything it needs.",
+            message: "Everything on the site, and everything it needs.",
             highlights: [
                 Highlight(symbol: "gearshape.2", title: "Assets", detail: "Machines, their details and downtime"),
                 Highlight(symbol: "shippingbox", title: "Spare Parts", detail: "Stock and low-stock warnings"),
@@ -121,7 +121,7 @@ nonisolated extension AriaOnboardingPage {
             ]),
         AriaOnboardingPage(
             id: "analytics", symbol: "chart.bar.xaxis", title: "Analytics",
-            message: "See how the plant, and Aria, are doing.",
+            message: "See how the site, and Aria, are doing.",
             highlights: [
                 Highlight(symbol: "chart.bar.xaxis", title: "Reports", detail: "Saved widgets with today's data"),
                 Highlight(symbol: "chart.pie", title: "LLM Usage", detail: "How much AI your company uses"),
@@ -130,7 +130,7 @@ nonisolated extension AriaOnboardingPage {
             id: "configuration", symbol: "building.columns", title: "Configuration",
             message: "Set up the company and the people who work in it.",
             highlights: [
-                Highlight(symbol: "building.columns", title: "Plants", detail: "Your sites"),
+                Highlight(symbol: "building.columns", title: "Sites", detail: "Your sites"),
                 Highlight(symbol: "tag", title: "Categories", detail: "The categories that keep your data in order"),
                 Highlight(symbol: "person.3", title: "Teams", detail: "Groups of people"),
                 Highlight(symbol: "person.2", title: "Members", detail: "Who uses the web platform"),
