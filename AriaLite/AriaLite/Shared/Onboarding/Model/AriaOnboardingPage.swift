@@ -134,6 +134,7 @@ nonisolated extension AriaOnboardingPage {
                 Highlight(symbol: "tag", title: "Categories", detail: "The categories that keep your data in order"),
                 Highlight(symbol: "person.3", title: "Teams", detail: "Groups of people"),
                 Highlight(symbol: "person.2", title: "Members", detail: "Your people, their role and access to this app"),
+                Highlight(symbol: "person.badge.key", title: "Roles & Rights", detail: "What each role can see and do"),
             ]),
     ]
 }

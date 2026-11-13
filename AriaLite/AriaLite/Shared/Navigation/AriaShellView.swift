@@ -43,6 +43,7 @@ enum AriaDestination: Hashable {
     case adminCategories
     case adminTeams
     case adminMembers
+    case adminRoles
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -163,9 +164,11 @@ struct AriaShellView: View {
             guard isOperator, granted else { return }
             Task { await viewModel.ariaWorkOrders.sync() }
         }
-        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat.
+        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat. Roles & Rights resta aperta (in caricamento)
+        // finché GET /v1/me non risponde: un `access` non letto non vuol dire "niente accesso".
         .onChange(of: offered) { _, offered in
             guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
+            guard destination != .adminRoles || viewModel.backend.access != nil else { return }
             select(.chat)
         }
         // Con l'app attiva i diritti si rileggono anche da soli: un'azione tolta o ridata dall'admin si vede
@@ -328,6 +331,8 @@ struct AriaShellView: View {
             AdminTeamsView(viewModel: viewModel.adminTeams)
         case .adminMembers:
             AdminMembersView(viewModel: viewModel.adminMembers)
+        case .adminRoles:
+            AdminRolesView(viewModel: viewModel.adminRoles, members: viewModel.adminMembers)
         }
     }
 

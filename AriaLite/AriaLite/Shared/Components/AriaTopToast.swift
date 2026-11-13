@@ -14,25 +14,32 @@ import SwiftUI
 extension View {
     /// Mostra `title` in alto finché `isPresented` è vero.
     func ariaTopToast(_ title: LocalizedStringResource, systemImage: String, isPresented: Bool) -> some View {
+        ariaTopToast(text: isPresented ? String(localized: title) : nil, systemImage: systemImage)
+    }
+
+    /// Come sopra, con un testo già pronto (`nil`: niente avviso). Un rifiuto (`isError`) vibra da avviso, non da successo.
+    func ariaTopToast(text: String?, systemImage: String, isError: Bool = false) -> some View {
         overlay(alignment: .top) {
-            if isPresented {
-                AriaTopToast(title: title, systemImage: systemImage)
+            if let text {
+                AriaTopToast(title: text, systemImage: systemImage)
                     .padding(.top, 8)
+                    .padding(.horizontal, 16)
                     .transition(.move(edge: .top).combined(with: .opacity))
+                    .id(text)
             }
         }
-        .animation(.snappy(duration: 0.3), value: isPresented)
-        .sensoryFeedback(.success, trigger: isPresented) { _, shown in shown }
+        .animation(.snappy(duration: 0.3), value: text)
+        .sensoryFeedback(isError ? .warning : .success, trigger: text) { _, shown in shown != nil }
     }
 }
 
 private struct AriaTopToast: View {
-    let title: LocalizedStringResource
+    let title: String
     let systemImage: String
 
     var body: some View {
         Label {
-            Text(title)
+            Text(verbatim: title)
         } icon: {
             Image(systemName: systemImage).foregroundStyle(Color.liteAccent)
         }
@@ -42,6 +49,6 @@ private struct AriaTopToast: View {
         .ariaGlass(in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isStaticText)
-        .onAppear { AccessibilityNotification.Announcement(String(localized: title)).post() }
+        .onAppear { AccessibilityNotification.Announcement(title).post() }
     }
 }

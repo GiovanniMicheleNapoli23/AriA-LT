@@ -17,6 +17,12 @@ struct AriaSidebarItem: Identifiable {
     let target: AriaDestination
     /// Le sezioni che il ruolo deve concedere perché la riga si veda (layout dell'operatore).
     var needs: [AriaSection] = []
+    /// Roles & Rights: si vede solo a chi gestisce i ruoli, in entrambi i layout (AriaRights.canOpenRolesAndRights).
+    var needsRoleManagement = false
+
+    func isOffered(by rights: AriaRights) -> Bool {
+        needs.allSatisfy(rights.has) && (!needsRoleManagement || rights.canOpenRolesAndRights)
+    }
 
     var id: AriaDestination { target }
 }
@@ -31,11 +37,10 @@ struct AriaSidebarGroup: Identifiable {
 
 enum AriaSidebarSections {
     static func groups(operatorLayout: Bool, rights: AriaRights) -> [AriaSidebarGroup] {
-        guard operatorLayout else { return adminGroups }
         // Senza ruolo che lo segua restano Task e Calendario (se il ruolo li concede): come prima dei ruoli.
-        let groups = rights.followsRole ? operatorGroups : Array(operatorGroups.prefix(1))
+        let groups = !operatorLayout ? adminGroups : rights.followsRole ? operatorGroups : Array(operatorGroups.prefix(1))
         return groups.compactMap { group in
-            let items = group.items.filter { $0.needs.allSatisfy(rights.has) }
+            let items = group.items.filter { $0.isOffered(by: rights) }
             return items.isEmpty ? nil : AriaSidebarGroup(title: group.title, items: items)
         }
     }
@@ -59,6 +64,7 @@ enum AriaSidebarSections {
         AriaSidebarGroup(title: "Configuration", items: [
             AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers, needs: [.members]),
             categories,
+            rolesAndRights,
         ]),
     ]
 
@@ -92,6 +98,7 @@ enum AriaSidebarSections {
             categories,
             AriaSidebarItem(title: "Teams", icon: "person.3", target: .adminTeams),
             AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers),
+            rolesAndRights,
         ]),
     ]
 
@@ -113,4 +120,6 @@ enum AriaSidebarSections {
     private static let llmUsage = AriaSidebarItem(title: "LLM Usage", icon: "chart.pie", target: .adminLLMUsage, needs: [.llmUsage])
     private static let categories = AriaSidebarItem(title: "Categories", icon: "tag", target: .adminCategories,
                                                     needs: [.categories])
+    private static let rolesAndRights = AriaSidebarItem(title: "Roles & Rights", icon: "person.badge.key",
+                                                        target: .adminRoles, needsRoleManagement: true)
 }

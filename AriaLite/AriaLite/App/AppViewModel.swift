@@ -46,6 +46,7 @@ class AppViewModel {
     let adminCategories: AdminCategoriesViewModel
     let adminTeams: AdminTeamsViewModel
     let adminMembers: AdminMembersViewModel
+    let adminRoles: AdminRolesViewModel
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
     var accountKind: AriaAccountKind { backend.accountKind }
@@ -107,6 +108,7 @@ class AppViewModel {
         adminCategories = AdminCategoriesViewModel(backend: backend)
         adminTeams = AdminTeamsViewModel(backend: backend)
         adminMembers = AdminMembersViewModel(backend: backend)
+        adminRoles = AdminRolesViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -306,6 +308,7 @@ class AppViewModel {
         adminCategories.reset()
         adminTeams.reset()
         adminMembers.reset()
+        adminRoles.reset()
         // File scaricati, report esportati e foto in cache non restano per chi entra dopo.
         AriaLocalFiles.removeTemporaryDocuments()
         URLCache.shared.removeAllCachedResponses()
