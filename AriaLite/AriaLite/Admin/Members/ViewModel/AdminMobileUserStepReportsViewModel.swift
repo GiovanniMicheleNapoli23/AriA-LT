@@ -44,7 +44,7 @@ final class AdminMobileUserStepReportsViewModel {
             errorMessage = nil
         } catch {
             _ = await procedure
-            if let message = AdminMobileUserFailure.message(for: error, backend: backend) { errorMessage = message }
+            if let message = AdminMembersFailure.from(error, action: .read, backend: backend)?.message { errorMessage = message }
         }
     }
 

@@ -1,11 +1,11 @@
 //
-//  AdminMemberAdHocTeamViewModel.swift
+//  AdminTeamAdHocViewModel.swift
 //  AriaLite
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il modulo "New ad-hoc team" (POST /v1/teams/ad-hoc): un team temporaneo con i membri scelti, fissati ai
-//  giorni di turno indicati. Si scelgono fra i membri attivi dell'elenco; la risposta non si legge.
+//  giorni di turno indicati. Si scelgono fra le persone attive dell'azienda (`owner.people`); la risposta non si legge.
 //
 
 import Foundation
@@ -13,8 +13,8 @@ import Observation
 
 @MainActor
 @Observable
-final class AdminMemberAdHocTeamViewModel: Identifiable {
-    let owner: AdminMembersViewModel
+final class AdminTeamAdHocViewModel: Identifiable {
+    let owner: AdminTeamsViewModel
 
     // MARK: - Campi
 
@@ -29,25 +29,37 @@ final class AdminMemberAdHocTeamViewModel: Identifiable {
     private(set) var isSaving = false
     private(set) var errorMessage: String?
 
-    init(owner: AdminMembersViewModel) {
+    init(owner: AdminTeamsViewModel) {
         self.owner = owner
     }
 
     // MARK: - Membri
 
-    /// Solo i membri attivi hanno senso in un team; ricerca per nome o email.
-    var candidates: [AdminMember] {
+    /// Le persone si caricano una volta sola dal proprietario; `owner.loadPeople()` dice se l'elenco è arrivato, così
+    /// un'azienda senza persone non passa per un errore.
+    private(set) var isLoadingPeople = false
+    private(set) var peopleFailed = false
+
+    func loadPeople() async {
+        guard !isLoadingPeople else { return }
+        isLoadingPeople = true
+        defer { isLoadingPeople = false }
+        peopleFailed = !(await owner.loadPeople())
+    }
+
+    /// Solo le persone attive hanno senso in un team; ricerca per nome o email.
+    var candidates: [AdminTeamPerson] {
         let q = memberQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        return owner.members
+        return owner.people
             .filter { $0.isActive }
-            .filter { q.isEmpty || [$0.fullName, $0.email].contains { $0?.localizedStandardContains(q) == true } }
+            .filter { q.isEmpty || $0.displayName.localizedStandardContains(q) || $0.email.localizedStandardContains(q) }
             .sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
     }
 
-    func isSelected(_ member: AdminMember) -> Bool { selectedIds.contains(member.id) }
+    func isSelected(_ person: AdminTeamPerson) -> Bool { selectedIds.contains(person.id) }
 
-    func toggle(_ member: AdminMember) {
-        if !selectedIds.insert(member.id).inserted { selectedIds.remove(member.id) }
+    func toggle(_ person: AdminTeamPerson) {
+        if !selectedIds.insert(person.id).inserted { selectedIds.remove(person.id) }
     }
 
     var selectedCountText: String { String(localized: "\(selectedIds.count) selected") }
@@ -92,14 +104,14 @@ final class AdminMemberAdHocTeamViewModel: Identifiable {
         isSaving = true
         defer { isSaving = false }
         do {
-            try await AdminMembersAPI(api: owner.backend.api).createAdHocTeam(body)
+            try await owner.api.createAdHoc(body)
         } catch {
-            if let failure = AdminMembersFailure.from(error, action: .write, backend: owner.backend) {
+            if let failure = AdminTeamsFailure.from(error, action: .write, backend: owner.backend) {
                 errorMessage = failure.message
             }
             return false
         }
-        await owner.didCreateAdHocTeam()
+        await owner.refresh()
         return true
     }
 }

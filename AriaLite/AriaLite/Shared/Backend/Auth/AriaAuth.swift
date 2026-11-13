@@ -504,6 +504,49 @@ actor AriaAuth {
         }
     }
 
+    private nonisolated struct InviteLinkResponse: Decodable, Sendable {
+        let sent: Bool?
+    }
+
+    /// Manda per email il link d'accesso all'app a chi ha un invito aperto (POST /api/auth/mobile/invite-link
+    /// `{companyId, userId}`, 202 `{sent}`). Chi chiama deve essere owner o admin attivo dell'azienda; con la
+    /// sessione (Bearer o cookie), non con il JWT. `false`: la persona ha già tre link validi, l'invito resta valido.
+    /// 404 "No open invitation" (invito chiuso o scaduto) arriva come `.http(404, …)`: chi chiama decide.
+    func sendMobileInviteLink(companyId: String, userId: String) async throws -> Bool {
+        guard let credential = loadCredential(context: nil) else { throw AriaError.signedOut }
+        var req = switch credential {
+        case .mobile(let token): request("api/auth/mobile/invite-link", method: "POST", bearer: token)
+        case .webCookie(let cookie): webRequest("api/auth/mobile/invite-link", method: "POST", cookie: cookie)
+        }
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONEncoder().encode(["companyId": companyId, "userId": userId])
+        AriaAuthTrace.step("inviteLink.send", req.url?.absoluteString ?? "-")
+        let (data, response) = try await send(req, response: "inviteLink.response", network: "inviteLink.network")
+        do {
+            try Self.checkInviteLink(response, data)
+        } catch AriaError.signedOut {
+            // 401: la sessione è finita, si rifà l'accesso.
+            clear()
+            throw AriaError.signedOut
+        }
+        return (try? JSONDecoder().decode(InviteLinkResponse.self, from: data))?.sent ?? false
+    }
+
+    private static func checkInviteLink(_ response: URLResponse, _ data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
+        switch http.statusCode {
+        case 200..<300:
+            return
+        case 401:
+            throw AriaError.signedOut
+        case 429:
+            throw tooManyAttempts(http)
+        default:
+            if let offline = AriaHTTP.hostDownError(response) { throw offline }
+            try AriaHTTP.check(response, data)
+        }
+    }
+
     /// Dimentica la sessione senza chiamare il server: la sessione è già finita
     /// (operatore disabilitato, membership non più attiva) o non va tenuta (accesso non completato).
     func discardSession() {

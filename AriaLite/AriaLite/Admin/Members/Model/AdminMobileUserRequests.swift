@@ -14,11 +14,6 @@ nonisolated struct AdminMobileUserAdd: Encodable, Sendable {
     let userId: String
 }
 
-nonisolated struct AdminMobileUserInvite: Encodable, Sendable {
-    let name: String
-    let email: String
-}
-
 nonisolated struct AdminMobileUserUpdate: Encodable, Sendable {
     /// Solo `active` o `suspended`.
     var status: String?

@@ -63,6 +63,13 @@ nonisolated struct AdminMemberTeamOption: Decodable, Sendable, Identifiable, Has
 
     private enum CodingKeys: String, CodingKey { case id, name, isAdHoc }
 
+    /// Per le squadre che arrivano da un'altra rotta (GET /v1/lookups/teams): solo nome e id.
+    init(id: String, name: String, isAdHoc: Bool) {
+        self.id = id
+        self.name = name
+        self.isAdHoc = isAdHoc
+    }
+
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         guard let id = AdminMemberText.clean(try? c.decodeIfPresent(String.self, forKey: .id)) else {

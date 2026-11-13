@@ -31,10 +31,47 @@ nonisolated struct AdminMemberAdHocTeamCreate: Encodable, Sendable {
     var shiftType: String
 }
 
-/// POST /v1/users: solo `email` è obbligatoria; nome, password e ruolo non si mandano se vuoti.
+/// POST /v1/users. Il modulo manda sempre `email`, `fullName` e `accessRoleId` (senza, il server sceglie lui un
+/// ruolo); `role` è la qualifica (`technician`, `manager`) e non si manda se vuota. Niente `password`: il server la scarta.
 nonisolated struct AdminMemberUserCreate: Encodable, Sendable {
     var email: String
-    var fullName: String?
-    var password: String?
+    var fullName: String
     var role: String?
+    /// Il ruolo di Roles & Rights da dare alla persona (ignorato dal server se è già in azienda).
+    var accessRoleId: String
+}
+
+/// PATCH /v1/members/{user_id}: si manda solo quel che cambia (i `nil` non si scrivono).
+nonisolated struct AdminMemberUpdate: Encodable, Sendable {
+    var name: String?
+    /// La qualifica.
+    var label: String?
+    var specialties: [String]?
+    /// Lavoro sul campo.
+    var field: Bool?
+    /// `active` o `suspended`: la sospensione è in tutta l'azienda.
+    var status: String?
+}
+
+/// La risposta di POST /v1/users (UserBriefResponse): serve l'`id` per cercare la persona nell'elenco.
+nonisolated struct AdminMemberCreated: Decodable, Sendable {
+    let id: String
+    let email: String
+    let fullName: String?
+
+    private enum CodingKeys: String, CodingKey { case id, email, fullName }
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func text(_ key: CodingKeys) -> String? {
+            AdminMemberText.clean((try? c.decodeIfPresent(AriaJSON.self, forKey: key))?.stringValue)
+        }
+        guard let id = text(.id) else {
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: decoder.codingPath, debugDescription: "Created user without id"))
+        }
+        self.id = id
+        email = text(.email) ?? ""
+        fullName = text(.fullName)
+    }
 }

@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La sezione Members, come la pagina /members della web: filtri (ruolo, stato, team) e ricerca in alto,
-//  una scheda per membro, dettaglio a tocco e un menu "+" per aggiungere un membro o creare un team ad hoc.
+//  La sezione Members, come la pagina /members della web: le licenze dell'app (solo owner e admin), filtri
+//  (ruolo, stato, team) e ricerca in alto, una riga per persona con la sua scheda a tocco e un "+" per crearne
+//  una nuova (solo owner e admin).
 //
 
 import SwiftUI
@@ -14,9 +15,10 @@ struct AdminMembersView: View {
     @Bindable var viewModel: AdminMembersViewModel
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $viewModel.path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
+                    seatsLine
                     if viewModel.hasLoaded && !viewModel.members.isEmpty {
                         AdminMemberFilterBar(viewModel: viewModel)
                             .padding(.top, 8)
@@ -29,25 +31,20 @@ struct AdminMembersView: View {
             .refreshable { await viewModel.refresh() }
             .liteBackground()
             .navigationTitle("Members")
-            .navigationDestination(for: AdminMember.self) { member in
-                AdminMemberDetailView(member: member, owner: viewModel)
+            .navigationDestination(for: AdminMemberRoute.self) { route in
+                AdminMemberDetailView(userId: route.userId, owner: viewModel)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu("Add", systemImage: "plus") {
-                        Button("Add member", systemImage: "person.badge.plus") { viewModel.startCreatingMember() }
-                        Button("New ad-hoc team", systemImage: "person.3") { viewModel.startCreatingAdHocTeam() }
-                            .disabled(!viewModel.hasLoaded)
+                if viewModel.canCreate {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("New person", systemImage: "plus") { viewModel.startCreatingMember() }
                     }
                 }
             }
             .searchable(text: $viewModel.query, prompt: Text("Name or email"))
             .sheet(item: $viewModel.newMemberForm) { form in
                 AdminMemberCreateView(viewModel: form)
-            }
-            .sheet(item: $viewModel.adHocTeamForm) { form in
-                AdminMemberAdHocTeamView(viewModel: form)
             }
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
@@ -62,8 +59,9 @@ struct AdminMembersView: View {
         } else {
             LazyVStack(spacing: 8) {
                 ForEach(viewModel.visibleMembers) { member in
-                    NavigationLink(value: member) {
-                        AdminMemberRow(member: member)
+                    NavigationLink(value: AdminMemberRoute(userId: member.id)) {
+                        AdminMemberRow(member: member, roleLine: viewModel.roleLine(for: member),
+                                       badge: viewModel.badge(for: member))
                     }
                     .buttonStyle(.plain)
                 }
@@ -79,6 +77,17 @@ struct AdminMembersView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.bottom, 24)
             }
+        }
+    }
+
+    /// "App seats: 7 of 10", solo per owner e admin quando le licenze sono arrivate.
+    @ViewBuilder
+    private var seatsLine: some View {
+        if let text = viewModel.seatsText {
+            AdminMemberSeatsLine(text: text, isFull: viewModel.seatsAreFull)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
         }
     }
 

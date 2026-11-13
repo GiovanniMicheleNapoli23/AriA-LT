@@ -15,10 +15,12 @@ nonisolated struct AdminMembersAPI: Sendable {
     let api: AriaAPIClient
 
     /// GET /v1/members: array di righe; una riga illeggibile si salta, le altre restano.
-    /// Ricerca e filtri si fanno sul telefono, quindi non si mandano `q` né `on_date`.
+    /// Ricerca e filtri si fanno sul telefono, quindi non si mandano `q` né `on_date`. Senza i due parametri il
+    /// server nasconde i sospesi e chi non lavora sul campo: qui si chiede tutta l'azienda.
     func list() async throws -> [AdminMember] {
         let endpoint: AriaEndpoint<AriaLossyArray<AdminMember>> =
-            AriaEndpoint<AriaLossyArray<AdminMember>>.get("v1/members").snakeCased()
+            AriaEndpoint<AriaLossyArray<AdminMember>>.get(
+                "v1/members", query: ["field_only": "false", "active_only": "false"]).snakeCased()
         return try await api.call(endpoint).items
     }
 
@@ -54,14 +56,20 @@ nonisolated struct AdminMembersAPI: Sendable {
         return try await api.call(endpoint).items
     }
 
-    /// POST /v1/teams/ad-hoc: team temporaneo con i suoi membri e i giorni di turno. Il 201 ha uno schema vuoto.
-    func createAdHocTeam(_ body: AdminMemberAdHocTeamCreate) async throws {
-        let endpoint = AriaEndpoint<AriaNoContent>.post("v1/teams/ad-hoc", body: body).snakeCased()
-        let _: AriaNoContent = try await api.call(endpoint)
+    /// POST /v1/users: nuovo utente dell'azienda (201 con `id`). Si rilegge l'elenco dei membri dopo.
+    @discardableResult
+    func createUser(_ body: AdminMemberUserCreate) async throws -> AdminMemberCreated {
+        try await api.call(AriaEndpoint<AdminMemberCreated>.post("v1/users", body: body).snakeCased())
     }
 
-    /// POST /v1/users: nuovo utente dell'azienda. Si rilegge l'elenco dei membri dopo.
-    func createUser(_ body: AdminMemberUserCreate) async throws {
-        let _: AriaNoContent = try await api.call(AriaEndpoint<AriaNoContent>.post("v1/users", body: body).snakeCased())
+    /// PATCH /v1/members/{user_id}: nome, qualifica, specialità, lavoro sul campo, stato in azienda.
+    func update(userId: String, _ body: AdminMemberUpdate) async throws -> AdminMember {
+        try await api.call(AriaEndpoint<AdminMember>.patch("v1/members/\(userId)", body: body).snakeCased())
+    }
+
+    /// DELETE /v1/companies/{company_id}/members/{user_id}: la persona esce dall'azienda (204).
+    func removeFromCompany(companyId: String, userId: String) async throws {
+        let _: AriaNoContent = try await api.call(
+            AriaEndpoint<AriaNoContent>.delete("v1/companies/\(companyId)/members/\(userId)"))
     }
 }

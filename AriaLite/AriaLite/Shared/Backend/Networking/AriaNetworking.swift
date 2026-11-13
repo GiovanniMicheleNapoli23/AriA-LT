@@ -144,6 +144,9 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case permissionDenied(AriaPermissionDenial)
     /// Un rifiuto delle rotte di Roles & Rights con un codice noto (versione vecchia, nome già usato…).
     case accessRefused(AriaAccessRefusal)
+    /// Un rifiuto delle rotte delle persone e dell'accesso all'app con un codice noto (`detail.code`); `detail` è il
+    /// testo del server, per chi vuole mostrarlo.
+    case peopleRefused(AriaPeopleRefusal, detail: String)
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
     case decoding(String)
@@ -186,6 +189,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
                 ? String(localized: "Your access is paused. Ask your admin.")
                 : String(localized: "Your role doesn't allow this.")
         case .accessRefused(let refusal): refusal.localized
+        case .peopleRefused(let refusal, _): refusal.message
         case .invalidChoice(_, _, let message): message
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
@@ -304,6 +308,10 @@ nonisolated enum AriaHTTP {
         }
         if let refusal = code(from: data).flatMap(AriaAccessRefusal.init(rawValue:)) {
             throw AriaError.accessRefused(refusal)
+        }
+        // Mai su un 403: `membership_suspended` lì è il rifiuto dei diritti (Agent Studio), non quello delle persone.
+        if http.statusCode != 403, let refusal = code(from: data).flatMap(AriaPeopleRefusal.init(rawValue:)) {
+            throw AriaError.peopleRefused(refusal, detail: detail(from: data))
         }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)

@@ -4,8 +4,10 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il modulo "Add member" (POST /v1/users): email, nome, ruolo e password. Solo l'email è obbligatoria per
-//  il server; nome, ruolo e password vuoti non si mandano. L'email si controlla qui, in modo leggero.
+//  Il modulo "New person" (POST /v1/users): nome, email, ruolo di Roles & Rights (sempre mandato: senza, il server
+//  ne sceglie uno lui), qualifica facoltativa e l'interruttore "Può usare l'app". Dopo la creazione rilegge
+//  l'elenco, confronta il ruolo della persona con quello scelto e, se serve, le dà l'accesso all'app e le manda
+//  l'email d'invito. Gli esiti da dire a chi crea sono gli `AdminMemberCreationNotice` della scheda.
 //
 
 import Foundation
@@ -18,10 +20,18 @@ final class AdminMemberCreateViewModel: Identifiable {
 
     // MARK: - Campi
 
+    var name = ""
     var email = ""
-    var fullName = ""
-    var role = ""
-    var password = ""
+    var label: AdminMemberLabel = .none
+    /// "Può usare l'app": spento di partenza.
+    var wantsApp = false
+
+    /// I ruoli attivi fra cui scegliere (quelli in pausa non si offrono).
+    private(set) var roles: [AdminRole] = []
+    private(set) var hasLoadedRoles = false
+    private(set) var rolesFailure: String?
+    private var chosenRoleId: String?
+    private var roleChosenByHand = false
 
     private(set) var isSaving = false
     private(set) var errorMessage: String?
@@ -30,30 +40,82 @@ final class AdminMemberCreateViewModel: Identifiable {
         self.owner = owner
     }
 
+    // MARK: - Ruolo
+
+    /// Il ruolo scelto. Finché non lo sceglie a mano chi compila, segue la qualifica (come la web): il ruolo base
+    /// della qualifica se è attivo, poi il predefinito se è attivo, altrimenti nessuno.
+    var roleId: String? {
+        get { roleChosenByHand ? chosenRoleId : AdminMemberRules.preselectedRole(roles, label: label.apiValue) }
+        set {
+            chosenRoleId = newValue
+            roleChosenByHand = true
+        }
+    }
+
+    /// Nessun ruolo attivo: la persona non si può creare finché non ne esiste uno.
+    var hasNoActiveRoles: Bool { hasLoadedRoles && roles.isEmpty }
+
+    func loadRoles() async {
+        guard let companyId = owner.backend.activeCompanyId else { return }
+        do {
+            let all = try await AdminRolesAPI(api: owner.backend.api, companyId: companyId).roles()
+            roles = all.filter(\.enabled)
+            hasLoadedRoles = true
+            rolesFailure = nil
+            // Un ruolo scelto che non c'è più: si torna alla preselezione.
+            if roleChosenByHand, let chosenRoleId, !roles.contains(where: { $0.id == chosenRoleId }) {
+                self.chosenRoleId = nil
+                roleChosenByHand = false
+            }
+        } catch {
+            if let failure = AdminMembersFailure.from(error, action: .read, backend: owner.backend) {
+                rolesFailure = failure.message
+            }
+        }
+    }
+
     // MARK: - Presentazione
 
-    var roleSuggestions: [String] { owner.roleSuggestions }
+    var seatsText: String? { owner.seatsText }
 
-    func roleLabel(_ raw: String) -> String { AdminMemberRole.label(raw) }
+    /// Se le licenze sono finite l'interruttore è spento e disattivato.
+    var appToggleEnabled: Bool { !owner.seatsAreFull }
 
-    /// Il suggerimento è il ruolo scritto (ruoli uguali a meno delle maiuscole).
-    func isCurrentRole(_ raw: String) -> Bool {
-        AdminMemberRole.key(raw) == AdminMemberRole.key(trimmed(role))
+    /// L'interruttore come lo vede chi compila: mai acceso con le licenze finite.
+    var wantsAppEffective: Bool { wantsApp && appToggleEnabled }
+
+    /// La spiegazione sotto l'interruttore.
+    var appFootnote: String {
+        if !appToggleEnabled {
+            return String(localized: "The app seats are full. Free a seat to give app access, or add them without it.")
+        }
+        return String(localized: "They get app access and an email with a sign-in link. Owners and admins don't need a seat.")
     }
 
-    var canSave: Bool { !isSaving && !trimmed(email).isEmpty }
+    /// L'email (senza maiuscole e spazi) è già nell'elenco caricato: si avvisa prima di salvare. "Crea" resta
+    /// attivo (chi è sospeso, o non compare per altri motivi, lo decide il server).
+    var duplicate: AdminMember? {
+        let key = Self.normalizedEmail(email)
+        guard !key.isEmpty else { return nil }
+        return owner.members.first { Self.normalizedEmail($0.email) == key }
+    }
+
+    var canSave: Bool {
+        !isSaving && Self.isValidName(trimmedName) && Self.isPlausibleEmail(trimmedEmail) && roleId != nil
+    }
 
     /// Qualcosa è stato scritto: chiudere con un trascinamento lo perderebbe.
-    var hasChanges: Bool {
-        ![email, fullName, role, password].allSatisfy { trimmed($0).isEmpty }
+    var hasChanges: Bool { !trimmedName.isEmpty || !trimmedEmail.isEmpty }
+
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var trimmedEmail: String { email.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    private static func normalizedEmail(_ text: String) -> String {
+        String(text.lowercased().filter { !$0.isWhitespace })
     }
 
-    private func trimmed(_ text: String) -> String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
-
-    private func optional(_ text: String) -> String? {
-        let value = trimmed(text)
-        return value.isEmpty ? nil : value
-    }
+    /// Nome obbligatorio, 1-100 caratteri.
+    static func isValidName(_ text: String) -> Bool { (1...100).contains(text.count) }
 
     /// Controllo leggero: qualcosa@dominio.estensione, senza spazi. Il resto lo decide il server.
     static func isPlausibleEmail(_ text: String) -> Bool {
@@ -63,32 +125,86 @@ final class AdminMemberCreateViewModel: Identifiable {
         return domain.count >= 2 && domain.allSatisfy { !$0.isEmpty }
     }
 
+    /// Dal foglio alla scheda di chi c'è già nell'elenco.
+    func openDuplicate() {
+        guard let duplicate else { return }
+        owner.open(duplicate.id)
+    }
+
     // MARK: - Salvataggio
 
-    /// `true` se creato: il modulo si può chiudere.
-    func save() async -> Bool {
-        guard !isSaving else { return false }
+    /// Crea la persona. `nil` se non è stata creata (il motivo è in `errorMessage` e il modulo resta aperto).
+    /// Se è creata, chiude il foglio e apre la sua scheda: gli esiti parziali sono avvisi della scheda, non errori.
+    @discardableResult
+    func save() async -> AdminMemberCreationResult? {
+        guard canSave, let roleId else { return nil }
         errorMessage = nil
-        guard Self.isPlausibleEmail(trimmed(email)) else {
-            errorMessage = String(localized: "Enter a valid email address.")
-            return false
-        }
-        // La password non si taglia: gli spazi ai lati potrebbero essere voluti.
-        let body = AdminMemberUserCreate(
-            email: trimmed(email), fullName: optional(fullName),
-            password: password.isEmpty ? nil : password, role: optional(role)
-        )
+        let wantsApp = wantsAppEffective
+        let backend = owner.backend
         isSaving = true
         defer { isSaving = false }
+
+        let body = AdminMemberUserCreate(email: trimmedEmail, fullName: trimmedName, role: label.apiValue,
+                                         accessRoleId: roleId)
+        let created: AdminMemberCreated
         do {
-            try await AdminMembersAPI(api: owner.backend.api).createUser(body)
+            created = try await AdminMembersAPI(api: backend.api).createUser(body)
         } catch {
-            if let failure = AdminMembersFailure.from(error, action: .write, backend: owner.backend) {
+            if let failure = AdminMembersFailure.from(error, action: .write, backend: backend) {
                 errorMessage = failure.message
+                // Un ruolo tolto nel frattempo: si ricaricano i ruoli.
+                if failure.accessRefusal == .roleNotFound { await loadRoles() }
             }
-            return false
+            return nil
         }
-        await owner.didCreateMember()
-        return true
+
+        // La risposta non ha ruolo né stato: si rilegge l'elenco e si trova la persona per id.
+        await owner.refresh()
+        let person = owner.members.first { $0.id == created.id }
+        var notices = roleNotices(for: person, chosen: roleId)
+        if wantsApp {
+            notices += await giveAppAccess(to: created.id, person: person)
+            // Licenze e badge dopo l'accesso dato.
+            await owner.refresh()
+        }
+
+        let result = AdminMemberCreationResult(userId: created.id, notices: notices)
+        owner.didCreate(result)
+        return result
+    }
+
+    /// Il confronto fra il ruolo della persona e quello scelto: con un'email già in azienda il server non lo cambia.
+    private func roleNotices(for person: AdminMember?, chosen roleId: String) -> [AdminMemberCreationNotice] {
+        guard let person else { return [] }
+        if person.isOwnerOrAdmin { return [.alreadyOwnerOrAdmin] }
+        guard let role = person.accessRole else { return [.noRoleChooseOne] }
+        return role.id == roleId ? [] : [.roleUnchanged]
+    }
+
+    /// `POST …/mobile-users`, poi l'email d'invito. Titolari e admin e sospesi in azienda si saltano. Se la
+    /// persona non si trova nell'elenco si prova: il server rifiuta con un codice e il motivo si dice.
+    private func giveAppAccess(to userId: String, person: AdminMember?) async -> [AdminMemberCreationNotice] {
+        if person?.isOwnerOrAdmin == true { return [.appSkippedOwnerOrAdmin] }
+        if person?.isSuspendedInCompany == true { return [.appSkippedSuspended] }
+        let backend = owner.backend
+        guard let companyId = backend.activeCompanyId else {
+            return [.appNotGiven(AriaError.missingCompany.localizedDescription)]
+        }
+        do {
+            let _: AdminMobileUser = try await backend.api.call(
+                AdminMobileUsersAPI.add(companyId: companyId, AdminMobileUserAdd(userId: userId)))
+        } catch {
+            let message = AdminMembersFailure.from(error, action: .write, backend: backend)?.message
+                ?? error.localizedDescription
+            return [.appNotGiven(message)]
+        }
+        do {
+            let sent = try await backend.api.auth.sendMobileInviteLink(companyId: companyId, userId: userId)
+            return sent ? [] : [.emailNotSent]
+        } catch {
+            // Una sessione scaduta passa da `backend.handle`; per il resto basta dire che l'email non è partita.
+            _ = AdminMembersFailure.from(error, action: .write, backend: backend)
+            return [.emailNotSent]
+        }
     }
 }

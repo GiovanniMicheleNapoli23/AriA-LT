@@ -1,5 +1,5 @@
 //
-//  AdminMemberAdHocTeamView.swift
+//  AdminTeamAdHocView.swift
 //  AriaLite
 //
 //  Created by Giovanni Michele on 22/10/26.
@@ -10,8 +10,8 @@
 
 import SwiftUI
 
-struct AdminMemberAdHocTeamView: View {
-    @Bindable var viewModel: AdminMemberAdHocTeamViewModel
+struct AdminTeamAdHocView: View {
+    @Bindable var viewModel: AdminTeamAdHocViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -60,6 +60,7 @@ struct AdminMemberAdHocTeamView: View {
             .disabled(viewModel.isSaving)
             .interactiveDismissDisabled(viewModel.hasChanges)
         }
+        .task { await viewModel.loadPeople() }
     }
 
     private var membersSection: some View {
@@ -67,28 +68,31 @@ struct AdminMemberAdHocTeamView: View {
             TextField("Search members", text: $viewModel.memberQuery)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
-            ForEach(viewModel.candidates) { member in
-                Button {
-                    viewModel.toggle(member)
-                } label: {
-                    HStack(spacing: 12) {
-                        AdminMemberAvatar(initials: member.initials)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(verbatim: member.displayName)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                            if let role = member.roleLabel {
-                                Text(verbatim: role).font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer(minLength: 0)
-                        Image(systemName: viewModel.isSelected(member) ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(viewModel.isSelected(member) ? Color.liteAccent : Color.secondary)
-                    }
-                    .contentShape(Rectangle())
+            if viewModel.isLoadingPeople {
+                ProgressView().frame(maxWidth: .infinity)
+            } else if viewModel.peopleFailed {
+                VStack(spacing: 8) {
+                    Text("Couldn't load people.")
+                        .foregroundStyle(.secondary)
+                    Button("Retry") { Task { await viewModel.loadPeople() } }
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(viewModel.isSelected(member) ? .isSelected : [])
+                .frame(maxWidth: .infinity)
+            } else if viewModel.candidates.isEmpty {
+                Text("No people to add.").foregroundStyle(.secondary)
+            } else {
+                ForEach(viewModel.candidates) { person in
+                    Button {
+                        viewModel.toggle(person)
+                    } label: {
+                        AdminPersonPickRow(
+                            name: person.displayName,
+                            detail: person.email.isEmpty || person.displayName == person.email ? nil : person.email,
+                            isSelected: viewModel.isSelected(person)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(viewModel.isSelected(person) ? .isSelected : [])
+                }
             }
         } header: {
             Text("Members")

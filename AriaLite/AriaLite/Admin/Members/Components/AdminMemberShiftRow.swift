@@ -4,14 +4,14 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Una riga dell'elenco dei turni: giorno, team, tipo di turno e note, con il menu per toglierlo.
+//  Una riga dell'elenco dei turni: giorno, team, tipo di turno e note, con il menu per toglierlo (solo se `onRemove` c'è: chi non può assegnare turni non lo vede).
 //
 
 import SwiftUI
 
 struct AdminMemberShiftRow: View {
     let shift: AdminMemberShift
-    let onRemove: () -> Void
+    var onRemove: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -31,19 +31,23 @@ struct AdminMemberShiftRow: View {
                 }
             }
             Spacer(minLength: 0)
-            Menu {
-                Button("Remove shift", systemImage: "trash", role: .destructive, action: onRemove)
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.title3)
-                    .foregroundStyle(Color.liteAccent)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
+            if let onRemove {
+                Menu {
+                    Button("Remove shift", systemImage: "trash", role: .destructive, action: onRemove)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.title3)
+                        .foregroundStyle(Color.liteAccent)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(Text("Shift actions"))
             }
-            .accessibilityLabel(Text("Shift actions"))
         }
         .contextMenu {
-            Button("Remove shift", systemImage: "trash", role: .destructive, action: onRemove)
+            if let onRemove {
+                Button("Remove shift", systemImage: "trash", role: .destructive, action: onRemove)
+            }
         }
     }
 }

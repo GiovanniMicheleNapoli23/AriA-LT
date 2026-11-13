@@ -43,7 +43,6 @@ enum AriaDestination: Hashable {
     case adminCategories
     case adminTeams
     case adminMembers
-    case adminMobileUsers
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -329,8 +328,6 @@ struct AriaShellView: View {
             AdminTeamsView(viewModel: viewModel.adminTeams)
         case .adminMembers:
             AdminMembersView(viewModel: viewModel.adminMembers)
-        case .adminMobileUsers:
-            AdminMobileUsersView(viewModel: viewModel.adminMobileUsers)
         }
     }
 

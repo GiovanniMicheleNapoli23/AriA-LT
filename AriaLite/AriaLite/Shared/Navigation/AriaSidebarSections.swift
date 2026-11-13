@@ -56,7 +56,10 @@ enum AriaSidebarSections {
         AriaSidebarGroup(title: "Resources", items: [assets, spareParts, alarms]),
         AriaSidebarGroup(title: "Purchases", items: [vendors]),
         AriaSidebarGroup(title: "Analytics", items: [llmUsage]),
-        AriaSidebarGroup(title: "Configuration", items: [categories]),
+        AriaSidebarGroup(title: "Configuration", items: [
+            AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers, needs: [.members]),
+            categories,
+        ]),
     ]
 
     private static let adminGroups: [AriaSidebarGroup] = [
@@ -89,7 +92,6 @@ enum AriaSidebarSections {
             categories,
             AriaSidebarItem(title: "Teams", icon: "person.3", target: .adminTeams),
             AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers),
-            AriaSidebarItem(title: "Mobile Users", icon: "iphone.gen3", target: .adminMobileUsers),
         ]),
     ]
 

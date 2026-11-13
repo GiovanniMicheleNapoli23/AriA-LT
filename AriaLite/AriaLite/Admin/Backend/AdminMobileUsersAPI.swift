@@ -4,10 +4,11 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Le rotte della sezione Mobile Users, come la pagina /mobile-users della web.
+//  Le rotte dell'accesso all'app (pagina /mobile-users della web), usate dalla scheda della persona in Members:
+//  licenze, dare e togliere l'accesso, sospendere l'app, rinnovare l'invito, dispositivi; più gli ordini aperti.
 //  ATTENZIONE ai due casing: gli operatori e le sessioni (`/v1/companies/{id}/mobile-users*`) viaggiano in
-//  camelCase (`openCount`, `lastActiveAt`), quindi niente `.snakeCased()`; utenti e ordini di lavoro
-//  (`/v1/users`, `/v1/work-orders*`) sono in snake_case e lo vogliono.
+//  camelCase (`openCount`, `lastActiveAt`), quindi niente `.snakeCased()`; gli ordini di lavoro
+//  (`/v1/work-orders*`) sono in snake_case e lo vogliono.
 //
 
 import Foundation
@@ -25,11 +26,6 @@ nonisolated enum AdminMobileUsersAPI {
     /// POST …/mobile-users: un utente già dell'azienda diventa operatore.
     static func add(companyId: String, _ body: AdminMobileUserAdd) -> AriaEndpoint<AdminMobileUser> {
         .post(base(companyId), body: body)
-    }
-
-    /// POST …/mobile-users/invite: un operatore nuovo, che riceve il link di accesso per email.
-    static func invite(companyId: String, _ body: AdminMobileUserInvite) -> AriaEndpoint<AdminMobileUser> {
-        .post("\(base(companyId))/invite", body: body)
     }
 
     /// PATCH …/mobile-users/{id}: stato (`active` o `suspended`) e specialità.
@@ -63,20 +59,14 @@ nonisolated enum AdminMobileUsersAPI {
         .delete("\(base(companyId))/\(userId)/sessions/\(sessionId)")
     }
 
-    // MARK: Utenti (snake_case)
-
-    /// GET /v1/users: gli utenti attivi dell'azienda, per scegliere chi promuovere a operatore.
-    static func users() -> AriaEndpoint<AriaLossyArray<AdminMobileUserCandidate>> {
-        AriaEndpoint.get("v1/users").snakeCased()
-    }
-
     // MARK: Ordini di lavoro (snake_case)
 
-    /// GET /v1/work-orders aperti e assegnati a quell'operatore.
+    /// GET /v1/work-orders aperti e assegnati a quell'operatore. `scope=all` sempre: senza, per chi ha un ruolo il
+    /// server sostituisce `assigned_to_user_id` con l'id di chi guarda, e la scheda mostrerebbe gli ordini di lui.
     static func openWorkOrders(userId: String) -> AriaEndpoint<AriaLossyArray<AdminMobileUserWorkOrder>> {
         AriaEndpoint<AriaLossyArray<AdminMobileUserWorkOrder>>.get(
             "v1/work-orders",
-            query: ["assigned_to_user_id": userId, "status_group": "open", "limit": "100"]).snakeCased()
+            query: ["assigned_to_user_id": userId, "status_group": "open", "scope": "all", "limit": "100"]).snakeCased()
     }
 
     /// GET /v1/work-orders/{id}/step-reports: il risultato di ogni passo (nota, foto, chi l'ha segnato).

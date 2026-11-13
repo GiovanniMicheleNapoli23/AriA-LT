@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  I prossimi turni del membro, per data, con "Assign shift" per aggiungerne uno. Ogni riga ha il menu per
-//  toglierlo (con conferma, gestita dal view model).
+//  I prossimi turni del membro, per data. "Assign shift" e il menu per toglierli ci sono solo se il view model dice
+//  che chi guarda può assegnare turni a questa persona (con conferma, gestita dal view model).
 //
 
 import SwiftUI
@@ -15,10 +15,12 @@ struct AdminMemberShiftsCard: View {
 
     var body: some View {
         AdminCard(title: "Upcoming shifts", systemImage: "calendar") {
-            Button("Assign shift", systemImage: "plus") { viewModel.startAssigning() }
-                .font(.subheadline.weight(.semibold))
-                .buttonStyle(.borderless)
-                .foregroundStyle(Color.liteAccent)
+            if viewModel.canAssignShifts {
+                Button("Assign shift", systemImage: "plus") { viewModel.startAssigning() }
+                    .font(.subheadline.weight(.semibold))
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(Color.liteAccent)
+            }
         } content: {
             VStack(alignment: .leading, spacing: 12) {
                 Text(verbatim: viewModel.horizonText)
@@ -35,7 +37,8 @@ struct AdminMemberShiftsCard: View {
                 } else {
                     ForEach(viewModel.shifts) { shift in
                         if shift.id != viewModel.shifts.first?.id { Divider() }
-                        AdminMemberShiftRow(shift: shift, onRemove: { viewModel.confirmRemoval(of: shift) })
+                        AdminMemberShiftRow(shift: shift,
+                                            onRemove: viewModel.canAssignShifts ? { viewModel.confirmRemoval(of: shift) } : nil)
                     }
                 }
             }

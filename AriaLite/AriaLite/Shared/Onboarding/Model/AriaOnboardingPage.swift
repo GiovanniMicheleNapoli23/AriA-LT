@@ -133,8 +133,7 @@ nonisolated extension AriaOnboardingPage {
                 Highlight(symbol: "building.columns", title: "Sites", detail: "Your sites"),
                 Highlight(symbol: "tag", title: "Categories", detail: "The categories that keep your data in order"),
                 Highlight(symbol: "person.3", title: "Teams", detail: "Groups of people"),
-                Highlight(symbol: "person.2", title: "Members", detail: "Who uses the web platform"),
-                Highlight(symbol: "iphone.gen3", title: "Mobile Users", detail: "Invite your technicians to this app"),
+                Highlight(symbol: "person.2", title: "Members", detail: "Your people, their role and access to this app"),
             ]),
     ]
 }

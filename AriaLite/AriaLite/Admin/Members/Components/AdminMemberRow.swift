@@ -4,13 +4,17 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Scheda di un membro nella lista: avatar con le iniziali, nome e ruolo, dove si trova oggi e il carico.
+//  Scheda di un membro nella lista: avatar con le iniziali, nome, la riga del ruolo, il badge di stato, dove si
+//  trova oggi e il carico. Una persona sospesa in azienda è più spenta (lo dice `access`, non `isActive`).
 //
 
 import SwiftUI
 
 struct AdminMemberRow: View {
     let member: AdminMember
+    /// La riga sotto il nome ("Owner", "Admin", il ruolo o "Needs a role"), già decisa dal view model.
+    let roleLine: String?
+    let badge: AdminMemberBadgeKind?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -20,14 +24,20 @@ struct AdminMemberRow: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
             : AnyLayout(HStackLayout(alignment: .top, spacing: 12))
         layout {
-            AdminMemberAvatar(initials: member.initials, isActive: member.isActive)
+            AdminMemberAvatar(initials: member.initials, isActive: !member.isSuspendedInCompany)
             VStack(alignment: .leading, spacing: 6) {
                 Text(verbatim: member.displayName)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(member.isSuspendedInCompany ? Color.secondary : Color.primary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(isAX ? nil : 2)
-                badges
+                if let roleLine {
+                    Text(verbatim: roleLine)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(isAX ? nil : 1)
+                }
+                if let badge { AdminMemberAccessBadge(kind: badge) }
                 Label(member.currentSummary ?? String(localized: "Not on shift today"), systemImage: "person.2")
                     .font(.footnote)
                     .foregroundStyle(member.currentSummary == nil ? .tertiary : .secondary)
@@ -47,13 +57,6 @@ struct AdminMemberRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
         .contentShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private var badges: some View {
-        HStack(spacing: 6) {
-            if let role = member.roleLabel { AdminMemberBadge(text: role) }
-            if !member.isActive { AdminMemberBadge(text: String(localized: "Inactive"), tint: .secondary) }
-        }
     }
 
     private var workload: some View {

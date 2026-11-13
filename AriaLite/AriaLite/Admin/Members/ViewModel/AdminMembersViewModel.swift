@@ -5,9 +5,10 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La sezione Members, come la pagina /members della web. Vive in AppViewModel: i dati restano fra un
-//  cambio di sezione e l'altro. L'elenco è dell'azienda attiva (GET /v1/members); ricerca e filtri
-//  (ruolo, stato, team) agiscono sul telefono, senza richiamare il server, così le voci dei filtri restano
-//  quelle di tutto l'elenco.
+//  cambio di sezione e l'altro. L'elenco è dell'azienda attiva (GET /v1/members, anche sospesi e chi non lavora
+//  sul campo); ricerca e filtri (ruolo, stato, team) agiscono sul telefono, senza richiamare il server, così le
+//  voci dei filtri restano quelle di tutto l'elenco. Solo per owner e admin si legge in parallelo anche
+//  GET …/mobile-users: licenze e riga mobile di ogni persona (la scheda e il badge la usano).
 //
 
 import Foundation
@@ -36,8 +37,18 @@ final class AdminMembersViewModel {
     private(set) var failure: AdminMembersFailure?
     private(set) var lastUpdated: Date?
 
+    /// Le righe mobile per id della persona (solo per owner e admin); vuote se la chiamata non c'è o è fallita.
+    private(set) var mobileRows: [String: AdminMobileUser] = [:]
+    /// Le licenze dell'app (solo per owner e admin).
+    private(set) var seats: AdminMobileUserSeats?
+
+    /// Le schede aperte sopra l'elenco (`NavigationStack(path:)`).
+    var path: [AdminMemberRoute] = []
+    /// Gli avvisi dell'ultima creazione, per id della persona: la scheda li prende una volta sola.
+    @ObservationIgnored var creationNotices: [String: [AdminMemberCreationNotice]] = [:]
+
     var query = ""
-    /// La chiave del ruolo scelto (vedi `AdminMemberRole.key`).
+    /// L'id del ruolo scelto, o una delle chiavi di `AdminMemberRoleFilter`.
     var roleFilter: String?
     var statusFilter: AdminMemberStatusFilter?
     var teamFilter: String?
@@ -50,7 +61,6 @@ final class AdminMembersViewModel {
 
     /// I moduli aperti (sheet).
     var newMemberForm: AdminMemberCreateViewModel?
-    var adHocTeamForm: AdminMemberAdHocTeamViewModel?
 
     init(backend: AriaBackend) {
         self.backend = backend
@@ -63,6 +73,10 @@ final class AdminMembersViewModel {
         isLoading = false
         failure = nil
         lastUpdated = nil
+        mobileRows = [:]
+        seats = nil
+        path = []
+        creationNotices = [:]
         query = ""
         roleFilter = nil
         statusFilter = nil
@@ -72,7 +86,6 @@ final class AdminMembersViewModel {
         isLoadingTeams = false
         teamsFailure = nil
         newMemberForm = nil
-        adHocTeamForm = nil
     }
 
     // MARK: - Caricamento
@@ -86,28 +99,74 @@ final class AdminMembersViewModel {
         if !hasLoaded { await refresh() }
     }
 
+    /// Rilegge l'elenco e, per owner e admin, in parallelo le licenze e le righe mobile. Se la lista mobile
+    /// fallisce l'elenco resta e licenze e dettagli mobili spariscono (il badge viene da `access`).
     func refresh() async {
         let company = backend.activeCompanyId
+        let mobileCompany = viewer.isAdmin ? company : nil
+        let api = backend.api
         isLoading = true
         defer { isLoading = false }
+        async let mobile = Self.fetchMobile(api: api, companyId: mobileCompany)
         do {
-            let fresh = try await AdminMembersAPI(api: backend.api).list()
+            let fresh = try await AdminMembersAPI(api: api).list()
+            let response = await mobile
             // Nel frattempo è cambiata l'azienda: questo elenco non è più quello giusto.
             guard company == backend.activeCompanyId else { return }
             members = fresh
+            var rows: [String: AdminMobileUser] = [:]
+            for row in response?.operators ?? [] { rows[row.id] = row }
+            mobileRows = rows
+            seats = response?.seats
             loadedCompanyId = company
             failure = nil
             lastUpdated = .now
             dropStaleFilters()
         } catch {
+            // Il lavoro mobile in corso si annulla da solo uscendo da qui.
             if let failure = AdminMembersFailure.from(error, action: .read, backend: backend) { self.failure = failure }
         }
+    }
+
+    /// GET …/mobile-users; `nil` se non si chiede (non è admin) o se fallisce: non è un errore dell'elenco.
+    private nonisolated static func fetchMobile(api: AriaAPIClient, companyId: String?) async -> AdminMobileUsersResponse? {
+        guard let companyId else { return nil }
+        return try? await api.call(AdminMobileUsersAPI.list(companyId: companyId))
     }
 
     /// Un membro riletto (dal dettaglio): si aggiorna dov'è.
     func didRefresh(_ member: AdminMember) {
         if let index = members.firstIndex(where: { $0.id == member.id }) { members[index] = member }
     }
+
+    // MARK: - Chi guarda e cosa vede
+
+    /// Chi guarda, ricavato ogni volta dal backend: i diritti possono cambiare mentre la sezione è aperta.
+    var viewer: AdminPeopleViewer { AdminPeopleViewer(backend: backend) }
+
+    var canCreate: Bool { AdminMemberRules.canCreate(viewer) }
+
+    func mobileRow(for id: String) -> AdminMobileUser? { mobileRows[id] }
+
+    /// I titolari attivi in azienda: l'ultimo non si sospende né si rimuove.
+    var activeOwners: Int { members.filter { $0.isOwner && !$0.isSuspendedInCompany }.count }
+
+    func badge(for member: AdminMember) -> AdminMemberBadgeKind? {
+        AdminMemberRules.badge(member, row: mobileRow(for: member.id))
+    }
+
+    func roleLine(for member: AdminMember) -> String? {
+        let viewer = viewer
+        return AdminMemberRules.roleLine(member, viewerCanManageRoles: viewer.isAdmin || viewer.canManageRoles)
+    }
+
+    /// "App seats: 7 of 10", solo per owner e admin quando le licenze sono arrivate.
+    var seatsText: String? {
+        guard let seats else { return nil }
+        return String(localized: "App seats: \(seats.used) of \(seats.total)")
+    }
+
+    var seatsAreFull: Bool { seats?.isFull ?? false }
 
     // MARK: - Filtri
 
@@ -116,7 +175,7 @@ final class AdminMembersViewModel {
     }
 
     private func matches(_ member: AdminMember) -> Bool {
-        if let roleFilter, member.role.map(AdminMemberRole.key) != roleFilter { return false }
+        if let roleFilter, !AdminMemberRoleFilter.matches(roleFilter, member) { return false }
         if let statusFilter, !statusFilter.matches(member) { return false }
         if let teamFilter, !member.teamIds.contains(teamFilter) { return false }
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -124,15 +183,22 @@ final class AdminMembersViewModel {
         return [member.fullName, member.email].contains { $0?.localizedStandardContains(q) == true }
     }
 
+    /// Per ruolo di Roles & Rights (`access_role.id`), più "Owners and admins" e "No role" quando servono.
     var roleOptions: [AdminMemberFilterOption] {
         var found: [String: (label: String, count: Int)] = [:]
         for member in members {
-            guard let role = member.role else { continue }
-            let key = AdminMemberRole.key(role)
-            found[key] = (found[key]?.label ?? AdminMemberRole.label(role), (found[key]?.count ?? 0) + 1)
+            guard let role = member.accessRole else { continue }
+            found[role.id] = (found[role.id]?.label ?? role.name, (found[role.id]?.count ?? 0) + 1)
         }
-        return found.map { AdminMemberFilterOption(key: $0.key, label: $0.value.label, count: $0.value.count) }
+        let roles = found.map { AdminMemberFilterOption(key: $0.key, label: $0.value.label, count: $0.value.count) }
             .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+        let special = [
+            AdminMemberFilterOption(key: AdminMemberRoleFilter.ownersAndAdmins, label: String(localized: "Owners and admins"),
+                                    count: members.filter(\.isOwnerOrAdmin).count),
+            AdminMemberFilterOption(key: AdminMemberRoleFilter.noRole, label: String(localized: "No role"),
+                                    count: members.filter { AdminMemberRoleFilter.matches(AdminMemberRoleFilter.noRole, $0) }.count)
+        ].filter { $0.count > 0 }
+        return special + roles
     }
 
     var statusOptions: [AdminMemberFilterOption] {
@@ -194,11 +260,4 @@ final class AdminMembersViewModel {
 
     /// Lista già a schermo ma l'ultimo aggiornamento è fallito.
     var refreshFailed: Bool { hasLoaded && failure != nil }
-
-    /// I ruoli già in uso come li ha scritti il server, per suggerirli nel modulo del nuovo membro.
-    var roleSuggestions: [String] {
-        var seen = Set<String>()
-        let used = members.compactMap(\.role)
-        return (used + AdminMemberRole.suggestions).filter { seen.insert(AdminMemberRole.key($0)).inserted }
-    }
 }

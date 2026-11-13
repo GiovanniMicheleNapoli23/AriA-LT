@@ -135,6 +135,8 @@ nonisolated enum AriaSectionAction: String, Sendable, CaseIterable {
     case create
     case edit
     case delete
+    /// Members: assegnare e togliere i turni.
+    case assignShifts = "assign_shifts"
 }
 
 /// Cosa può fare chi ha fatto l'accesso, nell'azienda attiva. Senza blocco `access` (backend precedente), in

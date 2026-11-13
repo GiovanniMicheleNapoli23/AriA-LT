@@ -65,7 +65,7 @@ final class AdminTeamDetailViewModel {
         let teamTask = Task { try await api.team(id: id) }
         let workloadTask = Task { try await api.workload(teamId: id) }
         let ordersTask = Task { try await api.workOrders(teamId: id) }
-        async let people: Void = owner.loadPeople()
+        async let people: Bool = owner.loadPeople()
 
         switch await teamTask.result {
         case .success(let fresh):
@@ -91,7 +91,7 @@ final class AdminTeamDetailViewModel {
         case .failure(let error):
             ordersMessage = AdminTeamsFailure.from(error, action: .read, backend: owner.backend)?.message
         }
-        await people
+        _ = await people
     }
 
     /// Prima gli aperti, poi per priorità e scadenza.

@@ -24,9 +24,18 @@ nonisolated struct AdminMember: Decodable, Sendable, Identifiable, Hashable {
     var currentShift: String?
     var workload: AdminMemberWorkload
     var homeTeams: [AdminMemberHomeTeam]
+    /// Lo stato in azienda e nell'app. `nil`: record legacy senza membership, o un valore che l'app non conosce.
+    var access: AdminMemberAccess?
+    /// Il ruolo di Roles & Rights; `nil` se la persona non ne ha.
+    var accessRole: AdminMemberRoleBrief?
+    /// `owner`, `admin` o `member` (anche il vecchio `mobile_operator`: vedi `isRegularMember`).
+    var membershipRole: String?
+    /// Lavora sul campo (compare nell'elenco dei turni e degli ordini).
+    var isField: Bool
 
     private enum CodingKeys: String, CodingKey {
         case id, email, fullName, role, isActive, avatarUrl, specialties, currentTeam, currentShift, workload, homeTeams
+        case access, accessRole, membershipRole, isField
     }
 
     init(from decoder: any Decoder) throws {
@@ -48,7 +57,21 @@ nonisolated struct AdminMember: Decodable, Sendable, Identifiable, Hashable {
         currentShift = text(.currentShift)
         workload = (try? c.decodeIfPresent(AdminMemberWorkload.self, forKey: .workload)) ?? AdminMemberWorkload()
         homeTeams = (try? c.decodeIfPresent(AriaLossyArray<AdminMemberHomeTeam>.self, forKey: .homeTeams))?.items ?? []
+        access = text(.access).flatMap(AdminMemberAccess.init(rawValue:))
+        accessRole = try? c.decodeIfPresent(AdminMemberRoleBrief.self, forKey: .accessRole)
+        membershipRole = text(.membershipRole)
+        isField = json(.isField)?.boolValue ?? false
     }
+
+    // MARK: - Ruolo e stato in azienda
+
+    var isOwner: Bool { membershipRole == "owner" }
+    var isCompanyAdmin: Bool { membershipRole == "admin" }
+    var isOwnerOrAdmin: Bool { isOwner || isCompanyAdmin }
+    /// Né titolare né admin: ogni altro valore di `membership_role` (anche `mobile_operator`) vale come `member`.
+    var isRegularMember: Bool { !isOwnerOrAdmin }
+    /// Sospeso in tutta l'azienda: lo dice solo `access`.
+    var isSuspendedInCompany: Bool { access == .suspended }
 
     // MARK: - Presentazione
 
