@@ -147,7 +147,7 @@
         }
       }
     },
-    "“%@” will be removed. Data linked to this plant can block the deletion. This can't be undone." : {
+    "“%@” will be removed. Data linked to this site can block the deletion. This can't be undone." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -226,6 +226,16 @@
         }
       }
     },
+    "%@ (paused)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (in pausa)"
+          }
+        }
+      }
+    },
     "%@ / 5" : {
       "localizations" : {
         "it" : {
@@ -298,6 +308,26 @@
         }
       }
     },
+    "%@ created" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ creato"
+          }
+        }
+      }
+    },
+    "%@ deleted" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ eliminato"
+          }
+        }
+      }
+    },
     "%@ h" : {
       "localizations" : {
         "it" : {
@@ -308,12 +338,42 @@
         }
       }
     },
+    "%@ has no role now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ora non ha un ruolo"
+          }
+        }
+      }
+    },
     "%@ is removed from this order." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ viene tolto da questo ordine."
+          }
+        }
+      }
+    },
+    "%@ is the default role now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ è ora il ruolo predefinito"
+          }
+        }
+      }
+    },
+    "%@ now holds %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ora ha il ruolo %@"
           }
         }
       }
@@ -370,32 +430,12 @@
         }
       }
     },
-    "%@ will be signed out everywhere and will need a new sign-in link." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ verrà disconnesso ovunque e avrà bisogno di un nuovo link di accesso."
-          }
-        }
-      }
-    },
     "%@ will have to connect their account again." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ dovrà collegare di nuovo il proprio account."
-          }
-        }
-      }
-    },
-    "%@ will lose access to the mobile app and free a seat. Their work orders stay as they are." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ perderà l'accesso all'app mobile e libererà un posto. I suoi ordini di lavoro restano come sono."
           }
         }
       }
@@ -412,16 +452,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ non sarà più nel team %@ il giorno %@."
-          }
-        }
-      }
-    },
-    "%@ won't be able to use the app until you reactivate them." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ non potrà usare l'app finché non lo riattivi."
           }
         }
       }
@@ -1209,7 +1239,7 @@
         }
       }
     },
-    "%lld files already exist in this plant. Replace them, or upload only the new ones?" : {
+    "%lld files already exist on this site. Replace them, or upload only the new ones?" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -1379,6 +1409,16 @@
         }
       }
     },
+    "%lld of %lld actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld di %2$lld azioni"
+          }
+        }
+      }
+    },
     "%lld of %lld checks done" : {
       "localizations" : {
         "it" : {
@@ -1429,22 +1469,6 @@
         }
       }
     },
-    "%lld of %lld operators" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld of %2$lld operators"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld di %2$lld operatori"
-          }
-        }
-      }
-    },
     "%lld of %lld parts done" : {
       "localizations" : {
         "en" : {
@@ -1467,22 +1491,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld su %2$lld eseguiti"
-          }
-        }
-      }
-    },
-    "%lld of %lld seats used" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld of %2$lld seats used"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld di %2$lld posti usati"
           }
         }
       }
@@ -1571,16 +1579,6 @@
         }
       }
     },
-    "%lld operators" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld operatori"
-          }
-        }
-      }
-    },
     "%lld overdue" : {
       "localizations" : {
         "it" : {
@@ -1607,6 +1605,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld ricambi"
+          }
+        }
+      }
+    },
+    "%lld people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld persone"
+          }
+        }
+      }
+    },
+    "%lld people hold this role. Choose the role they move to first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld persone hanno questo ruolo. Scegli prima il ruolo a cui spostarle."
           }
         }
       }
@@ -2306,6 +2324,26 @@
         }
       }
     },
+    "1 person" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 persona"
+          }
+        }
+      }
+    },
+    "1 person holds this role. Choose the role they move to first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 persona ha questo ruolo. Scegli prima il ruolo a cui spostarla."
+          }
+        }
+      }
+    },
     "1–10 people" : {
       "localizations" : {
         "it" : {
@@ -2386,7 +2424,7 @@
         }
       }
     },
-    "A chain that runs on a schedule or a plant event." : {
+    "A chain that runs on a schedule or a site event." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -2406,22 +2444,12 @@
         }
       }
     },
-    "A new category belongs to one plant." : {
+    "A new category belongs to one site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Una nuova categoria appartiene a un solo stabilimento."
-          }
-        }
-      }
-    },
-    "A new sign-in link was sent to %@." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un nuovo link di accesso è stato inviato a %@."
           }
         }
       }
@@ -2462,6 +2490,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un ricambio è sotto scorta quando la quantità scende al minimo."
+          }
+        }
+      }
+    },
+    "A role with this name already exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esiste già un ruolo con questo nome."
           }
         }
       }
@@ -2598,12 +2636,32 @@
         }
       }
     },
+    "Access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso"
+          }
+        }
+      }
+    },
     "Access for Aria" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accesso per Aria"
+          }
+        }
+      }
+    },
+    "Access given, but the email wasn't sent." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso dato, ma l'email non è partita."
           }
         }
       }
@@ -2667,6 +2725,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Accuratezza %lld%%"
+          }
+        }
+      }
+    },
+    "Acknowledge" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prendi in carico"
           }
         }
       }
@@ -2934,16 +3003,6 @@
         }
       }
     },
-    "Add existing user" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi utente esistente"
-          }
-        }
-      }
-    },
     "Add line" : {
       "localizations" : {
         "it" : {
@@ -3020,22 +3079,32 @@
         }
       }
     },
-    "Add operator" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi operatore"
-          }
-        }
-      }
-    },
     "Add Part" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi ricambio"
+          }
+        }
+      }
+    },
+    "Add people" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi persone"
+          }
+        }
+      }
+    },
+    "Add people to %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi persone a %@"
           }
         }
       }
@@ -3056,7 +3125,7 @@
         }
       }
     },
-    "Add plant" : {
+    "Add site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -3153,7 +3222,7 @@
         }
       }
     },
-    "Add your first plant to start chatting." : {
+    "Add your first site to start chatting." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -3175,16 +3244,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "aggiunto"
-          }
-        }
-      }
-    },
-    "Added" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiunto"
           }
         }
       }
@@ -3587,6 +3646,16 @@
         }
       }
     },
+    "All actions" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutte le azioni"
+          }
+        }
+      }
+    },
     "All areas" : {
       "localizations" : {
         "it" : {
@@ -3673,7 +3742,7 @@
         }
       }
     },
-    "All plants" : {
+    "All sites" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -3837,7 +3906,17 @@
         }
       }
     },
-    "Already in this plant" : {
+    "Already in the list." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È già nell'elenco."
+          }
+        }
+      }
+    },
+    "Already on this site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -4145,6 +4224,72 @@
         }
       }
     },
+    "App suspended." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App sospesa."
+          }
+        }
+      }
+    },
+    "App active." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App attiva."
+          }
+        }
+      }
+    },
+    "App active" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App attiva"
+          }
+        }
+      }
+    },
+    "App access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso all'app"
+          }
+        }
+      }
+    },
+    "App seats: %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "App seats: %1$lld of %2$lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licenze app: %1$lld di %2$lld"
+          }
+        }
+      }
+    },
+    "App suspended" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App sospesa"
+          }
+        }
+      }
+    },
     "App tour" : {
       "localizations" : {
         "it" : {
@@ -4277,6 +4422,7 @@
       }
     },
     "Approve" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4298,6 +4444,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Approva %lld"
+          }
+        }
+      }
+    },
+    "Approve closures" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva chiusure"
+          }
+        }
+      }
+    },
+    "Approve facts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva fatti"
           }
         }
       }
@@ -4374,7 +4542,7 @@
         }
       }
     },
-    "Approve this asset to add it to your plant's asset list." : {
+    "Approve this asset to add it to your site's asset list." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -4522,6 +4690,17 @@
         }
       }
     },
+    "Archive flows" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archivia flussi"
+          }
+        }
+      }
+    },
     "Archived" : {
       "localizations" : {
         "it" : {
@@ -4572,7 +4751,7 @@
         }
       }
     },
-    "Aria answers using the data of the selected plant." : {
+    "Aria answers using the data of the selected site." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5042,7 +5221,7 @@
         }
       }
     },
-    "Aria works plant by plant: add the first one to start chatting. You can add more later." : {
+    "Aria works site by site: add the first one to start chatting. You can add more later." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5500,6 +5679,17 @@
         }
       }
     },
+    "Assign shifts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assegna turni"
+          }
+        }
+      }
+    },
     "Assign to me" : {
       "localizations" : {
         "en" : {
@@ -5634,6 +5824,16 @@
         }
       }
     },
+    "Audit log" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registro attività"
+          }
+        }
+      }
+    },
     "Audits, deviations, batch records." : {
       "localizations" : {
         "it" : {
@@ -5681,6 +5881,7 @@
       }
     },
     "Auto-assign" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5768,7 +5969,7 @@
         }
       }
     },
-    "Availability, MTBF and open work orders for the plant, by line" : {
+    "Availability, MTBF and open work orders for the site, by line" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -5886,6 +6087,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Torna in bozza"
+          }
+        }
+      }
+    },
+    "Backfill" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recupero storico"
           }
         }
       }
@@ -6155,6 +6367,17 @@
         }
       }
     },
+    "Bulk reassign" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riassegnazione in blocco"
+          }
+        }
+      }
+    },
     "Burner" : {
       "localizations" : {
         "it" : {
@@ -6207,6 +6430,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Acquista…"
+          }
+        }
+      }
+    },
+    "by %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "di %@"
           }
         }
       }
@@ -6309,6 +6542,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Può delegare a"
+          }
+        }
+      }
+    },
+    "Can use the app" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Può usare l'app"
           }
         }
       }
@@ -6434,7 +6677,7 @@
         }
       }
     },
-    "Can't load plants" : {
+    "Can't load sites" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -6540,16 +6783,6 @@
         }
       }
     },
-    "Can't load the operators" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile caricare gli operatori"
-          }
-        }
-      }
-    },
     "Can't load the policy" : {
       "localizations" : {
         "it" : {
@@ -6586,16 +6819,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile caricare il testo"
-          }
-        }
-      }
-    },
-    "Can't load the users" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile caricare gli utenti"
           }
         }
       }
@@ -6667,6 +6890,7 @@
       }
     },
     "Cancel" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6698,6 +6922,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Annulla run"
+          }
+        }
+      }
+    },
+    "Cancel runs" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulla esecuzioni"
           }
         }
       }
@@ -7054,7 +7289,7 @@
         }
       }
     },
-    "Checking for files already in this plant…" : {
+    "Checking for files already on this site…" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7172,7 +7407,7 @@
         }
       }
     },
-    "Choose a plant" : {
+    "Choose a site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7182,7 +7417,7 @@
         }
       }
     },
-    "Choose a plant first." : {
+    "Choose a site first." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7192,7 +7427,7 @@
         }
       }
     },
-    "Choose a plant for the new category." : {
+    "Choose a site for the new category." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7202,7 +7437,7 @@
         }
       }
     },
-    "Choose a plant to create purchase orders." : {
+    "Choose a site to create purchase orders." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7212,7 +7447,7 @@
         }
       }
     },
-    "Choose a plant to see its purchase orders." : {
+    "Choose a site to see its purchase orders." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7222,7 +7457,7 @@
         }
       }
     },
-    "Choose a plant to see its spare parts." : {
+    "Choose a site to see its spare parts." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7232,12 +7467,22 @@
         }
       }
     },
-    "Choose a plant." : {
+    "Choose a site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scegli uno stabilimento."
+          }
+        }
+      }
+    },
+    "Choose a role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un ruolo"
           }
         }
       }
@@ -7385,7 +7630,7 @@
         }
       }
     },
-    "Choose which plant the category belongs to." : {
+    "Choose which site the category belongs to." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -7915,6 +8160,7 @@
       }
     },
     "Complete" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -8962,6 +9208,16 @@
         }
       }
     },
+    "Couldn't complete this" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operazione non riuscita"
+          }
+        }
+      }
+    },
     "Couldn't delete the alarm" : {
       "localizations" : {
         "it" : {
@@ -9012,7 +9268,7 @@
         }
       }
     },
-    "Couldn't delete the plant" : {
+    "Couldn't delete the site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -9098,12 +9354,12 @@
         }
       }
     },
-    "Couldn't log out" : {
+    "Couldn't load people." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile disconnettere"
+            "value" : "Impossibile caricare le persone."
           }
         }
       }
@@ -9180,16 +9436,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiornamento non riuscito"
-          }
-        }
-      }
-    },
-    "Couldn't remove the shift" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile togliere il turno"
           }
         }
       }
@@ -9304,16 +9550,6 @@
         }
       }
     },
-    "Couldn't update the operator" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile aggiornare l'operatore"
-          }
-        }
-      }
-    },
     "Couldn't update the stock" : {
       "localizations" : {
         "it" : {
@@ -9381,11 +9617,22 @@
       }
     },
     "Create" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Crea"
+          }
+        }
+      }
+    },
+    "Create a role to give people sections of ARIA." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea un ruolo per dare alle persone le sezioni di ARIA."
           }
         }
       }
@@ -9472,7 +9719,7 @@
         }
       }
     },
-    "Create plant" : {
+    "Create site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -9594,6 +9841,16 @@
         }
       }
     },
+    "Created by" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creato da"
+          }
+        }
+      }
+    },
     "Created on %@" : {
       "localizations" : {
         "en" : {
@@ -9606,6 +9863,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Creato il %@"
+          }
+        }
+      }
+    },
+    "Created, but without app access: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Creata, ma senza accesso all'app: %@"
           }
         }
       }
@@ -9692,7 +9959,7 @@
         }
       }
     },
-    "Current plant" : {
+    "Current site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -9968,7 +10235,18 @@
         }
       }
     },
+    "Default role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruolo predefinito"
+          }
+        }
+      }
+    },
     "Delete" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -9980,6 +10258,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elimina"
+          }
+        }
+      }
+    },
+    "Delete %@?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminare %@?"
           }
         }
       }
@@ -10000,6 +10288,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Elimina documento"
+          }
+        }
+      }
+    },
+    "Delete role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina ruolo"
+          }
+        }
+      }
+    },
+    "Delete saved charts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina grafici salvati"
           }
         }
       }
@@ -10104,7 +10413,7 @@
         }
       }
     },
-    "Delete this plant?" : {
+    "Delete this site?" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10204,7 +10513,7 @@
         }
       }
     },
-    "Describe a fault, a machine or a step you're stuck on: Aria answers from your plant's manuals and history." : {
+    "Describe a fault, a machine or a step you're stuck on: Aria answers from your site's manuals and history." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10626,6 +10935,17 @@
         }
       }
     },
+    "Dismiss closures" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Archivia chiusure"
+          }
+        }
+      }
+    },
     "Dismissed" : {
       "localizations" : {
         "it" : {
@@ -10734,7 +11054,7 @@
         }
       }
     },
-    "Documents are shared with everyone in this plant." : {
+    "Documents are shared with everyone on this site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -10750,6 +11070,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Documenti da caricare"
+          }
+        }
+      }
+    },
+    "Doesn't use the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non usa l'app."
           }
         }
       }
@@ -11048,16 +11378,6 @@
         }
       }
     },
-    "e.g. Marco Rossi" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "es. Marco Rossi"
-          }
-        }
-      }
-    },
     "e.g. Monthly bearing check" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -11065,6 +11385,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "es. Controllo mensile dei cuscinetti"
+          }
+        }
+      }
+    },
+    "e.g. Night shift technician" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "es. Tecnico turno notte"
           }
         }
       }
@@ -11150,6 +11480,7 @@
       }
     },
     "Edit" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -11211,6 +11542,16 @@
         }
       }
     },
+    "Edit details" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica dati"
+          }
+        }
+      }
+    },
     "Edit downtime" : {
       "localizations" : {
         "it" : {
@@ -11241,6 +11582,16 @@
         }
       }
     },
+    "Edit name, qualification and specialties" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica nome, qualifica e specialità"
+          }
+        }
+      }
+    },
     "Edit Part" : {
       "localizations" : {
         "it" : {
@@ -11261,7 +11612,7 @@
         }
       }
     },
-    "Edit plant" : {
+    "Edit site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -11425,16 +11776,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Email"
-          }
-        }
-      }
-    },
-    "Email is required." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'email è obbligatoria."
           }
         }
       }
@@ -11658,6 +11999,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inserisci la tua email di lavoro: ti mandiamo un link per creare il tuo account nell'app."
+          }
+        }
+      }
+    },
+    "Enters the app as an owner or admin, without a seat." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entra nell'app come titolare o admin, senza licenza."
           }
         }
       }
@@ -11941,22 +12292,12 @@
         }
       }
     },
-    "Every unread event of the current plant will be marked as read." : {
+    "Every unread event of the current site will be marked as read." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti gli eventi non letti dell'impianto attuale saranno segnati come letti."
-          }
-        }
-      }
-    },
-    "Everyone in the company is already a mobile operator." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tutti in azienda sono già operatori mobile."
           }
         }
       }
@@ -11981,7 +12322,7 @@
         }
       }
     },
-    "Everything in the plant, and everything it needs." : {
+    "Everything on the site, and everything it needs." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -12173,6 +12514,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Contesto aggiuntivo (facoltativo)"
+          }
+        }
+      }
+    },
+    "Extract" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estrai"
           }
         }
       }
@@ -12389,6 +12741,16 @@
         }
       }
     },
+    "Field work" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lavoro sul campo"
+          }
+        }
+      }
+    },
     "Field work: chat with Aria, your jobs and guided procedures." : {
       "localizations" : {
         "it" : {
@@ -12481,7 +12843,7 @@
         }
       }
     },
-    "Fill in the title and choose a plant." : {
+    "Fill in the title and choose a site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -12986,6 +13348,16 @@
         }
       }
     },
+    "Give app access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dai accesso all'app"
+          }
+        }
+      }
+    },
     "Give details (optional)" : {
       "localizations" : {
         "en" : {
@@ -13322,6 +13694,36 @@
         }
       }
     },
+    "High role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruolo alto"
+          }
+        }
+      }
+    },
+    "High roles" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruoli alti"
+          }
+        }
+      }
+    },
+    "High roles can create and manage their own low roles." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I ruoli alti possono creare e gestire i propri ruoli base."
+          }
+        }
+      }
+    },
     "Highest" : {
       "localizations" : {
         "it" : {
@@ -13388,6 +13790,26 @@
         }
       }
     },
+    "Holds sections its owner role lacks" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha sezioni che il ruolo proprietario non ha"
+          }
+        }
+      }
+    },
+    "Holds sections its owner role lacks." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha sezioni che il ruolo proprietario non ha."
+          }
+        }
+      }
+    },
     "Hourly rate" : {
       "localizations" : {
         "it" : {
@@ -13446,7 +13868,7 @@
         }
       }
     },
-    "How does the plant look this morning?" : {
+    "How does the site look this morning?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13836,6 +14258,16 @@
         }
       }
     },
+    "In the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In azienda"
+          }
+        }
+      }
+    },
     "In the email, press and hold the sign-in button, choose Copy Link and paste it here. Don't open it in the browser: the link works once and expires in 15 minutes." : {
       "localizations" : {
         "en" : {
@@ -13978,6 +14410,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dedotto da Aria"
+          }
+        }
+      }
+    },
+    "Ingest" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elabora"
           }
         }
       }
@@ -14126,6 +14569,16 @@
         }
       }
     },
+    "Invalid email address." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Indirizzo email non valido."
+          }
+        }
+      }
+    },
     "Invalid request." : {
       "localizations" : {
         "it" : {
@@ -14172,22 +14625,32 @@
         }
       }
     },
-    "Invitation" : {
+    "Invitation renewed, but the email wasn't sent." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invito"
+            "value" : "Invito rinnovato, ma l'email non è partita."
           }
         }
       }
     },
-    "Invite a field operator or add an existing user to get started." : {
+    "Invitation sent by email." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Invita un operatore sul campo o aggiungi un utente esistente per iniziare."
+            "value" : "Invito inviato per email."
+          }
+        }
+      }
+    },
+    "Invitation renewed and sent by email." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invito rinnovato e inviato per email."
           }
         }
       }
@@ -14202,42 +14665,32 @@
         }
       }
     },
-    "Invite new operator" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invita un nuovo operatore"
-          }
-        }
-      }
-    },
-    "Invite operator" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invita operatore"
-          }
-        }
-      }
-    },
-    "Invite your technicians to this app" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invita i tuoi tecnici in questa app"
-          }
-        }
-      }
-    },
     "Invited" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invitato"
+          }
+        }
+      }
+    },
+    "Invited to the app" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitato all'app"
+          }
+        }
+      }
+    },
+    "Invited to the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitato all'app."
           }
         }
       }
@@ -14407,7 +14860,7 @@
         }
       }
     },
-    "It won't be added to the plant's knowledge." : {
+    "It won't be added to the site's knowledge." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -14556,6 +15009,16 @@
         }
       }
     },
+    "Knowledge Graph" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knowledge Graph"
+          }
+        }
+      }
+    },
     "Knowledge pack" : {
       "localizations" : {
         "it" : {
@@ -14592,6 +15055,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "KPI, energia, quanto è costato un periodo."
+          }
+        }
+      }
+    },
+    "Label" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualifica"
           }
         }
       }
@@ -14916,6 +15389,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dal profilo fai sapere al team se sei disponibile"
+          }
+        }
+      }
+    },
+    "Level" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livello"
           }
         }
       }
@@ -15332,6 +15815,16 @@
         }
       }
     },
+    "Locations" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sedi"
+          }
+        }
+      }
+    },
     "Lockout/tagout (LOTO) confirmation" : {
       "localizations" : {
         "it" : {
@@ -15444,6 +15937,17 @@
         }
       }
     },
+    "Log readings" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra letture"
+          }
+        }
+      }
+    },
     "Logout" : {
       "localizations" : {
         "en" : {
@@ -15534,6 +16038,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Affidabilità bassa"
+          }
+        }
+      }
+    },
+    "Low role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruolo base"
+          }
+        }
+      }
+    },
+    "Low roles" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruoli base"
           }
         }
       }
@@ -15798,6 +16322,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La creazione si è interrotta prima della fine."
+          }
+        }
+      }
+    },
+    "Manage members" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestisci membri"
+          }
+        }
+      }
+    },
+    "Manager" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile"
           }
         }
       }
@@ -16224,6 +16769,16 @@
         }
       }
     },
+    "Meters" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contatori"
+          }
+        }
+      }
+    },
     "Microphone" : {
       "localizations" : {
         "en" : {
@@ -16316,26 +16871,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Minuti"
-          }
-        }
-      }
-    },
-    "Mobile seats" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Posti mobile"
-          }
-        }
-      }
-    },
-    "Mobile Users" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Utenti mobile"
           }
         }
       }
@@ -16546,6 +17081,16 @@
         }
       }
     },
+    "Move them to" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spostale in"
+          }
+        }
+      }
+    },
     "Move to…" : {
       "localizations" : {
         "it" : {
@@ -16638,6 +17183,16 @@
         }
       }
     },
+    "Name and email are required." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome ed email sono obbligatori."
+          }
+        }
+      }
+    },
     "Name and entity type are required." : {
       "localizations" : {
         "it" : {
@@ -16708,32 +17263,12 @@
         }
       }
     },
-    "Name, description or plant" : {
+    "Name, description or site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nome, descrizione o stabilimento"
-          }
-        }
-      }
-    },
-    "Name, email, specialty" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nome, email, specialità"
-          }
-        }
-      }
-    },
-    "name@company.com" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "nome@azienda.com"
           }
         }
       }
@@ -16744,6 +17279,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Da sistemare"
+          }
+        }
+      }
+    },
+    "needs a role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "serve un ruolo"
+          }
+        }
+      }
+    },
+    "Needs a role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Serve un ruolo"
           }
         }
       }
@@ -16906,6 +17461,36 @@
         }
       }
     },
+    "New Low role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo ruolo base"
+          }
+        }
+      }
+    },
+    "New members join with no role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I nuovi membri entrano senza ruolo."
+          }
+        }
+      }
+    },
+    "New person" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuova persona"
+          }
+        }
+      }
+    },
     "New plan" : {
       "localizations" : {
         "it" : {
@@ -16916,7 +17501,7 @@
         }
       }
     },
-    "New plant" : {
+    "New site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -16932,6 +17517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuovo ordine di acquisto"
+          }
+        }
+      }
+    },
+    "New role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo ruolo"
           }
         }
       }
@@ -17265,7 +17860,7 @@
         }
       }
     },
-    "No assets match these filters in this plant." : {
+    "No assets match these filters on this site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -17351,7 +17946,7 @@
         }
       }
     },
-    "No closures for this plant in the rows loaded so far." : {
+    "No closures for this site in the rows loaded so far." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -17745,7 +18340,7 @@
         }
       }
     },
-    "No network in the plant? Keep working: your changes stay on the phone and are sent as soon as you're back online." : {
+    "No network on site? Keep working: your changes stay on the phone and are sent as soon as you're back online." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -17833,16 +18428,6 @@
         }
       }
     },
-    "No open work orders" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun ordine di lavoro aperto"
-          }
-        }
-      }
-    },
     "No open work orders assigned." : {
       "localizations" : {
         "it" : {
@@ -17853,22 +18438,22 @@
         }
       }
     },
-    "No operators" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun operatore"
-          }
-        }
-      }
-    },
     "No parts used yet." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun ricambio usato."
+          }
+        }
+      }
+    },
+    "No people to add." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuna persona da aggiungere."
           }
         }
       }
@@ -17899,7 +18484,7 @@
         }
       }
     },
-    "No plant" : {
+    "No site" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -17915,7 +18500,7 @@
         }
       }
     },
-    "No plant selected" : {
+    "No site selected" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -17925,7 +18510,7 @@
         }
       }
     },
-    "No plants" : {
+    "No sites" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -17935,7 +18520,7 @@
         }
       }
     },
-    "No plants yet. Ask an owner or admin of your company to add one." : {
+    "No sites yet. Ask an owner or admin of your company to add one." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -18093,6 +18678,36 @@
         }
       }
     },
+    "No role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun ruolo"
+          }
+        }
+      }
+    },
+    "No role: choose one." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senza ruolo: sceglilo."
+          }
+        }
+      }
+    },
+    "No roles yet" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessun ruolo"
+          }
+        }
+      }
+    },
     "No runs yet." : {
       "localizations" : {
         "it" : {
@@ -18135,16 +18750,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessuna attività programmata"
-          }
-        }
-      }
-    },
-    "No seats left. Remove an operator or ask your administrator for more seats." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun posto libero. Rimuovi un operatore o chiedi più posti al tuo amministratore."
           }
         }
       }
@@ -18307,7 +18912,7 @@
         }
       }
     },
-    "No team matches this plant." : {
+    "No team matches this site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -18403,16 +19008,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun consumo in questo periodo."
-          }
-        }
-      }
-    },
-    "No users to add" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessun utente da aggiungere"
           }
         }
       }
@@ -18547,12 +19142,42 @@
         }
       }
     },
+    "Nobody holds this role yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno ha ancora questo ruolo."
+          }
+        }
+      }
+    },
+    "Nobody holds this role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno ha questo ruolo."
+          }
+        }
+      }
+    },
     "Nobody left to add." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun altro da aggiungere."
+          }
+        }
+      }
+    },
+    "Nobody to add." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno da aggiungere."
           }
         }
       }
@@ -18765,6 +19390,16 @@
         }
       }
     },
+    "Not in your role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non incluso nel tuo ruolo"
+          }
+        }
+      }
+    },
     "Not now" : {
       "localizations" : {
         "en" : {
@@ -18853,6 +19488,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non eseguita"
+          }
+        }
+      }
+    },
+    "Not saved: the audit log is unavailable. Try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non salvato: il registro di audit non è disponibile. Riprova."
           }
         }
       }
@@ -19355,7 +20000,7 @@
         }
       }
     },
-    "One job, done the way your plant does it." : {
+    "One job, done the way your site does it." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -19442,12 +20087,32 @@
         }
       }
     },
-    "Only active users who aren't mobile operators yet are listed." : {
+    "Only an admin can change this." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sono elencati solo gli utenti attivi che non sono ancora operatori mobile."
+            "value" : "Solo un admin può cambiarlo."
+          }
+        }
+      }
+    },
+    "Only an enabled Low role can be the default." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo un ruolo base attivo può essere il predefinito."
+          }
+        }
+      }
+    },
+    "Only an owner can change an owner's status, and the last owner can't be suspended." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo un titolare può cambiare lo stato di un titolare, e l'ultimo titolare non si può sospendere."
           }
         }
       }
@@ -19646,7 +20311,7 @@
         }
       }
     },
-    "Open plants" : {
+    "Open sites" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -19789,6 +20454,16 @@
         }
       }
     },
+    "Open their profile" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri la sua scheda"
+          }
+        }
+      }
+    },
     "Open work order" : {
       "localizations" : {
         "en" : {
@@ -19897,16 +20572,6 @@
         }
       }
     },
-    "Operator removed" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Operatore rimosso"
-          }
-        }
-      }
-    },
     "Operator signals" : {
       "localizations" : {
         "it" : {
@@ -19953,12 +20618,12 @@
         }
       }
     },
-    "Optional." : {
+    "Optional. A label doesn't give any access." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Facoltativa."
+            "value" : "Facoltativa. La qualifica non dà nessun accesso."
           }
         }
       }
@@ -20371,6 +21036,36 @@
         }
       }
     },
+    "Owners and admins" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titolari e admin"
+          }
+        }
+      }
+    },
+    "Owners and admins hold every section and take no role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proprietari e admin hanno tutte le sezioni e non ricevono un ruolo."
+          }
+        }
+      }
+    },
+    "Owners and admins use the app without a seat." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titolari e admin usano l'app senza licenza."
+          }
+        }
+      }
+    },
     "Ownership" : {
       "localizations" : {
         "it" : {
@@ -20615,22 +21310,6 @@
         }
       }
     },
-    "Password" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Password"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Password"
-          }
-        }
-      }
-    },
     "Past" : {
       "localizations" : {
         "en" : {
@@ -20659,6 +21338,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Incolla il link di accesso"
+          }
+        }
+      }
+    },
+    "Pause" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metti in pausa"
           }
         }
       }
@@ -20726,6 +21415,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Persone"
+          }
+        }
+      }
+    },
+    "People couldn't be loaded." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare le persone."
+          }
+        }
+      }
+    },
+    "People who join the company get this role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi entra in azienda riceve questo ruolo."
+          }
+        }
+      }
+    },
+    "People with this role can open %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi ha questo ruolo può aprire %@."
           }
         }
       }
@@ -20932,7 +21651,7 @@
         }
       }
     },
-    "Pick a plant to ask Aria to make something." : {
+    "Pick a site to ask Aria to make something." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21082,7 +21801,7 @@
         }
       }
     },
-    "Plant" : {
+    "Site" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21098,7 +21817,7 @@
         }
       }
     },
-    "Plant manager" : {
+    "Site manager" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21108,7 +21827,17 @@
         }
       }
     },
-    "Plant name" : {
+    "Site manager, planner, maintenance manager" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile di stabilimento, pianificatore, responsabile manutenzione"
+          }
+        }
+      }
+    },
+    "Site name" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21118,7 +21847,17 @@
         }
       }
     },
-    "Plant overview" : {
+    "Site operator, technician" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operatore di impianto, tecnico"
+          }
+        }
+      }
+    },
+    "Site overview" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -21134,7 +21873,7 @@
         }
       }
     },
-    "Plant records" : {
+    "Site records" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21144,7 +21883,7 @@
         }
       }
     },
-    "Plants" : {
+    "Sites" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21154,7 +21893,7 @@
         }
       }
     },
-    "Plants of this company appear here." : {
+    "Sites of this company appear here." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21739,6 +22478,17 @@
         }
       }
     },
+    "Publish flows" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pubblica flussi"
+          }
+        }
+      }
+    },
     "Publisher" : {
       "localizations" : {
         "it" : {
@@ -21789,7 +22539,7 @@
         }
       }
     },
-    "Purchase orders of this plant appear here. Tap + to create one." : {
+    "Purchase orders of this site appear here. Tap + to create one." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -21835,6 +22585,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Q.tà %@"
+          }
+        }
+      }
+    },
+    "Qualification" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualifica"
           }
         }
       }
@@ -21963,7 +22723,7 @@
         }
       }
     },
-    "Quiet weekend on the plant?" : {
+    "Quiet weekend on site?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -22045,12 +22805,32 @@
         }
       }
     },
-    "Reactivate" : {
+    "Reactivate the app" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Riattiva"
+            "value" : "Riattiva l'app"
+          }
+        }
+      }
+    },
+    "Reactivate them in the company to change this." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riattivala in azienda per cambiarlo."
+          }
+        }
+      }
+    },
+    "Reactivate in the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riattiva in azienda"
           }
         }
       }
@@ -22241,6 +23021,17 @@
         }
       }
     },
+    "Reassign closures" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riassegna chiusure"
+          }
+        }
+      }
+    },
     "Reassigned" : {
       "localizations" : {
         "it" : {
@@ -22267,6 +23058,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Piano di riassegnazione"
+          }
+        }
+      }
+    },
+    "Receive" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricevi"
           }
         }
       }
@@ -22473,6 +23275,17 @@
         }
       }
     },
+    "Refresh health" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiorna stato di salute"
+          }
+        }
+      }
+    },
     "Refresh health score" : {
       "localizations" : {
         "it" : {
@@ -22555,7 +23368,19 @@
         }
       }
     },
+    "Reindex knowledge" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reindicizza conoscenza"
+          }
+        }
+      }
+    },
     "Reject" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -22577,6 +23402,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rifiutarlo?"
+          }
+        }
+      }
+    },
+    "Reject proposals" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifiuta proposte"
           }
         }
       }
@@ -22731,12 +23567,62 @@
         }
       }
     },
+    "Remove app access?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togliere l'accesso all'app?"
+          }
+        }
+      }
+    },
+    "Remove access" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togli accesso"
+          }
+        }
+      }
+    },
     "Remove connector" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rimuovi connettore"
+          }
+        }
+      }
+    },
+    "Remove from role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi dal ruolo"
+          }
+        }
+      }
+    },
+    "Remove from the company?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovere dall'azienda?"
+          }
+        }
+      }
+    },
+    "Remove from the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovi dall'azienda"
           }
         }
       }
@@ -22793,6 +23679,16 @@
         }
       }
     },
+    "Remove their app access first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togli prima l'accesso all'app."
+          }
+        }
+      }
+    },
     "Remove this line?" : {
       "localizations" : {
         "it" : {
@@ -22809,16 +23705,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rimuovere questo membro?"
-          }
-        }
-      }
-    },
-    "Remove this operator?" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rimuovere questo operatore?"
           }
         }
       }
@@ -22891,6 +23777,26 @@
         }
       }
     },
+    "Rename role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rinomina ruolo"
+          }
+        }
+      }
+    },
+    "Renamed to %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rinominato in %@"
+          }
+        }
+      }
+    },
     "Rental" : {
       "localizations" : {
         "it" : {
@@ -22902,6 +23808,7 @@
       }
     },
     "Reopen" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -23165,6 +24072,16 @@
         }
       }
     },
+    "Required. The role decides what they can do." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obbligatorio. Il ruolo decide cosa può fare."
+          }
+        }
+      }
+    },
     "Requires" : {
       "localizations" : {
         "it" : {
@@ -23206,6 +24123,7 @@
       }
     },
     "Reset to default" : {
+      "comment" : "Roles & Rights action",
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -23317,6 +24235,17 @@
         }
       }
     },
+    "Restore versions" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina versioni"
+          }
+        }
+      }
+    },
     "Restored" : {
       "localizations" : {
         "it" : {
@@ -23355,6 +24284,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esito"
+          }
+        }
+      }
+    },
+    "Resume" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riattiva"
           }
         }
       }
@@ -23573,6 +24512,17 @@
         }
       }
     },
+    "Revoke facts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoca fatti"
+          }
+        }
+      }
+    },
     "Revoke this connection?" : {
       "localizations" : {
         "it" : {
@@ -23710,6 +24660,77 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ruolo nella squadra (facoltativo)"
+          }
+        }
+      }
+    },
+    "Roles & Rights" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruoli e permessi"
+          }
+        }
+      }
+    },
+    "Roles couldn't be loaded." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare i ruoli."
+          }
+        }
+      }
+    },
+    "roles.action.run" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esegui"
+          }
+        }
+      }
+    },
+    "roles.status.active" : {
+      "comment" : "Roles & Rights",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attivo"
+          }
+        }
+      }
+    },
+    "roles.summary.off" : {
+      "comment" : "Roles & Rights",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disattivata"
           }
         }
       }
@@ -24077,6 +25098,17 @@
         }
       }
     },
+    "Save charts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salva grafici"
+          }
+        }
+      }
+    },
     "Save note" : {
       "localizations" : {
         "it" : {
@@ -24163,7 +25195,7 @@
         }
       }
     },
-    "Saving your answer to the plant's knowledge." : {
+    "Saving your answer to the site's knowledge." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24307,6 +25339,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerca per codice o nome"
+          }
+        }
+      }
+    },
+    "Search by name…" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca per nome…"
           }
         }
       }
@@ -24545,7 +25587,7 @@
         }
       }
     },
-    "See how the plant, and Aria, are doing." : {
+    "See how the site, and Aria, are doing." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24565,7 +25607,7 @@
         }
       }
     },
-    "Select a plant before adding spare parts." : {
+    "Select a site before adding spare parts." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24575,7 +25617,7 @@
         }
       }
     },
-    "Select a plant before answering — this is saved to the plant's knowledge." : {
+    "Select a site before answering — this is saved to the site's knowledge." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24591,7 +25633,7 @@
         }
       }
     },
-    "Select a plant before chatting." : {
+    "Select a site before chatting." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24607,7 +25649,7 @@
         }
       }
     },
-    "Select a plant before logging downtime." : {
+    "Select a site before logging downtime." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24617,7 +25659,7 @@
         }
       }
     },
-    "Select a plant before using the chat." : {
+    "Select a site before using the chat." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -24633,7 +25675,7 @@
         }
       }
     },
-    "Select a plant." : {
+    "Select a site." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24679,7 +25721,7 @@
         }
       }
     },
-    "Selected: %lld. Approved assets become part of your plant's asset list." : {
+    "Selected: %lld. Approved assets become part of your site's asset list." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -24743,16 +25785,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invia per revisione"
-          }
-        }
-      }
-    },
-    "Send invite" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invia invito"
           }
         }
       }
@@ -24953,6 +25985,26 @@
         }
       }
     },
+    "set by your admin" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "impostato dal tuo admin"
+          }
+        }
+      }
+    },
+    "Set by your admin. You can't change your own role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impostato dal tuo admin. Non puoi modificare il tuo ruolo."
+          }
+        }
+      }
+    },
     "Set quantity" : {
       "localizations" : {
         "it" : {
@@ -24995,6 +26047,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impostazioni"
+          }
+        }
+      }
+    },
+    "Settle verdicts" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conferma verdetti"
           }
         }
       }
@@ -25696,6 +26759,16 @@
         }
       }
     },
+    "Someone else changed this role. It has been reloaded." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcun altro ha modificato questo ruolo. È stato ricaricato."
+          }
+        }
+      }
+    },
     "Something in the interface is broken" : {
       "localizations" : {
         "en" : {
@@ -25864,7 +26937,7 @@
         }
       }
     },
-    "Spare parts of this plant appear here." : {
+    "Spare parts of this site appear here." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -26036,6 +27109,16 @@
         }
       }
     },
+    "Starting role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruolo iniziale"
+          }
+        }
+      }
+    },
     "Starts" : {
       "localizations" : {
         "it" : {
@@ -26202,6 +27285,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passaggio non più presente nella procedura"
+          }
+        }
+      }
+    },
+    "Step photos" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto dei passi"
           }
         }
       }
@@ -26519,6 +27613,17 @@
         }
       }
     },
+    "Stop sessions" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrompi sessioni"
+          }
+        }
+      }
+    },
     "Stop this session?" : {
       "localizations" : {
         "it" : {
@@ -26681,16 +27786,6 @@
         }
       }
     },
-    "Suggested roles" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ruoli suggeriti"
-          }
-        }
-      }
-    },
     "Suggesting assignment" : {
       "localizations" : {
         "en" : {
@@ -26794,12 +27889,52 @@
         }
       }
     },
-    "Suspend this operator?" : {
+    "Suspend the app only" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sospendere questo operatore?"
+            "value" : "Sospendi solo l'app"
+          }
+        }
+      }
+    },
+    "Suspend in the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi in azienda"
+          }
+        }
+      }
+    },
+    "Suspend app" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi l'app"
+          }
+        }
+      }
+    },
+    "Suspend in the company?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendere in azienda?"
+          }
+        }
+      }
+    },
+    "Suspend app access?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendere l'accesso all'app?"
           }
         }
       }
@@ -26810,6 +27945,37 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sospeso"
+          }
+        }
+      }
+    },
+    "Suspended in the company: their app access, if any, comes back as it was when you reactivate them." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospeso in azienda: l'accesso all'app, se c'era, torna com'era quando lo riattivi."
+          }
+        }
+      }
+    },
+    "Suspended in the company: app access not given." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospesa in azienda: accesso all'app non dato."
+          }
+        }
+      }
+    },
+    "Switch workflows on and off" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva e disattiva workflow"
           }
         }
       }
@@ -26826,6 +27992,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passo allo specialista"
+          }
+        }
+      }
+    },
+    "Sync knowledge" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizza conoscenza"
           }
         }
       }
@@ -27139,7 +28316,7 @@
         }
       }
     },
-    "Teach Aria how your plant works and let it work for you." : {
+    "Teach Aria how your site works and let it work for you." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -27347,6 +28524,26 @@
         }
       }
     },
+    "That goes beyond your own role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo va oltre il tuo ruolo."
+          }
+        }
+      }
+    },
+    "That section or action can't be given to this role." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa sezione o azione non può essere data a questo ruolo."
+          }
+        }
+      }
+    },
     "The AI chat needs a connection. Tasks and the calendar keep working offline." : {
       "localizations" : {
         "en" : {
@@ -27457,6 +28654,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'app su %@ verrà disconnessa."
+          }
+        }
+      }
+    },
+    "The app seats are full." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le licenze dell'app sono finite."
+          }
+        }
+      }
+    },
+    "The app seats are full: free a seat and try again." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le licenze dell'app sono finite: libera una licenza e riprova."
+          }
+        }
+      }
+    },
+    "The app seats are full. Free a seat to give app access, or add them without it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le licenze dell'app sono finite. Libera una licenza per dare l'accesso all'app, oppure aggiungi la persona senza."
           }
         }
       }
@@ -27656,6 +28883,16 @@
         }
       }
     },
+    "The email wasn't sent: they already have valid sign-in links." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'email non è partita: ha già dei link di accesso validi."
+          }
+        }
+      }
+    },
     "The end date is before the start date." : {
       "localizations" : {
         "it" : {
@@ -27738,6 +28975,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il rapporto di intervento verrà archiviato con questa chat."
+          }
+        }
+      }
+    },
+    "The invitation is no longer open." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'invito non è più aperto."
+          }
+        }
+      }
+    },
+    "The invitation has expired." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'invito è scaduto."
           }
         }
       }
@@ -27922,7 +29179,7 @@
         }
       }
     },
-    "The plant hasn't raised any alarm yet." : {
+    "The site hasn't raised any alarm yet." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -27949,6 +29206,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La policy ha rifiutato questo run."
+          }
+        }
+      }
+    },
+    "The qualification doesn't give any access." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La qualifica non dà nessun accesso."
           }
         }
       }
@@ -28155,16 +29422,6 @@
         }
       }
     },
-    "The server refused this change." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il server ha rifiutato questa modifica."
-          }
-        }
-      }
-    },
     "The server sent no step verdicts." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -28354,7 +29611,7 @@
         }
       }
     },
-    "The tool returned no data for this plant right now." : {
+    "The tool returned no data for this site right now." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28460,6 +29717,46 @@
         }
       }
     },
+    "Their status has changed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo stato di questa persona è cambiato."
+          }
+        }
+      }
+    },
+    "Their open work orders are released: assigned ones go back to planned, the others stay without an assignee." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I suoi ordini aperti vengono rilasciati: quelli assegnati tornano pianificati, gli altri restano senza assegnatario."
+          }
+        }
+      }
+    },
+    "Their devices are signed out only if no other company lets them in." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I suoi dispositivi escono solo se nessun'altra azienda la fa entrare."
+          }
+        }
+      }
+    },
+    "Their seat is freed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sua licenza si libera."
+          }
+        }
+      }
+    },
     "Then" : {
       "localizations" : {
         "it" : {
@@ -28470,12 +29767,32 @@
         }
       }
     },
+    "There are no active roles. Create or turn on a role in Roles & Rights first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non ci sono ruoli attivi. Crea o riattiva prima un ruolo in Ruoli e permessi."
+          }
+        }
+      }
+    },
     "There are no unread alarm events." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non ci sono eventi di allarme non letti."
+          }
+        }
+      }
+    },
+    "There is no invitation to renew." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non c'è un invito da rinnovare."
           }
         }
       }
@@ -28506,12 +29823,142 @@
         }
       }
     },
-    "They'll get an email with a link to sign in to the app. The invite uses one mobile seat." : {
+    "They already use the app for another company: the app can be used for one company at a time." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Riceverà un'email con un link per accedere all'app. L'invito occupa un posto mobile."
+            "value" : "Usa già l'app per un'altra azienda: si può usare l'app per una sola azienda alla volta."
+          }
+        }
+      }
+    },
+    "They also lose their app access." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perde anche l'accesso all'app."
+          }
+        }
+      }
+    },
+    "They are suspended in the company: reactivate them first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È sospesa in azienda: riattivala prima."
+          }
+        }
+      }
+    },
+    "They lose their access to the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Perde l'accesso all'app."
+          }
+        }
+      }
+    },
+    "They were already in the company as an owner or admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Era già in azienda come titolare o admin."
+          }
+        }
+      }
+    },
+    "They won't be able to use the app; the web stays available." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non potrà usare l'app; la web resta disponibile."
+          }
+        }
+      }
+    },
+    "They already enter the app as an owner or admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entra già nell'app come titolare o admin."
+          }
+        }
+      }
+    },
+    "They will be signed out everywhere and will need a new sign-in link." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uscirà da tutti i dispositivi e le servirà un nuovo link di accesso."
+          }
+        }
+      }
+    },
+    "They use the app for another company too: their devices can't be signed out from here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa l'app anche per un'altra azienda: i suoi dispositivi non si possono disconnettere da qui."
+          }
+        }
+      }
+    },
+    "They already have app access." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha già l'accesso all'app."
+          }
+        }
+      }
+    },
+    "They leave the company and its teams, and lose their future shifts and their connector links." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esce dall'azienda e dalle sue squadre, e perde i turni futuri e i collegamenti ai connettori."
+          }
+        }
+      }
+    },
+    "They won't be able to use this company, on the web or in the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non potrà più usare questa azienda, né sulla web né nell'app."
+          }
+        }
+      }
+    },
+    "They get app access and an email with a sign-in link. Owners and admins don't need a seat." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riceve l'accesso all'app e un'email con il link di accesso. Titolari e admin non usano licenze."
+          }
+        }
+      }
+    },
+    "They were already in the company: their role was not changed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Era già in azienda: ruolo non cambiato."
           }
         }
       }
@@ -28724,6 +30171,26 @@
         }
       }
     },
+    "This is the default role for new members. Choose another default before deleting it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È il ruolo predefinito per i nuovi membri. Scegline un altro come predefinito prima di eliminarlo."
+          }
+        }
+      }
+    },
+    "This is the default role for new members. Choose another default first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "È il ruolo predefinito per i nuovi membri. Scegli prima un altro ruolo predefinito."
+          }
+        }
+      }
+    },
     "This isn't a valid symbol name." : {
       "localizations" : {
         "it" : {
@@ -28832,22 +30299,22 @@
         }
       }
     },
-    "This operator no longer exists. Refresh the list." : {
+    "This person is already in the list." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questo operatore non esiste più. Aggiorna l'elenco."
+            "value" : "Questa persona è già nell'elenco."
           }
         }
       }
     },
-    "This operator no longer has mobile access." : {
+    "This person is no longer a member of the company." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questo operatore non ha più accesso mobile."
+            "value" : "Questa persona non è più un membro dell'azienda."
           }
         }
       }
@@ -28894,7 +30361,7 @@
         }
       }
     },
-    "This plant" : {
+    "This site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28904,7 +30371,7 @@
         }
       }
     },
-    "This plant no longer exists." : {
+    "This site no longer exists." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -28930,6 +30397,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo ordine di acquisto non esiste più."
+          }
+        }
+      }
+    },
+    "This record has no membership in the company: it can only be viewed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo profilo non ha un'iscrizione all'azienda: si può solo guardare."
+          }
+        }
+      }
+    },
+    "This role no longer exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo ruolo non esiste più."
           }
         }
       }
@@ -29860,12 +31347,42 @@
         }
       }
     },
+    "Turn on access to choose what they may do." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attiva l'accesso per scegliere cosa possono fare."
+          }
+        }
+      }
+    },
     "Turn on at least one to upload." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Attivane almeno una per caricare."
+          }
+        }
+      }
+    },
+    "Turn on Field work first." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accendi prima Lavoro sul campo."
+          }
+        }
+      }
+    },
+    "Turn on Field work to edit them." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accendi Lavoro sul campo per modificarli."
           }
         }
       }
@@ -29962,6 +31479,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Annullare l'approvazione?"
+          }
+        }
+      }
+    },
+    "Unarchive flows" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristina flussi archiviati"
           }
         }
       }
@@ -30128,7 +31656,7 @@
         }
       }
     },
-    "Unknown plant" : {
+    "Unknown site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -30280,6 +31808,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ricambio senza nome"
+          }
+        }
+      }
+    },
+    "Unnamed person" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persona senza nome"
           }
         }
       }
@@ -31034,7 +32572,7 @@
         }
       }
     },
-    "Vendors of this plant appear here." : {
+    "Vendors of this site appear here." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -31076,6 +32614,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verificato da"
+          }
+        }
+      }
+    },
+    "Verify" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifica"
           }
         }
       }
@@ -31210,6 +32759,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vedi chunk"
+          }
+        }
+      }
+    },
+    "View only" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo consultazione"
+          }
+        }
+      }
+    },
+    "View only. Turn on below what they may change." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo consultazione. Attiva qui sotto cosa possono modificare."
           }
         }
       }
@@ -31583,6 +33152,16 @@
         }
       }
     },
+    "What each role can see and do" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cosa vede e cosa fa ogni ruolo"
+          }
+        }
+      }
+    },
     "What happened, what to check, anything useful" : {
       "localizations" : {
         "it" : {
@@ -31791,7 +33370,7 @@
         }
       }
     },
-    "What's happening on the plant?" : {
+    "What's happening on site?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -31875,6 +33454,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quando o dove vale"
+          }
+        }
+      }
+    },
+    "When paused, people with this role keep only the chat and the screens everyone has." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quando è in pausa, chi ha questo ruolo mantiene solo la chat e le schermate disponibili a tutti."
           }
         }
       }
@@ -32054,16 +33643,6 @@
         }
       }
     },
-    "Who uses the web platform" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chi usa la piattaforma web"
-          }
-        }
-      }
-    },
     "Whole company" : {
       "localizations" : {
         "it" : {
@@ -32138,6 +33717,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Widget"
+          }
+        }
+      }
+    },
+    "Withdraw approval" : {
+      "comment" : "Roles & Rights action",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revoca approvazione"
           }
         }
       }
@@ -32696,6 +34286,16 @@
         }
       }
     },
+    "You don't have access to Roles & Rights." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non hai accesso a Ruoli e permessi."
+          }
+        }
+      }
+    },
     "You haven't connected your account yet." : {
       "localizations" : {
         "it" : {
@@ -32762,6 +34362,16 @@
         }
       }
     },
+    "Your admin" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo admin"
+          }
+        }
+      }
+    },
     "Your Aria session has expired. Sign in again." : {
       "localizations" : {
         "en" : {
@@ -32808,7 +34418,7 @@
         }
       }
     },
-    "Your first plant" : {
+    "Your first site" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -32870,6 +34480,16 @@
         }
       }
     },
+    "Your people, their role and access to this app" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le tue persone, il loro ruolo e l'accesso a questa app"
+          }
+        }
+      }
+    },
     "Your plan" : {
       "localizations" : {
         "it" : {
@@ -32906,6 +34526,16 @@
         }
       }
     },
+    "Your role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo"
+          }
+        }
+      }
+    },
     "Your role can't change alarms. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
@@ -32936,7 +34566,7 @@
         }
       }
     },
-    "Your role can't change plants. Ask an owner or admin of your company." : {
+    "Your role can't change sites. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
@@ -33016,6 +34646,16 @@
         }
       }
     },
+    "Your role doesn't allow this. Ask your admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non lo consente. Chiedi al tuo admin."
+          }
+        }
+      }
+    },
     "Your role doesn't have access to alarms. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
@@ -33046,7 +34686,7 @@
         }
       }
     },
-    "Your role doesn't have access to plants. Ask an owner or admin of your company." : {
+    "Your role doesn't have access to sites. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
