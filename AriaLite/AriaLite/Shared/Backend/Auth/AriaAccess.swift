@@ -18,13 +18,16 @@ nonisolated struct AriaAccess: Decodable, Sendable, Equatable {
         let id: String
         let name: String
         let enabled: Bool
+        /// "high" o "low": un ruolo alto può gestire i ruoli base che crea (Roles & Rights).
+        let set: String?
 
-        private enum CodingKeys: String, CodingKey { case id, name, enabled }
+        private enum CodingKeys: String, CodingKey { case id, name, enabled, set }
 
-        init(id: String, name: String, enabled: Bool) {
+        init(id: String, name: String, enabled: Bool, set: String? = nil) {
             self.id = id
             self.name = name
             self.enabled = enabled
+            self.set = set
         }
 
         init(from decoder: any Decoder) throws {
@@ -32,6 +35,7 @@ nonisolated struct AriaAccess: Decodable, Sendable, Equatable {
             id = try c.decode(String.self, forKey: .id)
             name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
             enabled = try c.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+            set = try? c.decodeIfPresent(String.self, forKey: .set)
         }
     }
 
@@ -65,16 +69,20 @@ nonisolated struct AriaAccess: Decodable, Sendable, Equatable {
     let version: String?
     /// La sessione dell'app di un membro segue il suo ruolo: si mostrano le sezioni concesse.
     let appFollowsRole: Bool
+    /// Owner, admin o chi ha un ruolo alto attivo: apre Roles & Rights.
+    let canManageRoles: Bool
 
-    private enum CodingKeys: String, CodingKey { case model, role, admin, sections, version, appFollowsRole }
+    private enum CodingKeys: String, CodingKey { case model, role, admin, sections, version, appFollowsRole, canManageRoles }
 
-    init(model: String, role: Role?, admin: Bool, sections: [String: Grant], version: String?, appFollowsRole: Bool) {
+    init(model: String, role: Role?, admin: Bool, sections: [String: Grant], version: String?, appFollowsRole: Bool,
+         canManageRoles: Bool = false) {
         self.model = model
         self.role = role
         self.admin = admin
         self.sections = sections
         self.version = version
         self.appFollowsRole = appFollowsRole
+        self.canManageRoles = canManageRoles
     }
 
     init(from decoder: any Decoder) throws {
@@ -85,6 +93,7 @@ nonisolated struct AriaAccess: Decodable, Sendable, Equatable {
         sections = (try? c.decodeIfPresent([String: Grant].self, forKey: .sections)) ?? [:]
         version = try c.decodeIfPresent(String.self, forKey: .version)
         appFollowsRole = try c.decodeIfPresent(Bool.self, forKey: .appFollowsRole) ?? false
+        canManageRoles = (try? c.decodeIfPresent(Bool.self, forKey: .canManageRoles)) ?? false
     }
 }
 
@@ -146,6 +155,14 @@ nonisolated struct AriaRights: Sendable, Equatable {
 
     /// La sessione dell'app segue il ruolo: oltre a Task e Calendario si mostrano le sezioni concesse.
     var followsRole: Bool { isRoleBased && access?.appFollowsRole == true }
+
+    /// La sezione Roles & Rights (guida del 12/11): solo un'azienda sui ruoli e chi li gestisce (owner, admin, ruolo
+    /// alto attivo). Per un membro anche la sessione che segue il ruolo: altrimenti il server rifiuta le rotte
+    /// (`operation_forbidden`). Un'azienda "legacy" o un `access` non (ancora) letto: niente sezione.
+    var canOpenRolesAndRights: Bool {
+        guard let access, access.model == "rbac", access.canManageRoles else { return false }
+        return access.admin || access.appFollowsRole
+    }
 
     /// Nessun ruolo, o un ruolo messo in pausa dall'admin: restano la chat e le schermate sempre disponibili.
     var isPaused: Bool {
@@ -234,4 +251,33 @@ nonisolated struct AriaPermissionDenial: Sendable, Equatable {
 
     /// Ruolo in pausa o assente: non manca un diritto, manca l'accesso, finché l'admin non lo ridà.
     var pausesAccess: Bool { reason == "role_disabled" || reason == "no_role" }
+}
+
+/// I rifiuti delle rotte di Roles & Rights (`detail.code`), che l'app distingue: due 409 diversi vogliono due
+/// risposte diverse. `not_found` (persona non più membro) resta un 404 qualsiasi: è il codice di molte rotte.
+nonisolated enum AriaAccessRefusal: String, Sendable, CaseIterable {
+    case roleChanged = "role_changed"
+    case escalationDenied = "escalation_denied"
+    case invalidPermission = "invalid_permission"
+    case roleNameTaken = "role_name_taken"
+    case roleIsDefault = "role_is_default"
+    case roleNotAssignable = "role_not_assignable"
+    case roleNotFound = "role_not_found"
+    case auditUnavailable = "audit_unavailable"
+    case roleHasMembers = "role_has_members"
+
+    /// Le parole della web (`rolesAndRights.toast.*`). `role_has_members` non ha messaggio: chiede dove vanno le persone.
+    var localized: String {
+        switch self {
+        case .roleChanged: String(localized: "Someone else changed this role. It has been reloaded.")
+        case .escalationDenied: String(localized: "That goes beyond your own role.")
+        case .invalidPermission: String(localized: "That section or action can't be given to this role.")
+        case .roleNameTaken: String(localized: "A role with this name already exists.")
+        case .roleIsDefault: String(localized: "This is the default role for new members. Choose another default first.")
+        case .roleNotAssignable: String(localized: "Owners and admins hold every section and take no role.")
+        case .roleNotFound: String(localized: "This role no longer exists.")
+        case .auditUnavailable: String(localized: "Not saved: the audit log is unavailable. Try again.")
+        case .roleHasMembers: String(localized: "Something went wrong. Try again.")
+        }
+    }
 }

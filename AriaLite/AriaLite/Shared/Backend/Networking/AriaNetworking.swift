@@ -142,6 +142,8 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// 403 `permission_denied`: il ruolo non ha la sezione o l'azione (o è in pausa, o non c'è). L'azienda resta
     /// scelta; i diritti si rileggono da GET /v1/me (AriaBackend) e ciò che non è più concesso sparisce.
     case permissionDenied(AriaPermissionDenial)
+    /// Un rifiuto delle rotte di Roles & Rights con un codice noto (versione vecchia, nome già usato…).
+    case accessRefused(AriaAccessRefusal)
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
     case decoding(String)
@@ -183,6 +185,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
             denial.pausesAccess
                 ? String(localized: "Your access is paused. Ask your admin.")
                 : String(localized: "Your role doesn't allow this.")
+        case .accessRefused(let refusal): refusal.localized
         case .invalidChoice(_, _, let message): message
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
@@ -298,6 +301,9 @@ nonisolated enum AriaHTTP {
         }
         if http.statusCode == 403, let denial = AriaPermissionDenial(data) {
             throw AriaError.permissionDenied(denial)
+        }
+        if let refusal = code(from: data).flatMap(AriaAccessRefusal.init(rawValue:)) {
+            throw AriaError.accessRefused(refusal)
         }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)

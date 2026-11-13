@@ -157,8 +157,8 @@ enum TestEnv {
     static func accessJSON(model: String = "rbac", admin: Bool = false,
                            role: String? = #"{"id":"r1","name":"Technician","set":"low","enabled":true}"#,
                            sections: String = #"{"work_orders":{"granted":true,"actions":["complete"]},"assets":{"granted":false,"actions":[]}}"#,
-                           followsRole: Bool = true, version: String = "v1") -> String {
-        #"{"model":"\#(model)","role":\#(role ?? "null"),"admin":\#(admin),"sections":\#(sections),"canManageRoles":false,"version":"\#(version)","appFollowsRole":\#(followsRole)}"#
+                           followsRole: Bool = true, version: String = "v1", canManageRoles: Bool = false) -> String {
+        #"{"model":"\#(model)","role":\#(role ?? "null"),"admin":\#(admin),"sections":\#(sections),"canManageRoles":\#(canManageRoles),"version":"\#(version)","appFollowsRole":\#(followsRole)}"#
     }
 
     /// Dà al backend collegato i diritti di `access` (JSON di `accessJSON`), come li legge GET /v1/me: la sessione
