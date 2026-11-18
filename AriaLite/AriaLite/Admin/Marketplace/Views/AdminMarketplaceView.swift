@@ -57,6 +57,8 @@ struct AdminMarketplaceView: View {
             .sheet(item: $viewModel.maintainXForm) { form in
                 AdminConnectorCredentialsFormView(viewModel: form)
             }
+            // Il giro guidato si fa da parte mentre il modulo del connettore è aperto.
+            .ariaSetupTourAside(viewModel.maintainXForm != nil, source: "marketplace.connector")
         }
         .task(id: viewModel.loadKey) { await viewModel.load() }
     }
@@ -131,6 +133,7 @@ struct AdminMarketplaceView: View {
                 .accessibilityAddTraits(chip.isSelected ? .isSelected : [])
             }
         }
+        .ariaSetupTourAnchor(.connectors)
     }
 
     /// I filtri attivi come chip da togliere, più "Clear filters".

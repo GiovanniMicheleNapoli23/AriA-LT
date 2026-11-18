@@ -55,12 +55,15 @@ struct AdminDocumentsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Upload documents", systemImage: "plus") { upload = viewModel.makeUploadViewModel() }
                         .disabled(!viewModel.canUpload)
+                        .ariaSetupTourAnchor(.upload)
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Title, file name, tag"))
             .sheet(item: $upload, onDismiss: viewModel.uploadSheetClosed) { model in
                 AdminDocumentUploadView(viewModel: model)
             }
+            // Il giro guidato si fa da parte mentre il foglio di caricamento è aperto.
+            .ariaSetupTourAside(upload != nil, source: "documents.upload")
             .alert("Delete this document?", isPresented: $viewModel.showsDeleteConfirmation,
                    presenting: viewModel.documentToDelete) { document in
                 Button("Delete document", role: .destructive) {

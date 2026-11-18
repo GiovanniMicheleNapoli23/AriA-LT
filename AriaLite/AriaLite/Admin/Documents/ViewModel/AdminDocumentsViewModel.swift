@@ -279,7 +279,12 @@ final class AdminDocumentsViewModel {
     }
 
     /// Il caricamento vuole un'azienda e uno stabilimento.
-    var canUpload: Bool { backend.activeCompanyId != nil && (backend.activePlantId != nil || !backend.plants.isEmpty) }
+    var canUpload: Bool { Self.canUpload(backend) }
+
+    /// Lo stesso conto per chi non ha il view model (il giro guidato): niente sito, niente caricamento.
+    static func canUpload(_ backend: AriaBackend) -> Bool {
+        backend.activeCompanyId != nil && (backend.activePlantId != nil || !backend.plants.isEmpty)
+    }
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {

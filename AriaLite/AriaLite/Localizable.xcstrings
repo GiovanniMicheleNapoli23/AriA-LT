@@ -2840,6 +2840,16 @@
         }
       }
     },
+    "A few steps, one section at a time: your documents, your agents, your team and the systems you already use. Each one makes AriA's answers better." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pochi passi, una sezione alla volta: i tuoi documenti, i tuoi agenti, il tuo team e i sistemi che usi già. Ognuno rende le risposte di AriA più precise."
+          }
+        }
+      }
+    },
     "a free workspace address" : {
       "localizations" : {
         "it" : {
@@ -4848,6 +4858,16 @@
         }
       }
     },
+    "Apply your company's policies, standards and rules directly to agentic operations." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applica policy, standard e regole della tua azienda direttamente nelle operazioni agentiche."
+          }
+        }
+      }
+    },
     "Approval" : {
       "localizations" : {
         "it" : {
@@ -5288,6 +5308,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aria modifica la versione salvata, non le tue modifiche non salvate."
+          }
+        }
+      }
+    },
+    "AriA extracts your data" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AriA estrae i tuoi dati"
+          }
+        }
+      }
+    },
+    "AriA finds them in the documents you upload. Review them here before they join your data: approve what is right, reject the rest." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AriA li trova nei documenti che carichi. Qui li rivedi prima che entrino nei tuoi dati: approva quelli giusti, scarta il resto."
           }
         }
       }
@@ -6819,6 +6859,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rami"
+          }
+        }
+      }
+    },
+    "Build and customize your agents to fit the way you work, so they stay reliable and secure." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crea e personalizza i tuoi agenti nel modo più consono al tuo modo di lavorare, per garantire affidabilità e sicurezza."
           }
         }
       }
@@ -11872,6 +11922,16 @@
         }
       }
     },
+    "Documents are filed by site. Choose a site from the selector on Home, then come back here to upload them." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I documenti sono organizzati per impianto. Scegli un impianto dal selettore nella Home, poi torna qui per caricarli."
+          }
+        }
+      }
+    },
     "Documents are shared with everyone on this site." : {
       "localizations" : {
         "it" : {
@@ -11888,6 +11948,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Documenti da caricare"
+          }
+        }
+      }
+    },
+    "DOCX" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DOCX"
           }
         }
       }
@@ -12152,6 +12222,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Durata (min)"
+          }
+        }
+      }
+    },
+    "DWG" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DWG"
+          }
+        }
+      }
+    },
+    "DXF" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DXF"
           }
         }
       }
@@ -13322,6 +13412,16 @@
         }
       }
     },
+    "Excel" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excel"
+          }
+        }
+      }
+    },
     "Exchange rate: %@" : {
       "localizations" : {
         "it" : {
@@ -13983,6 +14083,16 @@
         }
       }
     },
+    "Find and use knowledge, methods and workflows already proven in your industry. Connect the tools you already use, pick skills and plugins to boost AriA's performance, and knowledge packs to make the system as reliable as it can be." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca e usa conoscenze, metodi e workflow già validati nel tuo settore. Puoi connettere i tool che già utilizzi, scegliere tra skill e plugin per migliorare le performance di AriA e knowledge pack per massimizzare l'affidabilità del sistema."
+          }
+        }
+      }
+    },
     "Finding similar WOs" : {
       "localizations" : {
         "en" : {
@@ -14479,6 +14589,26 @@
         }
       }
     },
+    "Get started with AriA" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primi passi con AriA"
+          }
+        }
+      }
+    },
+    "Get the most out of AriA" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sfrutta AriA al massimo"
+          }
+        }
+      }
+    },
     "Give app access" : {
       "localizations" : {
         "it" : {
@@ -14567,6 +14697,16 @@
         }
       }
     },
+    "Go to the chat" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vai alla chat"
+          }
+        }
+      }
+    },
     "Goal" : {
       "localizations" : {
         "it" : {
@@ -14641,12 +14781,32 @@
         }
       }
     },
+    "Governance" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Governance"
+          }
+        }
+      }
+    },
     "Grade %@" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voto %@"
+          }
+        }
+      }
+    },
+    "Group people into teams to assign work and decide what each team sees." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raggruppa le persone in team per assegnare il lavoro e decidere cosa vede ogni team."
           }
         }
       }
@@ -14667,6 +14827,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Domande guidate per individuare il guasto"
+          }
+        }
+      }
+    },
+    "Have AriA build autonomous workflows that solve complex problems or routine tasks while you work on something else." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fai costruire ad AriA workflow autonomi per risolvere problemi complessi o task di routine, mentre tu lavori su altro."
           }
         }
       }
@@ -15837,6 +16007,16 @@
         }
       }
     },
+    "Invite your team" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invita il tuo team"
+          }
+        }
+      }
+    },
     "Invited" : {
       "localizations" : {
         "it" : {
@@ -16188,6 +16368,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chiave"
+          }
+        }
+      }
+    },
+    "Knowledge" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Knowledge"
           }
         }
       }
@@ -16592,6 +16782,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dal profilo fai sapere al team se sei disponibile"
+          }
+        }
+      }
+    },
+    "Let's start" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniziamo"
           }
         }
       }
@@ -22189,6 +22389,16 @@
         }
       }
     },
+    "Organise people into teams" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Organizza le persone in team"
+          }
+        }
+      }
+    },
     "Organization" : {
       "localizations" : {
         "it" : {
@@ -22265,6 +22475,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Altri sistemi gestionali e i canali con cui Aria comunica."
+          }
+        }
+      }
+    },
+    "Others" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Altri"
           }
         }
       }
@@ -22806,6 +23026,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "In pausa"
+          }
+        }
+      }
+    },
+    "PDF" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF"
           }
         }
       }
@@ -27257,6 +27487,16 @@
         }
       }
     },
+    "Send an invitation by email: each colleague gets their own account and works from the same knowledge and the same agents." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manda un invito via email: ogni collega ha il suo account e lavora sulla stessa conoscenza e con gli stessi agenti."
+          }
+        }
+      }
+    },
     "Send email" : {
       "localizations" : {
         "it" : {
@@ -30082,6 +30322,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Squadra"
+          }
+        }
+      }
+    },
+    "Team & users" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Team e utenti"
           }
         }
       }
@@ -33117,6 +33367,38 @@
         }
       }
     },
+    "tour.guide.teams" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teams"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Team"
+          }
+        }
+      }
+    },
+    "tour.guide.workflows" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workflows"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automazioni"
+          }
+        }
+      }
+    },
     "Tracked" : {
       "localizations" : {
         "it" : {
@@ -34196,12 +34478,32 @@
         }
       }
     },
+    "Upload now: precise from the first minute" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carica ora: precisa dal primo minuto"
+          }
+        }
+      }
+    },
     "Upload only new files" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Carica solo i file nuovi"
+          }
+        }
+      }
+    },
+    "Upload your documents and AriA is at its most precise from day one. Otherwise it learns on the job, day by day." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricando i tuoi documenti AriA ha la massima precisione fin da subito. Altrimenti imparerà direttamente, giorno dopo giorno."
           }
         }
       }
@@ -35765,6 +36067,16 @@
         }
       }
     },
+    "Wiring diagrams" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schemi elettrici"
+          }
+        }
+      }
+    },
     "Withdraw approval" : {
       "comment" : "Roles & Rights action",
       "localizations" : {
@@ -36653,6 +36965,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo settore"
+          }
+        }
+      }
+    },
+    "Your industry's best, ready to use" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il meglio del tuo settore, già pronto"
           }
         }
       }

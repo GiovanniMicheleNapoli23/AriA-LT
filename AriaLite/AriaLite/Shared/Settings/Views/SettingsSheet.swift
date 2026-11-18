@@ -11,6 +11,7 @@
 import SwiftUI
 
 struct SettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: AriaSettingsViewModel
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSide: CGFloat = 76
@@ -75,6 +76,14 @@ struct SettingsSheet: View {
 
     private var header: some View {
         VStack(spacing: 12) {
+            identity
+            tourButtons
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var identity: some View {
+        VStack(spacing: 12) {
             Text(verbatim: viewModel.initials)
                 .font(.system(.title, design: .rounded, weight: .semibold))
                 .foregroundStyle(Color.liteAccent)
@@ -105,6 +114,34 @@ struct SettingsSheet: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+    }
+
+    // "Primi passi con AriA" si rifà dalle sezioni: il foglio si chiude.
+    @ViewBuilder
+    private var tourButtons: some View {
+        if viewModel.showsSetupTour {
+            tourButton("Get started with AriA", systemImage: "map", identifier: "settings.setupTour") {
+                viewModel.replaySetupTour()
+            }
+        }
+    }
+
+    private func tourButton(_ title: LocalizedStringKey, systemImage: String, identifier: String,
+                            action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            dismiss()
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.liteAccent)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.liteSurface, in: Capsule())
+                .overlay { Capsule().strokeBorder(Color.liteBorder) }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
     }
 
     // MARK: Dove

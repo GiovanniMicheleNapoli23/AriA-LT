@@ -15,19 +15,33 @@ struct AdminAgentStudioView: View {
 
     @State private var path: [AdminAgentStudioRoute] = []
     @State private var showsNotifications = false
+    @Environment(\.ariaSetupTour) private var setupTour
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if viewModel.hasLoaded { AdminAgentStudioAttentionSection(viewModel: viewModel) }
-                    AdminAgentStudioWorkflowsSection(viewModel: viewModel)
-                    AdminAgentStudioConfigurationSection()
+            ScrollViewReader { scroll in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if viewModel.hasLoaded { AdminAgentStudioAttentionSection(viewModel: viewModel) }
+                        AdminAgentStudioWorkflowsSection(viewModel: viewModel)
+                            .id(TourScrollTarget.workflows)
+                            .ariaSetupTourAnchor(.workflows)
+                        AdminAgentStudioConfigurationSection()
+                            .id(TourScrollTarget.configuration)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                    .padding(.bottom, 24)
+                    .ariaReadableWidth()
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 24)
-                .ariaReadableWidth()
+                // Il giro guidato indica i workflow o una riga della configurazione, in fondo: la porta in vista.
+                // Anche quando la lista si carica e sposta tutto.
+                .onChange(of: setupTour?.current, initial: true) { _, step in
+                    reveal(step, scroll)
+                }
+                .onChange(of: viewModel.hasLoaded) { _, _ in
+                    reveal(setupTour?.current, scroll)
+                }
             }
             .refreshable { await viewModel.load() }
             .liteBackground()
@@ -46,7 +60,25 @@ struct AdminAgentStudioView: View {
                 }
             }
         }
+        // Il giro guidato si fa da parte con una schermata di dettaglio o il foglio delle notifiche aperti.
+        .ariaSetupTourAside(!path.isEmpty, source: "agentStudio.path")
+        .ariaSetupTourAside(showsNotifications, source: "agentStudio.notifications")
         .task(id: viewModel.loadKey) { await viewModel.load() }
+    }
+
+    /// Dove scorrere per mostrare l'elemento di un passo del giro guidato.
+    private enum TourScrollTarget: Hashable {
+        case workflows, configuration
+    }
+
+    private func reveal(_ step: AriaSetupTourStep?, _ scroll: ScrollViewProxy) {
+        let target: TourScrollTarget
+        switch step {
+        case .workflows: target = .workflows
+        case .agents, .governance: target = .configuration
+        default: return
+        }
+        withAnimation { scroll.scrollTo(target, anchor: target == .workflows ? .top : .center) }
     }
 
     @ViewBuilder

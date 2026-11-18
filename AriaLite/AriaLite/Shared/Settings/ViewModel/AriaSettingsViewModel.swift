@@ -99,6 +99,14 @@ final class AriaSettingsViewModel {
 
     var isOnline: Bool { backend.isReady }
 
+    // MARK: Giro guidato
+
+    /// Il giro guidato c'è solo per chi ha dei passi (admin con le sezioni dei passi).
+    var showsSetupTour: Bool { app.setupTour.hasSteps }
+
+    /// Rifà "Primi passi con AriA" dall'intro: un replay, con la X, che non cambia lo stato di completamento.
+    func replaySetupTour() { app.setupTour.replay() }
+
     // MARK: Uscita
 
     /// Lavoro fatto offline non ancora partito: uscendo si perde, quindi si chiede prima.

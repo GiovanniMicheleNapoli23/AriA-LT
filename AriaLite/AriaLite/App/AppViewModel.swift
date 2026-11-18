@@ -22,6 +22,8 @@ class AppViewModel {
     let ariaWorkOrders: AriaWorkOrderStore
     /// Notifiche push dei lavori assegnati.
     let notifications = AriaPushNotifications.shared
+    /// Il giro guidato dell'admin, obbligatorio: lo stato sta qui, la shell lo mostra sopra le sezioni.
+    let setupTour: AriaSetupTourViewModel
 
     /// Sezioni della web: tutte per gli account della piattaforma, una parte per l'operatore (AriaSidebarSections).
     let adminDocuments: AdminDocumentsViewModel
@@ -86,6 +88,7 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        setupTour = AriaSetupTourViewModel()
         adminDocuments = AdminDocumentsViewModel(backend: backend)
         adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
         adminMarketplace = AdminMarketplaceViewModel(backend: backend)

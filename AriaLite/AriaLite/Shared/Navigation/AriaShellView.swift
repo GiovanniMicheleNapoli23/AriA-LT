@@ -14,7 +14,7 @@
 
 import SwiftUI
 
-enum AriaDestination: Hashable {
+nonisolated enum AriaDestination: Hashable, Sendable {
     case chat
     case chats
     // Operatore
@@ -149,6 +149,16 @@ struct AriaShellView: View {
         .background(Color.liteSidebar.ignoresSafeArea())
         .environment(\.sidebarController, sidebar)
         .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
+        .modifier(AriaSetupTourWiring(
+            tour: viewModel.setupTour,
+            account: user.username,
+            isOperator: isOperator,
+            membershipRead: viewModel.backend.membership != nil,
+            access: AriaSetupTourAccess(backend: viewModel.backend, offered: offered),
+            locked: viewModel.lock != .none,
+            onStep: { select($0.destination) },
+            onFinish: { select(.chat) }
+        ))
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .onAppear { AriaAuthTrace.step("shell.appear") }
         .task(id: viewModel.backend.isReady) { await store.load() }
@@ -353,6 +363,8 @@ struct AriaShellView: View {
 
     /// Orizzontale, e — a sidebar chiusa — partito dal bordo sinistro (lo scroll resta dei contenuti).
     private func isSidebarDrag(_ value: DragGesture.Value) -> Bool {
+        // Il giro guidato blocca la sidebar finché dura (la prima volta è obbligatorio).
+        guard !viewModel.setupTour.isActive else { return false }
         guard abs(value.translation.width) > abs(value.translation.height) else { return false }
         return sidebar.isOpen || value.startLocation.x < edgeWidth
     }

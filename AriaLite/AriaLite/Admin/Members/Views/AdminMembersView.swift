@@ -39,6 +39,7 @@ struct AdminMembersView: View {
                 if viewModel.canCreate {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("New person", systemImage: "plus") { viewModel.startCreatingMember() }
+                            .ariaSetupTourAnchor(.invite)
                     }
                 }
             }
@@ -46,6 +47,8 @@ struct AdminMembersView: View {
             .sheet(item: $viewModel.newMemberForm) { form in
                 AdminMemberCreateView(viewModel: form)
             }
+            // Il giro guidato si fa da parte mentre il modulo "New person" è aperto.
+            .ariaSetupTourAside(viewModel.newMemberForm != nil, source: "members.new")
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }

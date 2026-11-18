@@ -51,6 +51,7 @@ struct AdminTeamsView: View {
                             Button("New ad-hoc team", systemImage: "person.3") { viewModel.startCreatingAdHoc() }
                         }
                         .disabled(!viewModel.hasLoaded)
+                        .ariaSetupTourAnchor(.teams)
                     }
                 }
             }
@@ -61,6 +62,8 @@ struct AdminTeamsView: View {
             .sheet(item: $viewModel.adHocForm) { form in
                 AdminTeamAdHocView(viewModel: form)
             }
+            // Il giro guidato si fa da parte mentre un modulo di team è aperto.
+            .ariaSetupTourAside(viewModel.newTeamForm != nil || viewModel.adHocForm != nil, source: "teams.form")
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
