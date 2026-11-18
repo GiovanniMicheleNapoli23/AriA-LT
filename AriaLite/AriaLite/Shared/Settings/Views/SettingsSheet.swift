@@ -11,6 +11,7 @@
 import SwiftUI
 
 struct SettingsSheet: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: AriaSettingsViewModel
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSide: CGFloat = 76
 
@@ -29,6 +30,7 @@ struct SettingsSheet: View {
                     VStack(spacing: 20) {
                         header
                         if viewModel.showsWorkspace { workspaceCard }
+                        if viewModel.credits.isVisible { creditsCard }
                         if viewModel.showsAvailability {
                             AriaAvailabilityRow(store: viewModel.app.ariaWorkOrders)
                         }
@@ -49,6 +51,12 @@ struct SettingsSheet: View {
         .sheet(isPresented: $viewModel.showsConnection) {
             AriaConnectionSheet(backend: viewModel.app.backend)
         }
+        .sheet(isPresented: $viewModel.showsCredits) {
+            AriaCreditsSheet(model: viewModel.credits)
+        }
+        // Il saldo si rilegge ora e ogni 60 s finché il profilo è aperto, e quando l'app torna in primo piano.
+        .task { await viewModel.credits.poll() }
+        .onChange(of: scenePhase) { _, phase in viewModel.credits.scenePhaseChanged(phase) }
         .fullScreenCover(isPresented: $viewModel.showsOnboarding) {
             AriaOnboardingView(origin: .profile) { viewModel.showsOnboarding = false }
         }
@@ -59,7 +67,7 @@ struct SettingsSheet: View {
             Text("\(viewModel.unsyncedChanges) changes haven't reached the server yet. If you log out now, they will be lost.")
         }
         // Un admin non ha la disponibilità: il foglio parte più basso. Si può sempre allargare.
-        .presentationDetents([.fraction(viewModel.showsAvailability ? 0.72 : 0.67), .large])
+        .presentationDetents([.fraction(viewModel.detentFraction), .large])
         .presentationDragIndicator(.visible)
     }
 
@@ -118,6 +126,18 @@ struct SettingsSheet: View {
             }
         }
         .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: Crediti
+
+    private var creditsCard: some View {
+        Button {
+            viewModel.creditsTapped()
+        } label: {
+            AriaCreditsCard(model: viewModel.credits)
+                .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 
     private func valueText(_ text: String) -> some View {

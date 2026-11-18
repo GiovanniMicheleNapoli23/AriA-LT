@@ -127,6 +127,14 @@ struct AriaAgentMessageView: View {
                 }
             }
 
+            if let note = model.creditNote(message) {
+                AriaTurnCreditNoteView(text: note.text, tags: note.tags,
+                                       accessibilityText: model.creditNoteAccessibilityLabel(note))
+            }
+            if let notice = model.degradedNotice(message) {
+                AriaEffortDegradedNotice(text: notice)
+            }
+
             if model.showsToolbar(message, displayText: display) {
                 AriaMessageToolbar(model: model, message: message)
             }

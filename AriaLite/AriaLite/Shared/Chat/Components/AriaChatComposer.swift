@@ -49,6 +49,10 @@ struct AriaChatComposer: View {
         .fileImporter(isPresented: $model.showFiles, allowedContentTypes: AriaChatComposerViewModel.fileTypes,
                       allowsMultipleSelection: true) { model.filesPicked($0) }
         .task(id: model.dictationKey) { await model.loadDictationSupport() }
+        .task(id: model.dictationKey) { await model.loadEffortConfig() }
+        .sheet(isPresented: $model.showEffort) {
+            AriaEffortSheet(chat: model.chat, backend: model.backend)
+        }
         .onChange(of: model.isLocked) { _, locked in model.lockChanged(locked) }
         .onChange(of: model.isContextRingGone) { _, gone in model.contextRingGoneChanged(gone) }
         .task(id: model.contextRefreshKey) { await model.refreshContextUsage() }
@@ -161,6 +165,7 @@ private struct AriaComposerPlusMenu: View {
                 }
                 // Nel menu resta la spunta di sistema, non l'interruttore verde dell'app.
                 .toggleStyle(.automatic)
+                effortEntry
             }
         } label: {
             // Il limite sta sull'etichetta, non sul Menu: le voci del menu seguono il testo di sistema.
@@ -168,6 +173,27 @@ private struct AriaComposerPlusMenu: View {
                 .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
         }
         .accessibilityLabel("Add")
+    }
+
+    /// Il livello di effort: nascosto, in caricamento (spenta), col livello e il moltiplicatore, o in errore.
+    @ViewBuilder
+    private var effortEntry: some View {
+        switch model.effortEntry {
+        case .hidden:
+            EmptyView()
+        case .loading:
+            Button {} label: {
+                Label("Loading effort levels", systemImage: AriaChatComposerViewModel.effortIcon)
+            }
+            .disabled(true)
+        case .ready(let title), .failed(let title):
+            Button { model.showEffort = true } label: {
+                Label(title, systemImage: AriaChatComposerViewModel.effortIcon)
+            }
+            .disabled(model.isEffortDisabled)
+            .accessibilityLabel(model.effortAccessibilityLabel ?? title)
+            .accessibilityIdentifier("chat.effort")
+        }
     }
 }
 

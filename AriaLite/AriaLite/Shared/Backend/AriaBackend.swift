@@ -71,6 +71,8 @@ final class AriaBackend {
     private(set) var unavailableFeatures: Set<AriaServerFeature> = []
     /// Capacità della dettatura e vocabolario dell'azienda: si chiedono una volta per sessione.
     @ObservationIgnored private var dictationSupport: Task<AriaDictationSupport, Never>?
+    /// Crediti: config, saldo e stime dell'azienda attiva, condivisi da chat, composer e profilo.
+    @ObservationIgnored private(set) lazy var usage = AriaUsageStore(backend: self)
 
     @ObservationIgnored private var didBootstrap = false
     /// Rilegge i diritti quando il client li segnala vecchi (AriaContext.observe).
@@ -359,6 +361,7 @@ final class AriaBackend {
         activePlantId = nil
         lastError = nil
         unavailableFeatures = []
+        usage.resetAvailability()
         dictationSupport = nil
     }
 
@@ -510,7 +513,10 @@ final class AriaBackend {
             if changed { traceRights() }
             // La sessione ha cominciato (o smesso) a seguire il ruolo: le funzioni nascoste per un
             // `operation_forbidden` dell'operatore si riprovano con i limiti nuovi.
-            if rights.followsRole != followed { unavailableFeatures = [] }
+            if rights.followsRole != followed {
+                unavailableFeatures = []
+                usage.resetAvailability()
+            }
             await api.context.setAccess(version: me.access?.version, followsRole: rights.followsRole)
         } catch {
             guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
@@ -579,8 +585,11 @@ final class AriaBackend {
             access = nil
             await api.context.setAccess(version: nil, followsRole: false)
         }
+        let companyChanged = companyId != activeCompanyId
         await api.context.setCompany(companyId)
         activeCompanyId = companyId
+        // Un'altra azienda (o il primo avvio dopo l'accesso): i crediti dell'altra non valgono, si rileggono (contratto 3.6).
+        if companyChanged || !didBootstrap { usage.companyChanged() }
         if companyId == nil {
             plants = []
         } else {

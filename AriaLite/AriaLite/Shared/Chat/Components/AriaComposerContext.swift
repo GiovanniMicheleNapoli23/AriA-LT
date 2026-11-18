@@ -25,6 +25,10 @@ struct AriaComposerTray: View {
                 if model.style != .auto {
                     toolPill(model.style.shortTitle, icon: model.style.icon) { model.clearStyle() }
                 }
+                if let effort = model.effortPillTitle {
+                    actionPill(effort, icon: AriaChatComposerViewModel.effortIcon) { model.showEffort = true }
+                        .disabled(model.isEffortDisabled)
+                }
                 ForEach(model.contextItems) { item in
                     AriaContextTile(item: item) { model.removeContextItem(item.id) }
                 }
@@ -54,6 +58,24 @@ struct AriaComposerTray: View {
         .padding(.trailing, 6)
         .frame(minHeight: pillHeight)
         .background(Color.accentColor.opacity(0.12), in: Capsule())
+    }
+}
+
+extension AriaComposerTray {
+    /// Come `toolPill` ma senza "x": non è uno strumento da spegnere, il tocco apre il foglio che lo cambia.
+    fileprivate func actionPill(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(.caption.weight(.semibold))
+                Text(title).font(.footnote.weight(.medium))
+            }
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 11)
+            .frame(minHeight: pillHeight)
+            .background(Color.accentColor.opacity(0.12), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("chat.effortPill")
     }
 }
 

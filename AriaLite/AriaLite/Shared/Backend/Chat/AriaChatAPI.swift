@@ -51,6 +51,11 @@ nonisolated struct AriaChatAPI: Sendable {
         try await api.perform("PATCH", "v1/agent/sessions/\(sessionId)", body: ["title": title])
     }
 
+    /// Salva il livello di sforzo della conversazione (la risposta non lo rimanda). Solo se il server ha già la sessione.
+    func saveEffort(_ level: AriaEffortLevel, sessionId: String) async throws {
+        try await api.perform("PATCH", "v1/agent/sessions/\(sessionId)", body: ["effort": level.rawValue])
+    }
+
     func delete(sessionId: String) async throws {
         try await api.perform("DELETE", "v1/agent/sessions/\(sessionId)")
     }

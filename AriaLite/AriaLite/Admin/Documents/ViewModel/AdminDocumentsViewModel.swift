@@ -58,7 +58,10 @@ final class AdminDocumentsViewModel {
     init(backend: AriaBackend) {
         self.backend = backend
         uploads = AdminDocumentUploadCenter(backend: backend)
-        uploads.onUploaded = { [weak self] in self?.scheduleReload() }
+        uploads.onUploaded = { [weak self] in
+            self?.scheduleReload()
+            self?.backend.usage.refreshAllowanceLater()
+        }
         // Ritrova subito i caricamenti lasciati dall'esecuzione precedente.
         Task { [uploads] in await uploads.start() }
     }
@@ -238,6 +241,7 @@ final class AdminDocumentsViewModel {
         do {
             _ = try await backend.api.call(AdminDocumentsAPI.delete(id: document.id, rollbackEntities: removingExtractedData))
             remove(id: document.id)
+            backend.usage.refreshAllowanceLater()
         } catch {
             guard let message = AdminDocumentsFailure.message(for: error, backend: backend) else { return }
             actionError = message

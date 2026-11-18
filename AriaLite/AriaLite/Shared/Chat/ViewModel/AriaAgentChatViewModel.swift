@@ -79,7 +79,7 @@ final class AriaAgentChatViewModel {
     /// L'ultimo turno è fallito: si può rimandare la stessa domanda.
     var failedTurn: AriaAgentMessage? {
         guard !chat.isStreaming, let last = chat.messages.last, last.role == .assistant, last.error != nil,
-              last.interrupt == nil else { return nil }
+              !last.errorIsFinal, last.interrupt == nil else { return nil }
         return last
     }
 
@@ -119,6 +119,7 @@ final class AriaAgentChatViewModel {
     var isStreaming: Bool { chat.isStreaming }
     var webURL: URL { backend.webURL }
     var notice: String? { chat.notice }
+    var warning: String? { chat.warning }
     var turnError: String? { chat.lastError }
     var turnErrorIsOffline: Bool { chat.lastErrorIsOffline }
     var activeQuestionID: String? { chat.activeElicitation?.elicitation.id }
@@ -293,6 +294,10 @@ final class AriaAgentChatViewModel {
 
     func dismissNotice() {
         chat.notice = nil
+    }
+
+    func dismissWarning() {
+        chat.warning = nil
     }
 
     func expandQuestion() {

@@ -22,10 +22,15 @@ final class AriaSettingsViewModel {
     var confirmingLogout = false
     /// La presentazione dell'app, rivista dal profilo.
     var showsOnboarding = false
+    /// Il foglio "AI Operational Credits".
+    var showsCredits = false
+    /// La card dei crediti: stato, testo e rilettura del saldo.
+    let credits: AriaCreditsViewModel
 
     init(user: User, app: AppViewModel) {
         self.user = user
         self.app = app
+        self.credits = AriaCreditsViewModel(backend: app.backend)
     }
 
     private var backend: AriaBackend { app.backend }
@@ -77,6 +82,18 @@ final class AriaSettingsViewModel {
     var showsWorkspace: Bool { companyName != nil || plantName != nil }
 
     var showsAvailability: Bool { !isAdmin }
+
+    // MARK: Crediti
+
+    /// Il foglio dei crediti è alto di più della sola lista: il profilo si alza un poco quando la card c'è.
+    var detentFraction: Double {
+        (showsAvailability ? 0.72 : 0.67) + (credits.isVisible ? 0.08 : 0)
+    }
+
+    /// Tocco sulla card: i dettagli, o un nuovo tentativo se il saldo non si legge.
+    func creditsTapped() {
+        if credits.isFailed { credits.retry() } else { showsCredits = true }
+    }
 
     // MARK: Server
 

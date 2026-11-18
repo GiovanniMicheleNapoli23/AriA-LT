@@ -149,6 +149,9 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case peopleRefused(AriaPeopleRefusal, detail: String)
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
+    /// 402 `spend_cap_reached` di POST /v1/responses: il tetto di spesa dell'azienda è raggiunto (`overage.at_spend_cap`
+    /// "stop"). Risponde prima dello stream; non si riprova. Il testo è quello del server, per i log.
+    case spendCapReached(String)
     case decoding(String)
     case stream(String)
 
@@ -191,6 +194,8 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .accessRefused(let refusal): refusal.localized
         case .peopleRefused(let refusal, _): refusal.message
         case .invalidChoice(_, _, let message): message
+        case .spendCapReached:
+            String(localized: "Your company's spending limit is reached. An owner or admin can raise it.")
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
         }
@@ -293,6 +298,12 @@ nonisolated enum AriaHTTP {
     static func check(_ response: URLResponse, _ data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
         guard !(200..<300).contains(http.statusCode) else { return }
+        // 402 al tetto di spesa: `{"error":{"type":"spend_cap_reached","code":402}}`. Il `code` qui è il NUMERO 402, quindi
+        // `code(from:)` non serve: si legge `error.type`.
+        if http.statusCode == 402, let json = try? JSONDecoder().decode(AriaJSON.self, from: data),
+           json["error"]?["type"]?.stringValue == "spend_cap_reached" {
+            throw AriaError.spendCapReached(detail(from: data))
+        }
         let server = http.value(forHTTPHeaderField: "Server") ?? ""
         if http.statusCode == 403, server.localizedCaseInsensitiveContains("cloudfront") {
             throw AriaError.wafBlocked

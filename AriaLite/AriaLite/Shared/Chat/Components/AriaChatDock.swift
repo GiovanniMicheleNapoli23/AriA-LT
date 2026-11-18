@@ -118,6 +118,10 @@ private struct AriaChatDockNotices: View {
                 AriaChatNoticeBanner(notice: notice) { model.dismissNotice() }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            if let warning = model.warning {
+                AriaChatWarningBanner(warning: warning) { model.dismissWarning() }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             if let error = model.turnError {
                 errorBanner(error)
                     .transition(.move(edge: .bottom).combined(with: .opacity))

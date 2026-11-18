@@ -28,6 +28,26 @@ struct AriaChatNoticeBanner: View {
     }
 }
 
+/// Avviso neutro (es. un'impostazione non salvata): icona informativa, grigio, niente rosso né suono di successo.
+/// Sparisce da solo dopo 5 secondi.
+struct AriaChatWarningBanner: View {
+    let warning: String
+    var onExpire: () -> Void
+
+    var body: some View {
+        Label(warning, systemImage: "info.circle.fill")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .ariaGlass(in: Capsule(), tint: Color.gray.opacity(0.18))
+            .task(id: warning) {
+                try? await Task.sleep(for: .seconds(5))
+                onExpire()
+            }
+    }
+}
+
 /// Errore del turno, con "Riprova" quando l'ultima domanda si può rimandare.
 struct AriaChatErrorBanner: View {
     let error: String

@@ -246,6 +246,26 @@
         }
       }
     },
+    "%@ beyond today’s credits. Work continues as usual." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ oltre i crediti di oggi. Il lavoro prosegue normalmente."
+          }
+        }
+      }
+    },
+    "%@ beyond your plan this cycle. Work continues as usual." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ oltre il tuo piano in questo ciclo. Il lavoro prosegue normalmente."
+          }
+        }
+      }
+    },
     "%@ but in the last 7 days" : {
       "localizations" : {
         "en" : {
@@ -318,12 +338,78 @@
         }
       }
     },
+    "%@ credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crediti"
+          }
+        }
+      }
+    },
+    "%@ credits available" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crediti disponibili"
+          }
+        }
+      }
+    },
+    "%@ credits in pool" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crediti nel pool"
+          }
+        }
+      }
+    },
+    "%@ credits used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ crediti usati"
+          }
+        }
+      }
+    },
     "%@ deleted" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ eliminato"
+          }
+        }
+      }
+    },
+    "%@ effort unavailable, ran at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ effort unavailable, ran at %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento %1$@ non disponibile: usato il livello %2$@"
+          }
+        }
+      }
+    },
+    "%@ extra, not billed" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ extra, non addebitati"
           }
         }
       }
@@ -368,12 +454,38 @@
         }
       }
     },
+    "%@ left this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ rimasti nel ciclo"
+          }
+        }
+      }
+    },
     "%@ now holds %@" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ ora ha il ruolo %@"
+          }
+        }
+      }
+    },
+    "%@ of %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ di %2$@"
           }
         }
       }
@@ -394,12 +506,142 @@
         }
       }
     },
+    "%@ of %@ used" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@ used"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ di %2$@ usati"
+          }
+        }
+      }
+    },
     "%@ out of 5" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ su 5"
+          }
+        }
+      }
+    },
+    "%@ over today’s credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ oltre i crediti di oggi"
+          }
+        }
+      }
+    },
+    "%@ over your plan" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ oltre il tuo piano"
+          }
+        }
+      }
+    },
+    "%@ per reply" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a risposta"
+          }
+        }
+      }
+    },
+    "%@ per reply · about %@ a day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ per reply · about %2$@ a day"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ a risposta · circa %2$@ al giorno"
+          }
+        }
+      }
+    },
+    "%@ per reply · up to %@ a day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ per reply · up to %2$@ a day"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ a risposta · fino a %2$@ al giorno"
+          }
+        }
+      }
+    },
+    "%@ so far" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ finora"
+          }
+        }
+      }
+    },
+    "%@ so far today, at %@ per extra credit. Work continues as usual; the included credits start again at 00:00 UTC." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ so far today, at %2$@ per extra credit. Work continues as usual; the included credits start again at 00:00 UTC."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ finora oggi, a %2$@ per credito extra. Il lavoro prosegue normalmente; i crediti inclusi ripartono alle 00:00 UTC."
+          }
+        }
+      }
+    },
+    "%@ so far, at %@ per extra credit. Work continues as usual." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ so far, at %2$@ per extra credit. Work continues as usual."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ finora, a %2$@ per credito extra. Il lavoro prosegue normalmente."
+          }
+        }
+      }
+    },
+    "%@ today" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ oggi"
           }
         }
       }
@@ -495,6 +737,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@: %@"
+          }
+        }
+      }
+    },
+    "%@. Open credit details." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@. Apri i dettagli dei crediti."
           }
         }
       }
@@ -1409,6 +1661,16 @@
         }
       }
     },
+    "%lld of %lld" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld di %lld"
+          }
+        }
+      }
+    },
     "%lld of %lld actions" : {
       "localizations" : {
         "it" : {
@@ -2270,6 +2532,46 @@
         }
       }
     },
+    "%lld%% of this cycle used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% del ciclo utilizzato"
+          }
+        }
+      }
+    },
+    "%lld%% of today’s credits used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% dei crediti di oggi utilizzato"
+          }
+        }
+      }
+    },
+    "%lld%% of your free trial credits used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% dei crediti della prova gratuita utilizzato"
+          }
+        }
+      }
+    },
+    "%lld%% used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% utilizzato"
+          }
+        }
+      }
+    },
     "•" : {
       "localizations" : {
         "en" : {
@@ -2350,6 +2652,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 cella"
+          }
+        }
+      }
+    },
+    "1 credit" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 credito"
+          }
+        }
+      }
+    },
+    "1 credit available" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 credito disponibile"
+          }
+        }
+      }
+    },
+    "1 credit in pool" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 credito nel pool"
+          }
+        }
+      }
+    },
+    "1 credit used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 credito usato"
           }
         }
       }
@@ -3629,6 +3971,16 @@
         }
       }
     },
+    "AI Operational Credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti operativi IA"
+          }
+        }
+      }
+    },
     "Alarm" : {
       "localizations" : {
         "en" : {
@@ -4441,6 +4793,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Applicati: %lld, non riusciti: %lld"
+          }
+        }
+      }
+    },
+    "Applies to this conversation. New conversations start at %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vale per questa conversazione. Le nuove conversazioni partono da %@."
           }
         }
       }
@@ -6100,6 +6462,16 @@
         }
       }
     },
+    "Available on %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibile con %@"
+          }
+        }
+      }
+    },
     "Average" : {
       "localizations" : {
         "it" : {
@@ -6136,6 +6508,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Passi medi"
+          }
+        }
+      }
+    },
+    "avg %@ a day" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "media %@ al giorno"
           }
         }
       }
@@ -6279,6 +6661,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Codice a barre"
+          }
+        }
+      }
+    },
+    "Base" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Base"
           }
         }
       }
@@ -7014,6 +7407,16 @@
         }
       }
     },
+    "Can’t read your credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile leggere i crediti"
+          }
+        }
+      }
+    },
     "Cancel" : {
       "comment" : "Roles & Rights action",
       "localizations" : {
@@ -7292,6 +7695,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Grafici"
+          }
+        }
+      }
+    },
+    "Chat keeps working" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La chat funziona normalmente"
+          }
+        }
+      }
+    },
+    "Chat keeps working. The figures will show again once they load." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La chat continua a funzionare. Le cifre riappariranno appena saranno caricate."
           }
         }
       }
@@ -9648,6 +10071,16 @@
         }
       }
     },
+    "Couldn't save this setting. Your next message will still use %@." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile salvare l’impostazione. Il prossimo messaggio userà comunque il livello %@."
+          }
+        }
+      }
+    },
     "Couldn't start extraction" : {
       "localizations" : {
         "it" : {
@@ -10130,6 +10563,148 @@
         }
       }
     },
+    "credit available" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "credito disponibile"
+          }
+        }
+      }
+    },
+    "credit left in the pool" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "credito rimasto nel pool"
+          }
+        }
+      }
+    },
+    "credit used this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "credito usato in questo ciclo"
+          }
+        }
+      }
+    },
+    "Credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti"
+          }
+        }
+      }
+    },
+    "credits available" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti disponibili"
+          }
+        }
+      }
+    },
+    "credits left in the pool" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti rimasti nel pool"
+          }
+        }
+      }
+    },
+    "Credits return %lld hours after use. Next refill in %lld h." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Credits return %1$lld hours after use. Next refill in %2$lld h."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I crediti tornano disponibili %1$lld ore dopo l’uso. Prossima ricarica tra %2$lld h."
+          }
+        }
+      }
+    },
+    "Credits return %lld hours after use. Next refill in under 1 h." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I crediti tornano disponibili %lld ore dopo l’uso. Prossima ricarica tra meno di 1 h."
+          }
+        }
+      }
+    },
+    "Credits unavailable" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti non disponibili"
+          }
+        }
+      }
+    },
+    "Credits used by this reply: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti usati da questa risposta: %@"
+          }
+        }
+      }
+    },
+    "Credits used per day over the last 7 days: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti usati al giorno negli ultimi 7 giorni: %@"
+          }
+        }
+      }
+    },
+    "credits used this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti usati in questo ciclo"
+          }
+        }
+      }
+    },
+    "credits.note.stopped" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopped"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrotta"
+          }
+        }
+      }
+    },
     "Critical" : {
       "localizations" : {
         "it" : {
@@ -10242,6 +10817,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giornaliera"
+          }
+        }
+      }
+    },
+    "Daily allowance" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilità giornaliera"
+          }
+        }
+      }
+    },
+    "Daily allowance %@: %lld users × %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Daily allowance %1$@: %2$lld users × %3$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilità giornaliera %1$@: %2$lld utenti × %3$@"
+          }
+        }
+      }
+    },
+    "Daily allowance %@: 1 user × %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Daily allowance %1$@: 1 user × %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibilità giornaliera %1$@: 1 utente × %2$@"
           }
         }
       }
@@ -11961,6 +12578,158 @@
         }
       }
     },
+    "Effort" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento"
+          }
+        }
+      }
+    },
+    "Effort levels aren’t available right now" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I livelli di ragionamento non sono disponibili al momento"
+          }
+        }
+      }
+    },
+    "Effort: %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento: %@"
+          }
+        }
+      }
+    },
+    "Effort: %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Effort: %1$@ · %2$@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento: %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "Effort: %@, %@ times" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effort: %1$@, %2$@ times"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento: %1$@, %2$@ volte"
+          }
+        }
+      }
+    },
+    "Effort: %@, not available on your plan" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ragionamento: %@, non disponibile nel tuo piano"
+          }
+        }
+      }
+    },
+    "effort.level.base" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Base"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Base"
+          }
+        }
+      }
+    },
+    "effort.level.extra" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra"
+          }
+        }
+      }
+    },
+    "effort.level.high" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "High"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alto"
+          }
+        }
+      }
+    },
+    "effort.level.max" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max"
+          }
+        }
+      }
+    },
+    "effort.level.medium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medio"
+          }
+        }
+      }
+    },
     "Electrical" : {
       "localizations" : {
         "it" : {
@@ -12070,6 +12839,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fine"
+          }
+        }
+      }
+    },
+    "Ends %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Termina il %@"
           }
         }
       }
@@ -12719,12 +13498,72 @@
         }
       }
     },
+    "extra credit this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "credito extra in questo ciclo"
+          }
+        }
+      }
+    },
+    "extra credit today" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "credito extra oggi"
+          }
+        }
+      }
+    },
+    "Extra credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti extra"
+          }
+        }
+      }
+    },
     "Extra credits are never billed during the trial" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Durante la prova i crediti extra non vengono mai addebitati"
+          }
+        }
+      }
+    },
+    "Extra credits in use" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti extra in uso"
+          }
+        }
+      }
+    },
+    "extra credits this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti extra in questo ciclo"
+          }
+        }
+      }
+    },
+    "extra credits today" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "crediti extra oggi"
           }
         }
       }
@@ -13426,6 +14265,16 @@
         }
       }
     },
+    "Free trial credits used up" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crediti della prova gratuita esauriti"
+          }
+        }
+      }
+    },
     "Frequency" : {
       "localizations" : {
         "it" : {
@@ -14002,6 +14851,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I ruoli alti possono creare e gestire i propri ruoli base."
+          }
+        }
+      }
+    },
+    "High use" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consumo alto"
+          }
+        }
+      }
+    },
+    "Higher effort lets AriA think longer before it replies, which helps with harder questions. Each reply uses more credits, so fewer fit in a day." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con un livello più alto AriA ragiona più a lungo prima di rispondere, utile per le domande più complesse. Ogni risposta consuma più crediti, quindi ne entrano meno in una giornata."
           }
         }
       }
@@ -15423,6 +16292,16 @@
         }
       }
     },
+    "Last %lld hours" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ultime %lld ore"
+          }
+        }
+      }
+    },
     "Last 7 days" : {
       "localizations" : {
         "en" : {
@@ -15697,6 +16576,16 @@
         }
       }
     },
+    "left this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "rimasti in questo ciclo"
+          }
+        }
+      }
+    },
     "Let the team know you're available, from your profile" : {
       "localizations" : {
         "it" : {
@@ -15723,6 +16612,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Licenza"
+          }
+        }
+      }
+    },
+    "Lighter model" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modello più leggero"
+          }
+        }
+      }
+    },
+    "Lighter model in use" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modello più leggero in uso"
           }
         }
       }
@@ -16022,6 +16931,16 @@
         }
       }
     },
+    "Loading effort levels" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Caricamento dei livelli di ragionamento"
+          }
+        }
+      }
+    },
     "Loading low-stock parts" : {
       "localizations" : {
         "en" : {
@@ -16294,6 +17213,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esci"
+          }
+        }
+      }
+    },
+    "Long conversations count by size" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le conversazioni lunghe contano in base alla lunghezza"
           }
         }
       }
@@ -16862,6 +17791,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Corrispondenza"
+          }
+        }
+      }
+    },
+    "Max" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Max"
           }
         }
       }
@@ -18870,6 +19810,16 @@
         }
       }
     },
+    "No plan is assigned yet; your company runs on Basic. Extra credits are not billed, and work continues as usual." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun piano assegnato: l’azienda usa Basic. I crediti extra non vengono addebitati e il lavoro prosegue normalmente."
+          }
+        }
+      }
+    },
     "No plans" : {
       "localizations" : {
         "it" : {
@@ -19398,6 +20348,16 @@
         }
       }
     },
+    "No usage in the last 7 days yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessun consumo negli ultimi 7 giorni."
+          }
+        }
+      }
+    },
     "No usage in this period." : {
       "localizations" : {
         "it" : {
@@ -19644,6 +20604,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Non disponibile su questo server"
+          }
+        }
+      }
+    },
+    "Not available on your plan" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non disponibile nel tuo piano"
+          }
+        }
+      }
+    },
+    "Not charged" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non addebitata"
           }
         }
       }
@@ -20160,6 +21140,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Niente da rivedere"
+          }
+        }
+      }
+    },
+    "Nothing used in %lld h" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nulla usato nelle ultime %lld h"
           }
         }
       }
@@ -23653,6 +24643,26 @@
         }
       }
     },
+    "refills in %lld h" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si ricarica tra %lld h"
+          }
+        }
+      }
+    },
+    "refills in under 1 h" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si ricarica tra meno di 1 h"
+          }
+        }
+      }
+    },
     "Reflection" : {
       "localizations" : {
         "it" : {
@@ -24312,6 +25322,26 @@
         }
       }
     },
+    "Replies keep using Base and chat works as usual." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le risposte continuano a usare il livello Base e la chat funziona normalmente."
+          }
+        }
+      }
+    },
+    "Replies per day are estimates for a full day’s allowance." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le risposte al giorno sono stime su una giornata intera di crediti."
+          }
+        }
+      }
+    },
     "Report" : {
       "localizations" : {
         "en" : {
@@ -24543,6 +25573,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ripristinare il prompt predefinito?"
+          }
+        }
+      }
+    },
+    "resets %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si azzera il %@"
+          }
+        }
+      }
+    },
+    "Resets %@" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si azzera il %@"
+          }
+        }
+      }
+    },
+    "resets at 00:00 UTC" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "si azzera alle 00:00 UTC"
+          }
+        }
+      }
+    },
+    "Resets at 00:00 UTC" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si azzera alle 00:00 UTC"
           }
         }
       }
@@ -27545,6 +28615,16 @@
         }
       }
     },
+    "Spending limit reached" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Limite di spesa raggiunto"
+          }
+        }
+      }
+    },
     "Stable" : {
       "localizations" : {
         "it" : {
@@ -29654,6 +30734,26 @@
         }
       }
     },
+    "The free trial has no extra credits. Answers use a lighter model until you choose a plan." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prova gratuita non include crediti extra. Le risposte usano un modello più leggero finché non scegli un piano."
+          }
+        }
+      }
+    },
+    "The free trial has no extra credits. Answers use a lighter model. Ask an owner to change plan." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prova gratuita non include crediti extra. Le risposte usano un modello più leggero. Chiedi a un proprietario di cambiare piano."
+          }
+        }
+      }
+    },
     "The hourly rate must be a number of zero or more." : {
       "localizations" : {
         "it" : {
@@ -30856,6 +31956,26 @@
         }
       }
     },
+    "this cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in questo ciclo"
+          }
+        }
+      }
+    },
+    "This cycle" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo ciclo"
+          }
+        }
+      }
+    },
     "This domain doesn't exist. Check how it's spelled." : {
       "localizations" : {
         "it" : {
@@ -31413,6 +32533,16 @@
         }
       }
     },
+    "This week" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa settimana"
+          }
+        }
+      }
+    },
     "This widget has no identifier, so it can't be refreshed." : {
       "localizations" : {
         "it" : {
@@ -31701,6 +32831,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Oggi"
+          }
+        }
+      }
+    },
+    "Today (UTC)" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oggi (UTC)"
+          }
+        }
+      }
+    },
+    "Today’s credits are used up" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I crediti di oggi sono esauriti"
+          }
+        }
+      }
+    },
+    "Today’s credits reset at 00:00 UTC." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I crediti di oggi si azzerano alle 00:00 UTC."
+          }
+        }
+      }
+    },
+    "Today’s share is used" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai usato la quota di oggi"
           }
         }
       }
@@ -35150,12 +36320,100 @@
         }
       }
     },
+    "You asked for %@, but it couldn’t be applied, so this reply ran at %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You asked for %1$@, but it couldn’t be applied, so this reply ran at %2$@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avevi chiesto il livello %1$@, ma non è stato possibile applicarlo: questa risposta è stata generata con il livello %2$@."
+          }
+        }
+      }
+    },
+    "You asked for %@, but it isn’t available on your plan, so this reply ran at %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You asked for %1$@, but it isn’t available on your plan, so this reply ran at %2$@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avevi chiesto il livello %1$@, ma non è disponibile nel tuo piano: questa risposta è stata generata con il livello %2$@."
+          }
+        }
+      }
+    },
+    "You asked for %@, but your company’s spending limit is reached, so this reply ran at %@ on a lighter model." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You asked for %1$@, but your company’s spending limit is reached, so this reply ran at %2$@ on a lighter model."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avevi chiesto il livello %1$@, ma il limite di spesa dell’azienda è stato raggiunto: questa risposta è stata generata con il livello %2$@ e un modello più leggero."
+          }
+        }
+      }
+    },
     "You can add it later from the chat." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Potrai aggiungerlo più tardi dalla chat."
+          }
+        }
+      }
+    },
+    "You can keep working. Beyond 100% today, answers use a lighter model." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi continuare a lavorare. Oltre il 100% di oggi le risposte usano un modello più leggero."
+          }
+        }
+      }
+    },
+    "You can keep working. Beyond 100% today, extra credits are used." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi continuare a lavorare. Oltre il 100% di oggi vengono usati crediti extra."
+          }
+        }
+      }
+    },
+    "You can keep working. Beyond 100%, answers use a lighter model." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi continuare a lavorare. Oltre il 100% le risposte usano un modello più leggero."
+          }
+        }
+      }
+    },
+    "You can keep working. Beyond 100%, extra credits are used." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi continuare a lavorare. Oltre il 100% vengono usati crediti extra."
           }
         }
       }
@@ -35200,6 +36458,16 @@
         }
       }
     },
+    "You haven’t used any credits in the last %lld hours." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non hai usato crediti nelle ultime %lld ore."
+          }
+        }
+      }
+    },
     "You're offline" : {
       "localizations" : {
         "en" : {
@@ -35212,6 +36480,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sei offline"
+          }
+        }
+      }
+    },
+    "You’re using extra credits" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stai usando crediti extra"
           }
         }
       }
@@ -35313,6 +36591,26 @@
         }
       }
     },
+    "Your company’s spending limit for this cycle is reached. Answers now use a lighter model." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il limite di spesa della tua azienda per questo ciclo è stato raggiunto. Le risposte ora usano un modello più leggero."
+          }
+        }
+      }
+    },
+    "Your company's spending limit is reached. An owner or admin can raise it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il limite di spesa della tua azienda è stato raggiunto. Un proprietario o un amministratore può alzarlo."
+          }
+        }
+      }
+    },
     "Your first report will appear here" : {
       "localizations" : {
         "en" : {
@@ -35385,6 +36683,16 @@
         }
       }
     },
+    "Your limit of %@ for this cycle is reached. Answers now use a lighter model and nothing more is billed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hai raggiunto il limite di %@ per questo ciclo. Le risposte ora usano un modello più leggero e non viene addebitato altro."
+          }
+        }
+      }
+    },
     "your name" : {
       "localizations" : {
         "it" : {
@@ -35422,6 +36730,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo piano"
+          }
+        }
+      }
+    },
+    "Your plan still has %@ credits this cycle and nothing extra is charged. More credits return as your last %lld hours roll off." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your plan still has %1$@ credits this cycle and nothing extra is charged. More credits return as your last %2$lld hours roll off."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo piano ha ancora %1$@ crediti in questo ciclo e non viene addebitato nulla di extra. Altri crediti tornano man mano che scorrono le ultime %2$lld ore."
           }
         }
       }
@@ -35724,6 +37048,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'anagrafica dei fornitori"
+          }
+        }
+      }
+    },
+    "Your trial" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua prova"
           }
         }
       }

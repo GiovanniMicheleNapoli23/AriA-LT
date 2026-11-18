@@ -49,6 +49,8 @@ final class AriaChatComposerViewModel {
     var showPhotos = false
     var showFiles = false
     var showContext = false
+    /// Il foglio "Effort" (la logica sta in AriaChatComposerViewModel+Effort).
+    var showEffort = false
     var photoItems: [PhotosPickerItem] = []
     /// Cresce a ogni stop o voce: l'haptic del pulsante. L'invio lo segnala la chat (AriaChatHaptics).
     private(set) var tapCount = 0
@@ -78,7 +80,7 @@ final class AriaChatComposerViewModel {
     /// Con una pausa aperta il backend non accetta nuovi turni: la barra lascia il posto all'avviso.
     var isLocked: Bool { chat.pendingInterrupt != nil }
     var isLotoPending: Bool { chat.pendingInterrupt?.kind == .loto }
-    var hasTray: Bool { !chat.contextItems.isEmpty || chat.webSearch || chat.style != .auto }
+    var hasTray: Bool { !chat.contextItems.isEmpty || chat.webSearch || chat.style != .auto || effortPillTitle != nil }
     var cameraAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
     var contextItems: [AriaContextItem] { chat.contextItems }
     var contextUsage: AriaContextUsage? { chat.contextUsage }
