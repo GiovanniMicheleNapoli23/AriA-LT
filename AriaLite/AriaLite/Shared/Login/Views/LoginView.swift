@@ -156,19 +156,25 @@ struct LoginView: View {
                 .id(Self.primaryID)
 
             if !model.awaitsLink {
-                HStack(spacing: 4) {
-                    Text(model.isCreatingAccount ? "Already have an account?" : "New to AriaPLT?")
-                        .foregroundStyle(.secondary)
-                    Button(model.isCreatingAccount ? "Sign in" : "Create an account") {
-                        model.setCreatingAccount(!model.isCreatingAccount)
-                        focus = .email
+                // Tutta la riga è il pulsante, alta almeno 44 pt: il solo link era troppo piccolo per il dito.
+                Button {
+                    model.setCreatingAccount(!model.isCreatingAccount)
+                    focus = .email
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(model.isCreatingAccount ? "Already have an account?" : "New to AriaPLT?")
+                            .foregroundStyle(.secondary)
+                        Text(model.isCreatingAccount ? "Sign in" : "Create an account")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.liteAccent)
                     }
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color.liteAccent)
-                    .accessibilityIdentifier(model.isCreatingAccount ? "login.signIn" : "login.createAccount")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-                .font(.footnote)
-                .multilineTextAlignment(.center)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(model.isCreatingAccount ? "login.signIn" : "login.createAccount")
             }
 
             if model.awaitsLink {
