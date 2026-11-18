@@ -3125,16 +3125,6 @@
         }
       }
     },
-    "Add site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi stabilimento"
-          }
-        }
-      }
-    },
     "Add row" : {
       "localizations" : {
         "en" : {
@@ -3157,6 +3147,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aggiungi controlli di sicurezza"
+          }
+        }
+      }
+    },
+    "Add site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi stabilimento"
           }
         }
       }
@@ -3742,22 +3742,22 @@
         }
       }
     },
-    "All sites" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tutti gli stabilimenti"
-          }
-        }
-      }
-    },
     "All roles" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tutti i ruoli"
+          }
+        }
+      }
+    },
+    "All sites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti gli stabilimenti"
           }
         }
       }
@@ -3916,22 +3916,22 @@
         }
       }
     },
-    "Already on this site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Già presente in questo stabilimento"
-          }
-        }
-      }
-    },
     "Already known" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Già noto"
+          }
+        }
+      }
+    },
+    "Already on this site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Già presente in questo stabilimento"
           }
         }
       }
@@ -4224,22 +4224,12 @@
         }
       }
     },
-    "App suspended." : {
+    "App access" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "App sospesa."
-          }
-        }
-      }
-    },
-    "App active." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App attiva."
+            "value" : "Accesso all'app"
           }
         }
       }
@@ -4254,12 +4244,12 @@
         }
       }
     },
-    "App access" : {
+    "App active." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accesso all'app"
+            "value" : "App attiva."
           }
         }
       }
@@ -4286,6 +4276,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "App sospesa"
+          }
+        }
+      }
+    },
+    "App suspended." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App sospesa."
           }
         }
       }
@@ -4756,7 +4756,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aria answers using the data of the selected plant."
+            "value" : "Aria answers using the data of the selected site."
           }
         },
         "it" : {
@@ -6677,16 +6677,6 @@
         }
       }
     },
-    "Can't load sites" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossibile caricare gli stabilimenti"
-          }
-        }
-      }
-    },
     "Can't load purchase orders" : {
       "localizations" : {
         "it" : {
@@ -6713,6 +6703,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Impossibile caricare le revisioni delle sessioni"
+          }
+        }
+      }
+    },
+    "Can't load sites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile caricare gli stabilimenti"
           }
         }
       }
@@ -7407,6 +7407,16 @@
         }
       }
     },
+    "Choose a role" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli un ruolo"
+          }
+        }
+      }
+    },
     "Choose a site" : {
       "localizations" : {
         "it" : {
@@ -7473,16 +7483,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scegli uno stabilimento."
-          }
-        }
-      }
-    },
-    "Choose a role" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli un ruolo"
           }
         }
       }
@@ -11612,16 +11612,6 @@
         }
       }
     },
-    "Edit site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifica stabilimento"
-          }
-        }
-      }
-    },
     "Edit policy" : {
       "localizations" : {
         "it" : {
@@ -11638,6 +11628,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifica ordine di acquisto"
+          }
+        }
+      }
+    },
+    "Edit site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifica stabilimento"
           }
         }
       }
@@ -13873,7 +13873,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How does the plant look this morning?"
+            "value" : "How does the site look this morning?"
           }
         },
         "it" : {
@@ -14625,6 +14625,16 @@
         }
       }
     },
+    "Invitation renewed and sent by email." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invito rinnovato e inviato per email."
+          }
+        }
+      }
+    },
     "Invitation renewed, but the email wasn't sent." : {
       "localizations" : {
         "it" : {
@@ -14641,16 +14651,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invito inviato per email."
-          }
-        }
-      }
-    },
-    "Invitation renewed and sent by email." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invito rinnovato e inviato per email."
           }
         }
       }
@@ -17501,16 +17501,6 @@
         }
       }
     },
-    "New site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nuovo stabilimento"
-          }
-        }
-      }
-    },
     "New purchase order" : {
       "localizations" : {
         "it" : {
@@ -17527,6 +17517,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nuovo ruolo"
+          }
+        }
+      }
+    },
+    "New site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nuovo stabilimento"
           }
         }
       }
@@ -18484,52 +18484,6 @@
         }
       }
     },
-    "No site" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No plant"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuno stabilimento"
-          }
-        }
-      }
-    },
-    "No site selected" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuno stabilimento selezionato"
-          }
-        }
-      }
-    },
-    "No sites" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuno stabilimento"
-          }
-        }
-      }
-    },
-    "No sites yet. Ask an owner or admin of your company to add one." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ancora nessuno stabilimento. Chiedi a un owner o a un admin della tua azienda di aggiungerne uno."
-          }
-        }
-      }
-    },
     "No policy" : {
       "localizations" : {
         "it" : {
@@ -18780,6 +18734,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nessun turno assegnato in questo periodo."
+          }
+        }
+      }
+    },
+    "No site" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No site"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno stabilimento"
+          }
+        }
+      }
+    },
+    "No site selected" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno stabilimento selezionato"
+          }
+        }
+      }
+    },
+    "No sites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessuno stabilimento"
+          }
+        }
+      }
+    },
+    "No sites yet. Ask an owner or admin of your company to add one." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancora nessuno stabilimento. Chiedi a un owner o a un admin della tua azienda di aggiungerne uno."
           }
         }
       }
@@ -20311,22 +20311,6 @@
         }
       }
     },
-    "Open sites" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open plants"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apri stabilimenti"
-          }
-        }
-      }
-    },
     "Open purchases" : {
       "localizations" : {
         "en" : {
@@ -20382,6 +20366,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apri il run"
+          }
+        }
+      }
+    },
+    "Open sites" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open sites"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri stabilimenti"
           }
         }
       }
@@ -21656,7 +21656,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pick a plant to ask Aria to make something."
+            "value" : "Pick a site to ask Aria to make something."
           }
         },
         "it" : {
@@ -21797,108 +21797,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Piani"
-          }
-        }
-      }
-    },
-    "Site" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plant"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stabilimento"
-          }
-        }
-      }
-    },
-    "Site manager" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Responsabile di stabilimento"
-          }
-        }
-      }
-    },
-    "Site manager, planner, maintenance manager" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Responsabile di stabilimento, pianificatore, responsabile manutenzione"
-          }
-        }
-      }
-    },
-    "Site name" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nome dello stabilimento"
-          }
-        }
-      }
-    },
-    "Site operator, technician" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Operatore di impianto, tecnico"
-          }
-        }
-      }
-    },
-    "Site overview" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plant overview"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Panoramica impianto"
-          }
-        }
-      }
-    },
-    "Site records" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Registri dell'impianto"
-          }
-        }
-      }
-    },
-    "Sites" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stabilimenti"
-          }
-        }
-      }
-    },
-    "Sites of this company appear here." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qui compaiono gli stabilimenti dell'azienda."
           }
         }
       }
@@ -22728,7 +22626,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quiet weekend on the plant?"
+            "value" : "Quiet weekend on site?"
           }
         },
         "it" : {
@@ -22805,6 +22703,16 @@
         }
       }
     },
+    "Reactivate in the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riattiva in azienda"
+          }
+        }
+      }
+    },
     "Reactivate the app" : {
       "localizations" : {
         "it" : {
@@ -22821,16 +22729,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Riattivala in azienda per cambiarlo."
-          }
-        }
-      }
-    },
-    "Reactivate in the company" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Riattiva in azienda"
           }
         }
       }
@@ -23567,22 +23465,22 @@
         }
       }
     },
-    "Remove app access?" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Togliere l'accesso all'app?"
-          }
-        }
-      }
-    },
     "Remove access" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Togli accesso"
+          }
+        }
+      }
+    },
+    "Remove app access?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Togliere l'accesso all'app?"
           }
         }
       }
@@ -23607,22 +23505,22 @@
         }
       }
     },
-    "Remove from the company?" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rimuovere dall'azienda?"
-          }
-        }
-      }
-    },
     "Remove from the company" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rimuovi dall'azienda"
+          }
+        }
+      }
+    },
+    "Remove from the company?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rimuovere dall'azienda?"
           }
         }
       }
@@ -25200,7 +25098,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Saving your answer to the plant's knowledge."
+            "value" : "Saving your answer to the site's knowledge."
           }
         },
         "it" : {
@@ -25622,7 +25520,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a plant before answering — this is saved to the plant's knowledge."
+            "value" : "Select a site before answering — this is saved to the site's knowledge."
           }
         },
         "it" : {
@@ -25638,7 +25536,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a plant before chatting."
+            "value" : "Select a site before chatting."
           }
         },
         "it" : {
@@ -25664,7 +25562,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Select a plant before using the chat."
+            "value" : "Select a site before using the chat."
           }
         },
         "it" : {
@@ -26617,6 +26515,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dal %@"
+          }
+        }
+      }
+    },
+    "Site" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Site"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabilimento"
+          }
+        }
+      }
+    },
+    "Site manager" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile di stabilimento"
+          }
+        }
+      }
+    },
+    "Site manager, planner, maintenance manager" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responsabile di stabilimento, pianificatore, responsabile manutenzione"
+          }
+        }
+      }
+    },
+    "Site name" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome dello stabilimento"
+          }
+        }
+      }
+    },
+    "Site operator, technician" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operatore di impianto, tecnico"
+          }
+        }
+      }
+    },
+    "Site overview" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Site overview"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Panoramica impianto"
+          }
+        }
+      }
+    },
+    "Site records" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registri dell'impianto"
+          }
+        }
+      }
+    },
+    "Sites" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabilimenti"
+          }
+        }
+      }
+    },
+    "Sites of this company appear here." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui compaiono gli stabilimenti dell'azienda."
           }
         }
       }
@@ -27889,42 +27889,12 @@
         }
       }
     },
-    "Suspend the app only" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sospendi solo l'app"
-          }
-        }
-      }
-    },
-    "Suspend in the company" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sospendi in azienda"
-          }
-        }
-      }
-    },
     "Suspend app" : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sospendi l'app"
-          }
-        }
-      }
-    },
-    "Suspend in the company?" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sospendere in azienda?"
           }
         }
       }
@@ -27939,6 +27909,36 @@
         }
       }
     },
+    "Suspend in the company" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi in azienda"
+          }
+        }
+      }
+    },
+    "Suspend in the company?" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendere in azienda?"
+          }
+        }
+      }
+    },
+    "Suspend the app only" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospendi solo l'app"
+          }
+        }
+      }
+    },
     "Suspended" : {
       "localizations" : {
         "it" : {
@@ -27949,22 +27949,22 @@
         }
       }
     },
-    "Suspended in the company: their app access, if any, comes back as it was when you reactivate them." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sospeso in azienda: l'accesso all'app, se c'era, torna com'era quando lo riattivi."
-          }
-        }
-      }
-    },
     "Suspended in the company: app access not given." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sospesa in azienda: accesso all'app non dato."
+          }
+        }
+      }
+    },
+    "Suspended in the company: their app access, if any, comes back as it was when you reactivate them." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sospeso in azienda: l'accesso all'app, se c'era, torna com'era quando lo riattivi."
           }
         }
       }
@@ -28658,22 +28658,22 @@
         }
       }
     },
-    "The app seats are full." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le licenze dell'app sono finite."
-          }
-        }
-      }
-    },
     "The app seats are full: free a seat and try again." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le licenze dell'app sono finite: libera una licenza e riprova."
+          }
+        }
+      }
+    },
+    "The app seats are full." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le licenze dell'app sono finite."
           }
         }
       }
@@ -28979,22 +28979,22 @@
         }
       }
     },
-    "The invitation is no longer open." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'invito non è più aperto."
-          }
-        }
-      }
-    },
     "The invitation has expired." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'invito è scaduto."
+          }
+        }
+      }
+    },
+    "The invitation is no longer open." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'invito non è più aperto."
           }
         }
       }
@@ -29175,16 +29175,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I frammenti di testo in cui Aria cerca quando risponde."
-          }
-        }
-      }
-    },
-    "The site hasn't raised any alarm yet." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'impianto non ha ancora generato allarmi."
           }
         }
       }
@@ -29465,6 +29455,16 @@
         }
       }
     },
+    "The site hasn't raised any alarm yet." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'impianto non ha ancora generato allarmi."
+          }
+        }
+      }
+    },
     "The start can't be in the future." : {
       "localizations" : {
         "it" : {
@@ -29717,12 +29717,12 @@
         }
       }
     },
-    "Their status has changed." : {
+    "Their devices are signed out only if no other company lets them in." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lo stato di questa persona è cambiato."
+            "value" : "I suoi dispositivi escono solo se nessun'altra azienda la fa entrare."
           }
         }
       }
@@ -29737,22 +29737,22 @@
         }
       }
     },
-    "Their devices are signed out only if no other company lets them in." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I suoi dispositivi escono solo se nessun'altra azienda la fa entrare."
-          }
-        }
-      }
-    },
     "Their seat is freed." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "La sua licenza si libera."
+          }
+        }
+      }
+    },
+    "Their status has changed." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo stato di questa persona è cambiato."
           }
         }
       }
@@ -29823,6 +29823,26 @@
         }
       }
     },
+    "They already enter the app as an owner or admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entra già nell'app come titolare o admin."
+          }
+        }
+      }
+    },
+    "They already have app access." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha già l'accesso all'app."
+          }
+        }
+      }
+    },
     "They already use the app for another company: the app can be used for one company at a time." : {
       "localizations" : {
         "it" : {
@@ -29853,72 +29873,12 @@
         }
       }
     },
-    "They lose their access to the app." : {
+    "They get app access and an email with a sign-in link. Owners and admins don't need a seat." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Perde l'accesso all'app."
-          }
-        }
-      }
-    },
-    "They were already in the company as an owner or admin." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Era già in azienda come titolare o admin."
-          }
-        }
-      }
-    },
-    "They won't be able to use the app; the web stays available." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Non potrà usare l'app; la web resta disponibile."
-          }
-        }
-      }
-    },
-    "They already enter the app as an owner or admin." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entra già nell'app come titolare o admin."
-          }
-        }
-      }
-    },
-    "They will be signed out everywhere and will need a new sign-in link." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Uscirà da tutti i dispositivi e le servirà un nuovo link di accesso."
-          }
-        }
-      }
-    },
-    "They use the app for another company too: their devices can't be signed out from here." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa l'app anche per un'altra azienda: i suoi dispositivi non si possono disconnettere da qui."
-          }
-        }
-      }
-    },
-    "They already have app access." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ha già l'accesso all'app."
+            "value" : "Riceve l'accesso all'app e un'email con il link di accesso. Titolari e admin non usano licenze."
           }
         }
       }
@@ -29933,22 +29893,32 @@
         }
       }
     },
-    "They won't be able to use this company, on the web or in the app." : {
+    "They lose their access to the app." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Non potrà più usare questa azienda, né sulla web né nell'app."
+            "value" : "Perde l'accesso all'app."
           }
         }
       }
     },
-    "They get app access and an email with a sign-in link. Owners and admins don't need a seat." : {
+    "They use the app for another company too: their devices can't be signed out from here." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Riceve l'accesso all'app e un'email con il link di accesso. Titolari e admin non usano licenze."
+            "value" : "Usa l'app anche per un'altra azienda: i suoi dispositivi non si possono disconnettere da qui."
+          }
+        }
+      }
+    },
+    "They were already in the company as an owner or admin." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Era già in azienda come titolare o admin."
           }
         }
       }
@@ -29959,6 +29929,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Era già in azienda: ruolo non cambiato."
+          }
+        }
+      }
+    },
+    "They will be signed out everywhere and will need a new sign-in link." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uscirà da tutti i dispositivi e le servirà un nuovo link di accesso."
+          }
+        }
+      }
+    },
+    "They won't be able to use the app; the web stays available." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non potrà usare l'app; la web resta disponibile."
+          }
+        }
+      }
+    },
+    "They won't be able to use this company, on the web or in the app." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non potrà più usare questa azienda, né sulla web né nell'app."
           }
         }
       }
@@ -30361,26 +30361,6 @@
         }
       }
     },
-    "This site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questo stabilimento"
-          }
-        }
-      }
-    },
-    "This site no longer exists." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questo stabilimento non esiste più."
-          }
-        }
-      }
-    },
     "This purchase order isn't on the server, so it can't be shown or changed." : {
       "localizations" : {
         "it" : {
@@ -30510,6 +30490,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Questo link di accesso è già stato usato. Ricomincia."
+          }
+        }
+      }
+    },
+    "This site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo stabilimento"
+          }
+        }
+      }
+    },
+    "This site no longer exists." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo stabilimento non esiste più."
           }
         }
       }
@@ -33375,7 +33375,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What's happening on the plant?"
+            "value" : "What's happening on site?"
           }
         },
         "it" : {
@@ -34418,16 +34418,6 @@
         }
       }
     },
-    "Your first site" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il tuo primo stabilimento"
-          }
-        }
-      }
-    },
     "Your first report will appear here" : {
       "localizations" : {
         "en" : {
@@ -34440,6 +34430,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo primo rapporto comparirà qui"
+          }
+        }
+      }
+    },
+    "Your first site" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo primo stabilimento"
           }
         }
       }
@@ -34566,22 +34566,22 @@
         }
       }
     },
-    "Your role can't change sites. Ask an owner or admin of your company." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il tuo ruolo non può modificare gli stabilimenti. Chiedi a un proprietario o a un amministratore dell'azienda."
-          }
-        }
-      }
-    },
     "Your role can't change purchase orders. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo ruolo non può modificare gli ordini di acquisto. Chiedi a un owner o admin della tua azienda."
+          }
+        }
+      }
+    },
+    "Your role can't change sites. Ask an owner or admin of your company." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non può modificare gli stabilimenti. Chiedi a un proprietario o a un amministratore dell'azienda."
           }
         }
       }
@@ -34686,22 +34686,22 @@
         }
       }
     },
-    "Your role doesn't have access to sites. Ask an owner or admin of your company." : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il tuo ruolo non ha accesso agli stabilimenti. Chiedi a un proprietario o a un amministratore dell'azienda."
-          }
-        }
-      }
-    },
     "Your role doesn't have access to purchase orders. Ask an owner or admin of your company." : {
       "localizations" : {
         "it" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il tuo ruolo non ha accesso agli ordini di acquisto. Chiedi a un owner o admin della tua azienda."
+          }
+        }
+      }
+    },
+    "Your role doesn't have access to sites. Ask an owner or admin of your company." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo ruolo non ha accesso agli stabilimenti. Chiedi a un proprietario o a un amministratore dell'azienda."
           }
         }
       }
