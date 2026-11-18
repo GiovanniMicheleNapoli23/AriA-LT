@@ -243,8 +243,22 @@ class AppViewModel {
     // MARK: - Iscrizione
 
     /// Profilo, Azienda, Stabilimento e Piano fatti (o già fatti sulla web): la shell, col nome scritto al passo Profilo.
+    /// L'iscrizione in corso, con l'account di chi la sta facendo. Vive qui e non nella vista: tutto si scrive alla
+    /// fine, e la bozza non deve perdersi se la schermata viene ricreata. Un altro account (sessione scaduta e nuovo
+    /// accesso) non la eredita mai.
+    @ObservationIgnored private var signUpDraft: (account: String, model: AriaSignUpViewModel)?
+
+    func signUpModel() -> AriaSignUpViewModel {
+        let account = backend.mobileAccount?.id ?? ""
+        if let signUpDraft, signUpDraft.account == account { return signUpDraft.model }
+        let model = AriaSignUpViewModel(app: self)
+        signUpDraft = (account, model)
+        return model
+    }
+
     func signUpFinished() {
         guard !backend.isSigningUp, let account = backend.mobileAccount else { return }
+        signUpDraft = nil
         loggedInUser = User(account)
     }
 
@@ -279,6 +293,7 @@ class AppViewModel {
 
     func logout(keepOfflineWork: Bool = false) {
         loggedInUser = nil
+        signUpDraft = nil
         lock = .none
         unlockError = nil
         // Un altro operatore sullo stesso device non eredita la sessione Aria.

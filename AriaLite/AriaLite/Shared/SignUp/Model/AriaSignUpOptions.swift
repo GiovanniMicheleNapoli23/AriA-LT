@@ -10,7 +10,7 @@
 
 import Foundation
 
-/// Ruolo al passo Profilo (obbligatorio, come sulla web).
+/// Ruolo al passo Profilo (obbligatorio, come sulla web). Con "Altro" si manda il testo scritto, non `other`.
 nonisolated enum AriaJobRole: String, CaseIterable, Identifiable, Sendable {
     case plantManager = "plant_manager"
     case maintenanceEngineer = "maintenance_engineer"
@@ -20,18 +20,39 @@ nonisolated enum AriaJobRole: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
+    /// Le etichette della web; in inglese "site", mai "plant".
     var title: LocalizedStringResource {
         switch self {
-        case .plantManager: "Site manager"
-        case .maintenanceEngineer: "Maintenance engineer"
+        case .plantManager: "Site Manager"
+        case .maintenanceEngineer: "Maintenance Engineer"
         case .technician: "Technician"
-        case .operationsLead: "Operations lead"
+        case .operationsLead: "Operations Lead"
         case .other: "Other"
         }
     }
+
+    /// Il ruolo salvato com'è: un valore della lista, oppure il testo scritto sotto "Altro" (la web apre "Altro" già
+    /// compilato). Vuoto: nessuna scelta.
+    static func choice(saved: String?) -> (role: AriaJobRole?, otherText: String) {
+        let saved = saved?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !saved.isEmpty else { return (nil, "") }
+        if let role = AriaJobRole(rawValue: saved), role != .other { return (role, "") }
+        return (.other, saved == AriaJobRole.other.rawValue ? "" : saved)
+    }
 }
 
-/// Settore al passo Azienda (facoltativo: senza scelta non si manda).
+/// Il valore di una scelta con "Altro": quello della lista, o sotto "Altro" il testo scritto (al massimo 80 caratteri,
+/// come la web). Vuoto finché non c'è.
+nonisolated enum AriaOtherChoice {
+    static let maxLength = 80
+
+    static func value(_ raw: String?, isOther: Bool, otherText: String) -> String {
+        guard let raw else { return "" }
+        return isOther ? String(otherText.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maxLength)) : raw
+    }
+}
+
+/// Settore al passo Azienda: obbligatorio come sulla web; con "Altro" si manda il testo scritto.
 nonisolated enum AriaCompanyIndustry: String, CaseIterable, Identifiable, Sendable {
     case manufacturing
     case energy
@@ -47,8 +68,8 @@ nonisolated enum AriaCompanyIndustry: String, CaseIterable, Identifiable, Sendab
         case .manufacturing: "Manufacturing"
         case .energy: "Energy"
         case .automotive: "Automotive"
-        case .food: "Food & beverage"
-        case .pharma: "Pharma"
+        case .food: "Food & Beverage"
+        case .pharma: "Pharmaceutical"
         case .other: "Other"
         }
     }
@@ -64,15 +85,8 @@ nonisolated enum AriaCompanySize: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var title: LocalizedStringResource {
-        switch self {
-        case .tiny: "1–10 people"
-        case .small: "11–50 people"
-        case .medium: "51–200 people"
-        case .large: "201–1000 people"
-        case .huge: "More than 1000 people"
-        }
-    }
+    /// Come la web: solo i numeri.
+    var title: String { rawValue }
 }
 
 /// La lingua del telefono per `preferredLocale`: due lettere, `en` se non si sa. L'email di benvenuto è in italiano

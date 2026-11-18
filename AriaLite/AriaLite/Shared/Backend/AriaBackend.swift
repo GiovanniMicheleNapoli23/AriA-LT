@@ -431,18 +431,24 @@ final class AriaBackend {
         }
     }
 
-    /// Chi deve ancora fare Profilo, Azienda o Piano (contratto "Onboarding in the app", §3). Lo stato si legge solo
-    /// quando può servire: nessuna azienda attiva (chi si è appena iscritto ne ha zero), o un'azienda propria con
-    /// l'onboarding a metà. Chi è entrato in un'azienda altrui non lo legge: su un backend che non conosce ancora
-    /// le sessioni dell'app risulterebbe a metà anche lui.
+    /// Chi deve ancora fare Profilo, Azienda o Piano (contratto "Onboarding in the app", §3; handover 18/11/26 §1.2).
+    /// Lo stato si legge solo quando può servire: nessuna azienda attiva (chi si è appena iscritto ne ha zero),
+    /// un'azienda con l'onboarding a metà di cui si è owner o admin, o un account senza nome (un membro che non ha
+    /// ancora il profilo). Un membro col profilo fatto entra comunque, come sulla web: l'azienda non è sua.
     /// Nessuna azienda e onboarding finito: si esce come prima (il chiamante). 404: l'account non c'è più.
     /// Senza risposta, con aziende si va avanti; senza aziende si resta collegati e la schermata dell'iscrizione
     /// riprova da sé: una rete che cade non deve buttare fuori chi si è appena iscritto.
     private func needsSignUpSteps(_ listed: [AriaCompany]) async throws -> Bool {
-        let unfinished = listed.contains { $0.myRole == "owner" && $0.onboardingCompleted == false }
-        guard listed.isEmpty || unfinished else { return false }
+        let runsUnfinished = listed.contains {
+            ($0.myRole == "owner" || $0.myRole == "admin") && $0.onboardingCompleted == false
+        }
+        let unnamed = mobileAccount?.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? false
+        guard listed.isEmpty || runsUnfinished || unnamed else { return false }
         do {
-            return try await !AriaSignUpAPI(api: api).status().onboardingComplete
+            let status = try await AriaSignUpAPI(api: api).status()
+            // Solo con aziende in elenco: senza, l'azienda appena creata può non esserci ancora (è la propria).
+            let memberOnly = !listed.isEmpty && status.companyCreated && !runsUnfinished
+            return !status.onboardingComplete && !(memberOnly && status.profileComplete)
         } catch AriaError.http(let status, _) where status == 404 {
             await api.auth.discardSession()
             throw AriaError.signedOut

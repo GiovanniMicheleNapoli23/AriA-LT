@@ -18,6 +18,26 @@ struct AriaSignUpPlantForm: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            if model.plantOnServer {
+                // Già sul server (o non creabile da qui per i diritti): si vede, non si cambia.
+                if let name = model.savedPlantName {
+                    AriaSignUpSavedCard(icon: "building", title: name, detail: nil, note: "Your first site is already created.")
+                } else {
+                    AriaSignUpSavedCard(icon: "building", title: String(localized: "Your first site"), detail: nil,
+                                        note: "You can add it later from the chat.")
+                }
+            } else {
+                fields
+            }
+
+            LoginPrimaryButton(title: "Continue", isEnabled: model.canCreatePlant, isBusy: model.isSaving) {
+                focus = nil
+                Task { await model.continueFromStep() }
+            }
+        }
+    }
+
+    private var fields: some View {
             VStack(alignment: .leading, spacing: 8) {
                 VStack(spacing: 0) {
                     LoginCardRow(icon: "building") {
@@ -50,11 +70,5 @@ struct AriaSignUpPlantForm: View {
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 4)
             }
-
-            LoginPrimaryButton(title: "Create site", isEnabled: model.canCreatePlant, isBusy: model.isSaving) {
-                focus = nil
-                Task { await model.createPlant() }
-            }
-        }
     }
 }

@@ -4,7 +4,8 @@
 //
 //  Created by Giovanni Michele on 11/11/26.
 //
-//  Il passo Profilo: nome, ruolo e telefono in una card come quella del login, poi "Continue".
+//  Il passo Profilo: nome, ruolo (con "Altro" il proprio testo) e telefono facoltativo in una card come quella del
+//  login, poi "Continua". Campi e testi della sezione "Tu" della web.
 //
 
 import SwiftUI
@@ -14,45 +15,57 @@ struct AriaSignUpProfileForm: View {
     @FocusState private var focus: Field?
     @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 20
 
-    private enum Field { case name, phone }
+    private enum Field { case name, otherRole, phone }
 
     var body: some View {
         VStack(spacing: 16) {
             VStack(spacing: 0) {
                 LoginCardRow(icon: "person") {
-                    TextField("Full name", text: $model.name)
+                    TextField("Name", text: $model.name, prompt: Text("John Doe"))
                         .textContentType(.name)
                         .submitLabel(.next)
                         .focused($focus, equals: .name)
-                        .onSubmit { focus = .phone }
+                        .onSubmit { focus = model.jobRole == .other ? .otherRole : .phone }
                 }
-                Divider().padding(.leading, 28 + iconWidth)
+                divider
                 LoginCardRow(icon: "briefcase") {
-                    Picker("Job role", selection: $model.jobRole) {
-                        Text("Choose your role").tag(AriaJobRole?.none)
-                        ForEach(AriaJobRole.allCases) { role in
-                            Text(role.title).tag(Optional(role))
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .tint(model.jobRole == nil ? Color.secondary : Color.liteText)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    AriaSignUpChoicePicker(title: "Role", placeholder: "Select role…", selection: $model.jobRole,
+                                           options: AriaJobRole.allCases) { $0.title }
                 }
-                Divider().padding(.leading, 28 + iconWidth)
+                if model.jobRole == .other {
+                    divider
+                    LoginCardRow(icon: "pencil") {
+                        TextField("Your role", text: $model.otherJobRole)
+                            .textContentType(.jobTitle)
+                            .submitLabel(.next)
+                            .focused($focus, equals: .otherRole)
+                            .onSubmit { focus = .phone }
+                    }
+                    .transition(.opacity)
+                }
+                divider
                 LoginCardRow(icon: "phone") {
-                    TextField("Phone (optional)", text: $model.phone)
+                    TextField("Phone", text: $model.phone, prompt: Text("Phone (optional)"))
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
                         .focused($focus, equals: .phone)
                 }
             }
             .ariaSignUpCard()
+            .animation(.snappy(duration: 0.25), value: model.jobRole)
+            .onChange(of: model.jobRole) { _, role in
+                // Scelto "Altro", il cursore va subito nel suo campo (come la web).
+                if role == .other { focus = .otherRole }
+            }
 
             LoginPrimaryButton(title: "Continue", isEnabled: model.canSaveProfile, isBusy: model.isSaving) {
                 focus = nil
-                Task { await model.saveProfile() }
+                Task { await model.continueFromStep() }
             }
         }
+    }
+
+    private var divider: some View {
+        Divider().padding(.leading, 28 + iconWidth)
     }
 }

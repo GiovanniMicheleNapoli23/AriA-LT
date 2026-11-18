@@ -4,8 +4,10 @@
 //
 //  Created by Giovanni Michele on 11/11/26.
 //
-//  L'iscrizione dopo il link: quattro passi (Profilo, Azienda, Stabilimento, Piano) sullo sfondo del login, con i
-//  segmenti in alto e "Sign out". Tutta la logica è in AriaSignUpViewModel; qui restano layout e animazioni.
+//  L'iscrizione dopo il link: quattro passi (Profilo, Azienda, Stabilimento, Piano) sullo sfondo del login, con
+//  "Indietro", i segmenti in alto e "Sign out". Si scrive tutto solo con l'ultimo pulsante; il membro di un'azienda
+//  altrui vede solo il Profilo, senza segmenti. Sotto il pulsante, "Manca ancora: …" come sulla web. Tutta la logica
+//  è in AriaSignUpViewModel (tenuto da AppViewModel, perché la bozza non si perda); qui restano layout e animazioni.
 //
 
 import SwiftUI
@@ -15,7 +17,7 @@ struct AriaSignUpView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(app: AppViewModel) {
-        _model = State(initialValue: AriaSignUpViewModel(app: app))
+        _model = State(initialValue: app.signUpModel())
     }
 
     var body: some View {
@@ -53,8 +55,24 @@ struct AriaSignUpView: View {
     // MARK: Barra in alto
 
     private var topBar: some View {
-        HStack(spacing: 16) {
-            if model.step != nil {
+        HStack(spacing: 12) {
+            if model.canGoBack {
+                // Sempre si può tornare indietro: i campi restano, nulla è ancora scritto.
+                Button {
+                    model.goBack()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.headline)
+                        .foregroundStyle(Color.liteText)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Back"))
+                .accessibilityIdentifier("signUp.back")
+                .transition(.opacity)
+            }
+            if model.step != nil, !model.memberOnly {
                 AriaOnboardingProgressBar(count: model.stepCount, index: model.stepIndex, label: model.progressLabel)
                     .transition(.opacity)
             } else {
@@ -78,6 +96,11 @@ struct AriaSignUpView: View {
             VStack(alignment: .leading, spacing: 24) {
                 header(step)
                 form(step)
+                stillNeeded
+                if step == .profile, model.memberOnly {
+                    // Il membro chiude qui: la nota legale va sotto il suo "Continua", come sulla web.
+                    AriaSignUpTrustNote()
+                }
                 messages
             }
             .id(step)
@@ -99,7 +122,7 @@ struct AriaSignUpView: View {
     private func header(_ step: AriaSignUpStep) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             AriaOnboardingTitle(text: step.title, size: 40)
-            Text(step.subtitle)
+            Text(step.subtitle(memberOnly: model.memberOnly))
                 .font(.body)
                 .lineSpacing(3)
                 .foregroundStyle(.secondary)
@@ -119,6 +142,19 @@ struct AriaSignUpView: View {
         case .company: AriaSignUpCompanyForm(model: model)
         case .plant: AriaSignUpPlantForm(model: model)
         case .plan: AriaSignUpPlanCard(model: model)
+        }
+    }
+
+    /// "Manca ancora: …" sotto il pulsante, come la web.
+    @ViewBuilder
+    private var stillNeeded: some View {
+        if let text = model.stillNeeded {
+            Text(verbatim: text)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
+                .padding(.top, -8)
         }
     }
 

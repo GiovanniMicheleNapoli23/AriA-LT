@@ -4,62 +4,71 @@
 //
 //  Created by Giovanni Michele on 11/11/26.
 //
-//  Il passo Piano: l'unica scelta, la demo gratuita, già selezionata, e il pulsante che chiude l'iscrizione.
+//  Il passo Piano: la demo gratuita (durata, cifre e righe dal listino pubblico), il pulsante che chiude
+//  l'iscrizione con la nota legale, e gli altri piani. Il testo lo decide AriaTrialOffer; qui resta il layout.
 //
 
 import SwiftUI
 
 struct AriaSignUpPlanCard: View {
     @Bindable var model: AriaSignUpViewModel
-    @ScaledMetric(relativeTo: .body) private var iconSide: CGFloat = 44
 
     var body: some View {
-        VStack(spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                plan
-                Text("Paid plans are coming soon.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
+        let offer = AriaTrialOffer(state: model.priceList, locale: .current)
+        VStack(alignment: .leading, spacing: 24) {
+            AriaSignUpTrialCard(offer: offer)
+
+            VStack(spacing: 14) {
+                LoginPrimaryButton(title: offer.ctaTitle(isSaving: model.isSaving), isEnabled: model.canFinish,
+                                   isBusy: model.isSaving) {
+                    Task { await model.finish() }
+                }
+                // Con il giro in corso il pulsante mostra solo lo spinner: il testo resta per VoiceOver.
+                .accessibilityLabel(Text(offer.ctaTitle(isSaving: model.isSaving)))
+
+                AriaSignUpTrustNote(prefix: offer.legalPrefix, link: offer.legalLink, url: offer.termsURL)
             }
 
-            LoginPrimaryButton(title: "Start the free demo", isEnabled: model.canFinish, isBusy: model.isSaving) {
-                Task { await model.finish() }
-            }
+            AriaSignUpOtherPlans(title: offer.otherPlansTitle, rows: offer.otherPlans)
         }
+        .task { await model.loadPriceList() }
+    }
+}
+
+/// "By continuing, you acknowledge Sinaura · AriaPLT's Privacy Policy", con il nome del documento che è un link.
+struct AriaSignUpTrustNote: View {
+    let prefix: String
+    let link: String
+    let url: URL
+
+    init(prefix: String, link: String, url: URL) {
+        self.prefix = prefix
+        self.link = link
+        self.url = url
     }
 
-    private var plan: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "sparkles")
-                .font(.title3)
-                .foregroundStyle(Color.liteAccent)
-                .frame(width: iconSide, height: iconSide)
-                .background(Color.liteAccent.opacity(0.12), in: Circle())
+    /// La stessa nota fuori dalla card del piano (sotto "Continua" del membro), come la web.
+    init() {
+        let offer = AriaTrialOffer(state: .loading)
+        self.init(prefix: offer.legalPrefix, link: offer.legalLink, url: offer.termsURL)
+    }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Free demo")
-                    .font(.headline)
-                    .foregroundStyle(Color.liteText)
-                Text("Try AriaPLT with your team, free. No payment details needed.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+    var body: some View {
+        Text(note)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .tint(Color.liteAccent)
+            .frame(maxWidth: .infinity)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title3)
-                .foregroundStyle(Color.liteAccent)
-        }
-        .padding(16)
-        .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.liteAccent, lineWidth: 1.5)
-        }
-        .shadow(color: Color.liteAccent.opacity(0.06), radius: 20, x: 0, y: 8)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isSelected)
+    private var note: AttributedString {
+        var text = AttributedString("\(prefix) ")
+        var name = AttributedString(link)
+        name.link = url
+        name.underlineStyle = Text.LineStyle.single
+        text.append(name)
+        return text
     }
 }

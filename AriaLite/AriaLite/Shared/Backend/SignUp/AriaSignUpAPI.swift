@@ -75,14 +75,14 @@ nonisolated enum AriaSignUpError: LocalizedError, Sendable, Equatable {
     case noCompany
     /// POST /api/auth/onboarding/finish 422 `plan_not_allowed`: dall'app parte solo `free_demo`.
     case planNotAllowed
-    /// POST /api/auth/onboarding/finish 502 `backend_error`: il backend ha rifiutato o non risponde.
+    /// POST /api/auth/onboarding/finish 502 `backend_error` (o un altro rifiuto): il testo della web.
     case finishFailed
 
     var errorDescription: String? {
         switch self {
         case .noCompany: String(localized: "Create your company first.")
         case .planNotAllowed: String(localized: "This plan isn't available yet. Choose the free demo.")
-        case .finishFailed: String(localized: "Could not finish onboarding. Try again in a moment.")
+        case .finishFailed: String(localized: "Nothing was saved. Check your connection and try again.")
         }
     }
 }
