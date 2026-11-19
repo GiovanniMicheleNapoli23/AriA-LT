@@ -18,7 +18,10 @@ struct AdminMobileUserFlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrange(width: bounds.width, subviews: subviews)
+        // Si dispone con la stessa larghezza della misura: `bounds` è la larghezza del contenuto, arrotondata ai
+        // pixel, e con quella l'ultima etichetta di una riga piena poteva andare a capo fuori dall'altezza
+        // misurata, sopra la vista sotto.
+        let result = arrange(width: proposal.width ?? bounds.width, subviews: subviews)
         for (index, frame) in result.frames.enumerated() {
             // Con la misura presa: un'etichetta lunga resta nella larghezza (e tronca) invece di uscire.
             subviews[index].place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
@@ -32,7 +35,8 @@ struct AdminMobileUserFlowLayout: Layout {
         for subview in subviews {
             var size = subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
             size.width = min(size.width, width)
-            if x > 0, x + size.width > width {
+            // Mezzo punto di tolleranza: un arrotondamento non manda a capo un'etichetta che ci sta.
+            if x > 0, x + size.width > width + 0.5 {
                 x = 0
                 y += rowHeight + spacing
                 rowHeight = 0
