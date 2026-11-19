@@ -128,7 +128,9 @@ struct AriaSidebar: View {
                 SidebarRowLabel(title: Text("Connect to Aria server"), icon: "bolt.horizontal.circle")
             }
             .buttonStyle(.plain)
-        } else if store.isLoading && store.visible.isEmpty {
+        } else if store.visible.isEmpty && store.isLoading {
+            // `visible` prima: con le recenti già in lista `isLoading` non si legge, e la sidebar non si ridisegna
+            // all'inizio e alla fine di ogni lettura.
             ProgressView()
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)

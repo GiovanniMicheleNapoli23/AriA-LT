@@ -212,10 +212,10 @@ struct AriaShellView: View {
         }
         // Aprendo la sidebar (le sezioni che il ruolo concede) o una sezione (i suoi pulsanti) non si aspetta il giro.
         .onChange(of: sidebar.isOpen) { _, open in
-            if open { Task { await viewModel.backend.refreshMembership() } }
+            if open { Task { await viewModel.backend.refreshMembershipIfStale() } }
         }
         .onChange(of: destination) { _, _ in
-            Task { await viewModel.backend.refreshMembership() }
+            Task { await viewModel.backend.refreshMembershipIfStale() }
         }
         .onChange(of: scenePhase) { _, phase in
             // A ogni ritorno si rileggono membership e diritti: niente nuovo accesso per un ruolo cambiato.

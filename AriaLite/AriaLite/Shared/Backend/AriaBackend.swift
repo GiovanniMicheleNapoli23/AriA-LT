@@ -59,6 +59,9 @@ final class AriaBackend {
     /// `access` di GET /v1/me per l'azienda attiva: ruolo, sezioni e azioni. `nil`: non ancora letto, o un backend
     /// precedente ai ruoli (vale tutto come prima).
     private(set) var access: AriaAccess?
+    /// L'ultima lettura riuscita di GET /v1/me e una lettura dei tocchi della shell in corso (refreshMembershipIfStale).
+    @ObservationIgnored private var lastMembershipRead: ContinuousClock.Instant?
+    @ObservationIgnored private var isRefreshingMembership = false
     /// Email a cui è stato mandato il link di accesso, finché il link è valido (15').
     /// Sta qui e non nello sheet: l'utente chiude lo sheet per andare a copiare il link.
     private(set) var pendingLinkEmail: String?
@@ -354,6 +357,7 @@ final class AriaBackend {
         setSigningUp(false)
         membership = nil
         access = nil
+        lastMembershipRead = nil
         await api.context.setAccess(version: nil, followsRole: false)
         companies = []
         plants = []
@@ -518,10 +522,14 @@ final class AriaBackend {
                 setMobileAccount(AriaMobileAccount(id: account.id, name: account.name, email: account.email, kind: kind))
                 AriaAuthTrace.step("me.kind", "\(kind)")
             }
-            let changed = me.access != access || me.membership != membership
-            membership = me.membership
-            access = me.access
-            if changed { traceRights() }
+            // Solo se qualcosa cambia: ogni assegnazione ridisegna la shell e la sezione aperta (che leggono i
+            // diritti), e queste letture partono proprio mentre la sidebar si apre o si chiude.
+            if me.membership != membership { membership = me.membership }
+            if me.access != access {
+                access = me.access
+                traceRights()
+            }
+            lastMembershipRead = .now
             // La sessione ha cominciato (o smesso) a seguire il ruolo: le funzioni nascoste per un
             // `operation_forbidden` dell'operatore si riprovano con i limiti nuovi.
             if rights.followsRole != followed {
@@ -532,10 +540,21 @@ final class AriaBackend {
         } catch {
             guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
             AriaAuthTrace.failure("me.membership.failed", error)
-            membership = nil
-            access = nil
+            if membership != nil { membership = nil }
+            if access != nil { access = nil }
             // Il client non si riarma: la stessa versione nuova non fa ripartire una lettura che fallisce.
         }
+    }
+
+    /// Per i tocchi della shell (sidebar aperta, sezione scelta): una lettura sola se ne è appena finita una o ne è
+    /// già in corso una. Aprire la sidebar e scegliere una sezione ne facevano due in mezzo secondo, durante le
+    /// animazioni. Ritorno in primo piano, 403 e segnali del client usano `refreshMembership()` e leggono sempre.
+    func refreshMembershipIfStale(maxAge: Duration = .seconds(5)) async {
+        guard !isRefreshingMembership else { return }
+        if let last = lastMembershipRead, ContinuousClock.now - last < maxAge { return }
+        isRefreshingMembership = true
+        defer { isRefreshingMembership = false }
+        await refreshMembership()
     }
 
     /// Solo DEBUG: sezioni, switch e pulsanti nella console (categoria "rights").
