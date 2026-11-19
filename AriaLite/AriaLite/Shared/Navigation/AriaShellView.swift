@@ -42,7 +42,7 @@ nonisolated enum AriaDestination: Hashable, Sendable {
     case adminPlants
     case adminCategories
     case adminTeams
-    case adminMembers
+    case adminUsers
     case adminRoles
 }
 
@@ -179,7 +179,12 @@ struct AriaShellView: View {
         .onChange(of: offered) { _, offered in
             guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
             guard destination != .adminRoles || viewModel.backend.access != nil else { return }
+            guard destination != .adminUsers || viewModel.backend.access != nil else { return }
             select(.chat)
+        }
+        // Users: l'elenco ha risposto 403 (o la sessione è finita per l'azienda): la sezione si chiude (§2).
+        .onChange(of: viewModel.adminUsers.isClosed) { _, closed in
+            if closed, destination == .adminUsers { select(.chat) }
         }
         // Con l'app attiva i diritti si rileggono anche da soli: un'azione tolta o ridata dall'admin si vede
         // senza che parta una chiamata. Il task finisce quando l'app esce dal primo piano.
@@ -339,10 +344,10 @@ struct AriaShellView: View {
             AdminCategoriesView(viewModel: viewModel.adminCategories)
         case .adminTeams:
             AdminTeamsView(viewModel: viewModel.adminTeams)
-        case .adminMembers:
-            AdminMembersView(viewModel: viewModel.adminMembers)
+        case .adminUsers:
+            AdminUsersView(viewModel: viewModel.adminUsers)
         case .adminRoles:
-            AdminRolesView(viewModel: viewModel.adminRoles, members: viewModel.adminMembers)
+            AdminRolesView(viewModel: viewModel.adminRoles, members: viewModel.adminUsers)
         }
     }
 

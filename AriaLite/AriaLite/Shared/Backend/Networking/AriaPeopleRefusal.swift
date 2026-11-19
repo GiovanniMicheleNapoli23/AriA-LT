@@ -25,6 +25,10 @@ nonisolated enum AriaPeopleRefusal: String, Sendable, CaseIterable {
     case seatLimitReached = "seat_limit_reached"
     case ownerProtected = "owner_protected"
     case mobileStateConflict = "mobile_state_conflict"
+    case ownerLimitReached = "owner_limit_reached"
+    case roleRequired = "role_required"
+    case ownAppAccess = "own_app_access"
+    case userLimitReached = "user_limit_reached"
 
     var message: String {
         switch self {
@@ -45,6 +49,10 @@ nonisolated enum AriaPeopleRefusal: String, Sendable, CaseIterable {
         case .ownerProtected:
             String(localized: "Only an owner can change an owner's status, and the last owner can't be suspended.")
         case .mobileStateConflict: String(localized: "Their status has changed.")
+        case .ownerLimitReached: String(localized: "This workspace already has 3 owners.")
+        case .roleRequired: String(localized: "Choose a role before removing an owner.")
+        case .ownAppAccess: String(localized: "Something went wrong. Try again.")
+        case .userLimitReached: String(localized: "You've reached the user limit")
         }
     }
 }

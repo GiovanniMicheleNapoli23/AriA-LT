@@ -476,6 +476,17 @@ final class AriaBackend {
         await refreshMembership()
     }
 
+    /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva (le altre funzionano ancora).
+    /// Si lascia l'azienda e si passa alla prossima; senza altre aziende si esce (guida "roles and rights for clients").
+    func leaveEndedWorkspace() async {
+        guard isSignedIn, let ended = activeCompanyId else { return }
+        if let next = companies.first(where: { $0.id != ended }) {
+            await selectCompany(next.id)
+        } else {
+            await signOut()
+        }
+    }
+
     /// 403 `operation_forbidden`: l'accesso a quest'azienda è cambiato (guida "one account", §11). Si rileggono
     /// le aziende, quella persa sparisce e se ne sceglie un'altra, poi `membership`; un operatore senza aziende
     /// esce come in `bootstrap`.

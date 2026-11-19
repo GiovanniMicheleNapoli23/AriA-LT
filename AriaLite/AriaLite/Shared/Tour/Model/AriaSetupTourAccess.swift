@@ -18,7 +18,7 @@ nonisolated struct AriaSetupTourAccess: Equatable, Sendable {
     var hasSite = true
     /// Owner o admin: Governance (policy).
     var canGovern = false
-    /// Owner o admin: "New person" (`AdminMemberRules.canCreate`).
+    /// Titolare: "Add user" della sezione Users (`AdminUsersViewer.isOwner`).
     var canInvite = false
     /// Teams · create.
     var canCreateTeam = false

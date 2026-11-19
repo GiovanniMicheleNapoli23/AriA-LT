@@ -147,6 +147,9 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// Un rifiuto delle rotte delle persone e dell'accesso all'app con un codice noto (`detail.code`); `detail` è il
     /// testo del server, per chi vuole mostrarlo.
     case peopleRefused(AriaPeopleRefusal, detail: String)
+    /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva. Le altre aziende funzionano
+    /// ancora: si lascia questa (AriaBackend.leaveEndedWorkspace).
+    case sessionEnded
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
     /// 402 `spend_cap_reached` di POST /v1/responses: il tetto di spesa dell'azienda è raggiunto (`overage.at_spend_cap`
@@ -193,6 +196,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
                 : String(localized: "Your role doesn't allow this.")
         case .accessRefused(let refusal): refusal.localized
         case .peopleRefused(let refusal, _): refusal.message
+        case .sessionEnded: String(localized: "Your session for this workspace was ended. Sign in again.")
         case .invalidChoice(_, _, let message): message
         case .spendCapReached:
             String(localized: "Your company's spending limit is reached. An owner or admin can raise it.")
@@ -313,6 +317,9 @@ nonisolated enum AriaHTTP {
         }
         if http.statusCode == 403, code(from: data) == "operation_forbidden" {
             throw AriaError.notOnPhone
+        }
+        if http.statusCode == 403, code(from: data) == "session_ended" {
+            throw AriaError.sessionEnded
         }
         if http.statusCode == 403, let denial = AriaPermissionDenial(data) {
             throw AriaError.permissionDenied(denial)

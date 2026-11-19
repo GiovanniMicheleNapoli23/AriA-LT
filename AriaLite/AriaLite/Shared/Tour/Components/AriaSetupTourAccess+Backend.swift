@@ -13,12 +13,14 @@ import Foundation
 extension AriaSetupTourAccess {
     @MainActor
     init(backend: AriaBackend, offered: Set<AriaDestination>) {
-        let viewer = AdminPeopleViewer(backend: backend)
+        let company = backend.companies.first { $0.id == backend.activeCompanyId }
+        let myRole = company?.myRole ?? backend.membership?.role
+        let isAdmin = myRole == "owner" || myRole == "admin" || backend.rights.isCompanyAdmin == true
         self.init(
             offered: offered,
             hasSite: AdminDocumentsViewModel.canUpload(backend),
-            canGovern: viewer.isAdmin,
-            canInvite: AdminMemberRules.canCreate(viewer),
+            canGovern: isAdmin,
+            canInvite: AdminUsersViewer(backend: backend).isOwner,
             canCreateTeam: backend.rights.can(.create, in: .teams),
             canConnect: AdminMarketplaceViewModel.canManage(backend)
         )

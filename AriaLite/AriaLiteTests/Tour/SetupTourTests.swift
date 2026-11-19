@@ -19,7 +19,7 @@ nonisolated private func freshDefaults() -> UserDefaults {
 }
 
 nonisolated private let allSections: Set<AriaDestination> = [
-    .adminDocuments, .adminExtractionReview, .adminAgentStudio, .adminMembers, .adminTeams, .adminMarketplace
+    .adminDocuments, .adminExtractionReview, .adminAgentStudio, .adminUsers, .adminTeams, .adminMarketplace
 ]
 
 /// Un owner: tutte le sezioni e tutti i permessi.
@@ -51,7 +51,7 @@ struct SetupTourModelTests {
         #expect(!fullAccess(canCreateTeam: false).steps.contains(.teams))
         #expect(!fullAccess(canConnect: false).steps.contains(.connectors))
         // Un permesso senza la sezione offerta non basta.
-        #expect(!fullAccess(offered: allSections.subtracting([.adminMembers])).steps.contains(.invite))
+        #expect(!fullAccess(offered: allSections.subtracting([.adminUsers])).steps.contains(.invite))
         // Senza permessi restano i passi che bastano le sezioni (caricamento, revisione, agenti, workflow).
         let plain = fullAccess(canGovern: false, canInvite: false, canCreateTeam: false, canConnect: false)
         #expect(plain.steps == [.upload, .extraction, .agents, .workflows])
@@ -61,7 +61,7 @@ struct SetupTourModelTests {
         #expect(AriaSetupTourStep.allCases == allSteps)
         #expect(allSteps.map(\.destination)
                 == [.adminDocuments, .adminExtractionReview, .adminAgentStudio, .adminAgentStudio, .adminAgentStudio,
-                    .adminMembers, .adminTeams, .adminMarketplace])
+                    .adminUsers, .adminTeams, .adminMarketplace])
         #expect(allSteps.map(\.section)
                 == [.knowledge, .knowledge, .agents, .agents, .agents, .team, .team, .marketplace])
     }

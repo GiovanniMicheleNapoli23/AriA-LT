@@ -525,9 +525,10 @@ actor AriaAuth {
         do {
             try Self.checkInviteLink(response, data)
         } catch AriaError.signedOut {
-            // 401: la sessione è finita, si rifà l'accesso.
-            clear()
-            throw AriaError.signedOut
+            // 401: il sito non ha accettato il token di sessione come Bearer (mai provato da un'app, contratto Users
+            // §10). Non si esce: la persona resta aggiunta e l'email "non è partita"; le chiamate all'API diranno se
+            // la sessione è davvero finita.
+            throw AriaError.http(status: 401, detail: "invite-link")
         }
         return (try? JSONDecoder().decode(InviteLinkResponse.self, from: data))?.sent ?? false
     }

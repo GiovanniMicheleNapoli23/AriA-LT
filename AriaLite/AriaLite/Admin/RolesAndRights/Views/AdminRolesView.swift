@@ -12,7 +12,7 @@ import SwiftUI
 struct AdminRolesView: View {
     @Bindable var viewModel: AdminRolesViewModel
     /// Per la scheda della persona, che si apre dalla pagina Persone di un ruolo.
-    let members: AdminMembersViewModel
+    let members: AdminUsersViewModel
 
     var body: some View {
         NavigationStack(path: $viewModel.path) {
@@ -31,7 +31,7 @@ struct AdminRolesView: View {
                     case .people(let id): AdminRolePeopleView(viewModel: viewModel.detail(for: id))
                     case .section(let id, let section):
                         AdminRoleSectionView(viewModel: viewModel.detail(for: id), section: section)
-                    case .person(let id): AdminMemberDetailView(userId: id, owner: members)
+                    case .person(let id): AdminUserDetailView(userId: id, owner: members)
                     case .defaultRole: AdminRoleDefaultView(viewModel: viewModel)
                     }
                 }

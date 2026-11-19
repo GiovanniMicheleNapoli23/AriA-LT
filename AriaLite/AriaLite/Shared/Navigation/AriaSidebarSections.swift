@@ -19,9 +19,12 @@ struct AriaSidebarItem: Identifiable {
     var needs: [AriaSection] = []
     /// Roles & Rights: si vede solo a chi gestisce i ruoli, in entrambi i layout (AriaRights.canOpenRolesAndRights).
     var needsRoleManagement = false
+    /// Users: la regola del §2 (titolare, o Members con l'app che segue il ruolo); mentre /v1/me non ha risposto si vede.
+    var needsUsersEntry = false
 
     func isOffered(by rights: AriaRights) -> Bool {
         needs.allSatisfy(rights.has) && (!needsRoleManagement || rights.canOpenRolesAndRights)
+            && (!needsUsersEntry || AdminUsersRules.entry(rights.access) != .hidden)
     }
 
     var id: AriaDestination { target }
@@ -62,7 +65,7 @@ enum AriaSidebarSections {
         AriaSidebarGroup(title: "Purchases", items: [vendors]),
         AriaSidebarGroup(title: "Analytics", items: [llmUsage]),
         AriaSidebarGroup(title: "Configuration", items: [
-            AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers, needs: [.members]),
+            AriaSidebarItem(title: "Users", icon: "person.2", target: .adminUsers, needs: [.members], needsUsersEntry: true),
             categories,
             rolesAndRights,
         ]),
@@ -97,7 +100,7 @@ enum AriaSidebarSections {
             AriaSidebarItem(title: "Sites", icon: "building.columns", target: .adminPlants),
             categories,
             AriaSidebarItem(title: "Teams", icon: "person.3", target: .adminTeams),
-            AriaSidebarItem(title: "Members", icon: "person.2", target: .adminMembers),
+            AriaSidebarItem(title: "Users", icon: "person.2", target: .adminUsers, needsUsersEntry: true),
             rolesAndRights,
         ]),
     ]

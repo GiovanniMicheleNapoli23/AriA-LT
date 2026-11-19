@@ -201,7 +201,13 @@ extension BackendTests {
 
         @Test func adminLayoutIsUnchanged() throws {
             let rights = try Self.rights(Self.access(sections: "{}"))
-            #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: rights).contains(.adminMembers))
+            #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: rights).contains(.adminTeams))
+            // Users segue il §2 del contratto Users anche qui: il titolare sì, chi non ha Members no.
+            #expect(!AriaSidebarSections.destinations(operatorLayout: false, rights: rights).contains(.adminUsers))
+            let owner = try Self.rights(Self.access(admin: true, role: nil, sections: "{}"))
+            #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: owner).contains(.adminUsers))
+            #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: .unrestricted).contains(.adminUsers),
+                    "/v1/me non ha ancora risposto: la voce resta")
         }
 
         // MARK: 403 e segnali

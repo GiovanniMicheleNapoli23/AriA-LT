@@ -30,7 +30,7 @@ nonisolated enum AriaSetupTourStep: String, CaseIterable, Sendable {
         case .upload: return .adminDocuments
         case .extraction: return .adminExtractionReview
         case .agents, .workflows, .governance: return .adminAgentStudio
-        case .invite: return .adminMembers
+        case .invite: return .adminUsers
         case .teams: return .adminTeams
         case .connectors: return .adminMarketplace
         }
@@ -109,7 +109,7 @@ nonisolated enum AriaSetupTourStep: String, CaseIterable, Sendable {
         case .upload: return "Documents"
         case .extraction: return "Extraction Review"
         case .agents, .workflows, .governance: return title
-        case .invite: return "Members"
+        case .invite: return "Users"
         // Chiave propria: la sidebar dell'app traduce "Teams" con "Squadre", la web qui dice "Team".
         case .teams: return LocalizedStringResource("tour.guide.teams", defaultValue: "Teams")
         case .connectors: return "Marketplace"
