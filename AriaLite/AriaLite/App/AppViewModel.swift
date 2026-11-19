@@ -43,7 +43,9 @@ class AppViewModel {
     let adminVendors: AdminVendorsViewModel
     let adminAlarms: AdminAlarmsViewModel
     let adminReports: AdminReportsViewModel
-    let adminLLMUsage: AdminLLMUsageViewModel
+    /// La sezione Usage (crediti del ciclo) e i controlli di fatturazione dei titolari.
+    let adminUsage: AdminUsageViewModel
+    let adminUsageBilling: AdminUsageBillingViewModel
     let adminPlants: AdminPlantsViewModel
     let adminCategories: AdminCategoriesViewModel
     let adminTeams: AdminTeamsViewModel
@@ -106,7 +108,9 @@ class AppViewModel {
         adminVendors = AdminVendorsViewModel(backend: backend)
         adminAlarms = AdminAlarmsViewModel(backend: backend)
         adminReports = AdminReportsViewModel(backend: backend)
-        adminLLMUsage = AdminLLMUsageViewModel(backend: backend)
+        let usage = AdminUsageViewModel(backend: backend)
+        adminUsage = usage
+        adminUsageBilling = AdminUsageBillingViewModel(backend: backend, page: usage)
         adminPlants = AdminPlantsViewModel(backend: backend)
         adminCategories = AdminCategoriesViewModel(backend: backend)
         adminTeams = AdminTeamsViewModel(backend: backend)
@@ -321,7 +325,8 @@ class AppViewModel {
         adminVendors.reset()
         adminAlarms.reset()
         adminReports.reset()
-        adminLLMUsage.reset()
+        adminUsage.reset()
+        adminUsageBilling.reset()
         adminPlants.reset()
         adminCategories.reset()
         adminTeams.reset()

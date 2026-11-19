@@ -147,6 +147,9 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// Un rifiuto delle rotte delle persone e dell'accesso all'app con un codice noto (`detail.code`); `detail` è il
     /// testo del server, per chi vuole mostrarlo.
     case peopleRefused(AriaPeopleRefusal, detail: String)
+    /// Un rifiuto del tetto di spesa o degli avvisi d'uso con un codice noto (`detail.code`, più `minimum`, `user_ids`,
+    /// `notice`, `expected`): vedi AriaUsageRefusal.
+    case usageRefused(AriaUsageRefusal)
     /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva. Le altre aziende funzionano
     /// ancora: si lascia questa (AriaBackend.leaveEndedWorkspace).
     case sessionEnded
@@ -196,6 +199,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
                 : String(localized: "Your role doesn't allow this.")
         case .accessRefused(let refusal): refusal.localized
         case .peopleRefused(let refusal, _): refusal.message
+        case .usageRefused(let refusal): refusal.message
         case .sessionEnded: String(localized: "Your session for this workspace was ended. Sign in again.")
         case .invalidChoice(_, _, let message): message
         case .spendCapReached:
@@ -330,6 +334,9 @@ nonisolated enum AriaHTTP {
         // Mai su un 403: `membership_suspended` lì è il rifiuto dei diritti (Agent Studio), non quello delle persone.
         if http.statusCode != 403, let refusal = code(from: data).flatMap(AriaPeopleRefusal.init(rawValue:)) {
             throw AriaError.peopleRefused(refusal, detail: detail(from: data))
+        }
+        if http.statusCode != 403, let refusal = AriaUsageRefusal(data) {
+            throw AriaError.usageRefused(refusal)
         }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)

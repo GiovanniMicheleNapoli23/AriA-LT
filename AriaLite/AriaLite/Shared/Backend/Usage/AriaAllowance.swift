@@ -53,6 +53,8 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
         /// Primo e ultimo giorno del ciclo, in UTC (`YYYY-MM-DD`): mai spostati nel fuso locale.
         var start: String?
         var end: String?
+        /// Un ciclo chiuso è definitivo: niente oggi, proiezione, contatori né controlli. Mancante vale `false`.
+        var closed = false
         /// "max", "credits" o "tokens".
         var basis: String?
         /// 0 o `nil`: il piano non dichiara una quota.
@@ -60,6 +62,8 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
         var creditsUsed: Decimal?
         var tokenEquivalent: Decimal?
         var consumed: Decimal?
+        /// I giorni inclusi nel periodo (30 in un ciclo di novembre).
+        var includedDays: Int?
         /// La quota usata (può superare 1).
         var pct: Decimal?
         var overageCredits: Decimal?
@@ -76,8 +80,8 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
         var unreadable: Set<String> = []
 
         private enum CodingKeys: String, CodingKey {
-            case mode, start, end, basis, included, consumed, pct
-            case creditsUsed = "credits_used", tokenEquivalent = "token_equivalent"
+            case mode, start, end, closed, basis, included, consumed, pct
+            case creditsUsed = "credits_used", tokenEquivalent = "token_equivalent", includedDays = "included_days"
             case overageCredits = "overage_credits", overageAmount = "overage_amount"
             case pricePerCredit = "price_per_credit", extraCreditsBillable = "extra_credits_billable"
             case resetsAt = "resets_at", todayIncluded = "today_included", todayConsumed = "today_consumed"
@@ -89,8 +93,10 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
             mode = c.ariaLenient(.mode)
             start = c.ariaLenient(.start)
             end = c.ariaLenient(.end)
+            closed = c.ariaLenient(.closed) ?? false
             basis = c.ariaLenient(.basis)
             included = c.ariaDecimal(.included)
+            includedDays = c.ariaWhole(.includedDays)
             creditsUsed = c.ariaDecimal(.creditsUsed)
             tokenEquivalent = c.ariaDecimal(.tokenEquivalent)
             consumed = c.ariaDecimal(.consumed)
@@ -179,13 +185,21 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
     /// Le quote a cui il cliente viene avvisato; la più bassa sotto 1 è la tacca sulle barre.
     var noticeThresholds: [Decimal] = []
     var trial: AriaUsageTrial?
+    /// `daily` o `pool`; `nil` se manca o non si conosce.
+    var mode: AriaAllowanceMode?
     /// Per i ruoli che vedono i soldi; `nil` per gli altri.
-    var spendCap: AriaJSON?
+    var spendCap: AriaAllowanceSpendCap?
+    /// L'archivio della conoscenza; `nil` quando il contatore non si legge (o su un server vecchio).
+    var storage: AriaUsageStorage?
+    /// Dove va il ciclo; `nil` su un ciclo chiuso, in modo "day" e prima del primo giorno completo.
+    var projection: AriaUsageProjection?
+    /// I minuti di Live Talk del ciclo; `nil` se il piano non li ha.
+    var liveTalk: AriaUsageLiveTalk?
 
     private enum CodingKeys: String, CodingKey {
-        case enabled, tier, currency, state, window, period, meters, today, trial
+        case enabled, tier, currency, state, window, period, meters, today, trial, mode, storage, projection
         case tierSource = "tier_source", amountsVisible = "amounts_visible"
-        case lastDays = "last_days", noticeThresholds = "notice_thresholds", spendCap = "spend_cap"
+        case lastDays = "last_days", noticeThresholds = "notice_thresholds", spendCap = "spend_cap", liveTalk = "live_talk"
     }
 
     private enum TodayKeys: String, CodingKey { case credits }
@@ -200,6 +214,7 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
         currency = c.ariaLenient(.currency)
         amountsVisible = c.ariaLenient(.amountsVisible) ?? false
         state = c.ariaLenient(String.self, .state).flatMap(AriaAllowanceState.init(rawValue:))
+        mode = c.ariaLenient(String.self, .mode).flatMap(AriaAllowanceMode.init(rawValue:))
         window = c.ariaLenient(.window)
         period = c.ariaLenient(.period)
         meters = c.ariaLenient(.meters)
@@ -210,8 +225,11 @@ nonisolated struct AriaAllowance: Decodable, Sendable, Equatable {
         noticeThresholds = (c.ariaLenient([AriaWireDecimal].self, .noticeThresholds) ?? []).compactMap(\.value)
         trial = c.ariaLenient(.trial)
         spendCap = c.ariaLenient(.spendCap)
+        storage = c.ariaLenient(.storage)
+        projection = c.ariaLenient(.projection)
+        liveTalk = c.ariaLenient(.liveTalk)
     }
 
     /// Il tetto di spesa in valuta (`spend_cap.amount`); `nil` senza tetto o per chi non vede i soldi.
-    var spendCapAmount: Decimal? { AriaDecimal.from(spendCap?["amount"]) }
+    var spendCapAmount: Decimal? { spendCap?.amount }
 }

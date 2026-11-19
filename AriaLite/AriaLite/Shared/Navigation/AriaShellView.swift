@@ -38,7 +38,7 @@ nonisolated enum AriaDestination: Hashable, Sendable {
     case adminPurchaseOrders
     case adminVendors
     case adminReports
-    case adminLLMUsage
+    case adminUsage
     case adminPlants
     case adminCategories
     case adminTeams
@@ -115,7 +115,8 @@ struct AriaShellView: View {
     private var isOperator: Bool { viewModel.backend.usesOperatorLayout }
     /// Le sezioni che la sidebar offre ora: cambiano coi diritti letti da GET /v1/me.
     private var offered: Set<AriaDestination> {
-        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights)
+        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights,
+                                         usageVisible: viewModel.backend.usageEntryVisible)
     }
 
     var body: some View {
@@ -186,6 +187,10 @@ struct AriaShellView: View {
         .onChange(of: viewModel.adminUsers.isClosed) { _, closed in
             if closed, destination == .adminUsers { select(.chat) }
         }
+        // Usage: 403 `operation_forbidden` o rotte assenti, la sezione si chiude (contratto Usage §7).
+        .onChange(of: viewModel.adminUsage.isClosed) { _, closed in
+            if closed, destination == .adminUsage { select(.chat) }
+        }
         // Con l'app attiva i diritti si rileggono anche da soli: un'azione tolta o ridata dall'admin si vede
         // senza che parta una chiamata. Il task finisce quando l'app esce dal primo piano.
         .task(id: scenePhase == .active) {
@@ -202,6 +207,8 @@ struct AriaShellView: View {
         .onChange(of: scenePhase) { _, phase in
             // A ogni ritorno si rileggono membership e diritti: niente nuovo accesso per un ruolo cambiato.
             if phase == .active { Task { await viewModel.backend.refreshMembership() } }
+            // Usage aperta: al ritorno in primo piano si rileggono cruscotto e saldo (contratto Usage §3.1).
+            if phase == .active, destination == .adminUsage { Task { await viewModel.adminUsage.refresh() } }
             guard isOperator else { return }
             // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
             if phase == .background {
@@ -336,8 +343,8 @@ struct AriaShellView: View {
             AdminAlarmsView(viewModel: viewModel.adminAlarms)
         case .adminReports:
             AdminReportsView(viewModel: viewModel.adminReports)
-        case .adminLLMUsage:
-            AdminLLMUsageView(viewModel: viewModel.adminLLMUsage)
+        case .adminUsage:
+            AdminUsageView(viewModel: viewModel.adminUsage, billing: viewModel.adminUsageBilling)
         case .adminPlants:
             AdminPlantsView(viewModel: viewModel.adminPlants)
         case .adminCategories:

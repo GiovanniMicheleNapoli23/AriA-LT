@@ -35,6 +35,12 @@ nonisolated enum AriaDecimal {
         }
     }
 
+    /// Un decimale come lo scrive il server nei body: stringa esatta col punto, mai virgola, esponente o locale
+    /// (500 → "500", 12.5 → "12.5"). `Decimal.description` non dipende dalla lingua del telefono.
+    static func wire(_ value: Decimal) -> String {
+        value.description
+    }
+
     private static func isStrictDecimal(_ text: String) -> Bool {
         var digitsBefore = 0
         var digitsAfter = 0
@@ -70,11 +76,12 @@ nonisolated struct AriaWireDecimal: Decodable, Sendable, Hashable {
             value = nil
         } else if let text = try? container.decode(String.self) {
             value = AriaDecimal.parse(text)
-        } else if let number = try? container.decode(Decimal.self) {
-            // Il decoder legge la scrittura del numero (0.1, 172.8) come decimale esatto, senza passare da `Double`.
-            value = number
         } else if let number = try? container.decode(Double.self) {
+            // `decode(Decimal.self)` legge 0.84 come 0.8399…: si passa dalla scrittura più corta del `Double` ("0.84"),
+            // che torna esatta.
             value = AriaDecimal.parse(number)
+        } else if let number = try? container.decode(Decimal.self) {
+            value = number
         } else {
             value = nil
         }

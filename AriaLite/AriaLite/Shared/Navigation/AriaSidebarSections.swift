@@ -21,10 +21,14 @@ struct AriaSidebarItem: Identifiable {
     var needsRoleManagement = false
     /// Users: la regola del §2 (titolare, o Members con l'app che segue il ruolo); mentre /v1/me non ha risposto si vede.
     var needsUsersEntry = false
+    /// Usage: la regola del §2 del contratto Usage (titolare, o membro con il ruolo che la concede e l'app che lo
+    /// segue) e i consumi visibili ai clienti (`usageVisible`, dalla config; mentre non ha risposto si vede).
+    var needsUsageEntry = false
 
-    func isOffered(by rights: AriaRights) -> Bool {
+    func isOffered(by rights: AriaRights, usageVisible: Bool = true) -> Bool {
         needs.allSatisfy(rights.has) && (!needsRoleManagement || rights.canOpenRolesAndRights)
             && (!needsUsersEntry || AdminUsersRules.entry(rights.access) != .hidden)
+            && (!needsUsageEntry || (usageVisible && AdminUsageAccess.mayOpen(rights)))
     }
 
     var id: AriaDestination { target }
@@ -39,18 +43,19 @@ struct AriaSidebarGroup: Identifiable {
 }
 
 enum AriaSidebarSections {
-    static func groups(operatorLayout: Bool, rights: AriaRights) -> [AriaSidebarGroup] {
+    /// `usageVisible`: la config dei consumi non ha detto di no (`AriaBackend.usageEntryVisible`).
+    static func groups(operatorLayout: Bool, rights: AriaRights, usageVisible: Bool = true) -> [AriaSidebarGroup] {
         // Senza ruolo che lo segua restano Task e Calendario (se il ruolo li concede): come prima dei ruoli.
         let groups = !operatorLayout ? adminGroups : rights.followsRole ? operatorGroups : Array(operatorGroups.prefix(1))
         return groups.compactMap { group in
-            let items = group.items.filter { $0.isOffered(by: rights) }
+            let items = group.items.filter { $0.isOffered(by: rights, usageVisible: usageVisible) }
             return items.isEmpty ? nil : AriaSidebarGroup(title: group.title, items: items)
         }
     }
 
     /// Le destinazioni che la sidebar offre: una sezione tolta dal ruolo a schermata aperta torna alla chat.
-    static func destinations(operatorLayout: Bool, rights: AriaRights) -> Set<AriaDestination> {
-        Set(groups(operatorLayout: operatorLayout, rights: rights).flatMap { $0.items.map(\.target) })
+    static func destinations(operatorLayout: Bool, rights: AriaRights, usageVisible: Bool = true) -> Set<AriaDestination> {
+        Set(groups(operatorLayout: operatorLayout, rights: rights, usageVisible: usageVisible).flatMap { $0.items.map(\.target) })
     }
 
     private static let operatorGroups: [AriaSidebarGroup] = [
@@ -120,7 +125,8 @@ enum AriaSidebarSections {
                                                     needs: [.spareParts])
     private static let alarms = AriaSidebarItem(title: "Alarms", icon: "bell.badge", target: .adminAlarms, needs: [.alarms])
     private static let vendors = AriaSidebarItem(title: "Vendors", icon: "building.2", target: .adminVendors, needs: [.vendors])
-    private static let llmUsage = AriaSidebarItem(title: "LLM Usage", icon: "chart.pie", target: .adminLLMUsage, needs: [.llmUsage])
+    /// "LLM Usage" come nella sidebar della web (/settings/usage): crediti del ciclo, dove sono andati e, per i titolari, i controlli.
+    private static let llmUsage = AriaSidebarItem(title: "LLM Usage", icon: "chart.pie", target: .adminUsage, needsUsageEntry: true)
     private static let categories = AriaSidebarItem(title: "Categories", icon: "tag", target: .adminCategories,
                                                     needs: [.categories])
     private static let rolesAndRights = AriaSidebarItem(title: "Roles & Rights", icon: "person.badge.key",

@@ -130,19 +130,34 @@ nonisolated struct AriaUsageConfig: Decodable, Sendable, Equatable {
     var trial: AriaUsageTrial?
     /// `overage.at_spend_cap`: "degrade" o "stop".
     var atSpendCap: String?
+    /// `overage.price_per_credit`: euro per credito extra; `nil` per chi non vede i soldi (mai 0).
+    var pricePerCredit: Decimal?
+    /// `overage.spend_cap_default_eur`: il tetto sempre attivo del piano; `nil` lascia il tetto facoltativo.
+    var spendCapDefaultEur: Decimal?
+    /// `ui.projection_window_days`: i giorni su cui il server calcola la proiezione.
+    var projectionWindowDays: Int?
+    /// `notifications.email_enabled`: gli avvisi arrivano anche per email. Su un server vecchio: `false`.
+    var emailNotificationsEnabled = false
+    /// I piani in ordine di rango (dal più basso). Servono per "Upgrade to {plan}" e per Live Talk (vedi `+Tiers`).
+    var tiers: [AriaUsageTier] = []
 
     private enum CodingKeys: String, CodingKey {
-        case currency, plan, effort, actions, ui, billing, trial, overage
+        case currency, plan, effort, actions, ui, billing, trial, overage, tiers, notifications
         case tierSource = "tier_source", amountsVisible = "amounts_visible", canManagePlan = "can_manage_plan"
         case chargeRoundingIncrement = "charge_rounding_increment"
     }
 
     private enum UIKeys: String, CodingKey {
         case creditNoteMode = "credit_note_mode", salesContactEmail = "sales_contact_email"
+        case projectionWindowDays = "projection_window_days"
     }
 
     private enum BillingKeys: String, CodingKey { case customerVisibility = "customer_visibility" }
-    private enum OverageKeys: String, CodingKey { case atSpendCap = "at_spend_cap" }
+    private enum OverageKeys: String, CodingKey {
+        case atSpendCap = "at_spend_cap", pricePerCredit = "price_per_credit", spendCapDefaultEur = "spend_cap_default_eur"
+    }
+
+    private enum NotificationsKeys: String, CodingKey { case emailEnabled = "email_enabled" }
 
     /// Una configurazione vuota: nessun livello, nessuna azione.
     init() {}
@@ -160,6 +175,7 @@ nonisolated struct AriaUsageConfig: Decodable, Sendable, Equatable {
         if let ui = try? c.nestedContainer(keyedBy: UIKeys.self, forKey: .ui) {
             creditNoteMode = ui.ariaLenient(.creditNoteMode)
             salesContactEmail = ui.ariaLenient(.salesContactEmail)
+            projectionWindowDays = ui.ariaWhole(.projectionWindowDays)
         }
         if let billing = try? c.nestedContainer(keyedBy: BillingKeys.self, forKey: .billing) {
             customerVisibility = billing.ariaLenient(.customerVisibility) ?? false
@@ -167,7 +183,13 @@ nonisolated struct AriaUsageConfig: Decodable, Sendable, Equatable {
         trial = c.ariaLenient(.trial)
         if let overage = try? c.nestedContainer(keyedBy: OverageKeys.self, forKey: .overage) {
             atSpendCap = overage.ariaLenient(.atSpendCap)
+            pricePerCredit = overage.ariaDecimal(.pricePerCredit)
+            spendCapDefaultEur = overage.ariaDecimal(.spendCapDefaultEur)
         }
+        if let notifications = try? c.nestedContainer(keyedBy: NotificationsKeys.self, forKey: .notifications) {
+            emailNotificationsEnabled = notifications.ariaLenient(.emailEnabled) ?? false
+        }
+        tiers = AriaUsageTier.readList(c, .tiers)
     }
 
     /// Il controllo dell'impegno nella chat esiste solo se il server lista `chat.reply`.

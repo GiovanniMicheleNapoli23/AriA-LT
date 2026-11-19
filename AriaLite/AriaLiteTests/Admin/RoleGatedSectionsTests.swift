@@ -21,15 +21,6 @@ struct RoleGatedPureTests {
         try JSONDecoder().decode(AriaJSON.self, from: Data(text.utf8))
     }
 
-    @Test func llmUsageSessionReadsTheUserIdFromUserId() throws {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let mine = try decoder.decode(AdminLLMUsageSession.self, from: Data(#"{"id":"s1","status":"active","user_id":"u7"}"#.utf8))
-        #expect(mine.userId == "u7")
-        let old = try decoder.decode(AdminLLMUsageSession.self, from: Data(#"{"id":"s2","status":"active"}"#.utf8))
-        #expect(old.userId == nil, "un backend che non manda user_id: la sessione non è di nessuno in particolare")
-    }
-
     @Test func streamEventsBecomeTheMatching403() throws {
         let denied = try json(#"{"type":"permission_denied","detail":{"code":"permission_denied","message":"No","section":"scenario_analysis","action":"approve","reason":"no_action"}}"#)
         guard case .permissionDenied(let denial)? = AdminAgentStudioAPI.accessError(in: denied) else {
@@ -450,49 +441,6 @@ extension BackendTests {
             }
         }
 
-        // MARK: Consumi LLM
-
-        private func llmSession(id: String = "s1", status: String = "active", user: String?) throws -> AdminLLMUsageSession {
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let owner = user.map { #","user_id":"\#($0)""# } ?? ""
-            return try decoder.decode(AdminLLMUsageSession.self,
-                                      from: Data(#"{"id":"\#(id)","status":"\#(status)"\#(owner)}"#.utf8))
-        }
-
-        @Test func llmUsageStopIsOfferedOnOwnSessionsAndToRolesWithStopSession() async throws {
-            let backend = try await connected()
-            let me = try #require(backend.mobileAccount?.id)
-            let viewModel = AdminLLMUsageViewModel(backend: backend)
-            let own = try llmSession(id: "own", user: me)
-            let colleague = try llmSession(id: "other", user: "someone-else")
-            let unknownOwner = try llmSession(id: "anon", user: nil)
-            let finished = try llmSession(id: "done", status: "completed", user: "someone-else")
-
-            // Un ruolo con la sezione ma senza `stop_session`: ferma solo le proprie.
-            await become(.role(sections("llm_usage")), backend)
-            #expect(viewModel.showsStop(own))
-            #expect(viewModel.canStop(own))
-            #expect(!viewModel.showsStop(colleague))
-            #expect(!viewModel.showsStop(unknownOwner))
-            viewModel.requestStop(colleague)
-            #expect(viewModel.sessionToStop == nil, "senza il diritto la conferma non si apre")
-            viewModel.requestStop(own)
-            #expect(viewModel.sessionToStop == own)
-
-            // Con `stop_session` anche quelle dei colleghi; una già finita non si ferma comunque.
-            await become(.role(sections("llm_usage", "stop_session")), backend)
-            #expect(viewModel.showsStop(colleague))
-            #expect(viewModel.showsStop(unknownOwner))
-            #expect(!viewModel.showsStop(finished))
-
-            for who in [Who.admin, .legacy, .noBlock] {
-                await become(who, backend)
-                #expect(viewModel.showsStop(colleague))
-                #expect(!viewModel.showsStop(finished))
-            }
-        }
-
         // MARK: Agent Studio
 
         private func runBody() -> AdminAgentStudioRunBody {
@@ -615,7 +563,6 @@ extension BackendTests {
                 #expect(parts.isForbidden)
                 #expect(parts.message != generic)
 
-                #expect(AdminLLMUsageFailure.message(for: error, backend: backend) != generic)
             }
             // Un errore qualunque resta il suo testo (e non un rifiuto dei diritti).
             let other = AriaError.http(status: 500, detail: "boom")

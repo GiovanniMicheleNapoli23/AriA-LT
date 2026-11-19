@@ -65,7 +65,8 @@ nonisolated enum AriaRightsTrace {
             Button("Mark event read / Mark all read", .acknowledge, when: "Alarm events (bell in the Alarms toolbar)"),
         ], []),
         (.vendors, [Button("New vendor", .create), Button("Edit", .edit), Button("Delete", .delete)], []),
-        (.llmUsage, [Button("Stop on someone else's session", .stopSession, when: "own session: always")], []),
+        // Usage: nessun pulsante legato a un'azione del ruolo (le parti da titolare seguono `can_manage_plan`).
+        (.llmUsage, [], []),
         (.categories, [Button("New category", .create), Button("Edit", .edit), Button("Delete", .delete)], []),
     ]
 
