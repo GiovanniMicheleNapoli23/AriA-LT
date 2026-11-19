@@ -176,6 +176,13 @@ struct AriaShellView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .onAppear { AriaAuthTrace.step("shell.appear") }
         .task(id: viewModel.backend.isReady) { await store.load() }
+        // Riaperta l'app con la sessione salvata, azienda e sito tornano da UserDefaults ma l'elenco delle aziende e
+        // dei siti no: si legge subito (dopo Face ID), non solo quando lo chiede una schermata (Aria server, banner
+        // della chat). Senza, il filtro "Site" dei Documenti e le scelte del sito nei moduli restano vuoti.
+        .task(id: viewModel.lock == .none) {
+            guard viewModel.lock == .none else { return }
+            await viewModel.backend.bootstrapIfNeeded()
+        }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano. Anche quando il layout dell'operatore
         // arriva dopo l'avvio (un membro entrato col link della web: `membership.restricted` letta dal bootstrap).
         .task(id: isOperator) {
