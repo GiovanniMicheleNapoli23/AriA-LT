@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  La logica del menu "···" della chat: gli step della procedura (corrente e precedenti), il report in
-//  Word, la chiusura intervento e la fine procedura.
+//  La logica del menu "···" della chat: i crediti, gli step della procedura (corrente e precedenti), il report
+//  in Word, la chiusura intervento e la fine procedura.
 //
 
 import Foundation
@@ -15,18 +15,22 @@ import Observation
 @Observable
 final class AriaChatOptionsViewModel {
     let chat: AriaAgentChat
+    /// La card dei crediti in cima, come nel profilo.
+    let credits: AriaCreditsViewModel
     /// Chi apre il foglio sa presentare la chiusura intervento.
     let offersCloseOut: Bool
 
     // MARK: - State
 
     var confirmingEnd = false
+    var showsCredits = false
     private(set) var report: AriaReportFile?
     private(set) var preparingReport = false
     private(set) var reportError: String?
 
-    init(chat: AriaAgentChat, offersCloseOut: Bool) {
+    init(chat: AriaAgentChat, backend: AriaBackend, offersCloseOut: Bool) {
         self.chat = chat
+        self.credits = AriaCreditsViewModel(backend: backend)
         self.offersCloseOut = offersCloseOut
     }
 
@@ -49,6 +53,11 @@ final class AriaChatOptionsViewModel {
     var showsSessionActions: Bool { canCloseOut || canEndProcedure }
 
     // MARK: - Actions
+
+    /// Sulla card in errore il tocco riprova; altrimenti apre il dettaglio.
+    func creditsTapped() {
+        if credits.isFailed { credits.retry() } else { showsCredits = true }
+    }
 
     func prepareReport() async {
         preparingReport = true

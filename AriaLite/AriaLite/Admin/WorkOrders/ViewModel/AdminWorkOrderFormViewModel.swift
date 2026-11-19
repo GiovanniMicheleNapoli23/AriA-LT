@@ -70,6 +70,18 @@ final class AdminWorkOrderFormViewModel: Identifiable {
 
     var hasChanges: Bool { draft != original }
 
+    /// Gli stati del selettore: quello di partenza e quelli in cui ciclo di vita e ruolo lasciano portare l'ordine
+    /// (`AriaRights.canMoveWorkOrder`). Creando non c'è uno stato salvato.
+    var statusOptions: [AdminWorkOrderStatus] {
+        let stored = isCreating ? nil : original.status.rawValue
+        return AdminWorkOrderStatus.known.filter {
+            $0 == original.status || backend.rights.canMoveWorkOrder(from: stored, to: $0.rawValue)
+        }
+    }
+
+    /// Con il solo stato di partenza il selettore non serve.
+    var showsStatusPicker: Bool { statusOptions.count > 1 }
+
     // MARK: Controlli
 
     var trimmedTitle: String { draft.title.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -85,7 +97,7 @@ final class AdminWorkOrderFormViewModel: Identifiable {
     /// Il primo problema che impedisce di salvare.
     var validationMessage: String? {
         if trimmedTitle.isEmpty { return String(localized: "Add a title.") }
-        if isCreating, draft.plantId == nil { return String(localized: "Choose a plant.") }
+        if isCreating, draft.plantId == nil { return String(localized: "Choose a site.") }
         if !minutesAreValid { return String(localized: "The estimated duration must be a whole number of minutes.") }
         return nil
     }

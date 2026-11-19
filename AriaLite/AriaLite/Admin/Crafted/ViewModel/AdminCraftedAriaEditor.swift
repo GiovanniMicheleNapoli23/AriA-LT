@@ -66,7 +66,7 @@ final class AdminCraftedAriaEditor {
 
     /// Perché adesso non si può chiedere niente (nessuno stabilimento), altrimenti `nil`.
     var blockedReason: String? {
-        (plantId ?? backend.activePlantId) == nil ? String(localized: "Pick a plant to ask Aria to make something.") : nil
+        (plantId ?? backend.activePlantId) == nil ? String(localized: "Pick a site to ask Aria to make something.") : nil
     }
 
     var progressText: String? {

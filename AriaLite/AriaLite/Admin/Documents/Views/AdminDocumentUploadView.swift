@@ -4,10 +4,10 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il foglio di caricamento, una sola scroll view di schede: stabilimento, cosa fare del documento
-//  (indicizzarlo, estrarne i dati), file da Files con l'avviso sui nomi già presenti.
-//  Con doppioni chiede se sostituirli o saltarli. "Upload" affida i file al caricamento in background
-//  e chiude il foglio: l'avanzamento si segue nella lista.
+//  Il foglio di caricamento, una sola scroll view di schede: prima i file (un'area da toccare finché non ce ne
+//  sono, poi l'elenco con l'avviso sui nomi già presenti), poi lo stabilimento e cosa fare del documento
+//  (indicizzarlo, estrarne i dati). Il pulsante in basso dice quanti file parte; con doppioni chiede se
+//  sostituirli o saltarli, poi affida i file al caricamento in background e chiude il foglio.
 //
 
 import SwiftUI
@@ -28,9 +28,9 @@ struct AdminDocumentUploadView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    filesSection
                     destination
                     pipelines
-                    filesSection
                     if let message = viewModel.errorMessage {
                         AdminSectionNotice(text: message, isError: true)
                     }
@@ -47,15 +47,8 @@ struct AdminDocumentUploadView: View {
                     Button("Cancel") { dismiss() }
                         .disabled(viewModel.isUploading)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if viewModel.isUploading {
-                        ProgressView()
-                    } else {
-                        Button("Upload") { Task { await viewModel.startUpload() } }
-                            .disabled(!viewModel.canUpload)
-                    }
-                }
             }
+            .safeAreaInset(edge: .bottom, spacing: 0) { uploadBar }
             .interactiveDismissDisabled(viewModel.isUploading)
             .fileImporter(isPresented: $isImporting, allowedContentTypes: Self.allowedTypes, allowsMultipleSelection: true) { result in
                 Task { await viewModel.filesImported(result) }
@@ -80,59 +73,138 @@ struct AdminDocumentUploadView: View {
 
     // MARK: Schede
 
-    private var destination: some View {
-        AdminCard(title: "Plant", systemImage: "building.2") {
-            Picker("Plant", selection: $viewModel.plantId) {
-                if viewModel.plantId == nil { Text("Choose").tag(String?.none) }
-                ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
+    private var filesSection: some View {
+        AdminCard(title: "Files", systemImage: "doc.on.doc") {
+            if viewModel.files.isEmpty {
+                AdminDocumentUploadDropZone(isReading: viewModel.isReading) { isImporting = true }
+                    .disabled(viewModel.isUploading || viewModel.isReading)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(viewModel.files) { file in
+                        AdminDocumentUploadFileRow(file: file, isConflicting: viewModel.isConflicting(file),
+                                                   canRemove: !viewModel.isUploading) { viewModel.remove(file) }
+                        Divider()
+                    }
+                }
+                Button {
+                    isImporting = true
+                } label: {
+                    HStack(spacing: 8) {
+                        if viewModel.isReading {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "plus.circle.fill")
+                        }
+                        Text("Add more files")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.liteAccent)
+                    .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isUploading || viewModel.isReading)
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .leading)
+            filesFooter
+        }
+        .animation(.snappy, value: viewModel.files.count)
+    }
+
+    private var destination: some View {
+        AdminCard(title: "Site", systemImage: "building.2") {
+            Menu {
+                Picker("Site", selection: $viewModel.plantId) {
+                    ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Group {
+                        if let name = viewModel.plantName {
+                            Text(verbatim: name).foregroundStyle(Color.liteText)
+                        } else {
+                            Text("Choose a site").foregroundStyle(.secondary)
+                        }
+                    }
+                    .font(.body.weight(.medium))
+                    .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .frame(minHeight: 48)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
             .disabled(viewModel.isUploading)
-            caption("Documents are shared with everyone in this plant.")
+            caption("Documents are shared with everyone on this site.")
         }
     }
 
     private var pipelines: some View {
         AdminCard(title: "After upload", systemImage: "gearshape.2") {
-            VStack(alignment: .leading, spacing: 8) {
-                Toggle("Index for answers", isOn: $viewModel.runIndexing)
-                Toggle("Extract maintenance data", isOn: $viewModel.runExtraction)
+            VStack(spacing: 8) {
+                AdminDocumentPipelineToggle(title: "Index for answers",
+                                            detail: "Aria can find and cite the document in chat.",
+                                            systemImage: "text.magnifyingglass", isOn: $viewModel.runIndexing)
+                Divider()
+                AdminDocumentPipelineToggle(title: "Extract maintenance data",
+                                            detail: "Proposes assets, spare parts and procedures for you to review.",
+                                            systemImage: "wrench.and.screwdriver", isOn: $viewModel.runExtraction)
             }
             .disabled(viewModel.isUploading)
-            caption("Indexing lets Aria cite the document. Extraction proposes assets, spare parts and procedures for review.")
+            if viewModel.pipelines.isEmpty {
+                caption("Turn on at least one to upload.")
+            }
         }
+        .animation(.snappy, value: viewModel.pipelines.isEmpty)
     }
 
-    private var filesSection: some View {
-        AdminCard(title: "Files", systemImage: "doc.on.doc") {
-            ForEach(viewModel.files) { file in
-                AdminDocumentUploadFileRow(file: file, isConflicting: viewModel.isConflicting(file),
-                                           canRemove: !viewModel.isUploading) { viewModel.remove(file) }
-                Divider()
-            }
+    // MARK: Pulsante
+
+    private var uploadBar: some View {
+        VStack(spacing: 8) {
             Button {
-                isImporting = true
+                Task { await viewModel.startUpload() }
             } label: {
-                if viewModel.isReading {
-                    ProgressView()
-                } else {
-                    Label("Choose from Files", systemImage: "folder")
+                HStack(spacing: 8) {
+                    if viewModel.isUploading {
+                        ProgressView().tint(Color.liteOnAccent)
+                    } else {
+                        Image(systemName: "arrow.up.circle.fill")
+                    }
+                    if viewModel.files.isEmpty {
+                        Text("Upload")
+                    } else {
+                        Text("Upload \(viewModel.files.count) files")
+                    }
                 }
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 32)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .tint(Color.liteAccent)
-            .disabled(viewModel.isUploading || viewModel.isReading)
-            filesFooter
-            caption("Uploads continue in the background, even if you leave the app.")
+            .foregroundStyle(Color.liteOnAccent)
+            .disabled(!viewModel.canUpload)
+            Label("Uploads continue in the background, even if you leave the app.", systemImage: "icloud.and.arrow.up")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .ariaReadableWidth()
+        .frame(maxWidth: .infinity)
+        .background(.bar)
     }
 
     @ViewBuilder
     private var filesFooter: some View {
         if viewModel.isCheckingConflicts {
-            caption("Checking for files already in this plant…")
+            caption("Checking for files already on this site…")
         } else if let message = viewModel.conflictCheckError {
             caption("Couldn't check for duplicates: \(message)")
         } else if !viewModel.files.isEmpty {

@@ -79,7 +79,7 @@ struct AriaConnectionSheet: View {
                 }
             }
             LabeledContent("Status") {
-                Label(backend.isReady ? "Online" : "No plant", systemImage: "circle.fill")
+                Label(backend.isReady ? "Online" : "No site", systemImage: "circle.fill")
                     .labelStyle(.titleAndIcon)
                     .foregroundStyle(backend.isReady ? .green : .orange)
                     .font(.subheadline)
@@ -96,7 +96,7 @@ struct AriaConnectionSheet: View {
                 )) {
                     ForEach(backend.companies) { Text($0.name).tag($0.id) }
                 }
-                Picker("Plant", selection: Binding(
+                Picker("Site", selection: Binding(
                     get: { backend.activePlantId ?? "" },
                     set: { id in Task { await backend.selectPlant(id) } }
                 )) {
@@ -105,7 +105,7 @@ struct AriaConnectionSheet: View {
                 .disabled(backend.plants.isEmpty)
             }
         } footer: {
-            Text("Aria answers using the data of the selected plant.")
+            Text("Aria answers using the data of the selected site.")
         }
 
         Section {

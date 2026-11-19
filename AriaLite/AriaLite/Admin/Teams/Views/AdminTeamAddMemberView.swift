@@ -35,19 +35,11 @@ struct AdminTeamAddMemberView: View {
                     } else {
                         ForEach(viewModel.choices) { person in
                             Button { viewModel.select(person) } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(verbatim: person.displayName).font(.body)
-                                        if !person.email.isEmpty, person.displayName != person.email {
-                                            Text(verbatim: person.email).font(.caption).foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    Spacer(minLength: 8)
-                                    if viewModel.selectedId == person.id {
-                                        Image(systemName: "checkmark").foregroundStyle(Color.liteAccent)
-                                    }
-                                }
-                                .contentShape(Rectangle())
+                                AdminPersonPickRow(
+                                    name: person.displayName,
+                                    detail: person.email.isEmpty || person.displayName == person.email ? nil : person.email,
+                                    isSelected: viewModel.selectedId == person.id
+                                )
                             }
                             .buttonStyle(.plain)
                             .accessibilityAddTraits(viewModel.selectedId == person.id ? .isSelected : [])

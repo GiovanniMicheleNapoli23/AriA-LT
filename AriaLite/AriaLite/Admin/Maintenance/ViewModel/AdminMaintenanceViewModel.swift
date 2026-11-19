@@ -48,7 +48,7 @@ final class AdminMaintenanceViewModel {
     // MARK: Filtri
 
     var plants: [AriaPlant] { backend.plants }
-    /// Senza scelta esplicita vale lo stabilimento attivo. "All plants" (`nil`) resta finché non si azzera;
+    /// Senza scelta esplicita vale lo stabilimento attivo. "All sites" (`nil`) resta finché non si azzera;
     /// uno stabilimento scelto vale finché lo stabilimento attivo non cambia (poi si torna al nuovo attivo).
     var plantFilter: String? {
         get {
@@ -120,7 +120,7 @@ final class AdminMaintenanceViewModel {
     }
 
     var plantFilterLabel: String {
-        guard let plantFilter else { return String(localized: "All plants") }
+        guard let plantFilter else { return String(localized: "All sites") }
         return plants.first { $0.id == plantFilter }?.name ?? plantFilter
     }
     var assetFilterLabel: String { assetFilter ?? String(localized: "All assets") }
@@ -182,11 +182,18 @@ final class AdminMaintenanceViewModel {
         if plan.status == nil || plan.status == statusFilter.rawValue { plans.append(plan) }
     }
 
+    /// Un piano eliminato dal dettaglio: esce dalla lista.
+    func remove(_ plan: AdminMaintenancePlan) {
+        plans.removeAll { $0.id == plan.id }
+    }
+
     /// `plant_id` è obbligatorio alla creazione.
     var canCreate: Bool { backend.activePlantId != nil || !backend.plants.isEmpty }
 
     func makeDetailViewModel(for plan: AdminMaintenancePlan) -> AdminMaintenanceDetailViewModel {
-        AdminMaintenanceDetailViewModel(backend: backend, plan: plan) { [weak self] in self?.apply($0) }
+        AdminMaintenanceDetailViewModel(backend: backend, plan: plan,
+                                        onChange: { [weak self] in self?.apply($0) },
+                                        onDelete: { [weak self] in self?.remove($0) })
     }
 
     func makeFormViewModel() -> AdminMaintenanceFormViewModel {

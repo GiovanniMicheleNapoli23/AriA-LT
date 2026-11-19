@@ -37,16 +37,11 @@ struct AriaMessageToolbar: View {
             .accessibilityLabel("Regenerate")
             .disabled(!model.canRegenerate)
             Spacer()
-            if let usage = model.usageText(message) {
-                Text(verbatim: usage)
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.tertiary)
-            }
         }
         .font(.footnote)
         .foregroundStyle(.secondary)
         .buttonStyle(AriaIconButtonStyle())
-        // Cinque pulsanti e i token in riga: oltre xxxLarge smettono di crescere per non uscire dalla bolla.
+        // Cinque pulsanti in riga: oltre xxxLarge smettono di crescere per non uscire dalla bolla.
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .padding(.leading, -8)
     }

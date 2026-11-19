@@ -5,8 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La scheda "Diagnosis" del dettaglio, con la sfera di Aria (è l'agente diagnostico): sopra il risultato
-//  (AdminAlarmDiagnosisResult) o due righe su cosa fa, poi l'errore e una barra come il composer della chat,
-//  col contesto in più e "Diagnose" accanto. Con testo molto grande il pulsante va sotto il campo.
+//  (AdminAlarmDiagnosisResult) o due righe su cosa fa, poi l'errore, il campo col contesto in più (facoltativo,
+//  quindi sobrio) e sotto "Diagnose" a tutta larghezza: è l'azione della scheda.
 //
 
 import SwiftUI
@@ -14,9 +14,6 @@ import SwiftUI
 struct AdminAlarmDiagnoseCard: View {
     @Bindable var viewModel: AdminAlarmDiagnosisViewModel
     @FocusState private var contextFocused: Bool
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    /// L'altezza di una riga della barra: il campo a riga singola e il pulsante hanno lo stesso centro.
-    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 36
 
     var body: some View {
         AdminCard(ariaTitle: "Diagnosis") {
@@ -44,31 +41,17 @@ struct AdminAlarmDiagnoseCard: View {
     }
 
     private var bar: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .trailing, spacing: 6) {
-                    field
-                    diagnoseButton
-                }
-            } else {
-                HStack(alignment: .bottom, spacing: 6) {
-                    field
-                    diagnoseButton
-                }
-            }
+        VStack(spacing: 10) {
+            TextField("Extra context (optional)", text: $viewModel.context, axis: .vertical)
+                .lineLimit(1...5)
+                .focused($contextFocused)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .disabled(viewModel.isRunning)
+            diagnoseButton
         }
-        .padding(5)
-        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-    }
-
-    private var field: some View {
-        TextField("Extra context (optional)", text: $viewModel.context, axis: .vertical)
-            .lineLimit(1...4)
-            .focused($contextFocused)
-            .padding(.leading, 10)
-            .padding(.vertical, 6)
-            .frame(maxWidth: .infinity, minHeight: rowHeight, alignment: .leading)
-            .disabled(viewModel.isRunning)
     }
 
     private var diagnoseButton: some View {
@@ -86,12 +69,11 @@ struct AdminAlarmDiagnoseCard: View {
                     Label(viewModel.diagnosis == nil ? "Diagnose" : "Diagnose again", systemImage: "stethoscope")
                 }
             }
-            .font(.subheadline.weight(.semibold))
-            .frame(minHeight: rowHeight - 8)
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 34)
         }
         .ariaAccentGlassButtonStyle()
         .buttonBorderShape(.capsule)
-        .fixedSize()
         .disabled(viewModel.isRunning)
     }
 }

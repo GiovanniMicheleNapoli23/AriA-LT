@@ -29,8 +29,8 @@ struct AdminCategoryFilterBar: View {
 
             if !viewModel.plants.isEmpty {
                 Menu {
-                    Picker("Plant", selection: plantBinding) {
-                        Text("All plants").tag(String?.none)
+                    Picker("Site", selection: plantBinding) {
+                        Text("All sites").tag(String?.none)
                         ForEach(viewModel.plants) { plant in
                             Text(plant.name).tag(Optional(plant.id))
                         }
@@ -38,7 +38,7 @@ struct AdminCategoryFilterBar: View {
                 } label: {
                     filterLabel(title: viewModel.plantFilter.flatMap { id in
                         viewModel.plants.first { $0.id == id }?.name
-                    } ?? String(localized: "All plants"), systemImage: "building.2")
+                    } ?? String(localized: "All sites"), systemImage: "building.2")
                 }
             }
             Spacer(minLength: 0)

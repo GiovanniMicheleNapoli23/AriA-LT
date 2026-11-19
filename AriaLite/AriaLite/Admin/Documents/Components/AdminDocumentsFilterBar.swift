@@ -27,12 +27,12 @@ struct AdminDocumentsFilterBar: View {
             }
             if viewModel.plants.count > 1 {
                 Menu {
-                    Picker("Plant", selection: $viewModel.selectedPlantId) {
-                        Text("All plants").tag(String?.none)
+                    Picker("Site", selection: $viewModel.selectedPlantId) {
+                        Text("All sites").tag(String?.none)
                         ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                     }
                 } label: {
-                    AdminFilterChip(title: "Plant", value: viewModel.plantFilterLabel, isActive: viewModel.isPlantFilterCustom)
+                    AdminFilterChip(title: "Site", value: viewModel.plantFilterLabel, isActive: viewModel.isPlantFilterCustom)
                 }
             }
             if viewModel.statusFilter != nil {

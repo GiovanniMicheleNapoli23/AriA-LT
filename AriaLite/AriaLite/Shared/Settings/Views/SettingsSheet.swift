@@ -11,6 +11,8 @@
 import SwiftUI
 
 struct SettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: AriaSettingsViewModel
     @ScaledMetric(relativeTo: .largeTitle) private var avatarSide: CGFloat = 76
 
@@ -29,6 +31,7 @@ struct SettingsSheet: View {
                     VStack(spacing: 20) {
                         header
                         if viewModel.showsWorkspace { workspaceCard }
+                        if viewModel.credits.isVisible { creditsCard }
                         if viewModel.showsAvailability {
                             AriaAvailabilityRow(store: viewModel.app.ariaWorkOrders)
                         }
@@ -49,6 +52,12 @@ struct SettingsSheet: View {
         .sheet(isPresented: $viewModel.showsConnection) {
             AriaConnectionSheet(backend: viewModel.app.backend)
         }
+        .sheet(isPresented: $viewModel.showsCredits) {
+            AriaCreditsSheet(model: viewModel.credits)
+        }
+        // Il saldo si rilegge ora e ogni 60 s finché il profilo è aperto, e quando l'app torna in primo piano.
+        .task { await viewModel.credits.poll() }
+        .onChange(of: scenePhase) { _, phase in viewModel.credits.scenePhaseChanged(phase) }
         .fullScreenCover(isPresented: $viewModel.showsOnboarding) {
             AriaOnboardingView(origin: .profile) { viewModel.showsOnboarding = false }
         }
@@ -59,13 +68,21 @@ struct SettingsSheet: View {
             Text("\(viewModel.unsyncedChanges) changes haven't reached the server yet. If you log out now, they will be lost.")
         }
         // Un admin non ha la disponibilità: il foglio parte più basso. Si può sempre allargare.
-        .presentationDetents([.fraction(viewModel.showsAvailability ? 0.72 : 0.67), .large])
+        .presentationDetents([.fraction(viewModel.detentFraction), .large])
         .presentationDragIndicator(.visible)
     }
 
     // MARK: Chi
 
     private var header: some View {
+        VStack(spacing: 12) {
+            identity
+            tourButtons
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var identity: some View {
         VStack(spacing: 12) {
             Text(verbatim: viewModel.initials)
                 .font(.system(.title, design: .rounded, weight: .semibold))
@@ -99,6 +116,34 @@ struct SettingsSheet: View {
         .accessibilityElement(children: .combine)
     }
 
+    // "Primi passi con AriA" si rifà dalle sezioni: il foglio si chiude.
+    @ViewBuilder
+    private var tourButtons: some View {
+        if viewModel.showsSetupTour {
+            tourButton("Get started with AriA", systemImage: "map", identifier: "settings.setupTour") {
+                viewModel.replaySetupTour()
+            }
+        }
+    }
+
+    private func tourButton(_ title: LocalizedStringKey, systemImage: String, identifier: String,
+                            action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+            dismiss()
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.liteAccent)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color.liteSurface, in: Capsule())
+                .overlay { Capsule().strokeBorder(Color.liteBorder) }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
+    }
+
     // MARK: Dove
 
     private var workspaceCard: some View {
@@ -112,12 +157,24 @@ struct SettingsSheet: View {
                 Divider().padding(.leading, 54)
             }
             if let plant = viewModel.plantName {
-                AriaSettingsRow(title: "Plant", systemImage: "gearshape.2") {
+                AriaSettingsRow(title: "Site", systemImage: "gearshape.2") {
                     valueText(plant)
                 }
             }
         }
         .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    // MARK: Crediti
+
+    private var creditsCard: some View {
+        Button {
+            viewModel.creditsTapped()
+        } label: {
+            AriaCreditsCard(model: viewModel.credits)
+                .background(Color.liteSurface, in: RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
     }
 
     private func valueText(_ text: String) -> some View {

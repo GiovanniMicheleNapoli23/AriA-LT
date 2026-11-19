@@ -23,14 +23,14 @@ struct AdminPlantsView: View {
             }
             .refreshable { await viewModel.refresh() }
             .liteBackground()
-            .navigationTitle("Plants")
+            .navigationTitle("Sites")
             .navigationDestination(for: AdminPlant.self) { plant in
                 AdminPlantDetailView(plant: plant, owner: viewModel)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("New plant", systemImage: "plus") { viewModel.startCreating() }
+                    Button("New site", systemImage: "plus") { viewModel.startCreating() }
                 }
             }
             .searchable(text: $viewModel.query, prompt: Text("Name, code, location..."))

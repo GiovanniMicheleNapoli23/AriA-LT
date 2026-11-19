@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il filtro per stabilimento sopra la lista: un menu con "All plants" e gli stabilimenti che hanno squadre.
+//  Il filtro per stabilimento sopra la lista: un menu con "All sites" e gli stabilimenti che hanno squadre.
 //
 
 import SwiftUI
@@ -14,8 +14,8 @@ struct AdminTeamPlantFilter: View {
 
     var body: some View {
         Menu {
-            Picker("Plant", selection: $viewModel.plantFilter) {
-                Text("All plants").tag(String?.none)
+            Picker("Site", selection: $viewModel.plantFilter) {
+                Text("All sites").tag(String?.none)
                 ForEach(viewModel.plantOptions) { plant in
                     Text(verbatim: plant.name).tag(Optional(plant.id))
                 }

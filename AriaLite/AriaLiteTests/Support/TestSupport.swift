@@ -27,7 +27,8 @@ enum TestEnv {
                                "aria.install_marker", "aria.legacy_keys_purged",
                                "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference", "aria.availability_pending",
                                "aria.api_base_url", "aria.auth_base_url",
-                               "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session"]
+                               "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session",
+                               "aria.signing_up"]
     static let keychainAccounts = ["aria.mobile_session", "aria.dev_access_token", "aria.operator_account",
                                    "aria.web_session", "aria.link_session", "aria.link_verifier"]
 
@@ -156,8 +157,8 @@ enum TestEnv {
     static func accessJSON(model: String = "rbac", admin: Bool = false,
                            role: String? = #"{"id":"r1","name":"Technician","set":"low","enabled":true}"#,
                            sections: String = #"{"work_orders":{"granted":true,"actions":["complete"]},"assets":{"granted":false,"actions":[]}}"#,
-                           followsRole: Bool = true, version: String = "v1") -> String {
-        #"{"model":"\#(model)","role":\#(role ?? "null"),"admin":\#(admin),"sections":\#(sections),"canManageRoles":false,"version":"\#(version)","appFollowsRole":\#(followsRole)}"#
+                           followsRole: Bool = true, version: String = "v1", canManageRoles: Bool = false) -> String {
+        #"{"model":"\#(model)","role":\#(role ?? "null"),"admin":\#(admin),"sections":\#(sections),"canManageRoles":\#(canManageRoles),"version":"\#(version)","appFollowsRole":\#(followsRole)}"#
     }
 
     /// Dà al backend collegato i diritti di `access` (JSON di `accessJSON`), come li legge GET /v1/me: la sessione

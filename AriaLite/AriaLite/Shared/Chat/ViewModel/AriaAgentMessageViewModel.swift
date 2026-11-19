@@ -89,17 +89,34 @@ final class AriaAgentMessageViewModel {
         return unique.filter { $0.to != nil && ($0.action == "navigate" || $0.action == "open-external") }
     }
 
-    func usageText(_ message: AriaAgentMessage) -> String? {
-        guard let usage = message.usage, let input = usage.inputTokens, let output = usage.outputTokens else { return nil }
-        return "↑\(input) ↓\(output)"
+    // MARK: - Crediti
+
+    /// La nota dei crediti sotto una risposta finita (tabella 3.5 del contratto); nil se non c'è niente da dire.
+    func creditNote(_ message: AriaAgentMessage) -> AriaTurnCreditNote? {
+        guard message.finished else { return nil }
+        return AriaTurnCreditNote.make(usage: message.turnUsage, config: chat.usageConfig)
+    }
+
+    /// Per VoiceOver: "Credits used by this reply: 2.4 credits · Effort: High, Lighter model".
+    func creditNoteAccessibilityLabel(_ note: AriaTurnCreditNote) -> String {
+        // Il " · " del testo si legge male: per VoiceOver le parti si separano con la virgola.
+        let spoken = ([note.text.replacingOccurrences(of: " · ", with: ", ")] + note.tags).joined(separator: ", ")
+        return String(localized: "Credits used by this reply: \(spoken)")
+    }
+
+    /// "You asked for High, but it isn't available on your plan…": solo se il livello è stato abbassato.
+    func degradedNotice(_ message: AriaAgentMessage) -> String? {
+        guard message.finished, let effort = message.turnUsage?.effort else { return nil }
+        return AriaEffortNotice.degradedSentence(effort)
     }
 
     /// Le card mandano domande, comandi rapidi e link.
-    func artifactActions(open: @escaping (URL) -> Void) -> AriaArtifactActions {
+    func artifactActions(messageId: String, open: @escaping (URL) -> Void) -> AriaArtifactActions {
         AriaArtifactActions(
             ask: { [chat] in chat.send($0) },
             quick: { [chat] in chat.sendQuick(label: $0, tool: $1, args: $2) },
-            open: { [weak self] path in if let url = self?.url(for: path) { open(url) } }
+            open: { [weak self] path in if let url = self?.url(for: path) { open(url) } },
+            reassignmentPlan: { [chat] in chat.reassignmentPlan(messageId: messageId, artifact: $0) }
         )
     }
 

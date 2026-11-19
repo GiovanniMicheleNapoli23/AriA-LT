@@ -6,7 +6,8 @@
 //
 //  La proposta dell'AI per il piano, come sezioni di un Form (come quella di un allarme): il testo libero
 //  della risposta, ogni parte (passi, ricambi, descrizione, durata) con il suo interruttore e il valore
-//  proposto, poi "Apply" (solo le parti scelte) e "Discard".
+//  proposto, poi "Apply" (solo le parti scelte) e "Discard". Applicata, la proposta se ne va: il foglio torna
+//  alle richieste e conferma con un avviso in alto.
 //
 
 import SwiftUI
@@ -69,7 +70,6 @@ struct AdminMaintenanceProposalSections: View {
                 }
             }
         }
-        .disabled(viewModel.didApply)
     }
 
     @ViewBuilder
@@ -79,21 +79,16 @@ struct AdminMaintenanceProposalSections: View {
                 .font(.subheadline)
                 .foregroundStyle(.red)
         }
-        if viewModel.didApply {
-            Label("Applied to the plan", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(Color.liteAccent)
-        } else {
-            Button { Task { await viewModel.apply() } } label: {
-                HStack {
-                    Label("Apply", systemImage: "checkmark")
-                    Spacer()
-                    if viewModel.isApplying { ProgressView() }
-                }
+        Button { Task { await viewModel.apply() } } label: {
+            HStack {
+                Label("Apply", systemImage: "checkmark")
+                Spacer()
+                if viewModel.isApplying { ProgressView() }
             }
-            .tint(Color.liteAccent)
-            .disabled(!viewModel.canApply)
-            Button("Discard", systemImage: "xmark", role: .destructive) { viewModel.discard() }
-                .disabled(viewModel.isApplying)
         }
+        .tint(Color.liteAccent)
+        .disabled(!viewModel.canApply)
+        Button("Discard", systemImage: "xmark", role: .destructive) { viewModel.discard() }
+            .disabled(viewModel.isApplying)
     }
 }

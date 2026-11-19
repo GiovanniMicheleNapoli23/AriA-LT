@@ -54,7 +54,7 @@ final class AdminMemoryFactDetailViewModel {
         add(String(localized: "Proposed by"), list.authorName(for: fact))
         add(String(localized: "Proposed on"), fact.createdAt?.formatted(date: .abbreviated, time: .shortened))
         add(String(localized: "Source"), fact.source.map(AdminMemoryFactLabels.source))
-        add(String(localized: "Plant"), list.plantName(fact.plantId) ?? String(localized: "Whole company"))
+        add(String(localized: "Site"), list.plantName(fact.plantId) ?? String(localized: "Whole company"))
         add(String(localized: "Category"), fact.category)
         add(String(localized: "Task"), fact.taskType.map(AdminMemoryFactLabels.readable))
         add(String(localized: "Validated by"), list.validatorName(for: fact))

@@ -36,11 +36,11 @@ struct AdminSparePartsPlaceholder: View {
                     }
                 }
             case .noPlant:
-                ContentUnavailableView("No plant selected", systemImage: "building.2",
-                                       description: Text("Choose a plant to see its spare parts."))
+                ContentUnavailableView("No site selected", systemImage: "building.2",
+                                       description: Text("Choose a site to see its spare parts."))
             case .empty:
                 ContentUnavailableView("No spare parts", systemImage: "shippingbox",
-                                       description: Text("Spare parts of this plant appear here."))
+                                       description: Text("Spare parts of this site appear here."))
             case .noLowStock:
                 ContentUnavailableView("Stock is fine", systemImage: "checkmark.circle",
                                        description: Text("No spare part is below its minimum quantity."))

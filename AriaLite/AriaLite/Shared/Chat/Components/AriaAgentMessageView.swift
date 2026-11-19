@@ -57,7 +57,7 @@ struct AriaAgentMessageView: View {
 
     /// Come Claude: il testo occupa tutta la larghezza e il blob di Aria sta sotto l'ultima risposta.
     private var assistant: some View {
-        let actions = model.artifactActions { openURL($0) }
+        let actions = model.artifactActions(messageId: message.id) { openURL($0) }
         // Costa (regex): una volta per body, non a ogni uso.
         let display = message.displayText
         return VStack(alignment: .leading, spacing: 10) {
@@ -125,6 +125,14 @@ struct AriaAgentMessageView: View {
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
+            }
+
+            if let note = model.creditNote(message) {
+                AriaTurnCreditNoteView(text: note.text, tags: note.tags,
+                                       accessibilityText: model.creditNoteAccessibilityLabel(note))
+            }
+            if let notice = model.degradedNotice(message) {
+                AriaEffortDegradedNotice(text: notice)
             }
 
             if model.showsToolbar(message, displayText: display) {

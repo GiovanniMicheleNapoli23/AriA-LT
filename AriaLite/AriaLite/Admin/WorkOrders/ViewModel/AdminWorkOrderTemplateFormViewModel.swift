@@ -143,7 +143,7 @@ final class AdminWorkOrderTemplateFormViewModel: Identifiable {
 
     var validationMessage: String? {
         if Self.trimmed(title) == nil { return String(localized: "Add a title.") }
-        if isCreating, backend.activePlantId == nil { return String(localized: "Choose a plant first.") }
+        if isCreating, backend.activePlantId == nil { return String(localized: "Choose a site first.") }
         if !AdminWorkOrderCostFormat.isBlank(estimatedMinutes), minutes == nil {
             return String(localized: "The estimated duration must be a whole number of minutes.")
         }

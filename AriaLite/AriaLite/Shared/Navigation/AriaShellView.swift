@@ -14,7 +14,7 @@
 
 import SwiftUI
 
-enum AriaDestination: Hashable {
+nonisolated enum AriaDestination: Hashable, Sendable {
     case chat
     case chats
     // Operatore
@@ -38,12 +38,12 @@ enum AriaDestination: Hashable {
     case adminPurchaseOrders
     case adminVendors
     case adminReports
-    case adminLLMUsage
+    case adminUsage
     case adminPlants
     case adminCategories
     case adminTeams
-    case adminMembers
-    case adminMobileUsers
+    case adminUsers
+    case adminRoles
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -66,6 +66,17 @@ extension EnvironmentValues {
     @Entry var sidebarController: AriaSidebarController?
     /// Apre una conversazione nella chat principale (per id di sessione): le sezioni lo usano per "Apri la chat".
     @Entry var openChatSession: AriaOpenChatSessionAction?
+    /// I connettori per il pulsante sotto il campo della chat; `nil` se il Marketplace non è offerto.
+    @Entry var chatConnectors: AriaChatConnectorsAccess?
+}
+
+/// Cosa serve al pulsante dei connettori della chat: la lista (quella del Marketplace) e come aprire il Marketplace
+/// già filtrato sui connettori. Due istanze con lo stesso Marketplace valgono come uguali (l'azione è sempre la stessa).
+struct AriaChatConnectorsAccess: Equatable {
+    let marketplace: AdminMarketplaceViewModel
+    let open: @MainActor () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.marketplace === rhs.marketplace }
 }
 
 /// L'azione dietro `openChatSession`, come `OpenURLAction`: si chiama con l'id della sessione. Una closure
@@ -115,7 +126,8 @@ struct AriaShellView: View {
     private var isOperator: Bool { viewModel.backend.usesOperatorLayout }
     /// Le sezioni che la sidebar offre ora: cambiano coi diritti letti da GET /v1/me.
     private var offered: Set<AriaDestination> {
-        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights)
+        AriaSidebarSections.destinations(operatorLayout: isOperator, rights: viewModel.backend.rights,
+                                         usageVisible: viewModel.backend.usageEntryVisible)
     }
 
     var body: some View {
@@ -149,9 +161,28 @@ struct AriaShellView: View {
         .background(Color.liteSidebar.ignoresSafeArea())
         .environment(\.sidebarController, sidebar)
         .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
+        .environment(\.chatConnectors, offered.contains(.adminMarketplace)
+                     ? AriaChatConnectorsAccess(marketplace: viewModel.adminMarketplace, open: openConnectors) : nil)
+        .modifier(AriaSetupTourWiring(
+            tour: viewModel.setupTour,
+            account: user.username,
+            isOperator: isOperator,
+            membershipRead: viewModel.backend.membership != nil,
+            access: AriaSetupTourAccess(backend: viewModel.backend, offered: offered),
+            locked: viewModel.lock != .none,
+            onStep: { select($0.destination) },
+            onFinish: { select(.chat) }
+        ))
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
         .onAppear { AriaAuthTrace.step("shell.appear") }
         .task(id: viewModel.backend.isReady) { await store.load() }
+        // Riaperta l'app con la sessione salvata, azienda e sito tornano da UserDefaults ma l'elenco delle aziende e
+        // dei siti no: si legge subito (dopo Face ID), non solo quando lo chiede una schermata (Aria server, banner
+        // della chat). Senza, il filtro "Site" dei Documenti e le scelte del sito nei moduli restano vuoti.
+        .task(id: viewModel.lock == .none) {
+            guard viewModel.lock == .none else { return }
+            await viewModel.backend.bootstrapIfNeeded()
+        }
         // Disponibilità e lavori all'apertura e a ogni ritorno in primo piano. Anche quando il layout dell'operatore
         // arriva dopo l'avvio (un membro entrato col link della web: `membership.restricted` letta dal bootstrap).
         .task(id: isOperator) {
@@ -164,10 +195,21 @@ struct AriaShellView: View {
             guard isOperator, granted else { return }
             Task { await viewModel.ariaWorkOrders.sync() }
         }
-        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat.
+        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat. Roles & Rights resta aperta (in caricamento)
+        // finché GET /v1/me non risponde: un `access` non letto non vuol dire "niente accesso".
         .onChange(of: offered) { _, offered in
             guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
+            guard destination != .adminRoles || viewModel.backend.access != nil else { return }
+            guard destination != .adminUsers || viewModel.backend.access != nil else { return }
             select(.chat)
+        }
+        // Users: l'elenco ha risposto 403 (o la sessione è finita per l'azienda): la sezione si chiude (§2).
+        .onChange(of: viewModel.adminUsers.isClosed) { _, closed in
+            if closed, destination == .adminUsers { select(.chat) }
+        }
+        // Usage: 403 `operation_forbidden` o rotte assenti, la sezione si chiude (contratto Usage §7).
+        .onChange(of: viewModel.adminUsage.isClosed) { _, closed in
+            if closed, destination == .adminUsage { select(.chat) }
         }
         // Con l'app attiva i diritti si rileggono anche da soli: un'azione tolta o ridata dall'admin si vede
         // senza che parta una chiamata. Il task finisce quando l'app esce dal primo piano.
@@ -177,14 +219,16 @@ struct AriaShellView: View {
         }
         // Aprendo la sidebar (le sezioni che il ruolo concede) o una sezione (i suoi pulsanti) non si aspetta il giro.
         .onChange(of: sidebar.isOpen) { _, open in
-            if open { Task { await viewModel.backend.refreshMembership() } }
+            if open { Task { await viewModel.backend.refreshMembershipIfStale() } }
         }
         .onChange(of: destination) { _, _ in
-            Task { await viewModel.backend.refreshMembership() }
+            Task { await viewModel.backend.refreshMembershipIfStale() }
         }
         .onChange(of: scenePhase) { _, phase in
             // A ogni ritorno si rileggono membership e diritti: niente nuovo accesso per un ruolo cambiato.
             if phase == .active { Task { await viewModel.backend.refreshMembership() } }
+            // Usage aperta: al ritorno in primo piano si rileggono cruscotto e saldo (contratto Usage §3.1).
+            if phase == .active, destination == .adminUsage { Task { await viewModel.adminUsage.refresh() } }
             guard isOperator else { return }
             // Uscendo dall'app le modifiche ai lavori ancora sul telefono partono subito.
             if phase == .background {
@@ -319,18 +363,18 @@ struct AriaShellView: View {
             AdminAlarmsView(viewModel: viewModel.adminAlarms)
         case .adminReports:
             AdminReportsView(viewModel: viewModel.adminReports)
-        case .adminLLMUsage:
-            AdminLLMUsageView(viewModel: viewModel.adminLLMUsage)
+        case .adminUsage:
+            AdminUsageView(viewModel: viewModel.adminUsage, billing: viewModel.adminUsageBilling)
         case .adminPlants:
             AdminPlantsView(viewModel: viewModel.adminPlants)
         case .adminCategories:
             AdminCategoriesView(viewModel: viewModel.adminCategories)
         case .adminTeams:
             AdminTeamsView(viewModel: viewModel.adminTeams)
-        case .adminMembers:
-            AdminMembersView(viewModel: viewModel.adminMembers)
-        case .adminMobileUsers:
-            AdminMobileUsersView(viewModel: viewModel.adminMobileUsers)
+        case .adminUsers:
+            AdminUsersView(viewModel: viewModel.adminUsers)
+        case .adminRoles:
+            AdminRolesView(viewModel: viewModel.adminRoles, members: viewModel.adminUsers)
         }
     }
 
@@ -351,6 +395,8 @@ struct AriaShellView: View {
 
     /// Orizzontale, e — a sidebar chiusa — partito dal bordo sinistro (lo scroll resta dei contenuti).
     private func isSidebarDrag(_ value: DragGesture.Value) -> Bool {
+        // Il giro guidato blocca la sidebar finché dura (la prima volta è obbligatorio).
+        guard !viewModel.setupTour.isActive else { return false }
         guard abs(value.translation.width) > abs(value.translation.height) else { return false }
         return sidebar.isOpen || value.startLocation.x < edgeWidth
     }
@@ -361,6 +407,16 @@ struct AriaShellView: View {
         destination = target
         searchingChats = false
         sidebar.setOpen(false)
+    }
+
+    /// Da "Manage connectors" nel popover della chat: il Marketplace sui soli connettori (una ricerca o un filtro rimasti
+    /// da prima non devono nasconderli).
+    private func openConnectors() {
+        let marketplace = viewModel.adminMarketplace
+        marketplace.searchText = ""
+        marketplace.clearFilters()
+        marketplace.select(kind: .connector)
+        select(.adminMarketplace)
     }
 
     private func searchChats() {

@@ -116,6 +116,12 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case tooManyAttempts(retryAfter: Int?)
     /// Magic link della web senza captcha Turnstile pronto, o rifiutato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
     case captchaRejected
+    /// Iscrizione dall'app: il captcha Turnstile manca o non è passato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
+    /// Senza, il link d'iscrizione non parte: non c'è un altro link a cui ripiegare.
+    case signUpCheckFailed
+    /// L'host di accesso non iscrive dall'app: rotta assente (404, una web precedente a questa release) o iscrizione
+    /// spenta in quell'ambiente (403 `SIGN_UP_DISABLED`).
+    case signUpUnavailable
     /// Il sistema non è raggiungibile (nessuna rete, server giù): non è un errore dell'operatore.
     case serverOffline
     /// 403 `not_a_mobile_user`: il login è valido ma non è quello di un utente mobile.
@@ -136,8 +142,22 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     /// 403 `permission_denied`: il ruolo non ha la sezione o l'azione (o è in pausa, o non c'è). L'azienda resta
     /// scelta; i diritti si rileggono da GET /v1/me (AriaBackend) e ciò che non è più concesso sparisce.
     case permissionDenied(AriaPermissionDenial)
+    /// Un rifiuto delle rotte di Roles & Rights con un codice noto (versione vecchia, nome già usato…).
+    case accessRefused(AriaAccessRefusal)
+    /// Un rifiuto delle rotte delle persone e dell'accesso all'app con un codice noto (`detail.code`); `detail` è il
+    /// testo del server, per chi vuole mostrarlo.
+    case peopleRefused(AriaPeopleRefusal, detail: String)
+    /// Un rifiuto del tetto di spesa o degli avvisi d'uso con un codice noto (`detail.code`, più `minimum`, `user_ids`,
+    /// `notice`, `expected`): vedi AriaUsageRefusal.
+    case usageRefused(AriaUsageRefusal)
+    /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva. Le altre aziende funzionano
+    /// ancora: si lascia questa (AriaBackend.leaveEndedWorkspace).
+    case sessionEnded
     /// 422 con `detail.field` e `detail.valid` (closeout): il valore scelto non esiste, ecco quelli accettati.
     case invalidChoice(field: String, valid: [String], message: String)
+    /// 402 `spend_cap_reached` di POST /v1/responses: il tetto di spesa dell'azienda è raggiunto (`overage.at_spend_cap`
+    /// "stop"). Risponde prima dello stream; non si riprova. Il testo è quello del server, per i log.
+    case spendCapReached(String)
     case decoding(String)
     case stream(String)
 
@@ -157,6 +177,10 @@ nonisolated enum AriaError: LocalizedError, Sendable {
             String(localized: "Too many attempts. Wait a minute and try again.")
         case .captchaRejected:
             String(localized: "The security check for web accounts wasn't ready. If no email arrives, send the link again.")
+        case .signUpCheckFailed:
+            String(localized: "The security check didn't pass. Complete it and try again.")
+        case .signUpUnavailable:
+            String(localized: "This server doesn't support creating an account from the app yet.")
         case .serverOffline:
             String(localized: "Aria is offline. Try again in a moment.")
         case .notMobileUser:
@@ -167,13 +191,19 @@ nonisolated enum AriaError: LocalizedError, Sendable {
         case .wafBlocked: String(localized: "Request blocked by the firewall (body over 8 KB).")
         case .bodyTooLarge(let bytes, let limit): String(localized: "Message too long (\(bytes) bytes, limit \(limit)).")
         case .missingCompany: String(localized: "No company selected.")
-        case .missingPlant: String(localized: "Select a plant before using the chat.")
+        case .missingPlant: String(localized: "Select a site before using the chat.")
         case .notOnPhone: String(localized: "This isn't available on the phone yet.")
         case .permissionDenied(let denial):
             denial.pausesAccess
                 ? String(localized: "Your access is paused. Ask your admin.")
                 : String(localized: "Your role doesn't allow this.")
+        case .accessRefused(let refusal): refusal.localized
+        case .peopleRefused(let refusal, _): refusal.message
+        case .usageRefused(let refusal): refusal.message
+        case .sessionEnded: String(localized: "Your session for this workspace was ended. Sign in again.")
         case .invalidChoice(_, _, let message): message
+        case .spendCapReached:
+            String(localized: "Your company's spending limit is reached. An owner or admin can raise it.")
         case .decoding(let message): String(localized: "Invalid server response: \(message)")
         case .stream(let message): message
         }
@@ -276,6 +306,12 @@ nonisolated enum AriaHTTP {
     static func check(_ response: URLResponse, _ data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
         guard !(200..<300).contains(http.statusCode) else { return }
+        // 402 al tetto di spesa: `{"error":{"type":"spend_cap_reached","code":402}}`. Il `code` qui è il NUMERO 402, quindi
+        // `code(from:)` non serve: si legge `error.type`.
+        if http.statusCode == 402, let json = try? JSONDecoder().decode(AriaJSON.self, from: data),
+           json["error"]?["type"]?.stringValue == "spend_cap_reached" {
+            throw AriaError.spendCapReached(detail(from: data))
+        }
         let server = http.value(forHTTPHeaderField: "Server") ?? ""
         if http.statusCode == 403, server.localizedCaseInsensitiveContains("cloudfront") {
             throw AriaError.wafBlocked
@@ -286,8 +322,21 @@ nonisolated enum AriaHTTP {
         if http.statusCode == 403, code(from: data) == "operation_forbidden" {
             throw AriaError.notOnPhone
         }
+        if http.statusCode == 403, code(from: data) == "session_ended" {
+            throw AriaError.sessionEnded
+        }
         if http.statusCode == 403, let denial = AriaPermissionDenial(data) {
             throw AriaError.permissionDenied(denial)
+        }
+        if let refusal = code(from: data).flatMap(AriaAccessRefusal.init(rawValue:)) {
+            throw AriaError.accessRefused(refusal)
+        }
+        // Mai su un 403: `membership_suspended` lì è il rifiuto dei diritti (Agent Studio), non quello delle persone.
+        if http.statusCode != 403, let refusal = code(from: data).flatMap(AriaPeopleRefusal.init(rawValue:)) {
+            throw AriaError.peopleRefused(refusal, detail: detail(from: data))
+        }
+        if http.statusCode != 403, let refusal = AriaUsageRefusal(data) {
+            throw AriaError.usageRefused(refusal)
         }
         if http.statusCode == 409, let conflict = AriaTurnConflict(data) {
             throw AriaError.turnConflict(conflict)

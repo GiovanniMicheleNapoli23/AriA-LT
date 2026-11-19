@@ -5,13 +5,16 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un asset, come /assets/{tag} della web: intestazione, disponibilità degli ultimi
-//  30 giorni, fermi macchina, ordini di lavoro e scheda tecnica. "Edit" in alto apre il form.
+//  30 giorni, salute, fermi macchina, ordini di lavoro e scheda tecnica. Sotto l'intestazione lo stato di
+//  revisione (AdminReviewBanner), le decisioni nella barra in basso (AdminReviewDecisionBar). "Edit" in alto apre il form;
+//  il cestino (solo per il ruolo che può eliminare) chiede conferma e chiude il dettaglio.
 //
 
 import SwiftUI
 
 struct AdminAssetDetailView: View {
     @State private var viewModel: AdminAssetDetailViewModel
+    @Environment(\.dismiss) private var dismiss
 
     @State private var isEditing = false
     @State private var downtimeForm: AdminDowntimeFormViewModel?
@@ -27,16 +30,28 @@ struct AdminAssetDetailView: View {
                 if let message = viewModel.assetError {
                     AdminSectionNotice(text: message, isError: true)
                 }
+                if viewModel.showsReview {
+                    AdminReviewBanner(stage: viewModel.reviewStage, message: viewModel.reviewMessage)
+                }
                 if viewModel.asset.description != nil || viewModel.asset.notes != nil { textCard }
+                AdminAssetHealthCard(viewModel: viewModel.health)
                 AdminAssetStatsCard(viewModel: viewModel)
-                AdminAssetDowntimeCard(viewModel: viewModel) { downtime in
-                    downtimeForm = viewModel.makeDowntimeForm(editing: downtime)
+                if AdminAssetDetailViewModel.showsDowntime {
+                    AdminAssetDowntimeCard(viewModel: viewModel) { downtime in
+                        downtimeForm = viewModel.makeDowntimeForm(editing: downtime)
+                    }
                 }
                 AdminAssetWorkOrdersCard(viewModel: viewModel)
                 detailsCard
             }
             .padding(20)
             .ariaReadableWidth()
+        }
+        .ariaBottomBar {
+            if viewModel.showsReview {
+                AdminReviewDecisionBar(actions: viewModel.reviewActions, running: viewModel.reviewing,
+                                       error: viewModel.reviewError, perform: { viewModel.requestReview($0) })
+            }
         }
         .liteBackground()
         .navigationTitle(viewModel.asset.tag)
@@ -45,6 +60,17 @@ struct AdminAssetDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { isEditing = true }
                     .disabled(!viewModel.canEdit)
+            }
+            if viewModel.canDeleteAsset {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isDeletingAsset {
+                        ProgressView()
+                    } else {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            viewModel.showsAssetDeleteConfirmation = true
+                        }
+                    }
+                }
             }
         }
         .refreshable { await viewModel.load() }
@@ -57,6 +83,9 @@ struct AdminAssetDetailView: View {
                 Task { await viewModel.downtimeSaved(saved) }
             }
         }
+        .adminReviewConfirmation(isPresented: $viewModel.isConfirmingReview, action: viewModel.confirmingReview) { action in
+            Task { await viewModel.review(action) }
+        }
         .alert("Couldn't update downtime", isPresented: $viewModel.showsActionError) {
             Button("OK") {}
         } message: {
@@ -68,6 +97,19 @@ struct AdminAssetDetailView: View {
             Button("Cancel", role: .cancel) {}
         } message: { _ in
             Text("The uptime statistics of this asset will be recalculated.")
+        }
+        .alert("Delete this asset?", isPresented: $viewModel.showsAssetDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { if await viewModel.deleteAsset() { dismiss() } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("“\(viewModel.asset.tag)” will be removed from your assets. This can't be undone.")
+        }
+        .alert("Couldn't delete the asset", isPresented: $viewModel.isShowingAssetDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(verbatim: viewModel.assetDeleteError ?? "")
         }
     }
 

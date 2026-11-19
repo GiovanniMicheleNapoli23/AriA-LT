@@ -122,7 +122,7 @@ final class AdminInspectionFormViewModel {
 
     var validationMessage: String? {
         if trimmed(title).isEmpty { return String(localized: "Enter a title for the inspection.") }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site.") }
         return nil
     }
 

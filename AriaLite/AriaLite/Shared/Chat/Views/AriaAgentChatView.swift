@@ -48,6 +48,7 @@ struct AriaAgentChatView: View {
         .animation(.snappy(duration: 0.3), value: model.activeQuestionID)
         .animation(.snappy(duration: 0.3), value: model.questionCollapsed)
         .animation(.snappy(duration: 0.25), value: model.notice)
+        .animation(.snappy(duration: 0.25), value: model.warning)
         .animation(.snappy(duration: 0.25), value: model.turnError)
         .animation(.snappy(duration: 0.25), value: model.isOnline)
         .animation(.snappy(duration: 0.3), value: model.hasBlockingProcedure)

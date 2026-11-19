@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La proposta dell'AI per l'allarme, come sezioni di un Form: il testo libero della risposta, ogni campo
-//  cambiato con la sua spunta e il valore proposto, poi "Apply" (solo i campi scelti) e "Discard".
+//  cambiato con il suo interruttore e il valore proposto, poi "Apply" (solo i campi scelti) e "Discard".
+//  Applicata, la proposta se ne va: il foglio torna alle richieste e conferma con un avviso in alto.
 //
 
 import SwiftUI
@@ -56,7 +57,6 @@ struct AdminAlarmProposalSections: View {
                 }
             }
         }
-        .disabled(viewModel.didApply)
     }
 
     @ViewBuilder
@@ -66,21 +66,16 @@ struct AdminAlarmProposalSections: View {
                 .font(.subheadline)
                 .foregroundStyle(.red)
         }
-        if viewModel.didApply {
-            Label("Applied to the alarm", systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        } else {
-            Button { Task { await viewModel.apply() } } label: {
-                HStack {
-                    Label("Apply", systemImage: "checkmark")
-                    Spacer()
-                    if viewModel.isApplying { ProgressView() }
-                }
+        Button { Task { await viewModel.apply() } } label: {
+            HStack {
+                Label("Apply", systemImage: "checkmark")
+                Spacer()
+                if viewModel.isApplying { ProgressView() }
             }
-            .tint(Color.liteAccent)
-            .disabled(!viewModel.canApply)
-            Button("Discard", systemImage: "xmark", role: .destructive) { viewModel.discard() }
-                .disabled(viewModel.isApplying)
         }
+        .tint(Color.liteAccent)
+        .disabled(!viewModel.canApply)
+        Button("Discard", systemImage: "xmark", role: .destructive) { viewModel.discard() }
+            .disabled(viewModel.isApplying)
     }
 }

@@ -21,15 +21,6 @@ struct RoleGatedPureTests {
         try JSONDecoder().decode(AriaJSON.self, from: Data(text.utf8))
     }
 
-    @Test func llmUsageSessionReadsTheUserIdFromUserId() throws {
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let mine = try decoder.decode(AdminLLMUsageSession.self, from: Data(#"{"id":"s1","status":"active","user_id":"u7"}"#.utf8))
-        #expect(mine.userId == "u7")
-        let old = try decoder.decode(AdminLLMUsageSession.self, from: Data(#"{"id":"s2","status":"active"}"#.utf8))
-        #expect(old.userId == nil, "un backend che non manda user_id: la sessione non è di nessuno in particolare")
-    }
-
     @Test func streamEventsBecomeTheMatching403() throws {
         let denied = try json(#"{"type":"permission_denied","detail":{"code":"permission_denied","message":"No","section":"scenario_analysis","action":"approve","reason":"no_action"}}"#)
         guard case .permissionDenied(let denial)? = AdminAgentStudioAPI.accessError(in: denied) else {
@@ -243,6 +234,14 @@ extension BackendTests {
             }
         }
 
+        @Test func aNewAssetReadsItsRightsFromDraftEvenWhenItStartsApproved() async throws {
+            let backend = try await connected()
+            await become(.role(sections("assets", "approve")), backend)
+            let form = AdminAssetFormViewModel(backend: backend, editing: nil)
+            #expect(form.status == "approved")
+            #expect(form.statusOptions == ["approved", "draft", "staged"], "creare in bozza non vuole `unapprove`")
+        }
+
         @Test func assetStatusPickerOffersOnlyTheChangesTheRoleAllows() async throws {
             let backend = try await connected()
             let draft = try decode(AdminAsset.self, #"{"id":"a1","tag":"M1","name":"Motor","status":"draft"}"#)
@@ -251,11 +250,11 @@ extension BackendTests {
             // Una bozza: senza approve né reject restano le scelte che non toccano l'approvazione.
             await become(.role(sections("assets")), backend)
             var form = AdminAssetFormViewModel(backend: backend, editing: draft)
-            #expect(form.statusOptions == ["draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["draft", "staged"])
             #expect(form.showsStatusPicker)
             await become(.role(sections("assets", "approve")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: draft)
-            #expect(form.statusOptions == ["approved", "draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["approved", "draft", "staged"])
             await become(.role(sections("assets", "reject")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: draft)
             #expect(form.statusOptions == ["draft", "staged", "rejected", "superseded"])
@@ -267,7 +266,7 @@ extension BackendTests {
             #expect(!form.showsStatusPicker)
             await become(.role(sections("assets", "unapprove")), backend)
             form = AdminAssetFormViewModel(backend: backend, editing: approved)
-            #expect(form.statusOptions == ["approved", "draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["approved", "draft", "staged"])
 
             // Senza ruolo (admin, legacy, backend precedente) tutte le scelte.
             for who in [Who.admin, .legacy, .noBlock] {
@@ -287,7 +286,7 @@ extension BackendTests {
             // Un ricambio nuovo parte bozza: senza approve non si può approvare.
             await become(.role(sections("spare_parts")), backend)
             var form = AdminSparePartFormViewModel(mode: .create, owner: owner)
-            #expect(form.statusChoices == [.staged, .draft, .superseded])
+            #expect(form.statusChoices == [.staged, .draft])
             await become(.role(sections("spare_parts", "approve", "reject")), backend)
             form = AdminSparePartFormViewModel(mode: .create, owner: owner)
             #expect(form.statusChoices == [.staged, .draft, .approved, .rejected, .superseded])
@@ -299,7 +298,7 @@ extension BackendTests {
             #expect(!form.showsStatusPicker)
             await become(.role(sections("spare_parts", "unapprove")), backend)
             form = AdminSparePartFormViewModel(mode: .edit(approved), owner: owner)
-            #expect(form.statusChoices == [.staged, .draft, .approved, .superseded])
+            #expect(form.statusChoices == [.staged, .draft, .approved])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
@@ -348,9 +347,9 @@ extension BackendTests {
             let approved = try alarm(status: "approved", id: "a2")
 
             await become(.role(sections("alarms")), backend)
-            #expect(keys(draft) == ["draft", "staged", "superseded"])
+            #expect(keys(draft) == ["draft", "staged"])
             await become(.role(sections("alarms", "approve")), backend)
-            #expect(keys(draft) == ["approved", "draft", "staged", "superseded"])
+            #expect(keys(draft) == ["approved", "draft", "staged"])
             await become(.role(sections("alarms", "reject")), backend)
             #expect(keys(draft) == ["draft", "staged", "rejected", "superseded"])
 
@@ -359,7 +358,7 @@ extension BackendTests {
             let form = AdminAlarmFormViewModel(alarm: approved, backend: backend, onSaved: { _ in })
             #expect(!form.showsStatusPicker, "una sola scelta: il selettore non serve")
             await become(.role(sections("alarms", "unapprove")), backend)
-            #expect(keys(approved) == ["approved", "draft", "staged", "superseded"])
+            #expect(keys(approved) == ["approved", "draft", "staged"])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
@@ -367,22 +366,47 @@ extension BackendTests {
             }
         }
 
-        @Test func alarmDetailCanApproveOnlyAPendingAlarmWithTheApproveRight() async throws {
+        @Test func alarmDetailOffersTheDecisionsOfItsStatusThatTheRoleHolds() async throws {
             let backend = try await connected()
             let owner = AdminAlarmsViewModel(backend: backend)
-            let draft = try alarm(status: "draft")
-            let approved = try alarm(status: "approved", id: "a2")
+            let draft = AdminAlarmDetailViewModel(alarm: try alarm(status: "draft"), owner: owner)
+            let approved = AdminAlarmDetailViewModel(alarm: try alarm(status: "approved", id: "a2"), owner: owner)
+            let rejected = AdminAlarmDetailViewModel(alarm: try alarm(status: "rejected", id: "a3"), owner: owner)
 
             await become(.role(sections("alarms")), backend)
-            #expect(!AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
+            #expect(draft.reviewActions.isEmpty && !draft.showsReview, "senza diritti niente avviso")
             await become(.role(sections("alarms", "approve")), backend)
-            #expect(AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
-            #expect(!AdminAlarmDetailViewModel(alarm: approved, owner: owner).canApprove, "già approvato")
+            #expect(draft.reviewActions == [.approve] && draft.showsReview)
+            #expect(approved.reviewActions.isEmpty, "già approvato: Approve non c'è")
+            await become(.role(sections("alarms", "reject")), backend)
+            #expect(draft.reviewActions == [.reject])
+            #expect(approved.reviewActions.isEmpty, "rifiutare un approvato vuole anche unapprove")
+            #expect(rejected.reviewActions == [.backToDraft])
+            await become(.role(sections("alarms", "reject", "unapprove")), backend)
+            #expect(approved.reviewActions == [.reject, .unapprove])
 
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
-                #expect(AdminAlarmDetailViewModel(alarm: draft, owner: owner).canApprove)
+                #expect(draft.reviewActions == [.reject, .approve])
+                #expect(rejected.reviewActions == [.backToDraft, .approve])
             }
+        }
+
+        @Test func rejectingAnAlarmPatchesOnlyItsStatus() async throws {
+            let backend = try await connected()
+            await become(.role(sections("alarms", "reject")), backend)
+            server.route("PATCH /v1/alarms/a1", .json(#"{"id":"a1","code":"E-a1","description":"Overload","status":"rejected"}"#))
+            let detail = AdminAlarmDetailViewModel(alarm: try alarm(status: "draft"), owner: AdminAlarmsViewModel(backend: backend))
+
+            detail.requestReview(.reject)
+            #expect(detail.confirmingReview == .reject, "Reject chiede conferma")
+            #expect(server.calls("PATCH /v1/alarms/a1").isEmpty)
+            await detail.review(.reject)
+
+            let body = server.calls("PATCH /v1/alarms/a1").first?.json
+            #expect(body?["status"] as? String == "rejected" && body?.count == 1)
+            #expect(detail.alarm.status == .rejected && detail.reviewError == nil)
+            #expect(detail.reviewActions == [.backToDraft], "da rifiutato si torna in bozza")
         }
 
         @Test func alarmListSelectsDraftsOnlyWithTheApproveRight() async throws {
@@ -414,49 +438,6 @@ extension BackendTests {
             for who in [Who.admin, .legacy, .noBlock] {
                 await become(who, backend)
                 #expect(diagnosis.canCreateWorkOrder)
-            }
-        }
-
-        // MARK: Consumi LLM
-
-        private func llmSession(id: String = "s1", status: String = "active", user: String?) throws -> AdminLLMUsageSession {
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let owner = user.map { #","user_id":"\#($0)""# } ?? ""
-            return try decoder.decode(AdminLLMUsageSession.self,
-                                      from: Data(#"{"id":"\#(id)","status":"\#(status)"\#(owner)}"#.utf8))
-        }
-
-        @Test func llmUsageStopIsOfferedOnOwnSessionsAndToRolesWithStopSession() async throws {
-            let backend = try await connected()
-            let me = try #require(backend.mobileAccount?.id)
-            let viewModel = AdminLLMUsageViewModel(backend: backend)
-            let own = try llmSession(id: "own", user: me)
-            let colleague = try llmSession(id: "other", user: "someone-else")
-            let unknownOwner = try llmSession(id: "anon", user: nil)
-            let finished = try llmSession(id: "done", status: "completed", user: "someone-else")
-
-            // Un ruolo con la sezione ma senza `stop_session`: ferma solo le proprie.
-            await become(.role(sections("llm_usage")), backend)
-            #expect(viewModel.showsStop(own))
-            #expect(viewModel.canStop(own))
-            #expect(!viewModel.showsStop(colleague))
-            #expect(!viewModel.showsStop(unknownOwner))
-            viewModel.requestStop(colleague)
-            #expect(viewModel.sessionToStop == nil, "senza il diritto la conferma non si apre")
-            viewModel.requestStop(own)
-            #expect(viewModel.sessionToStop == own)
-
-            // Con `stop_session` anche quelle dei colleghi; una già finita non si ferma comunque.
-            await become(.role(sections("llm_usage", "stop_session")), backend)
-            #expect(viewModel.showsStop(colleague))
-            #expect(viewModel.showsStop(unknownOwner))
-            #expect(!viewModel.showsStop(finished))
-
-            for who in [Who.admin, .legacy, .noBlock] {
-                await become(who, backend)
-                #expect(viewModel.showsStop(colleague))
-                #expect(!viewModel.showsStop(finished))
             }
         }
 
@@ -582,7 +563,6 @@ extension BackendTests {
                 #expect(parts.isForbidden)
                 #expect(parts.message != generic)
 
-                #expect(AdminLLMUsageFailure.message(for: error, backend: backend) != generic)
             }
             // Un errore qualunque resta il suo testo (e non un rifiuto dei diritti).
             let other = AriaError.http(status: 500, detail: "boom")

@@ -23,7 +23,7 @@ extension AdminWorkOrderFormViewModel {
         case .details:
             trimmedTitle.isEmpty ? String(localized: "Add a title.") : nil
         case .location:
-            draft.plantId == nil ? String(localized: "Choose a plant.") : nil
+            draft.plantId == nil ? String(localized: "Choose a site.") : nil
         case .assignment:
             minutesAreValid ? nil : String(localized: "The estimated duration must be a whole number of minutes.")
         case .procedure, .classification, .review:
@@ -101,7 +101,7 @@ extension AdminWorkOrderFormViewModel {
             add(String(localized: "Status"), d.status.localized)
             add(String(localized: "Category"), d.category)
         case .location:
-            add(String(localized: "Plant"), d.plantId == nil ? nil : plantLabel)
+            add(String(localized: "Site"), d.plantId == nil ? nil : plantLabel)
             add(String(localized: "Asset"), d.assetTag == nil ? nil : assetLabel)
             add(String(localized: "Zone"), d.zone)
             add(String(localized: "Alarm code"), d.alarmCode)

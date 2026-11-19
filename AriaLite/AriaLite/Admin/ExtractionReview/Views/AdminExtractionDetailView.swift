@@ -77,7 +77,7 @@ struct AdminExtractionDetailView: View {
             Button("Reject", role: .destructive) { decide(AdminExtractionStatus.rejected) }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("It won't be added to the plant's knowledge.")
+            Text("It won't be added to the site's knowledge.")
         }
     }
 

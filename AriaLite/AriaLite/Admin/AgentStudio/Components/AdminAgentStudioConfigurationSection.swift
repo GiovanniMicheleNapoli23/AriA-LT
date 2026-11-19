@@ -22,10 +22,20 @@ struct AdminAgentStudioConfigurationSection: View {
                 ForEach(items) { item in
                     NavigationLink(value: item.route) { row(item) }
                         .buttonStyle(.plain)
+                        .ariaSetupTourAnchor(tourStep(for: item))
                     if item != items.last { Divider().padding(.leading, 14) }
                 }
             }
             .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
+        }
+    }
+
+    /// Il giro guidato indica la riga dei prompt degli agenti e quella delle policy (governance).
+    private func tourStep(for item: AdminAgentStudioConfigurationItem) -> AriaSetupTourStep? {
+        switch item {
+        case .prompts: return .agents
+        case .policy: return .governance
+        case .approvals, .accuracy: return nil
         }
     }
 

@@ -22,7 +22,10 @@ actor AriaContext {
     private(set) var plantId: String? = UserDefaults.standard.string(forKey: "aria.plant_id")
 
     /// Lingua dell'app: il backend la usa per fissare la lingua della sessione al primo turno.
-    nonisolated var locale: String {
+    nonisolated var locale: String { Self.appLocale }
+
+    /// `it` o `en`: serve anche fuori dal contesto (la lingua dell'email del link d'iscrizione).
+    nonisolated static var appLocale: String {
         Locale.current.language.languageCode?.identifier == "it" ? "it" : "en"
     }
 

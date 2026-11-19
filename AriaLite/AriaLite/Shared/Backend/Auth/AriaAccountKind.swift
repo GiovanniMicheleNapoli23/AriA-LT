@@ -29,8 +29,16 @@ nonisolated struct AriaMe: Decodable, Sendable {
     let membership: AriaMeMembership?
     /// Solo con `Company-Id`: ruolo e diritti nell'azienda (AriaAccess). `nil` su un backend precedente.
     let access: AriaAccess?
+    /// Il profilo dell'onboarding (passo Profilo): `nil` finché non è stato scritto.
+    let jobRole: String?
+    let phone: String?
+    /// L'azienda ancora in onboarding di cui si è membri, con il proprio ruolo: con `owner` o `admin` tocca a noi
+    /// scegliere il piano; un semplice membro compila solo il profilo.
+    let onboardingCompany: AriaOnboardingCompany?
 
-    private enum CodingKeys: String, CodingKey { case id, name, email, operatorProfile, membership, access }
+    private enum CodingKeys: String, CodingKey {
+        case id, name, email, operatorProfile, membership, access, jobRole, phone, onboardingCompany
+    }
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -41,6 +49,9 @@ nonisolated struct AriaMe: Decodable, Sendable {
         // Un backend senza il campo, o con una forma nuova, non rompe l'accesso.
         membership = try? c.decodeIfPresent(AriaMeMembership.self, forKey: .membership)
         access = try? c.decodeIfPresent(AriaAccess.self, forKey: .access)
+        jobRole = try? c.decodeIfPresent(String.self, forKey: .jobRole)
+        phone = try? c.decodeIfPresent(String.self, forKey: .phone)
+        onboardingCompany = try? c.decodeIfPresent(AriaOnboardingCompany.self, forKey: .onboardingCompany)
     }
 
     /// L'account come lo ricorda l'app: per un operatore valgono nome ed email del profilo operatore.
@@ -50,6 +61,17 @@ nonisolated struct AriaMe: Decodable, Sendable {
         }
         return AriaMobileAccount(id: id, name: name ?? "", email: email ?? "", kind: .admin)
     }
+}
+
+/// `onboardingCompany` di GET /v1/me: l'azienda creata ma non ancora attiva (piano non scelto).
+nonisolated struct AriaOnboardingCompany: Decodable, Sendable, Equatable {
+    let id: String?
+    let name: String?
+    let slug: String?
+    let role: String?
+
+    /// Owner o admin: il piano lo sceglie questa persona.
+    var runsCompany: Bool { id?.isEmpty == false && (role == "owner" || role == "admin") }
 }
 
 /// `membership` di GET /v1/me per l'azienda di `Company-Id`. Dall'app `restricted` è vero per un operatore (ogni

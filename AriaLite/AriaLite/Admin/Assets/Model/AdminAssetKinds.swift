@@ -52,6 +52,9 @@ nonisolated enum AdminAssetStatus: String, CaseIterable, Sendable, Hashable, Ide
 
     var id: String { rawValue }
 
+    /// Bozze in attesa di revisione: sono le uniche che si approvano in blocco.
+    var isPending: Bool { self == .draft || self == .staged }
+
     var label: String {
         switch self {
         case .approved: String(localized: "Approved")

@@ -4,8 +4,8 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Rotte dei membri (pagina /members della web): elenco e dettaglio, turni, assegnazioni, team ad hoc
-//  e nuovo utente.
+//  Rotte dei membri con l'azienda nell'header `Company-Id` (la scheda della persona in Users): dettaglio, turni,
+//  assegnazioni e team.
 //  Body e risposte in snake_case (`.snakeCased()`), i modelli restano in camelCase.
 //
 
@@ -14,22 +14,14 @@ import Foundation
 nonisolated struct AdminMembersAPI: Sendable {
     let api: AriaAPIClient
 
-    /// GET /v1/members: array di righe; una riga illeggibile si salta, le altre restano.
-    /// Ricerca e filtri si fanno sul telefono, quindi non si mandano `q` né `on_date`.
-    func list() async throws -> [AdminMember] {
-        let endpoint: AriaEndpoint<AriaLossyArray<AdminMember>> =
-            AriaEndpoint<AriaLossyArray<AdminMember>>.get("v1/members").snakeCased()
-        return try await api.call(endpoint).items
-    }
-
     /// GET /v1/members/{user_id}
     func member(id: String) async throws -> AdminMember {
         try await api.call(AriaEndpoint<AdminMember>.get("v1/members/\(id)").snakeCased())
     }
 
-    /// GET /v1/members/{user_id}/shifts nell'intervallo di giorni (`YYYY-MM-DD`).
-    func shifts(userId: String, from: String, to: String) async throws -> [AdminMemberShift] {
-        let query = [URLQueryItem(name: "from_date", value: from), URLQueryItem(name: "to_date", value: to)]
+    /// GET /v1/members/{user_id}/shifts: tutte le assegnazioni, le più recenti prima; le date (`YYYY-MM-DD`) restringono.
+    func shifts(userId: String, from: String? = nil, to: String? = nil) async throws -> [AdminMemberShift] {
+        let query = [("from_date", from), ("to_date", to)].compactMap { name, value in value.map { URLQueryItem(name: name, value: $0) } }
         let endpoint: AriaEndpoint<AriaLossyArray<AdminMemberShift>> =
             AriaEndpoint(method: "GET", path: "v1/members/\(userId)/shifts", query: query).snakeCased()
         return try await api.call(endpoint).items
@@ -52,16 +44,5 @@ nonisolated struct AdminMembersAPI: Sendable {
         let endpoint: AriaEndpoint<AriaLossyArray<AdminMemberTeamOption>> =
             AriaEndpoint<AriaLossyArray<AdminMemberTeamOption>>.get("v1/teams").snakeCased()
         return try await api.call(endpoint).items
-    }
-
-    /// POST /v1/teams/ad-hoc: team temporaneo con i suoi membri e i giorni di turno. Il 201 ha uno schema vuoto.
-    func createAdHocTeam(_ body: AdminMemberAdHocTeamCreate) async throws {
-        let endpoint = AriaEndpoint<AriaNoContent>.post("v1/teams/ad-hoc", body: body).snakeCased()
-        let _: AriaNoContent = try await api.call(endpoint)
-    }
-
-    /// POST /v1/users: nuovo utente dell'azienda. Si rilegge l'elenco dei membri dopo.
-    func createUser(_ body: AdminMemberUserCreate) async throws {
-        let _: AriaNoContent = try await api.call(AriaEndpoint<AriaNoContent>.post("v1/users", body: body).snakeCased())
     }
 }

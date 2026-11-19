@@ -105,7 +105,7 @@ struct AdminCraftedWidgetDetailView: View {
                                           nested: viewModel.nested(of: json))
             updatedLine
         case .empty?:
-            AdminSectionNotice(text: String(localized: "The tool returned no data for this plant right now."),
+            AdminSectionNotice(text: String(localized: "The tool returned no data for this site right now."),
                                systemImage: "tray")
         case nil:
             if viewModel.isLoading {

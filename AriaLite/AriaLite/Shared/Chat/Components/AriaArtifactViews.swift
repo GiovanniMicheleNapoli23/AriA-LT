@@ -17,6 +17,8 @@ struct AriaArtifactActions {
     var ask: (String) -> Void = { _ in }
     var quick: (_ label: String, _ tool: String, _ args: [String: AriaJSON]) -> Void = { _, _, _ in }
     var open: (String) -> Void = { _ in }
+    /// Lo stato del piano di riassegnazione di questa card, se la chat lo tiene (altrove, `nil`).
+    var reassignmentPlan: (AriaArtifact) -> AriaReassignmentPlanViewModel? = { _ in nil }
 }
 
 struct AriaArtifactView: View {
@@ -36,9 +38,16 @@ struct AriaArtifactView: View {
         case "diagnostic-card": AriaDiagnosticCard(data: d, actions: actions)
         case "alarm-toast": AriaAlarmCard(data: d)
         case "dashboard": AriaDashboardArtifact(data: d, actions: actions)
-        case "reassignment-plan", "assignment-suggestion", "similar-wo-list", "spare-parts-recommendation",
+        case "assignment-suggestion", "similar-wo-list", "spare-parts-recommendation",
              "triage-plan", "member-absence-plan", "team-kanban":
             AriaListArtifact(kind: artifact.kind, data: d, actions: actions)
+        case "reassignment-plan":
+            if let model = actions.reassignmentPlan(artifact) {
+                AriaReassignmentPlanCard(model: model)
+            } else {
+                // Fuori dalla chat (Crafted, widget salvati) il piano si legge e basta.
+                AriaListArtifact(kind: artifact.kind, data: d, actions: actions)
+            }
         case "connector-connect":
             if let connector = AriaArtifactContent.connectorConnect(d) {
                 AriaConnectorConnectCard(connector: connector, actions: actions)

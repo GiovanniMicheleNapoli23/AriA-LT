@@ -91,10 +91,11 @@ extension BackendTests {
             #expect(backend.activePlantId == "p1")
             #expect(backend.lastError == nil)
 
-            // L'ordine del collegamento: email → link → sessione → JWT → azienda → stabilimenti.
-            let order = server.calls.map { "\($0.method) \($0.path)" }
+            // L'ordine del collegamento: email → link → sessione → JWT → azienda → stabilimenti → ruolo e diritti.
+            // Piano e crediti (/v1/usage/*) si leggono in background appena c'è l'azienda: non fanno parte della sequenza.
+            let order = server.calls.map { "\($0.method) \($0.path)" }.filter { !$0.contains(" /v1/usage/") }
             #expect(order == ["POST /api/auth/mobile/request-link", "POST /api/auth/mobile/verify",
-                              "GET /api/aria/token", "GET /v1/companies", "GET /v1/plants"])
+                              "GET /api/aria/token", "GET /v1/companies", "GET /v1/plants", "GET /v1/me"])
             let plants = try #require(server.calls("GET /v1/plants").first)
             #expect(plants.header("company-id") == "c1", "dopo l'azienda ogni chiamata porta il Company-Id")
             #expect(plants.header("authorization")?.hasPrefix("Bearer ") == true)

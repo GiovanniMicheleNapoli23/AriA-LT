@@ -21,6 +21,7 @@ struct AdminExtractionReviewView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     AdminExtractionKindPicker(viewModel: viewModel)
+                        .ariaSetupTourAnchor(.extraction)
                         .padding(.horizontal, 20)
                     errorPill
                     content

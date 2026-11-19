@@ -6,7 +6,7 @@
 //
 //  "Improve with AI" di un allarme (POST /v1/alarms/{id}/ai-improve): si sceglie cosa chiedere, il server
 //  propone, l'utente decide cosa applicare (PATCH dell'allarme con i soli campi scelti) o scarta.
-//  I valori di `action` sono ipotesi: se il server ne rifiuta uno, si mostrano quelli validi.
+//  Un'azione che il server non conosce torna come {"status": "error"}: si mostra come errore, non come proposta.
 //
 
 import Foundation
@@ -20,6 +20,8 @@ final class AdminAlarmImproveViewModel: Identifiable {
     private let onApplied: (AdminAlarm) -> Void
 
     var customPrompt = ""
+    /// La lingua in cui tradurre (codice ISO, fra `AdminAIImproveStatus.translationLanguages`).
+    var translateLanguage = AdminAIImproveStatus.defaultTranslationLanguage
 
     /// L'azione in corso (valore mandato al server): una alla volta.
     private(set) var runningAction: String?
@@ -29,7 +31,9 @@ final class AdminAlarmImproveViewModel: Identifiable {
     var selected: Set<AdminAlarmField> = []
     private(set) var isApplying = false
     private(set) var applyError: String?
-    private(set) var didApply = false
+    /// L'avviso "Applied" in alto: compare dopo un'applicazione riuscita e se ne va da solo.
+    private(set) var showsApplied = false
+    @ObservationIgnored private var appliedTask: Task<Void, Never>?
 
     @ObservationIgnored private var task: Task<Void, Never>?
 
@@ -51,6 +55,18 @@ final class AdminAlarmImproveViewModel: Identifiable {
         start(action.rawValue, isCustom: action == .custom)
     }
 
+    /// "Translate" nella lingua scelta nel menu.
+    func translate(to language: String) {
+        guard !isRunning else { return }
+        translateLanguage = language
+        run(.translate)
+    }
+
+    /// Le lingue offerte per la traduzione, col nome da mostrare.
+    var translationLanguages: [(code: String, name: String)] {
+        AdminAIImproveStatus.translationLanguages.map { ($0, AdminAIImproveStatus.languageName($0)) }
+    }
+
     /// Riprova con uno dei valori che il server ha detto validi.
     func retry(with rawAction: String) {
         start(rawAction, isCustom: false)
@@ -69,12 +85,20 @@ final class AdminAlarmImproveViewModel: Identifiable {
         applyError = nil
         defer { runningAction = nil }
         let prompt = customPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isTranslation = rawAction == AdminAlarmImproveAction.translate.rawValue
         let body = AdminAlarmImproveRequest(action: rawAction,
                                             customPrompt: isCustom && !prompt.isEmpty ? prompt : nil,
-                                            language: Locale.current.language.languageCode?.identifier)
+                                            language: isTranslation ? translateLanguage
+                                                : Locale.current.language.languageCode?.identifier)
         do {
             let json = try await AdminAlarmsAPI(api: backend.api).improve(id: alarm.id, body)
             guard !Task.isCancelled else { return }
+            if let message = AdminAIImproveStatus.errorMessage(in: json) {
+                proposal = nil
+                failure = AdminAlarmAssistFailure(message: message, validActions: [])
+                return
+            }
+            if isCustom { customPrompt = "" }
             let result = AdminAlarmProposal(json: json, alarm: alarm)
             if result.isEmpty {
                 proposal = nil
@@ -83,7 +107,6 @@ final class AdminAlarmImproveViewModel: Identifiable {
             } else {
                 proposal = result
                 selected = Set(result.changes.map(\.field))
-                didApply = false
             }
         } catch {
             guard let found = AdminAlarmAssistFailure.from(error, action: rawAction, backend: backend) else { return }
@@ -95,7 +118,7 @@ final class AdminAlarmImproveViewModel: Identifiable {
     // MARK: Applicare
 
     var canApply: Bool {
-        guard let proposal, !isApplying, !didApply else { return false }
+        guard let proposal, !isApplying else { return false }
         return proposal.changes.contains { selected.contains($0.field) }
     }
 
@@ -104,7 +127,6 @@ final class AdminAlarmImproveViewModel: Identifiable {
         proposal = nil
         failure = nil
         applyError = nil
-        didApply = false
     }
 
     func apply() async {
@@ -128,7 +150,7 @@ final class AdminAlarmImproveViewModel: Identifiable {
             let saved = try await AdminAlarmsAPI(api: backend.api).update(id: alarm.id, update)
             alarm = saved
             onApplied(saved)
-            didApply = true
+            finishApplying()
         } catch {
             if let failure = AdminAlarmsFailure.from(error, action: .write, backend: backend) {
                 applyError = failure.message
@@ -136,9 +158,24 @@ final class AdminAlarmImproveViewModel: Identifiable {
         }
     }
 
+    /// Applicato: si torna alle richieste e in alto compare l'avviso, che sparisce da solo.
+    private func finishApplying() {
+        proposal = nil
+        failure = nil
+        applyError = nil
+        showsApplied = true
+        appliedTask?.cancel()
+        appliedTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            self?.showsApplied = false
+        }
+    }
+
     /// Alla chiusura del foglio: la richiesta in corso non serve più.
     func cancel() {
         task?.cancel()
         task = nil
+        appliedTask?.cancel()
     }
 }

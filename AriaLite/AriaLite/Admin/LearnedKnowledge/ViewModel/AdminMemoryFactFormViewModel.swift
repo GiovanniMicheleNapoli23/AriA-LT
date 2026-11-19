@@ -62,7 +62,7 @@ final class AdminMemoryFactFormViewModel: Identifiable {
         if trimmed(context).count > AdminMemoryFactCreate.maxContext || trimmed(category).count > AdminMemoryFactCreate.maxContext {
             return String(localized: "Context and category can be at most \(AdminMemoryFactCreate.maxContext) characters.")
         }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site.") }
         return nil
     }
 

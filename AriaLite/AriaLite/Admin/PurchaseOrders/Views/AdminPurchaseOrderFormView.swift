@@ -88,17 +88,17 @@ struct AdminPurchaseOrderFormView: View {
     @ViewBuilder
     private var plant: some View {
         if viewModel.showsPlantPicker {
-            Picker("Plant", selection: $viewModel.plantId) {
-                if viewModel.plantId == nil { Text("Choose a plant").tag(String?.none) }
+            Picker("Site", selection: $viewModel.plantId) {
+                if viewModel.plantId == nil { Text("Choose a site").tag(String?.none) }
                 ForEach(viewModel.plants) { plant in
                     Text(verbatim: plant.name).tag(Optional(plant.id))
                 }
                 if viewModel.hasUnlistedPlant, let id = viewModel.plantId {
-                    Text("Current plant").tag(Optional(id))
+                    Text("Current site").tag(Optional(id))
                 }
             }
         } else if let name = viewModel.plantName {
-            LabeledContent("Plant") { Text(verbatim: name) }
+            LabeledContent("Site") { Text(verbatim: name) }
         }
     }
 

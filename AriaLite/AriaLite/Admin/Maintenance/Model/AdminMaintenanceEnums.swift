@@ -57,6 +57,17 @@ nonisolated enum AdminMaintenanceStatus: String, CaseIterable, Identifiable, Sen
         }
     }
 
+    /// Le stesse icone degli stati di un allarme.
+    var systemImage: String {
+        switch self {
+        case .approved: "checkmark.seal"
+        case .draft: "pencil.line"
+        case .staged: "tray.and.arrow.down"
+        case .rejected: "xmark.octagon"
+        case .superseded: "arrow.triangle.2.circlepath"
+        }
+    }
+
     static func label(for raw: String) -> String {
         if let known = Self(rawValue: raw) { return known.label }
         return raw.prefix(1).uppercased() + raw.dropFirst()

@@ -39,6 +39,8 @@ struct AriaAgentMessage: Identifiable {
     /// `aria.validation_request` arrivato prima del verdetto: si aggancia appena arriva.
     var pendingValidationRequest: AriaValidationRequest? = nil
     var pipeline: [AriaPipelineEntry] = []
+    /// Gli `aria.turn_usage` di questa risposta, in ordine: più di uno se una pausa riprende (vedi `turnUsage`).
+    var turnUsageEvents: [AriaTurnUsage] = []
     var interrupt: AriaInterrupt? = nil
     var interruptOutcome: AriaInterruptOutcome? = nil
     var usage: AriaUsage? = nil
@@ -53,6 +55,8 @@ struct AriaAgentMessage: Identifiable {
     var error: String? = nil
     /// L'errore è che il sistema non si raggiunge (si mostra come "offline", non come guasto).
     var errorIsOffline = false
+    /// L'errore è definitivo: rimandare la domanda non serve (402 `spend_cap_reached`: il limite di spesa è raggiunto).
+    var errorIsFinal = false
     /// Solo locale: il voto dato dall'operatore.
     var vote: Vote? = nil
 
@@ -80,6 +84,9 @@ struct AriaAgentMessage: Identifiable {
 
     /// La domanda del Real-time Learning di questa risposta (answerConfidence.validation_request della web).
     var validationRequest: AriaValidationRequest? { answerConfidence?.validationRequest }
+
+    /// Quanto è costata la risposta: gli eventi piegati con la regola delle continuazioni. nil = nessuna nota.
+    var turnUsage: AriaTurnUsage? { AriaTurnUsage.folded(turnUsageEvents) }
 
     /// Ricostruito dallo storico: gli id `db-` non coincidono con quelli del turno dal vivo.
     var isHydrated: Bool { id.hasPrefix("db-") }
@@ -145,6 +152,8 @@ struct AriaAgentMessage: Identifiable {
             taskListResponseId = responseId
         case .pipeline(let name, let data):
             pipeline.append(AriaPipelineEntry(name: name, data: data))
+        case .turnUsage(let usage):
+            turnUsageEvents.append(usage)
         case .ignored:
             break
         }
@@ -157,6 +166,7 @@ struct AriaAgentMessage: Identifiable {
         finished = false
         error = nil
         errorIsOffline = false
+        errorIsFinal = false
         if !text.isEmpty { text += "\n\n" }
     }
 
@@ -192,6 +202,14 @@ struct AriaAgentMessage: Identifiable {
             }
         }
         if taskList != nil { taskListResponseId = row.responseId }
+        turnUsageEvents = Self.turnUsageEvents(in: row.pipeline)
+    }
+
+    /// Gli `aria.turn_usage` di una pipeline salvata (la voce è l'evento com'è arrivato); quelli illeggibili si scartano.
+    static func turnUsageEvents(in pipeline: [AriaJSON]?) -> [AriaTurnUsage] {
+        (pipeline ?? []).compactMap { entry in
+            entry["type"]?.stringValue == "aria.turn_usage" ? AriaTurnUsage(json: entry) : nil
+        }
     }
 
     init(id: String, role: Role, text: String = "", finished: Bool = true) {

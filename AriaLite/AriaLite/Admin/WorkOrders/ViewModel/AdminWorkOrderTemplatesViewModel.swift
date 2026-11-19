@@ -209,7 +209,7 @@ final class AdminWorkOrderTemplatesViewModel {
                 if fields["title"] == nil || fields["title"] == .null { fields["title"] = .string(template.title) }
                 if fields["plant_id"] == nil || fields["plant_id"] == .null {
                     guard let plantId = template.plantId ?? backend.activePlantId else {
-                        errorMessage = String(localized: "Choose a plant first.")
+                        errorMessage = String(localized: "Choose a site first.")
                         return
                     }
                     fields["plant_id"] = .string(plantId)

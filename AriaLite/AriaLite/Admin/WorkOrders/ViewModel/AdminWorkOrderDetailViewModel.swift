@@ -229,7 +229,7 @@ final class AdminWorkOrderDetailViewModel {
             field(String(localized: "Asset"), order.assetTag),
             field(String(localized: "Zone"), order.zone),
             // Senza il nome (stabilimento di un'altra azienda o non caricato) l'id non dice niente: si omette.
-            field(String(localized: "Plant"), directory.plantName(order.plantId)),
+            field(String(localized: "Site"), directory.plantName(order.plantId)),
             field(String(localized: "Alarm code"), order.alarmCode),
             field(String(localized: "Created"), order.createdAt.map(AdminWorkOrderFormat.dateTime)),
             field(String(localized: "Updated"), order.updatedAt.map(AdminWorkOrderFormat.dateTime)),

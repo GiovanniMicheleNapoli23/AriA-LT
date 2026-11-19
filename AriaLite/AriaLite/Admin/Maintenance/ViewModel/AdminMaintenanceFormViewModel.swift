@@ -119,6 +119,18 @@ final class AdminMaintenanceFormViewModel {
         if let asset, trimmed(zone).isEmpty, let assetZone = asset.zone { zone = assetZone }
     }
 
+    /// La selezione del picker "Asset": "" è nessuno; sceglierne uno passa da `chooseAsset` (che copia la zona).
+    var selectedAssetTag: String {
+        get { assetTag }
+        set { chooseAsset(assetChoices.first { $0.tag == newValue }) }
+    }
+
+    /// Un tag che non è tra le scelte (scritto a mano prima, o di un altro stabilimento) resta scelto finché non si cambia.
+    var unlistedAssetTag: String? {
+        let tag = trimmed(assetTag)
+        return tag.isEmpty || assetChoices.contains { $0.tag == assetTag } ? nil : assetTag
+    }
+
     // MARK: Lettura dei campi
 
     private func trimmed(_ value: String) -> String { value.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -157,7 +169,7 @@ final class AdminMaintenanceFormViewModel {
     /// Il primo problema da correggere, mostrato nella scheda; `nil` se si può salvare.
     var validationMessage: String? {
         if trimmed(name).isEmpty { return String(localized: "Enter the plan name.") }
-        if !isEditing, plantId == nil { return String(localized: "Select a plant.") }
+        if !isEditing, plantId == nil { return String(localized: "Select a site.") }
         if parsedHours == nil { return String(localized: "The interval must be a positive number of hours.") }
         if parsedDuration == nil { return String(localized: "The duration must be a whole number of minutes.") }
         if let startsOn, let endsOn, endsOn < startsOn { return String(localized: "The end date is before the start date.") }

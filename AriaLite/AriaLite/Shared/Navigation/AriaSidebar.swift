@@ -41,7 +41,8 @@ struct AriaSidebar: View {
                 }
                 navRow(Text("Chats"), icon: "bubble.left.and.bubble.right", target: .chats)
                 ForEach(AriaSidebarSections.groups(operatorLayout: viewModel.backend.usesOperatorLayout,
-                                                   rights: viewModel.backend.rights)) { group in
+                                                   rights: viewModel.backend.rights,
+                                                   usageVisible: viewModel.backend.usageEntryVisible)) { group in
                     if let title = group.title { sectionTitle(Text(title)) }
                     ForEach(group.items) { navRow(Text($0.title), icon: $0.icon, target: $0.target) }
                 }
@@ -127,7 +128,9 @@ struct AriaSidebar: View {
                 SidebarRowLabel(title: Text("Connect to Aria server"), icon: "bolt.horizontal.circle")
             }
             .buttonStyle(.plain)
-        } else if store.isLoading && store.visible.isEmpty {
+        } else if store.visible.isEmpty && store.isLoading {
+            // `visible` prima: con le recenti già in lista `isLoading` non si legge, e la sidebar non si ridisegna
+            // all'inizio e alla fine di ogni lettura.
             ProgressView()
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)

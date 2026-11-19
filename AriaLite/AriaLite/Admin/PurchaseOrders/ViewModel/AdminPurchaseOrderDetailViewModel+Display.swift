@@ -77,7 +77,7 @@ extension AdminPurchaseOrderDetailViewModel {
         let rows: [(String, String?, Bool)] = [
             (String(localized: "Order date"), fmt.day(raw: order.orderDate, value: order.orderDateValue), false),
             (String(localized: "Expected delivery"), expectedDeliveryText, false),
-            (String(localized: "Plant"), plantName, false),
+            (String(localized: "Site"), plantName, false),
             (String(localized: "Approved by"), approverName, false),
             (String(localized: "Approved on"), fmt.dateTime(order.approvedAtValue), false),
             (String(localized: "Shipping address"), order.shippingAddress, true),

@@ -63,9 +63,13 @@ final class AriaSessionStore {
             let page = try await api.sessions(limit: Self.pageSize, offset: offset)
             var seen = Set((more ? sessions : []).map(\.sessionId))
             let fresh = page.filter { seen.insert($0.sessionId).inserted }
-            sessions = (more ? sessions : []) + fresh
-            reachedEnd = page.count < Self.pageSize
-            error = nil
+            // Solo se cambia: si rilegge a ogni apertura della sidebar, e una lista uguale riassegnata ridisegnerebbe
+            // le recenti mentre la sidebar scorre dentro.
+            let loaded = (more ? sessions : []) + fresh
+            if loaded != sessions { sessions = loaded }
+            let ended = page.count < Self.pageSize
+            if ended != reachedEnd { reachedEnd = ended }
+            if error != nil { error = nil }
         } catch {
             self.error = error.localizedDescription
         }

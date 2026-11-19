@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il filtro per stabilimento in cima alla pagina: un menu con "All plants" e gli stabilimenti
+//  Il filtro per stabilimento in cima alla pagina: un menu con "All sites" e gli stabilimenti
 //  dell'azienda, e l'ora dell'ultimo aggiornamento.
 //
 
@@ -17,8 +17,8 @@ struct AdminReportPlantFilter: View {
         HStack(spacing: 12) {
             if !viewModel.plants.isEmpty {
                 Menu {
-                    Picker("Plant", selection: $viewModel.plantFilterId) {
-                        Text("All plants").tag(String?.none)
+                    Picker("Site", selection: $viewModel.plantFilterId) {
+                        Text("All sites").tag(String?.none)
                         ForEach(viewModel.plants) { plant in
                             Text(plant.name).tag(String?.some(plant.id))
                         }
@@ -31,7 +31,7 @@ struct AdminReportPlantFilter: View {
                         .padding(.vertical, 8)
                         .ariaGlass(in: Capsule())
                 }
-                .accessibilityLabel("Plant")
+                .accessibilityLabel("Site")
                 .accessibilityValue(viewModel.plantFilterLabel)
             }
             Spacer(minLength: 0)

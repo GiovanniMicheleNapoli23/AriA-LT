@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  La sezione Teams, come la pagina /teams della web: filtro per stabilimento, ricerca, una scheda per squadra con
-//  il suo carico, dettaglio a tocco, "Board" in alto e "+" per crearne una nuova.
+//  il suo carico, dettaglio a tocco, "Board" in alto e menu "+" per crearne una nuova (anche ad hoc).
 //
 
 import SwiftUI
@@ -44,15 +44,26 @@ struct AdminTeamsView: View {
                     }
                     .disabled(viewModel.teams.isEmpty)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("New team", systemImage: "plus") { viewModel.startCreating() }
+                if viewModel.canCreate {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu("Add", systemImage: "plus") {
+                            Button("New team", systemImage: "person.2") { viewModel.startCreating() }
+                            Button("New ad-hoc team", systemImage: "person.3") { viewModel.startCreatingAdHoc() }
+                        }
                         .disabled(!viewModel.hasLoaded)
+                        .ariaSetupTourAnchor(.teams)
+                    }
                 }
             }
-            .searchable(text: $viewModel.query, prompt: Text("Name, description or plant"))
+            .searchable(text: $viewModel.query, prompt: Text("Name, description or site"))
             .sheet(item: $viewModel.newTeamForm) { form in
                 AdminTeamFormView(viewModel: form)
             }
+            .sheet(item: $viewModel.adHocForm) { form in
+                AdminTeamAdHocView(viewModel: form)
+            }
+            // Il giro guidato si fa da parte mentre un modulo di team è aperto.
+            .ariaSetupTourAside(viewModel.newTeamForm != nil || viewModel.adHocForm != nil, source: "teams.form")
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }

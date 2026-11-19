@@ -28,6 +28,26 @@ struct AriaChatNoticeBanner: View {
     }
 }
 
+/// Avviso neutro (es. un'impostazione non salvata): icona informativa, grigio, niente rosso né suono di successo.
+/// Sparisce da solo dopo 5 secondi.
+struct AriaChatWarningBanner: View {
+    let warning: String
+    var onExpire: () -> Void
+
+    var body: some View {
+        Label(warning, systemImage: "info.circle.fill")
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .ariaGlass(in: Capsule(), tint: Color.gray.opacity(0.18))
+            .task(id: warning) {
+                try? await Task.sleep(for: .seconds(5))
+                onExpire()
+            }
+    }
+}
+
 /// Errore del turno, con "Riprova" quando l'ultima domanda si può rimandare.
 struct AriaChatErrorBanner: View {
     let error: String
@@ -71,23 +91,42 @@ struct AriaChatErrorBanner: View {
 /// PlantGuardBanner della web: senza stabilimento il backend non risponde.
 struct AriaPlantGuardBanner: View {
     let backend: AriaBackend
+    let state: AriaPlantGuard
+    /// Apre "Nuovo stabilimento" (`state == .create`).
+    var onCreate: () -> Void
 
     var body: some View {
         HStack {
-            Label("Select a plant before chatting.", systemImage: "building.2")
+            Label(message, systemImage: "building.2")
                 .font(.footnote.weight(.medium))
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            Menu {
-                ForEach(backend.plants) { plant in
-                    Button(plant.name) { Task { await backend.selectPlant(plant.id) } }
+            switch state {
+            case .choose:
+                Menu {
+                    ForEach(backend.plants) { plant in
+                        Button(plant.name) { Task { await backend.selectPlant(plant.id) } }
+                    }
+                } label: {
+                    Text("Choose").font(.footnote.weight(.semibold))
                 }
-            } label: {
-                Text("Choose").font(.footnote.weight(.semibold))
+            case .create:
+                Button("Add site", action: onCreate)
+                    .font(.footnote.weight(.semibold))
+            case .askAdmin:
+                EmptyView()
             }
-            .disabled(backend.plants.isEmpty)
         }
         .padding(12)
         .ariaGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous), tint: Color.orange.opacity(0.14))
         .task { await backend.bootstrapIfNeeded() }
+    }
+
+    private var message: LocalizedStringKey {
+        switch state {
+        case .choose: "Select a site before chatting."
+        case .create: "Add your first site to start chatting."
+        case .askAdmin: "No sites yet. Ask an owner or admin of your company to add one."
+        }
     }
 }

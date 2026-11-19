@@ -45,6 +45,8 @@ class AriaUITestCase: XCTestCase {
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         // La presentazione del primo avvio non si mette davanti mentre la sessione si apre.
         app.launchArguments += ["-AriaOnboardingSeen", "YES"]
+        // Il giro guidato "Primi passi con AriA" non copre le sezioni durante i test.
+        app.launchArguments += ["-AriaTourHidden", "YES"]
         app.launchEnvironment["ARIA_UITEST_SESSION"] = session
         app.launch()
         allowSystemAlerts()

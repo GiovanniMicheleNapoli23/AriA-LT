@@ -38,7 +38,7 @@ struct AdminAlarmWorkOrderFormView: View {
                             Text(verbatim: option.label).tag(option.key)
                         }
                     }
-                    Picker("Plant", selection: $viewModel.plantId) {
+                    Picker("Site", selection: $viewModel.plantId) {
                         ForEach(viewModel.plants) { plant in
                             Text(verbatim: plant.name).tag(Optional(plant.id))
                         }

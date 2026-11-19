@@ -277,21 +277,26 @@ final class AdminMarketplaceViewModel {
 
     // MARK: Scaffali
 
-    /// Con "Tutti" uno scaffale per tipo, con un tipo scelto uno per area; i vuoti si saltano.
+    /// Con "Tutti" uno scaffale per tipo, con un tipo scelto uno per area; i vuoti si saltano. I connettori
+    /// "in arrivo" non stanno tra quelli che si possono usare: con "Tutti" chiudono lo scaffale dei connettori,
+    /// per area hanno uno scaffale loro, l'ultimo.
     var shelves: [AdminMarketplaceShelf] {
         let visible = catalog.filter { passes($0) }
+        let available = visible.filter { !$0.isPreview }
+        let upcoming = Self.sorted(visible.filter(\.isPreview))
         let extra = extras(ignoringKind: false)
         if kind == nil {
-            let byKind = Dictionary(grouping: visible, by: \.kind)
+            let byKind = Dictionary(grouping: available, by: \.kind)
             return AdminMarketplaceKind.allCases.compactMap { kind in
                 let items = Self.sorted(byKind[kind] ?? [])
                 let extraConnectors = kind == .connector ? extra : []
-                guard !items.isEmpty || !extraConnectors.isEmpty else { return nil }
+                let kindUpcoming = upcoming.filter { $0.kind == kind }
+                guard !items.isEmpty || !extraConnectors.isEmpty || !kindUpcoming.isEmpty else { return nil }
                 return AdminMarketplaceShelf(id: "kind:\(kind.rawValue)", title: kind.plural, blurb: kind.blurb,
-                                             items: items, extraConnectors: extraConnectors)
+                                             items: items, extraConnectors: extraConnectors, upcoming: kindUpcoming)
             }
         }
-        let byArea = Dictionary(grouping: visible, by: \.area)
+        let byArea = Dictionary(grouping: available, by: \.area)
         var result = AdminMarketplaceArea.allCases.compactMap { area -> AdminMarketplaceShelf? in
             let items = Self.sorted(byArea[area] ?? [])
             guard !items.isEmpty else { return nil }
@@ -301,6 +306,11 @@ final class AdminMarketplaceViewModel {
             result.append(AdminMarketplaceShelf(id: "extra", title: String(localized: "Other connectors"),
                                                 blurb: String(localized: "Set up on your server, not in the catalog."),
                                                 items: [], extraConnectors: extra))
+        }
+        if !upcoming.isEmpty {
+            result.append(AdminMarketplaceShelf(id: "upcoming", title: String(localized: "Coming soon"),
+                                                blurb: String(localized: "Connectors we're still building."),
+                                                items: [], upcoming: upcoming))
         }
         return result
     }

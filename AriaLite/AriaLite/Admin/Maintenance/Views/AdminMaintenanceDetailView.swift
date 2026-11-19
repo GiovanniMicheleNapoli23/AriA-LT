@@ -4,15 +4,18 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  Il dettaglio di un piano, come /maintenance/{id} della web: intestazione, programmazione, passi, ricambi,
-//  ordini di lavoro generati, allegati, storico e scheda. In alto "Edit"; "Improve with AI" è il blob di
-//  Aria in basso a destra, come nel dettaglio di un ordine.
+//  Il dettaglio di un piano, come /maintenance/{id} della web: intestazione (descrizione, stato, dove e la
+//  programmazione), passi, ricambi, ordini di lavoro generati, allegati, storico e scheda. Il riquadro di
+//  revisione solo per un piano da rivedere; le decisioni nella barra in basso (AdminReviewDecisionBar; Reject e
+//  Unapprove chiedono conferma). In alto "Edit"; "Improve with AI" è il blob di Aria in basso a destra, come nel
+//  dettaglio di un ordine.
 //
 
 import SwiftUI
 
 struct AdminMaintenanceDetailView: View {
     @State private var viewModel: AdminMaintenanceDetailViewModel
+    @Environment(\.dismiss) private var dismiss
 
     @State private var isEditing = false
     @State private var improveModel: AdminMaintenanceImproveViewModel?
@@ -22,14 +25,16 @@ struct AdminMaintenanceDetailView: View {
     }
 
     var body: some View {
+        @Bindable var viewModel = viewModel
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                AdminMaintenanceHeader(plan: viewModel.plan, place: viewModel.placeLine)
+                AdminMaintenanceHeader(plan: viewModel.plan, summary: viewModel.summaryLine, schedule: viewModel.scheduleRows)
                 if let message = viewModel.planError {
                     AdminSectionNotice(text: message, isError: true)
                 }
-                scheduleCard
-                if let description = viewModel.plan.description { descriptionCard(description) }
+                if viewModel.showsReviewNotice {
+                    AdminReviewBanner(stage: viewModel.reviewStage, message: viewModel.reviewMessage)
+                }
                 AdminMaintenanceListCard(title: "Steps", systemImage: "checklist", items: viewModel.plan.tasks,
                                          emptyText: String(localized: "No steps yet."), numbered: true)
                 if !viewModel.plan.spareParts.isEmpty {
@@ -39,7 +44,7 @@ struct AdminMaintenanceDetailView: View {
                 if viewModel.showsWorkOrders { AdminMaintenanceWorkOrdersCard(viewModel: viewModel) }
                 if let files = viewModel.files { AdminMaintenanceFilesCard(viewModel: files) }
                 if let history = viewModel.history { AdminMaintenanceHistoryCard(viewModel: history) }
-                detailsCard
+                if !viewModel.detailFields.isEmpty { detailsCard }
             }
             .padding(20)
             .ariaReadableWidth()
@@ -54,13 +59,31 @@ struct AdminMaintenanceDetailView: View {
                     .ignoresSafeArea(.keyboard)
             }
         }
+        .ariaBottomBar {
+            if viewModel.showsReview {
+                AdminReviewDecisionBar(actions: viewModel.reviewActions, running: viewModel.reviewing,
+                                       error: viewModel.reviewError, perform: { viewModel.requestReview($0) })
+            }
+        }
         .liteBackground()
-        .navigationTitle(viewModel.plan.assetTag ?? String(localized: "Plan"))
+        // L'asset è già nell'intestazione: il titolo dice solo dove si è.
+        .navigationTitle("Maintenance plan")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { isEditing = true }
                     .disabled(!viewModel.canEdit)
+            }
+            if viewModel.canDelete {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.isDeleting {
+                        ProgressView()
+                    } else {
+                        Menu("More", systemImage: "ellipsis.circle") {
+                            Button("Delete", systemImage: "trash", role: .destructive) { viewModel.showsDeleteConfirmation = true }
+                        }
+                    }
+                }
             }
         }
         .refreshable { await viewModel.reloadAll() }
@@ -71,29 +94,25 @@ struct AdminMaintenanceDetailView: View {
         .sheet(item: $improveModel) { model in
             AdminMaintenanceImproveView(viewModel: model)
         }
+        .adminReviewConfirmation(isPresented: $viewModel.isConfirmingReview, action: viewModel.confirmingReview) { action in
+            Task { await viewModel.review(action) }
+        }
+        .alert("Delete this plan?", isPresented: $viewModel.showsDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                Task { if await viewModel.delete() { dismiss() } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("“\(viewModel.plan.name)” will be removed, with its history. This can't be undone.")
+        }
+        .alert("Couldn't delete the plan", isPresented: $viewModel.isShowingDeleteError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(verbatim: viewModel.deleteError ?? "")
+        }
     }
 
     // MARK: Schede
-
-    private var scheduleCard: some View {
-        AdminCard(title: "Schedule", systemImage: "calendar.badge.clock") {
-            let fields = viewModel.scheduleFields
-            VStack(spacing: 0) {
-                ForEach(fields) { field in
-                    AdminFieldRow(field: field, showsDivider: field != fields.last)
-                }
-            }
-        }
-    }
-
-    private func descriptionCard(_ text: String) -> some View {
-        AdminCard(title: "Description", systemImage: "text.alignleft") {
-            Text(text)
-                .font(.subheadline)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
 
     private var detailsCard: some View {
         AdminCard(title: "Details", systemImage: "info.circle") {

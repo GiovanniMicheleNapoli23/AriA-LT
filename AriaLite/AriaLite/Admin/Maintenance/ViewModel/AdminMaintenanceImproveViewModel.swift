@@ -6,7 +6,8 @@
 //
 //  "Improve with AI" di un piano (POST /v1/maintenance-plans/{plan_id}/ai-improve): si sceglie cosa chiedere,
 //  il server propone, l'utente decide cosa applicare (PATCH del piano con le sole parti scelte).
-//  I valori di `action` sono ipotesi: se il server ne rifiuta uno, si mostrano quelli validi e si può riprovare.
+//  Un'azione che il server non conosce torna come {"status": "error"}: si mostra come errore, non come proposta;
+//  se il server rifiuta un valore con 400/422 e dice quelli validi, si può riprovare con uno di quelli.
 //
 
 import Foundation
@@ -20,8 +21,10 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
     private let onApplied: (AdminMaintenancePlan) -> Void
 
     var customPrompt = ""
+    /// La lingua in cui tradurre (codice ISO, fra `AdminAIImproveStatus.translationLanguages`).
+    var translateLanguage = AdminAIImproveStatus.defaultTranslationLanguage
     /// Il passo (indice) da riscrivere con "Improve one step".
-    var stepIndex = 0
+    private(set) var stepIndex = 0
 
     private(set) var isRunning = false
     /// Il valore di `action` dell'ultima richiesta.
@@ -36,7 +39,9 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
     var applyDuration = true
     private(set) var isApplying = false
     private(set) var applyError: String?
-    private(set) var didApply = false
+    /// L'avviso "Applied" in alto: compare dopo un'applicazione riuscita e se ne va da solo.
+    private(set) var showsApplied = false
+    @ObservationIgnored private var appliedTask: Task<Void, Never>?
 
     @ObservationIgnored private var task: Task<Void, Never>?
     /// Il passo chiesto con "Improve one step": una proposta di un solo passo lo sostituisce, non cancella gli altri.
@@ -49,9 +54,13 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
     }
 
     var canAskCustom: Bool { !customPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isRunning }
-    var canImproveStep: Bool { plan.tasks.indices.contains(stepIndex) && !isRunning }
 
-    /// Il passo scelto, per il pulsante.
+    /// Le lingue offerte per la traduzione, col nome da mostrare.
+    var translationLanguages: [(code: String, name: String)] {
+        AdminAIImproveStatus.translationLanguages.map { ($0, AdminAIImproveStatus.languageName($0)) }
+    }
+
+    /// Un passo, per il menu di "Improve one step".
     func stepLabel(_ index: Int) -> String {
         "\(index + 1). \(plan.tasks[index])"
     }
@@ -70,6 +79,20 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
 
     func run(_ action: AdminMaintenanceImproveAction) {
         start(action.rawValue, action: action)
+    }
+
+    /// "Improve one step" sul passo scelto nel menu.
+    func improveStep(at index: Int) {
+        guard plan.tasks.indices.contains(index), !isRunning else { return }
+        stepIndex = index
+        run(.improveStep)
+    }
+
+    /// "Translate" nella lingua scelta nel menu.
+    func translate(to language: String) {
+        guard !isRunning else { return }
+        translateLanguage = language
+        run(.translate)
     }
 
     /// Riprova con uno dei valori che il server ha detto validi.
@@ -96,10 +119,16 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
             action: rawAction,
             stepIndex: action == .improveStep ? stepIndex : nil,
             customPrompt: action == .custom && !prompt.isEmpty ? prompt : nil,
-            language: Locale.current.language.languageCode?.identifier)
+            language: action == .translate ? translateLanguage : Locale.current.language.languageCode?.identifier)
         do {
             let json = try await backend.api.call(AdminMaintenanceAPI.aiImprove(id: id, body))
             guard !Task.isCancelled else { return }
+            if let message = AdminAIImproveStatus.errorMessage(in: json) {
+                proposal = nil
+                failure = AdminWorkOrderAssistantFailure(message: message, validActions: [])
+                return
+            }
+            if action == .custom { customPrompt = "" }
             let result = AdminMaintenanceProposal(json: json)
             if result.isEmpty {
                 proposal = nil
@@ -121,7 +150,6 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
         applyParts = !proposal.spareParts.isEmpty
         applyDescription = proposal.description != nil
         applyDuration = proposal.estimatedDurationMin != nil
-        didApply = false
     }
 
     // MARK: Applicare
@@ -157,14 +185,14 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
         }
         guard !changes.isEmpty else {
             // La proposta coincide col piano: niente da scrivere.
-            didApply = true
+            finishApplying()
             return
         }
         do {
             let saved = try await backend.api.call(AdminMaintenanceAPI.update(id: id, changes))
             plan = saved
             onApplied(saved)
-            didApply = true
+            finishApplying()
         } catch {
             applyError = AdminMaintenanceFailure.message(for: error, backend: backend)
         }
@@ -175,12 +203,26 @@ final class AdminMaintenanceImproveViewModel: Identifiable {
         proposal = nil
         failure = nil
         applyError = nil
-        didApply = false
+    }
+
+    /// Applicato: si torna alle richieste e in alto compare l'avviso, che sparisce da solo.
+    private func finishApplying() {
+        proposal = nil
+        failure = nil
+        applyError = nil
+        showsApplied = true
+        appliedTask?.cancel()
+        appliedTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            self?.showsApplied = false
+        }
     }
 
     /// Alla chiusura del foglio: la richiesta in corso non serve più.
     func cancel() {
         task?.cancel()
         task = nil
+        appliedTask?.cancel()
     }
 }

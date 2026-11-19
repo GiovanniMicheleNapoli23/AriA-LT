@@ -9,6 +9,8 @@
 //     pronto in silenzio), il magic link della web. Solo il tipo di account giusto riceve un'email;
 //     senza captcha parte solo il link dell'operatore, con una nota.
 //  2) Il link si tocca nell'email (AppViewModel.open) o si incolla qui: la sua forma decide come entrare.
+//  Chi non ha un account lo crea qui (`setCreatingAccount`): stessa email, ma parte solo il link d'iscrizione dell'app,
+//  dietro il captcha come sul form della web; poi il passo 2 di sempre e l'onboarding (AriaSignUpView).
 //  La vista mostra lo stato e passa le azioni; il fuoco dei campi e le animazioni restano a lei.
 //
 
@@ -44,6 +46,9 @@ final class LoginViewModel {
     /// Cambia dopo ogni invio: la vista ricrea il widget e Turnstile conia un token nuovo.
     private(set) var captchaGeneration = 0
 
+    /// "Crea un account": il passo dell'email manda il link d'iscrizione invece dei link di accesso.
+    private(set) var isCreatingAccount = false
+
     init(app: AppViewModel) {
         self.app = app
     }
@@ -52,6 +57,9 @@ final class LoginViewModel {
 
     /// Email a cui sono partiti i link (in attesa di essere toccati o incollati): passo 2.
     var sentTo: String? { app.backend.pendingLinkEmail }
+
+    /// Passo 2: un link è in arrivo, di accesso o d'iscrizione.
+    var awaitsLink: Bool { sentTo != nil }
 
     /// In attesa del server: invio dei link, link incollato o link toccato nell'email.
     var isBusy: Bool { isLoading || app.isOpeningLink }
@@ -64,10 +72,10 @@ final class LoginViewModel {
         !pastedLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isBusy
     }
 
-    var isPrimaryEnabled: Bool { sentTo == nil ? canSend : canSignIn }
+    var isPrimaryEnabled: Bool { awaitsLink ? canSignIn : canSend }
 
-    /// Il captcha serve solo per mandare il magic link: al passo dell'email.
-    var showsCaptcha: Bool { sentTo == nil }
+    /// Il captcha serve solo al passo dell'email: per il magic link della web e, obbligatorio, per l'iscrizione.
+    var showsCaptcha: Bool { !awaitsLink }
 
     var turnstileSiteKey: String { app.backend.api.config.turnstileSiteKey }
     var turnstileOrigin: URL { app.backend.webURL }
@@ -100,9 +108,10 @@ final class LoginViewModel {
     }
 
     /// Il token, se c'è. Turnstile lavora mentre l'utente scrive: se è stato più veloce si aspetta un poco,
-    /// mai a lungo (né se serve un tocco: il link dell'operatore parte comunque).
-    private func readyCaptcha() async -> String? {
-        let deadline = ContinuousClock.now + .seconds(3)
+    /// mai a lungo (né se serve un tocco: il link dell'operatore parte comunque). L'iscrizione aspetta di più:
+    /// senza captcha non parte nulla, e il widget appena aperto può metterci qualche secondo.
+    private func readyCaptcha(within wait: Duration = .seconds(3)) async -> String? {
+        let deadline = ContinuousClock.now + wait
         while captcha == nil, !captchaFailed, !captchaNeedsInteraction, ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(150))
         }
@@ -122,7 +131,18 @@ final class LoginViewModel {
     /// Il pulsante principale: manda i link (passo 1) o entra con quello incollato (passo 2).
     /// Restituisce il campo da mettere a fuoco.
     func primaryAction() async -> LoginField? {
-        sentTo == nil ? await sendLink() : await signIn()
+        if awaitsLink { return await signIn() }
+        return isCreatingAccount ? await sendSignUpLink() : await sendLink()
+    }
+
+    /// "Crea un account" (`true`) o di nuovo l'accesso (`false`). Serve anche a chi si è iscritto e si è fermato
+    /// prima di creare l'azienda: il link di accesso a lui non arriva, quello d'iscrizione sì.
+    func setCreatingAccount(_ creating: Bool) {
+        guard !isBusy else { return }
+        isCreatingAccount = creating
+        errorMessage = nil
+        isOffline = false
+        notice = nil
     }
 
     /// Passo 1: i due link insieme. Basta che ne parta uno.
@@ -140,6 +160,35 @@ final class LoginViewModel {
             return .link
         } catch {
             AriaAuthTrace.failure("login.sendLink.failed", error)
+            return handle(AriaHTTP.isOffline(error) ? .offline : .failure(error.localizedDescription), field: .email)
+        }
+    }
+
+    /// Passo 1 dell'iscrizione: solo il link d'iscrizione, e solo con il captcha (senza, il server lo rifiuta e non
+    /// c'è un altro link a cui ripiegare). Non parte anche request-link: a chi ha già l'app arriverebbero due email.
+    func sendSignUpLink() async -> LoginField? {
+        guard canSend else { return nil }
+        startRequest()
+        notice = nil
+        defer { isLoading = false }
+        guard let token = await readyCaptcha(within: .seconds(8)) else {
+            AriaAuthTrace.step("signUp.sendLink", "captcha non pronto, serve un tocco=\(captchaNeedsInteraction)")
+            if captchaNeedsInteraction {
+                // Il riquadro è visibile: niente tastiera sopra, la persona lo tocca e riprova.
+                errorMessage = String(localized: "Complete the security check below, then try again.")
+                shakes += 1
+                return nil
+            }
+            if captchaFailed { renewCaptcha() }
+            return handle(.failure(String(localized: "The security check isn't ready yet. Try again in a moment.")), field: .email)
+        }
+        AriaAuthTrace.step("signUp.sendLink", "server=\(app.backend.authURL.absoluteString)")
+        renewCaptcha()
+        do {
+            try await app.backend.sendSignUpLink(email: email, captcha: token)
+            return .link
+        } catch {
+            AriaAuthTrace.failure("signUp.sendLink.failed", error)
             return handle(AriaHTTP.isOffline(error) ? .offline : .failure(error.localizedDescription), field: .email)
         }
     }

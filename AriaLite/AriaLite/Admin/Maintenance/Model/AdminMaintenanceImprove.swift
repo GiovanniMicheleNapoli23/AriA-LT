@@ -4,33 +4,41 @@
 //
 //  Created by Giovanni Michele on 22/10/26.
 //
-//  "Improve with AI": le azioni offerte e la proposta che torna. L'OpenAPI non descrive né i valori di `action`
-//  né la risposta, quindi i valori sono IPOTESI (un 400/422 mostra quelli validi) e la risposta si legge con
-//  tolleranza: elenchi di passi e ricambi, descrizione, durata, più il testo libero.
+//  "Improve with AI": le azioni offerte e la proposta che torna. I valori di `action` sono quelli della web
+//  (AIImproveAction in lib/api/cmms-types.ts di aria-web); un valore che il server non conosce torna come
+//  {"status": "error"} (vedi AdminAIImproveStatus). La risposta è {"status", "action", "result": {steps,
+//  improved_step, reasoning, safety_notes, estimated_duration_min, …}} e si legge con tolleranza.
 //
 
 import Foundation
 
 nonisolated enum AdminMaintenanceImproveAction: String, CaseIterable, Identifiable, Sendable {
-    // Valori indovinati: da verificare col backend.
     case improveAll = "improve_all"
+    /// Riscrive il passo `step_index`.
     case improveStep = "improve_step"
     case addSafety = "add_safety"
-    case simplify = "simplify"
+    case optimizeOrder = "optimize_order"
+    case generateFromScratch = "generate_from_scratch"
+    /// Traduce i passi nella lingua di `language`.
+    case translate = "translate"
     /// Richiesta libera: il testo va in `custom_prompt`.
     case custom = "custom"
 
     var id: String { rawValue }
 
-    /// Le scorciatoie senza testo né passo da scegliere.
-    static let shortcuts: [Self] = [.improveAll, .addSafety, .simplify]
+    /// Le scorciatoie senza testo né passo da scegliere: senza passi c'è solo da scriverli.
+    static func shortcuts(hasSteps: Bool) -> [Self] {
+        hasSteps ? [.improveAll, .addSafety, .optimizeOrder, .generateFromScratch] : [.generateFromScratch]
+    }
 
     var title: String {
         switch self {
         case .improveAll: String(localized: "Improve procedure")
         case .improveStep: String(localized: "Improve one step")
         case .addSafety: String(localized: "Add safety checks")
-        case .simplify: String(localized: "Simplify")
+        case .optimizeOrder: String(localized: "Reorder the steps")
+        case .generateFromScratch: String(localized: "Write new steps")
+        case .translate: String(localized: "Translate")
         case .custom: String(localized: "Custom request")
         }
     }
@@ -40,7 +48,9 @@ nonisolated enum AdminMaintenanceImproveAction: String, CaseIterable, Identifiab
         case .improveAll: String(localized: "Clearer, more complete steps")
         case .improveStep: String(localized: "Rewrite the step you pick")
         case .addSafety: String(localized: "Risks and precautions")
-        case .simplify: String(localized: "Shorter and easier to follow")
+        case .optimizeOrder: String(localized: "A more logical, efficient order")
+        case .generateFromScratch: String(localized: "A whole new procedure, in place of the current one")
+        case .translate: String(localized: "Rewrites the texts in the chosen language")
         case .custom: String(localized: "Ask for something specific")
         }
     }
@@ -50,7 +60,9 @@ nonisolated enum AdminMaintenanceImproveAction: String, CaseIterable, Identifiab
         case .improveAll: "wand.and.stars"
         case .improveStep: "list.number"
         case .addSafety: "exclamationmark.shield"
-        case .simplify: "scissors"
+        case .optimizeOrder: "arrow.up.arrow.down"
+        case .generateFromScratch: "doc.badge.plus"
+        case .translate: "character.bubble"
         case .custom: "text.bubble"
         }
     }
@@ -85,17 +97,36 @@ nonisolated struct AdminMaintenanceProposal: Equatable, Sendable {
     init(json: AriaJSON) {
         let json = json.camelCased()
         let answer = AdminWorkOrderAIAnswer(json: json)
-        let tasks = Self.list(["tasks", "improvedTasks", "improvedSteps", "newTasks"], in: json, depth: 0)
+        // "improve_step" manda il solo passo riscritto, come testo: è un passo, anche se va a capo.
+        let improvedStep = Self.string("improvedStep", in: json, depth: 0)
+        let tasks = improvedStep.map { [$0] }
+            ?? Self.list(["tasks", "improvedTasks", "improvedSteps", "newTasks"], in: json, depth: 0)
+        // Il perché dei cambiamenti e le note di sicurezza (il piano non ha un campo per queste) si leggono e basta.
+        let reasoning = Self.string("reasoning", in: json, depth: 0)
+        let safety = answer.suggestion.safetyWarnings
+        let safetyText = safety.isEmpty
+            ? nil : String(localized: "Safety:") + "\n" + safety.map { "- \($0)" }.joined(separator: "\n")
+        let notes = [reasoning ?? answer.text, safetyText].compactMap { $0 }
         self.init(
             tasks: tasks ?? answer.suggestion.steps,
             spareParts: Self.list(["spareParts", "improvedSpareParts"], in: json, depth: 0) ?? answer.suggestion.partsNeeded,
             description: answer.suggestion.description,
             estimatedDurationMin: answer.suggestion.estimatedMinutes,
-            text: answer.text,
+            text: notes.isEmpty ? nil : notes.joined(separator: "\n\n"),
             raw: answer.raw
         )
         // Se si è trovato qualcosa, il JSON grezzo non serve.
-        if hasChanges { raw = nil }
+        if hasChanges || text != nil { raw = nil }
+    }
+
+    /// Il testo sotto `name`, in cima o dentro un oggetto annidato.
+    private static func string(_ name: String, in json: AriaJSON, depth: Int) -> String? {
+        guard depth < 4, let object = json.objectValue else { return nil }
+        if let text = object[name]?.nonEmptyString { return text }
+        for value in object.values where value.objectValue != nil {
+            if let found = string(name, in: value, depth: depth + 1) { return found }
+        }
+        return nil
     }
 
     /// Il primo elenco con uno dei nomi, in cima o dentro un oggetto annidato.

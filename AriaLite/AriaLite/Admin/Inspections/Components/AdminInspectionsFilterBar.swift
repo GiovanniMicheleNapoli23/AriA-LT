@@ -49,12 +49,12 @@ struct AdminInspectionsFilterBar: View {
 
     private var plant: some View {
         Menu {
-            Picker("Plant", selection: $viewModel.plantFilter) {
-                Text("All plants").tag(String?.none)
+            Picker("Site", selection: $viewModel.plantFilter) {
+                Text("All sites").tag(String?.none)
                 ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
             }
         } label: {
-            AdminFilterChip(title: "Plant", value: viewModel.plantFilterLabel, isActive: viewModel.isPlantFilterCustom)
+            AdminFilterChip(title: "Site", value: viewModel.plantFilterLabel, isActive: viewModel.isPlantFilterCustom)
         }
     }
 

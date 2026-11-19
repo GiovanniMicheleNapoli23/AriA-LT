@@ -58,7 +58,10 @@ final class AdminDocumentsViewModel {
     init(backend: AriaBackend) {
         self.backend = backend
         uploads = AdminDocumentUploadCenter(backend: backend)
-        uploads.onUploaded = { [weak self] in self?.scheduleReload() }
+        uploads.onUploaded = { [weak self] in
+            self?.scheduleReload()
+            self?.backend.usage.refreshAllowanceLater()
+        }
         // Ritrova subito i caricamenti lasciati dall'esecuzione precedente.
         Task { [uploads] in await uploads.start() }
     }
@@ -89,8 +92,8 @@ final class AdminDocumentsViewModel {
     var plants: [AriaPlant] { backend.plants }
 
     var plantFilterLabel: String {
-        guard let plantId else { return String(localized: "All plants") }
-        return plants.first { $0.id == plantId }?.name ?? String(localized: "This plant")
+        guard let plantId else { return String(localized: "All sites") }
+        return plants.first { $0.id == plantId }?.name ?? String(localized: "This site")
     }
 
     /// Lo stabilimento filtrato non è quello attivo dell'app: il filtro si evidenzia.
@@ -238,6 +241,7 @@ final class AdminDocumentsViewModel {
         do {
             _ = try await backend.api.call(AdminDocumentsAPI.delete(id: document.id, rollbackEntities: removingExtractedData))
             remove(id: document.id)
+            backend.usage.refreshAllowanceLater()
         } catch {
             guard let message = AdminDocumentsFailure.message(for: error, backend: backend) else { return }
             actionError = message
@@ -275,7 +279,12 @@ final class AdminDocumentsViewModel {
     }
 
     /// Il caricamento vuole un'azienda e uno stabilimento.
-    var canUpload: Bool { backend.activeCompanyId != nil && (backend.activePlantId != nil || !backend.plants.isEmpty) }
+    var canUpload: Bool { Self.canUpload(backend) }
+
+    /// Lo stesso conto per chi non ha il view model (il giro guidato): niente sito, niente caricamento.
+    static func canUpload(_ backend: AriaBackend) -> Bool {
+        backend.activeCompanyId != nil && (backend.activePlantId != nil || !backend.plants.isEmpty)
+    }
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {

@@ -32,6 +32,15 @@ final class AdminAssetsViewModel {
     var typeFilter: AdminAssetType?
     var zoneFilter: String?
 
+    /// Selezione e approvazione in blocco delle bozze; la logica è in AdminAssetsViewModel+Approval.
+    var isSelecting = false
+    var selection: Set<String> = []
+    var showsApproveConfirmation = false
+    var isApproving = false
+    var approveError: String?
+    /// L'esito dell'ultima approvazione in blocco.
+    var notice: String?
+
     init(backend: AriaBackend) {
         self.backend = backend
     }
@@ -88,6 +97,8 @@ final class AdminAssetsViewModel {
             hasLoaded = false
             errorMessage = nil
             loadedKey = key
+            endSelecting()
+            notice = nil
         }
         isLoading = true
         defer { isLoading = false }
@@ -108,6 +119,12 @@ final class AdminAssetsViewModel {
 
     // MARK: Dopo una modifica
 
+    /// Un asset eliminato dal dettaglio: esce dalla lista.
+    func remove(_ asset: AdminAsset) {
+        assets.removeAll { $0.id == asset.id || $0.tag == asset.tag }
+        selection.remove(asset.id)
+    }
+
     /// Un asset creato o modificato altrove (form, dettaglio): si aggiorna la lista senza ricaricarla.
     /// Se ora ha un altro stato da quello filtrato, esce dalla lista.
     func apply(_ asset: AdminAsset) {
@@ -118,7 +135,9 @@ final class AdminAssetsViewModel {
     var canCreate: Bool { backend.activePlantId != nil || !backend.plants.isEmpty }
 
     func makeDetailViewModel(for asset: AdminAsset) -> AdminAssetDetailViewModel {
-        AdminAssetDetailViewModel(backend: backend, asset: asset) { [weak self] in self?.apply($0) }
+        AdminAssetDetailViewModel(backend: backend, asset: asset,
+                                  onAssetChanged: { [weak self] in self?.apply($0) },
+                                  onAssetDeleted: { [weak self] in self?.remove($0) })
     }
 
     func makeFormViewModel() -> AdminAssetFormViewModel {
@@ -137,5 +156,10 @@ final class AdminAssetsViewModel {
         statusFilter = .approved
         typeFilter = nil
         zoneFilter = nil
+        endSelecting()
+        showsApproveConfirmation = false
+        isApproving = false
+        approveError = nil
+        notice = nil
     }
 }

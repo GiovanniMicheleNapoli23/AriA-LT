@@ -42,6 +42,12 @@ nonisolated struct AdminTeamsAPI: Sendable {
         let _: AriaNoContent = try await api.call(AriaEndpoint<AriaNoContent>.delete("\(teams)/\(id)").snakeCased())
     }
 
+    /// POST /v1/teams/ad-hoc: squadra temporanea con i suoi membri e i giorni di turno. Il 201 ha uno schema vuoto.
+    func createAdHoc(_ body: AdminMemberAdHocTeamCreate) async throws {
+        let _: AriaNoContent = try await api.call(
+            AriaEndpoint<AriaNoContent>.post("\(teams)/ad-hoc", body: body).snakeCased())
+    }
+
     // MARK: Membri
 
     func addMember(teamId: String, _ body: AdminTeamMemberCreate) async throws -> AdminTeamMember {

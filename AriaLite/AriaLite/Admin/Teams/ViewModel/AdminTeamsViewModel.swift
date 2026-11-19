@@ -44,6 +44,8 @@ final class AdminTeamsViewModel {
     var plantFilter: String?
     /// Il modulo di creazione aperto (sheet).
     var newTeamForm: AdminTeamFormViewModel?
+    /// Il modulo del team ad hoc aperto (sheet).
+    var adHocForm: AdminTeamAdHocViewModel?
 
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var peopleLoaded = false
@@ -66,6 +68,7 @@ final class AdminTeamsViewModel {
         query = ""
         plantFilter = nil
         newTeamForm = nil
+        adHocForm = nil
         peopleLoaded = false
     }
 
@@ -115,12 +118,15 @@ final class AdminTeamsViewModel {
     }
 
     /// Le persone dell'azienda, una volta sola (o di nuovo se la prima volta è fallita).
-    func loadPeople() async {
-        guard !peopleLoaded else { return }
+    /// `false` se l'elenco non è arrivato: chi lo usa distingue "nessuno" da "non caricato".
+    @discardableResult
+    func loadPeople() async -> Bool {
+        guard !peopleLoaded else { return true }
         if let rows = try? await api.people() {
             people = rows
             peopleLoaded = true
         }
+        return peopleLoaded
     }
 
     func person(id: String?) -> AdminTeamPerson? {
@@ -146,7 +152,7 @@ final class AdminTeamsViewModel {
     var showsPlantFilter: Bool { plantOptions.count > 1 || plantFilter != nil }
 
     var plantFilterTitle: String {
-        plantFilter.flatMap(plantName(for:)) ?? String(localized: "All plants")
+        plantFilter.flatMap(plantName(for:)) ?? String(localized: "All sites")
     }
 
     var visibleTeams: [AdminTeam] {
@@ -185,6 +191,13 @@ final class AdminTeamsViewModel {
     func startCreating() {
         newTeamForm = AdminTeamFormViewModel(mode: .create, owner: self)
     }
+
+    func startCreatingAdHoc() {
+        adHocForm = AdminTeamAdHocViewModel(owner: self)
+    }
+
+    /// Creare una squadra (anche ad hoc) lo consente il diritto `create` di teams; un admin sempre.
+    var canCreate: Bool { backend.rights.can(.create, in: .teams) }
 
     func didCreate(_ team: AdminTeam) {
         teams.removeAll { $0.id == team.id }

@@ -73,17 +73,9 @@ final class AdminWorkOrderQuickActions {
         }
     }
 
-    /// Il ruolo ha l'azione dietro quel cambio di stato: "Completed" è `complete`, "Verified" `verify`, "Cancelled"
-    /// `cancel`; da un ordine chiuso a uno aperto è `reopen`. Gli altri passaggi non hanno un'azione.
+    /// Il passaggio è nel ciclo di vita e il ruolo ha l'azione dietro (`AriaRights.canMoveWorkOrder`).
     private func canChange(_ order: AdminWorkOrder, to status: AdminWorkOrderStatus) -> Bool {
-        let rights = backend.rights
-        switch status {
-        case .completed: return rights.can(.complete, in: .workOrders)
-        case .verified: return rights.can(.verify, in: .workOrders)
-        case .cancelled: return rights.can(.cancel, in: .workOrders)
-        case .unknown: return false
-        default: return !order.isClosed || rights.can(.reopen, in: .workOrders)
-        }
+        status != .unknown && backend.rights.canMoveWorkOrder(from: order.status?.rawValue, to: status.rawValue)
     }
 
     /// L'assegnazione automatica è un'azione del ruolo (`auto_assign`).

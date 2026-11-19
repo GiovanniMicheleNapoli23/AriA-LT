@@ -22,6 +22,8 @@ class AppViewModel {
     let ariaWorkOrders: AriaWorkOrderStore
     /// Notifiche push dei lavori assegnati.
     let notifications = AriaPushNotifications.shared
+    /// Il giro guidato dell'admin, obbligatorio: lo stato sta qui, la shell lo mostra sopra le sezioni.
+    let setupTour: AriaSetupTourViewModel
 
     /// Sezioni della web: tutte per gli account della piattaforma, una parte per l'operatore (AriaSidebarSections).
     let adminDocuments: AdminDocumentsViewModel
@@ -41,12 +43,14 @@ class AppViewModel {
     let adminVendors: AdminVendorsViewModel
     let adminAlarms: AdminAlarmsViewModel
     let adminReports: AdminReportsViewModel
-    let adminLLMUsage: AdminLLMUsageViewModel
+    /// La sezione Usage (crediti del ciclo) e i controlli di fatturazione dei titolari.
+    let adminUsage: AdminUsageViewModel
+    let adminUsageBilling: AdminUsageBillingViewModel
     let adminPlants: AdminPlantsViewModel
     let adminCategories: AdminCategoriesViewModel
     let adminTeams: AdminTeamsViewModel
-    let adminMembers: AdminMembersViewModel
-    let adminMobileUsers: AdminMobileUsersViewModel
+    let adminUsers: AdminUsersViewModel
+    let adminRoles: AdminRolesViewModel
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
     var accountKind: AriaAccountKind { backend.accountKind }
@@ -86,6 +90,7 @@ class AppViewModel {
         mainChat = AriaAgentChat(backend: backend, remembersSession: true)
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
+        setupTour = AriaSetupTourViewModel()
         adminDocuments = AdminDocumentsViewModel(backend: backend)
         adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
         adminMarketplace = AdminMarketplaceViewModel(backend: backend)
@@ -103,12 +108,14 @@ class AppViewModel {
         adminVendors = AdminVendorsViewModel(backend: backend)
         adminAlarms = AdminAlarmsViewModel(backend: backend)
         adminReports = AdminReportsViewModel(backend: backend)
-        adminLLMUsage = AdminLLMUsageViewModel(backend: backend)
+        let usage = AdminUsageViewModel(backend: backend)
+        adminUsage = usage
+        adminUsageBilling = AdminUsageBillingViewModel(backend: backend, page: usage)
         adminPlants = AdminPlantsViewModel(backend: backend)
         adminCategories = AdminCategoriesViewModel(backend: backend)
         adminTeams = AdminTeamsViewModel(backend: backend)
-        adminMembers = AdminMembersViewModel(backend: backend)
-        adminMobileUsers = AdminMobileUsersViewModel(backend: backend)
+        adminUsers = AdminUsersViewModel(backend: backend)
+        adminRoles = AdminRolesViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -240,6 +247,28 @@ class AppViewModel {
     }
     #endif
 
+    // MARK: - Iscrizione
+
+    /// Profilo, Azienda, Stabilimento e Piano fatti (o già fatti sulla web): la shell, col nome scritto al passo Profilo.
+    /// L'iscrizione in corso, con l'account di chi la sta facendo. Vive qui e non nella vista: tutto si scrive alla
+    /// fine, e la bozza non deve perdersi se la schermata viene ricreata. Un altro account (sessione scaduta e nuovo
+    /// accesso) non la eredita mai.
+    @ObservationIgnored private var signUpDraft: (account: String, model: AriaSignUpViewModel)?
+
+    func signUpModel() -> AriaSignUpViewModel {
+        let account = backend.mobileAccount?.id ?? ""
+        if let signUpDraft, signUpDraft.account == account { return signUpDraft.model }
+        let model = AriaSignUpViewModel(app: self)
+        signUpDraft = (account, model)
+        return model
+    }
+
+    func signUpFinished() {
+        guard !backend.isSigningUp, let account = backend.mobileAccount else { return }
+        signUpDraft = nil
+        loggedInUser = User(account)
+    }
+
     private func signIn(with link: AriaSignInLink) async -> LoginResult {
         do {
             try await backend.completeSignIn(with: link)
@@ -271,6 +300,7 @@ class AppViewModel {
 
     func logout(keepOfflineWork: Bool = false) {
         loggedInUser = nil
+        signUpDraft = nil
         lock = .none
         unlockError = nil
         // Un altro operatore sullo stesso device non eredita la sessione Aria.
@@ -295,12 +325,13 @@ class AppViewModel {
         adminVendors.reset()
         adminAlarms.reset()
         adminReports.reset()
-        adminLLMUsage.reset()
+        adminUsage.reset()
+        adminUsageBilling.reset()
         adminPlants.reset()
         adminCategories.reset()
         adminTeams.reset()
-        adminMembers.reset()
-        adminMobileUsers.reset()
+        adminUsers.reset()
+        adminRoles.reset()
         // File scaricati, report esportati e foto in cache non restano per chi entra dopo.
         AriaLocalFiles.removeTemporaryDocuments()
         URLCache.shared.removeAllCachedResponses()

@@ -307,7 +307,7 @@ extension BackendTests {
 
         @Test func aRoleWithoutAnyStatusActionLeavesAClosedCardWithoutMoves() async throws {
             let backend = try await Roles.member(Roles.workOrders())
-            stubRoutes(orders: [TestEnv.orderJSON(id: "o1", status: "completed")])
+            stubRoutes(orders: [TestEnv.orderJSON(id: "o1", status: "verified")])
             let model = AdminTaskboardViewModel(backend: backend)
             await model.load()
 
@@ -366,26 +366,28 @@ extension BackendTests {
             #expect(actions.statusChoices(for: open) == [.proposed, .planned, .inProgress, .completed, .cancelled])
         }
 
-        @Test func aClosedOrderNeedsVerifyAndReopen() async throws {
-            let done = try gateOrder("completed"), cancelled = try gateOrder("cancelled")
-            let (backend, actions) = try await makeActions(Roles.workOrders(["complete"]))
-            #expect(actions.statusChoices(for: done).isEmpty)
+        @Test func aCompletedOrderReopensFreelyAndAClosedOneOnlyToProposedWithReopen() async throws {
+            let done = try gateOrder("completed"), verified = try gateOrder("verified"), cancelled = try gateOrder("cancelled")
+            let (backend, actions) = try await makeActions(Roles.workOrders(["complete", "cancel"]))
+            #expect(actions.statusChoices(for: done) == [.proposed, .planned, .assigned, .inProgress],
+                    "da Completed basta la sezione; Cancelled no (409)")
+            #expect(actions.statusChoices(for: verified).isEmpty && actions.statusChoices(for: cancelled).isEmpty)
 
             await TestEnv.grant(Roles.workOrders(["verify"]), to: backend)
-            #expect(actions.statusChoices(for: done) == [.verified], "Verified solo da Completed, con `verify`")
+            #expect(actions.statusChoices(for: done) == [.proposed, .planned, .assigned, .inProgress, .verified],
+                    "Verified solo da Completed, con `verify`")
 
-            await TestEnv.grant(Roles.workOrders(["verify", "reopen"]), to: backend)
-            #expect(actions.statusChoices(for: done) == [.proposed, .planned, .assigned, .inProgress, .verified])
-
-            await TestEnv.grant(Roles.workOrders(["reopen"]), to: backend)
-            #expect(actions.statusChoices(for: cancelled) == [.proposed, .planned, .assigned, .inProgress])
+            await TestEnv.grant(Roles.workOrders(["reopen", "complete", "verify", "cancel"]), to: backend)
+            #expect(actions.statusChoices(for: verified) == [.proposed], "il resto da Verified è 409")
+            #expect(actions.statusChoices(for: cancelled) == [.proposed])
         }
 
         @Test(arguments: RoleGatedUnrestricted.allCases)
         func withoutLimitsEveryChoiceAndActionStaysAvailable(_ kind: RoleGatedUnrestricted) async throws {
             let (_, actions) = try await makeActions(kind.access)
             #expect(actions.statusChoices(for: try gateOrder("assigned")) == [.proposed, .planned, .inProgress, .completed, .cancelled])
-            #expect(actions.statusChoices(for: try gateOrder("completed")) == [.proposed, .planned, .assigned, .inProgress, .verified, .cancelled])
+            #expect(actions.statusChoices(for: try gateOrder("completed")) == [.proposed, .planned, .assigned, .inProgress, .verified])
+            #expect(actions.statusChoices(for: try gateOrder("cancelled")) == [.proposed])
             let open = try gateOrder("assigned"), closed = try gateOrder("completed")
             #expect(actions.canComplete(open) && !actions.canComplete(closed))
             #expect(actions.canAutoAssign)
@@ -404,11 +406,11 @@ extension BackendTests {
 
         @Test func changingToAStatusTheRoleLacksDoesNothing() async throws {
             let (_, actions) = try await makeActions(Roles.workOrders(["verify"]))
-            let open = try gateOrder("assigned"), done = try gateOrder("completed")
+            let open = try gateOrder("assigned"), closed = try gateOrder("verified")
 
             actions.change(open, to: .cancelled)
             actions.change(open, to: .completed)
-            await actions.setStatus(done, .proposed)
+            await actions.setStatus(closed, .proposed)
             await actions.setStatus(open, .completed)
 
             #expect(actions.cancelling == nil && actions.completion == nil)
@@ -454,7 +456,7 @@ extension BackendTests {
             let open = AdminWorkOrderDetailViewModel(order: try gateOrder("assigned"), list: list)
             #expect(!open.canAutoAssign)
             #expect(open.canChangeStatus && open.statusChoices.contains(.completed))
-            let closed = AdminWorkOrderDetailViewModel(order: try gateOrder("completed"), list: list)
+            let closed = AdminWorkOrderDetailViewModel(order: try gateOrder("cancelled"), list: list)
             #expect(!closed.canChangeStatus, "nessuno stato da offrire: si legge e basta")
 
             await TestEnv.grant(nil, to: backend)
@@ -482,6 +484,32 @@ extension BackendTests {
 
         private func makeForm(_ backend: AriaBackend) -> AdminWorkOrderFormViewModel {
             AdminWorkOrderFormViewModel(mode: .create, backend: backend, directory: AdminWorkOrderDirectory(backend: backend), onSaved: { _ in })
+        }
+
+        @Test func theFormStatusPickerFollowsTheLifecycleAndTheRole() async throws {
+            let backend = try await Roles.member(Roles.workOrders())
+            let directory = AdminWorkOrderDirectory(backend: backend)
+            func edit(_ status: String) throws -> AdminWorkOrderFormViewModel {
+                AdminWorkOrderFormViewModel(mode: .edit(try gateOrder(status)), backend: backend, directory: directory, onSaved: { _ in })
+            }
+
+            #expect(try edit("completed").statusOptions == [.proposed, .planned, .assigned, .inProgress, .completed],
+                    "da Completed basta la sezione; Verified vuole `verify`, Cancelled è 409")
+            #expect(try !edit("verified").showsStatusPicker, "senza `reopen` un ordine verificato non si sposta")
+            #expect(makeForm(backend).statusOptions == [.proposed, .planned, .assigned, .inProgress])
+
+            await TestEnv.grant(Roles.workOrders(["reopen", "complete"]), to: backend)
+            #expect(try edit("verified").statusOptions == [.proposed, .verified], "da Verified si esce solo verso Proposed")
+            #expect(makeForm(backend).statusOptions == [.proposed, .planned, .assigned, .inProgress, .completed])
+        }
+
+        @Test func aNewTaskInAClosedColumnNeedsThatColumnsAction() async throws {
+            let backend = try await Roles.member(Roles.workOrders())
+            #expect(AdminTaskboardCreateViewModel(backend: backend, status: .completed, onCreated: { _ in }).status == .planned)
+            #expect(AdminTaskboardCreateViewModel(backend: backend, status: .inProgress, onCreated: { _ in }).status == .inProgress)
+
+            await TestEnv.grant(Roles.workOrders(["complete"]), to: backend)
+            #expect(AdminTaskboardCreateViewModel(backend: backend, status: .completed, onCreated: { _ in }).status == .completed)
         }
 
         @Test func theDirectoryOfARoleWithoutAssetsFillsFromTheLookupsAndSkipsAssets() async throws {
@@ -653,10 +681,13 @@ extension BackendTests {
             #expect(form.statusOptions == ["approved"] && !form.showsStatus, "il picker non offre scelta: non c'è")
 
             await TestEnv.grant(role(["reject"]), to: backend)
-            #expect(form.statusOptions == ["approved", "rejected"] && form.showsStatus)
+            #expect(form.statusOptions == ["approved"] && !form.showsStatus, "rifiutare un approvato vuole anche unapprove")
+
+            await TestEnv.grant(role(["reject", "unapprove"]), to: backend)
+            #expect(form.statusOptions == ["approved", "draft", "staged", "rejected", "superseded"])
 
             await TestEnv.grant(role(["unapprove"]), to: backend)
-            #expect(form.statusOptions == ["approved", "draft", "staged", "superseded"])
+            #expect(form.statusOptions == ["approved", "draft", "staged"], "superato vuole reject")
 
             await TestEnv.grant(role(["unapprove", "reject", "approve"]), to: backend)
             #expect(form.statusOptions == AdminMaintenanceStatus.allCases.map(\.rawValue))
@@ -665,10 +696,49 @@ extension BackendTests {
         @Test func aPlanThatIsNotApprovedNeedsApproveAndRejectOnlyForThoseStatuses() async throws {
             let backend = try await Roles.member(role())
             let form = AdminMaintenanceFormViewModel(backend: backend, editing: try plan(status: "draft"))
-            #expect(form.statusOptions == ["draft", "staged", "superseded"], "da bozza non serve `unapprove`")
+            #expect(form.statusOptions == ["draft", "staged"], "da bozza non serve `unapprove`; superato vuole reject")
 
             await TestEnv.grant(role(["approve", "reject"]), to: backend)
             #expect(form.statusOptions == AdminMaintenanceStatus.allCases.map(\.rawValue))
+        }
+
+        // Dettaglio: Approve e Reject
+
+        @Test func aPlanOffersTheDecisionsOfItsStatusThatTheRoleHolds() async throws {
+            let backend = try await Roles.member(role())
+            let detail = AdminMaintenanceDetailViewModel(backend: backend, plan: try plan(status: "draft"), onChange: { _ in })
+            #expect(detail.reviewActions.isEmpty && !detail.showsReview, "senza diritti niente avviso")
+
+            await TestEnv.grant(role(["approve"]), to: backend)
+            #expect(detail.reviewActions == [.approve] && detail.showsReview)
+            await TestEnv.grant(role(["reject"]), to: backend)
+            #expect(detail.reviewActions == [.reject])
+
+            let approved = AdminMaintenanceDetailViewModel(backend: backend, plan: try plan(), onChange: { _ in })
+            await TestEnv.grant(role(["approve", "reject"]), to: backend)
+            #expect(approved.reviewActions.isEmpty, "da approvato servono unapprove (e reject)")
+            await TestEnv.grant(role(["approve", "reject", "unapprove"]), to: backend)
+            #expect(approved.reviewActions == [.reject, .unapprove] && approved.showsReview)
+
+            for kind in RoleGatedUnrestricted.allCases {
+                await TestEnv.grant(kind.access, to: backend)
+                #expect(detail.reviewActions == [.reject, .approve], "\(kind)")
+            }
+        }
+
+        @Test func reviewingADraftPatchesOnlyTheStatus() async throws {
+            let backend = try await Roles.member(role(["approve", "reject"]))
+            for action in [AdminReviewAction.approve, .reject] {
+                server.route("PATCH /v1/maintenance-plans/mp1",
+                             .json(#"{"id":"mp1","name":"Lube","frequency":"monthly","status":"\#(action.target)"}"#))
+                let detail = AdminMaintenanceDetailViewModel(backend: backend, plan: try plan(status: "draft"), onChange: { _ in })
+
+                await detail.review(action)
+
+                let body = server.calls("PATCH /v1/maintenance-plans/mp1").last?.json
+                #expect(body?["status"] as? String == action.target && body?.count == 1)
+                #expect(detail.plan.status == action.target && detail.reviewError == nil && detail.reviewing == nil)
+            }
         }
 
         @Test func aNewPlanStartsAsDraftUnlessTheRoleCanApprove() async throws {

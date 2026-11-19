@@ -18,6 +18,8 @@ nonisolated struct AdminMarketplaceShelf: Identifiable, Sendable {
     let items: [AdminMarketplaceItem]
     /// Connettori del server che il catalogo non conosce (personalizzati, orfani): restano visibili come prima.
     var extraConnectors: [AdminConnector] = []
+    /// I connettori "in arrivo": in fondo allo scaffale, in schede compatte, dopo quelli che si possono usare.
+    var upcoming: [AdminMarketplaceItem] = []
 }
 
 /// Una scheda del selettore: "Tutti 71", "Skill 14". `kind` nil è "Tutti".

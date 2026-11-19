@@ -94,9 +94,12 @@ nonisolated struct AriaResponsesRequest: Encodable, Sendable {
     var instructions: String? = nil
     var toolCall: AriaToolCallRequest? = nil
     var resume: AriaResumePayload? = nil
+    /// Il livello di sforzo della conversazione. Solo per i messaggi normali, non per i tool diretti né per `resume`;
+    /// `nil` = non si manda (config non letta o `chat.reply` non abilitato).
+    var effort: AriaEffortLevel? = nil
 
     enum CodingKeys: String, CodingKey {
-        case input, stream, model, style, locale, instructions, resume, background
+        case input, stream, model, style, locale, instructions, resume, background, effort
         case plantId = "plant_id"
         case sessionId = "session_id"
         case companyId = "company_id"
@@ -543,6 +546,8 @@ nonisolated enum AriaStreamEvent: Sendable {
     case taskList(AriaTaskList)
     /// Eventi di pipeline della web (PIPELINE_EVENTS): passo di intent, retrieval, CMMS, azioni esterne.
     case pipeline(name: String, data: AriaJSON)
+    /// Quanto è costata la risposta e a che sforzo è girata (`aria.turn_usage`). Non è un evento di pipeline.
+    case turnUsage(AriaTurnUsage)
     case ignored
 
     /// Un rifiuto del ruolo dentro lo stream: l'errore del modello che comincia con `permission_denied:`, o uno
@@ -616,6 +621,7 @@ nonisolated enum AriaStreamEvent: Sendable {
         case "aria.diagnostic_state": .diagnosticState(episode: decode(Diagnostic.self)?.episodeNumber)
         case "aria.interrupt": decode(AriaInterrupt.self).map { .interrupt($0) } ?? .ignored
         case "aria.task_list": decode(AriaTaskList.self).map { .taskList($0) } ?? pipelineOrIgnored()
+        case "aria.turn_usage": decode(AriaJSON.self).flatMap { AriaTurnUsage(json: $0) }.map { .turnUsage($0) } ?? .ignored
         default: pipelineOrIgnored()
         }
     }
@@ -717,7 +723,7 @@ nonisolated struct AriaTurn: Decodable, Sendable {
     }
 }
 
-/// GET /v1/agent/sessions/{id}: le spunte salvate e il turno ancora aperto (servono solo questi).
+/// GET /v1/agent/sessions/{id}: le spunte salvate, il turno ancora aperto e il livello di sforzo (servono solo questi).
 nonisolated struct AriaChatSessionState: Decodable, Sendable {
     nonisolated struct ActiveTurn: Decodable, Sendable {
         let responseId: String
@@ -731,9 +737,11 @@ nonisolated struct AriaChatSessionState: Decodable, Sendable {
 
     let checklist: AriaChecklist?
     let activeTurn: ActiveTurn?
+    /// Il livello di sforzo salvato per la conversazione (`base`…`max`); nil se non c'è o il server non lo manda.
+    let effort: String?
 
     enum CodingKeys: String, CodingKey {
-        case checklist
+        case checklist, effort
         case activeTurn = "active_turn"
     }
 
@@ -741,6 +749,7 @@ nonisolated struct AriaChatSessionState: Decodable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         checklist = try? c.decodeIfPresent(AriaChecklist.self, forKey: .checklist)
         activeTurn = try? c.decodeIfPresent(ActiveTurn.self, forKey: .activeTurn)
+        effort = try? c.decodeIfPresent(String.self, forKey: .effort)
     }
 }
 
@@ -783,6 +792,8 @@ nonisolated struct AriaCompany: Decodable, Sendable, Identifiable, Hashable {
     let myRole: String?
     /// `false`: la persona non ha più accesso a quest'azienda dall'app. `nil` su un backend precedente.
     let appAccess: Bool?
+    /// `false`: l'azienda è stata creata ma il piano non è ancora scelto (onboarding a metà). `nil` se manca.
+    var onboardingCompleted: Bool? = nil
 }
 
 nonisolated struct AriaPlant: Decodable, Sendable, Identifiable, Hashable {

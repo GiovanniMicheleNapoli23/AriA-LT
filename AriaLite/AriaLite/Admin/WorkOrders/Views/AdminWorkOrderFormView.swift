@@ -81,8 +81,10 @@ struct AdminWorkOrderFormView: View {
         Section {
             segmentedRow("Priority", selection: $viewModel.draft.priority, options: AdminWorkOrderPriority.known) { $0.localized }
             segmentedRow("Type", selection: $viewModel.draft.type, options: AdminWorkOrderType.known) { $0.localized }
-            Picker("Status", selection: $viewModel.draft.status) {
-                ForEach(AdminWorkOrderStatus.known, id: \.self) { Text($0.localized).tag($0) }
+            if viewModel.showsStatusPicker {
+                Picker("Status", selection: $viewModel.draft.status) {
+                    ForEach(viewModel.statusOptions, id: \.self) { Text($0.localized).tag($0) }
+                }
             }
             TextField("Category", text: $viewModel.draft.category)
                 .focused($focused, equals: .category)
@@ -92,9 +94,9 @@ struct AdminWorkOrderFormView: View {
     private var placeSection: some View {
         Section {
             if viewModel.plants.isEmpty {
-                LabeledContent("Plant", value: viewModel.plantLabel)
+                LabeledContent("Site", value: viewModel.plantLabel)
             } else {
-                Picker("Plant", selection: $viewModel.draft.plantId) {
+                Picker("Site", selection: $viewModel.draft.plantId) {
                     if viewModel.draft.plantId == nil { Text("None").tag(String?.none) }
                     ForEach(viewModel.plants) { Text($0.name).tag(Optional($0.id)) }
                 }

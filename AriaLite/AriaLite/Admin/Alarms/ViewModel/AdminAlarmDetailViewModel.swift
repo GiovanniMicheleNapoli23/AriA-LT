@@ -5,11 +5,15 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Il dettaglio di un allarme (pagina /alarms/{id} della web): scheda riletta dal server (by-id), cause e
-//  passi, modifica in un foglio, approvazione (con conferma), "Improve with AI" e diagnosi.
+//  passi, modifica in un foglio, decisioni di revisione in ogni stato (Approve, Unapprove, Reject, Back to draft;
+//  con conferma quelle che tolgono l'allarme dal lavoro; quali dipende dal ruolo), eliminazione (con conferma),
+//  "Improve with AI" e diagnosi. Approvare passa da bulk-approve (che sincronizza la conoscenza), le altre
+//  decisioni sono un PATCH dello stato.
 //
 
 import Foundation
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -30,14 +34,23 @@ final class AdminAlarmDetailViewModel {
     var editForm: AdminAlarmFormViewModel?
     /// "Improve with AI" aperto (sheet).
     var improve: AdminAlarmImproveViewModel?
-    /// "Approvare questo allarme?" (conferma).
-    var showsApproveConfirmation = false
-    private(set) var isApproving = false
-    /// Errore dell'approvazione (alert).
-    var approveError: String?
-    var isShowingApproveError: Bool {
-        get { approveError != nil }
-        set { if !newValue { approveError = nil } }
+    /// La decisione di revisione in corso e l'errore dell'ultima (si mostra nel riquadro di revisione).
+    private(set) var reviewing: AdminReviewAction?
+    private(set) var reviewError: String?
+    /// La decisione che aspetta la conferma (Reject, Unapprove).
+    var confirmingReview: AdminReviewAction?
+    var isConfirmingReview: Bool {
+        get { confirmingReview != nil }
+        set { if !newValue { confirmingReview = nil } }
+    }
+    /// "Eliminare questo allarme?" (conferma).
+    var showsDeleteConfirmation = false
+    private(set) var isDeleting = false
+    /// Errore dell'eliminazione (alert).
+    var deleteError: String?
+    var isShowingDeleteError: Bool {
+        get { deleteError != nil }
+        set { if !newValue { deleteError = nil } }
     }
 
     init(alarm: AdminAlarm, owner: AdminAlarmsViewModel) {
@@ -91,9 +104,21 @@ final class AdminAlarmDetailViewModel {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    var canApprove: Bool {
-        alarm.status?.isPending == true && !isApproving && backend.rights.can(.approve, in: .alarms)
+    /// Eliminare vuole quello che servirebbe a rifiutarlo (AriaRights.canDelete).
+    var canDelete: Bool {
+        reviewing == nil && !isDeleting && backend.rights.canDelete(stored: alarm.statusKey, in: .alarms)
     }
+
+    // MARK: - Revisione
+
+    /// Le decisioni possibili ora (restano mentre una è in corso, ferme): nessuna mentre l'eliminazione è in corso.
+    var reviewActions: [AdminReviewAction] {
+        guard !isDeleting else { return [] }
+        return AdminReviewAction.available(from: alarm.statusKey, in: .alarms, rights: backend.rights)
+    }
+
+    /// La barra delle decisioni: almeno una decisione, o una in corso. Lo stato lo dice il badge dell'intestazione.
+    var showsReview: Bool { !reviewActions.isEmpty || reviewing != nil }
 
     // MARK: - Azioni
 
@@ -114,21 +139,55 @@ final class AdminAlarmDetailViewModel {
         owner.didSave(saved)
     }
 
-    /// Approva questo allarme (bulk-approve con un solo id, che sincronizza anche la conoscenza) e lo rilegge.
-    func approve() async {
-        guard canApprove else { return }
-        isApproving = true
-        defer { isApproving = false }
+    /// Reject e Unapprove chiedono conferma; le altre partono subito.
+    func requestReview(_ action: AdminReviewAction) {
+        if action.needsConfirmation {
+            confirmingReview = action
+        } else {
+            Task { await review(action) }
+        }
+    }
+
+    /// Prende la decisione: Approve passa da bulk-approve (con un solo id, che sincronizza anche la conoscenza)
+    /// e rilegge l'allarme; le altre sono un PATCH dello stato.
+    func review(_ action: AdminReviewAction) async {
+        guard reviewing == nil, reviewActions.contains(action) else { return }
+        reviewing = action
+        reviewError = nil
+        defer { reviewing = nil }
         do {
-            try await AdminAlarmsAPI(api: backend.api).approve(ids: [alarm.id])
+            if action == .approve {
+                try await AdminAlarmsAPI(api: backend.api).approve(ids: [alarm.id])
+            } else {
+                didSave(try await AdminAlarmsAPI(api: backend.api).update(id: alarm.id, AdminAlarmUpdate(status: action.target)))
+                return
+            }
         } catch {
             if let failure = AdminAlarmsFailure.from(error, action: .write, backend: backend) {
-                approveError = failure.message
+                reviewError = failure.message
             }
             return
         }
         owner.invalidateApproved()
         await load()
+    }
+
+    /// `true` se eliminato: la schermata si chiude. Un 404 vuol dire che non c'era già più.
+    func delete() async -> Bool {
+        guard canDelete, !isDeleting else { return false }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await AdminAlarmsAPI(api: backend.api).delete(id: alarm.id)
+        } catch {
+            guard let failure = AdminAlarmsFailure.from(error, action: .write, backend: backend) else { return false }
+            guard failure.isNotFound else {
+                deleteError = failure.message
+                return false
+            }
+        }
+        owner.didDelete(id: alarm.id)
+        return true
     }
 
     /// Alla chiusura della schermata: le richieste in corso non servono più.
