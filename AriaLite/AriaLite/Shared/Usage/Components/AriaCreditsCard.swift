@@ -14,6 +14,8 @@ import SwiftUI
 
 struct AriaCreditsCard: View {
     let model: AriaCreditsViewModel
+    /// Nel profilo "settings.credits", nel menu "···" della chat "options.credits".
+    var identifier = "settings.credits"
 
     @ScaledMetric(relativeTo: .body) private var ringSide: CGFloat = 34
 
@@ -32,7 +34,7 @@ struct AriaCreditsCard: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.cardAccessibilityLabel)
         .accessibilityHint(model.cardAccessibilityHint)
-        .accessibilityIdentifier("settings.credits")
+        .accessibilityIdentifier(identifier)
     }
 
     @ViewBuilder

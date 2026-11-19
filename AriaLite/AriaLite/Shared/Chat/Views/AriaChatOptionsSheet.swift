@@ -4,7 +4,8 @@
 //
 //  Created by Giovanni Michele on 26/09/26.
 //
-//  Il menu "···" della chat: la procedura della sessione (il "Task & Event Rail" della web).
+//  Il menu "···" della chat: in cima i crediti (come nel profilo), poi la procedura della sessione
+//  (il "Task & Event Rail" della web).
 //  Lo step corrente è la scheda in evidenza, con i suoi task sempre visibili e il prossimo da fare
 //  evidenziato; gli step precedenti sono righe compatte con il loro esito, da aprire al bisogno.
 //  In fondo la lingua di dettatura (anche dal tocco lungo sul microfono della barra), il report in Word e le
@@ -22,14 +23,17 @@ struct AriaChatOptionsSheet: View {
     @AppStorage(AriaDictation.languageKey) private var dictationLanguage = AriaDictation.automatic
     @State private var model: AriaChatOptionsViewModel
 
-    init(chat: AriaAgentChat, onCloseOut: (() -> Void)?) {
-        _model = State(initialValue: AriaChatOptionsViewModel(chat: chat, offersCloseOut: onCloseOut != nil))
+    init(chat: AriaAgentChat, backend: AriaBackend, onCloseOut: (() -> Void)?) {
+        _model = State(initialValue: AriaChatOptionsViewModel(chat: chat, backend: backend,
+                                                              offersCloseOut: onCloseOut != nil))
         self.onCloseOut = onCloseOut
     }
 
     var body: some View {
         NavigationStack {
             List {
+                if model.credits.isVisible { creditsSection }
+
                 if let current = model.currentStep {
                     Section("Current step") {
                         AriaCurrentStepCard(list: current.list, messageId: current.messageId, chat: model.chat)
@@ -85,6 +89,11 @@ struct AriaChatOptionsSheet: View {
                     }
                 }
             }
+            // Una lettura fresca del saldo all'apertura (la chat lo rilegge già dopo ogni risposta).
+            .task { await model.credits.refresh() }
+            .sheet(isPresented: $model.showsCredits) {
+                AriaCreditsSheet(model: model.credits)
+            }
             .navigationTitle("Procedure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -104,6 +113,18 @@ struct AriaChatOptionsSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    private var creditsSection: some View {
+        Section {
+            Button {
+                model.creditsTapped()
+            } label: {
+                AriaCreditsCard(model: model.credits, identifier: "options.credits")
+            }
+            .buttonStyle(.plain)
+            .listRowInsets(EdgeInsets())
+        }
     }
 
     private var reportSection: some View {

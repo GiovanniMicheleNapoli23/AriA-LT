@@ -66,6 +66,17 @@ extension EnvironmentValues {
     @Entry var sidebarController: AriaSidebarController?
     /// Apre una conversazione nella chat principale (per id di sessione): le sezioni lo usano per "Apri la chat".
     @Entry var openChatSession: AriaOpenChatSessionAction?
+    /// I connettori per il pulsante sotto il campo della chat; `nil` se il Marketplace non è offerto.
+    @Entry var chatConnectors: AriaChatConnectorsAccess?
+}
+
+/// Cosa serve al pulsante dei connettori della chat: la lista (quella del Marketplace) e come aprire il Marketplace
+/// già filtrato sui connettori. Due istanze con lo stesso Marketplace valgono come uguali (l'azione è sempre la stessa).
+struct AriaChatConnectorsAccess: Equatable {
+    let marketplace: AdminMarketplaceViewModel
+    let open: @MainActor () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.marketplace === rhs.marketplace }
 }
 
 /// L'azione dietro `openChatSession`, come `OpenURLAction`: si chiama con l'id della sessione. Una closure
@@ -150,6 +161,8 @@ struct AriaShellView: View {
         .background(Color.liteSidebar.ignoresSafeArea())
         .environment(\.sidebarController, sidebar)
         .environment(\.openChatSession, AriaOpenChatSessionAction(open: openSession(id:)))
+        .environment(\.chatConnectors, offered.contains(.adminMarketplace)
+                     ? AriaChatConnectorsAccess(marketplace: viewModel.adminMarketplace, open: openConnectors) : nil)
         .modifier(AriaSetupTourWiring(
             tour: viewModel.setupTour,
             account: user.username,
@@ -387,6 +400,16 @@ struct AriaShellView: View {
         destination = target
         searchingChats = false
         sidebar.setOpen(false)
+    }
+
+    /// Da "Manage connectors" nel popover della chat: il Marketplace sui soli connettori (una ricerca o un filtro rimasti
+    /// da prima non devono nasconderli).
+    private func openConnectors() {
+        let marketplace = viewModel.adminMarketplace
+        marketplace.searchText = ""
+        marketplace.clearFilters()
+        marketplace.select(kind: .connector)
+        select(.adminMarketplace)
     }
 
     private func searchChats() {

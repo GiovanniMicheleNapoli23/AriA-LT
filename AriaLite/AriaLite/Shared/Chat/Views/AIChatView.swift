@@ -52,7 +52,7 @@ private struct AIChatScreen: View {
                     }
                 }
                 .sheet(isPresented: $model.showingOptions, onDismiss: { model.optionsDismissed() }) {
-                    AriaChatOptionsSheet(chat: model.chat,
+                    AriaChatOptionsSheet(chat: model.chat, backend: model.backend,
                                          onCloseOut: model.offersCloseOut ? { model.closeOutAfterOptionsDismiss() } : nil)
                 }
                 .sheet(item: $model.closeout) { choice in

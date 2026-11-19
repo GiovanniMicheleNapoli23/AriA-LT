@@ -20,6 +20,8 @@ final class AriaChatComposerViewModel {
     let backend: AriaBackend
     let voice: AriaVoiceViewModel?
     let dictation = AriaDictation()
+    /// I livelli di effort del menu sotto il campo (righe, stime, scelta): gli stessi del foglio "Effort".
+    let effortPicker: AriaEffortPickerViewModel
 
     /// Cosa fa il pulsante tondo a destra del campo.
     enum PrimaryRole: Equatable {
@@ -49,8 +51,12 @@ final class AriaChatComposerViewModel {
     var showPhotos = false
     var showFiles = false
     var showContext = false
-    /// Il foglio "Effort" (la logica sta in AriaChatComposerViewModel+Effort).
+    /// Il foglio "Effort" con i costi e "Try again" (la logica sta in AriaChatComposerViewModel+Effort).
     var showEffort = false
+    /// Il popover dei connettori: finché è aperto la riga sotto il campo resta, anche se il campo perde il focus.
+    var showConnectors = false
+    /// Il campo ha la tastiera: sotto compaiono l'effort e l'icona dei connettori. Lo aggiorna la vista dal suo FocusState.
+    var isInputFocused = false
     var photoItems: [PhotosPickerItem] = []
     /// Cresce a ogni stop o voce: l'haptic del pulsante. L'invio lo segnala la chat (AriaChatHaptics).
     private(set) var tapCount = 0
@@ -65,6 +71,7 @@ final class AriaChatComposerViewModel {
         self.chat = chat
         self.backend = backend
         self.voice = voice
+        self.effortPicker = AriaEffortPickerViewModel(chat: chat, backend: backend)
     }
 
     /// Gli stessi formati del context dock della web (CONTEXT_FILE_ACCEPT).

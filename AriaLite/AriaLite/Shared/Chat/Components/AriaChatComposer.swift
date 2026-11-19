@@ -8,7 +8,9 @@
 //  galleria, file, stile di risposta, ricerca web), il campo al centro, il microfono
 //  per dettare (tocco = detta, pressione lunga = lingua e opzioni) e un pulsante tondo
 //  che cambia ruolo (assistente dal vivo → invia → stop). Il contesto aggiunto e gli
-//  strumenti attivi stanno sopra il campo, dentro la barra.
+//  strumenti attivi stanno sopra il campo, dentro la barra; con la tastiera aperta, sotto
+//  il campo, i pulsanti scendono in una riga: "+", connettori ed effort, microfono e invio (in
+//  orizzontale resta tutto su una riga, lo spazio è poco).
 //  La logica sta in AriaChatComposerViewModel.
 //
 
@@ -23,6 +25,8 @@ struct AriaChatComposer: View {
 
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// I connettori (lista e Marketplace), se la shell offre il Marketplace.
+    @Environment(\.chatConnectors) private var chatConnectors
     /// Come il lato dei cerchi (stessa base e stessa scala).
     @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 38
 
@@ -50,6 +54,8 @@ struct AriaChatComposer: View {
                       allowsMultipleSelection: true) { model.filesPicked($0) }
         .task(id: model.dictationKey) { await model.loadDictationSupport() }
         .task(id: model.dictationKey) { await model.loadEffortConfig() }
+        .task(id: model.effortEstimatesKey) { await model.loadEffortEstimates() }
+        .onChange(of: inputFocused.wrappedValue, initial: true) { _, focused in model.isInputFocused = focused }
         .sheet(isPresented: $model.showEffort) {
             AriaEffortSheet(chat: model.chat, backend: model.backend)
         }
@@ -79,32 +85,73 @@ struct AriaChatComposer: View {
                     .accessibilityIdentifier("chat.dictation.error")
             }
 
-            if dynamicTypeSize.isAccessibilitySize {
-                // Testo molto grande: il campo prende tutta la riga e i pulsanti vanno sotto,
-                // altrimenti quattro cerchi lascerebbero al testo poche lettere per riga.
-                VStack(alignment: .leading, spacing: 2) {
-                    field
-                        .padding(.horizontal, 8)
-                    HStack(alignment: .bottom, spacing: 2) {
+            // Il campo resta sempre nello stesso posto della gerarchia: se cambiasse contenitore verrebbe ricreato e
+            // perderebbe il focus (e la tastiera) proprio quando la riga sotto compare. Si spostano solo i pulsanti.
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .bottom, spacing: 2) {
+                    if !isExpanded {
                         AriaComposerPlusMenu(model: model)
-                        Spacer(minLength: 0)
-                        trailingButtons
+                    }
+                    field
+                        .padding(.leading, isExpanded ? 8 : 0)
+                    if !isExpanded, showsUsageRow {
+                        // In orizzontale con la tastiera restano ~150 pt: niente riga in più, connettori ed effort in linea.
+                        AriaComposerUsageRow(model: model, connectors: chatConnectors, onManageConnectors: dismissKeyboard)
+                            .fixedSize()
+                            .frame(minHeight: rowHeight)
+                            .transition(.opacity)
+                    }
+                    // La memoria resta accanto al campo (col testo molto grande scende anche lei).
+                    if !dynamicTypeSize.isAccessibilitySize {
+                        contextRing
+                    }
+                    if !isExpanded {
+                        micAndPrimary
                     }
                 }
-            } else {
-                HStack(alignment: .bottom, spacing: 2) {
-                    AriaComposerPlusMenu(model: model)
-                    field
-                    trailingButtons
+                if isExpanded {
+                    // Con la tastiera aperta i pulsanti scendono sotto il campo, tutti su una riga: "+", connettori
+                    // ed effort a sinistra, microfono e invio a destra.
+                    HStack(alignment: .center, spacing: 2) {
+                        AriaComposerPlusMenu(model: model)
+                        if showsUsageRow {
+                            AriaComposerUsageRow(model: model, connectors: chatConnectors, onManageConnectors: dismissKeyboard)
+                                // Se la riga è stretta si accorcia l'etichetta dell'effort, non i cerchi.
+                                .layoutPriority(-1)
+                                .transition(.opacity)
+                        }
+                        Spacer(minLength: 0)
+                        if dynamicTypeSize.isAccessibilitySize {
+                            contextRing
+                        }
+                        micAndPrimary
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
         }
+        .animation(.snappy(duration: 0.22), value: showsUsageRow)
+        .animation(.snappy(duration: 0.22), value: isExpanded)
         .animation(.snappy(duration: 0.2), value: model.dictation.error)
         .animation(.snappy(duration: 0.22), value: model.isDictating)
         .animation(.snappy(duration: 0.22), value: model.contextUsage == nil)
         .padding(6)
         // Liquid Glass (material prima di iOS 26): i messaggi scorrono sotto la barra.
         .ariaGlass(in: RoundedRectangle(cornerRadius: 26, style: .continuous), interactive: true)
+    }
+
+    private var showsUsageRow: Bool {
+        model.showsUsageRow(offersConnectors: chatConnectors != nil)
+    }
+
+    /// Campo sopra e pulsanti sotto: con la riga di connettori ed effort (in verticale) o col testo molto grande.
+    private var isExpanded: Bool {
+        dynamicTypeSize.isAccessibilitySize || (showsUsageRow && verticalSizeClass != .compact)
+    }
+
+    /// "Manage connectors" porta al Marketplace: la tastiera si chiude prima.
+    private func dismissKeyboard() {
+        inputFocused.wrappedValue = false
     }
 
     private var field: some View {
@@ -121,12 +168,15 @@ struct AriaChatComposer: View {
     }
 
     @ViewBuilder
-    private var trailingButtons: some View {
+    private var contextRing: some View {
         if let usage = model.contextUsage, !model.dictation.isListening {
             AriaContextRing(model: model, usage: usage)
                 .transition(.scale(scale: 0.6).combined(with: .opacity))
         }
+    }
 
+    @ViewBuilder
+    private var micAndPrimary: some View {
         AriaDictationMicButton(model: model)
 
         AriaComposerPrimaryButton(model: model) { inputFocused.wrappedValue = false }
@@ -139,7 +189,7 @@ struct AriaChatComposer: View {
     static let maxButtonTypeSize = DynamicTypeSize.accessibility1
 }
 
-/// Il "+": foto, galleria, file, stile di risposta e ricerca web.
+/// Il "+": foto, galleria, file, stile di risposta e ricerca web. Effort e connettori hanno i loro pulsanti.
 private struct AriaComposerPlusMenu: View {
     @Bindable var model: AriaChatComposerViewModel
 
@@ -165,7 +215,6 @@ private struct AriaComposerPlusMenu: View {
                 }
                 // Nel menu resta la spunta di sistema, non l'interruttore verde dell'app.
                 .toggleStyle(.automatic)
-                effortEntry
             }
         } label: {
             // Il limite sta sull'etichetta, non sul Menu: le voci del menu seguono il testo di sistema.
@@ -174,37 +223,18 @@ private struct AriaComposerPlusMenu: View {
         }
         .accessibilityLabel("Add")
     }
-
-    /// Il livello di effort: nascosto, in caricamento (spenta), col livello e il moltiplicatore, o in errore.
-    @ViewBuilder
-    private var effortEntry: some View {
-        switch model.effortEntry {
-        case .hidden:
-            EmptyView()
-        case .loading:
-            Button {} label: {
-                Label("Loading effort levels", systemImage: AriaChatComposerViewModel.effortIcon)
-            }
-            .disabled(true)
-        case .ready(let title), .failed(let title):
-            Button { model.showEffort = true } label: {
-                Label(title, systemImage: AriaChatComposerViewModel.effortIcon)
-            }
-            .disabled(model.isEffortDisabled)
-            .accessibilityLabel(model.effortAccessibilityLabel ?? title)
-            .accessibilityIdentifier("chat.effort")
-        }
-    }
 }
 
+/// Il "+" in un cerchio pieno e tenue, alto quanto gli altri cerchi della barra.
 private struct AriaComposerPlusGlyph: View {
     @ScaledMetric(relativeTo: .body) private var side: CGFloat = 38
 
     var body: some View {
         Image(systemName: "plus")
-            .font(.title3)
+            .font(.body.weight(.semibold))
             .foregroundStyle(.primary)
             .frame(width: side, height: side)
+            .background(Color.primary.opacity(0.08), in: Circle())
             .contentShape(Circle())
     }
 }

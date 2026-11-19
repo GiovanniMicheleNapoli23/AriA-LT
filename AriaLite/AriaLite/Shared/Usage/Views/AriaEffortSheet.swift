@@ -4,8 +4,9 @@
 //
 //  Created by Giovanni Michele on 18/11/26.
 //
-//  Il foglio "Effort" aperto dal "+" della chat: i livelli con cosa costa una risposta, e la scelta per la
-//  conversazione. Se i livelli non si leggono, spiega che le risposte usano Base e offre "Try again".
+//  Il foglio "Effort" aperto dal menu dell'effort sotto il campo della chat ("Effort details", o l'errore):
+//  i livelli con cosa costa una risposta, e la scelta per la conversazione.
+//  Se i livelli non si leggono, spiega che le risposte usano Base e offre "Try again".
 //  La logica sta in AriaEffortPickerViewModel.
 //
 
