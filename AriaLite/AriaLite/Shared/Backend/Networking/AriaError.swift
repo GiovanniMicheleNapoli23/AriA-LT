@@ -22,7 +22,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
     case signInHostOffline
     /// 429 sull'invio o sulla verifica del link, con i secondi da aspettare se l'host li dice.
     case tooManyAttempts(retryAfter: Int?)
-    /// Magic link della web senza captcha Turnstile pronto, o rifiutato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
+    /// Magic link della web: il captcha Turnstile manca o non è passato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
     case captchaRejected
     /// Iscrizione dall'app: il captcha Turnstile manca o non è passato (400 MISSING_RESPONSE, 403 VERIFICATION_FAILED).
     /// Senza, il link d'iscrizione non parte: non c'è un altro link a cui ripiegare.
@@ -83,9 +83,7 @@ nonisolated enum AriaError: LocalizedError, Sendable {
             String(localized: "Too many attempts. Try again in \(seconds) seconds.")
         case .tooManyAttempts:
             String(localized: "Too many attempts. Wait a minute and try again.")
-        case .captchaRejected:
-            String(localized: "The security check for web accounts wasn't ready. If no email arrives, send the link again.")
-        case .signUpCheckFailed:
+        case .captchaRejected, .signUpCheckFailed:
             String(localized: "The security check didn't pass. Complete it and try again.")
         case .signUpUnavailable:
             String(localized: "This server doesn't support creating an account from the app yet.")

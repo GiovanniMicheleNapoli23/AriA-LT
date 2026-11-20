@@ -5,9 +5,9 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  Tutta la logica del login. Un solo campo email per i due tipi di account:
-//  1) "Send sign-in link" manda insieme il link dell'operatore e, con il captcha Turnstile (di solito
-//     pronto in silenzio), il magic link della web. Solo il tipo di account giusto riceve un'email;
-//     senza captcha parte solo il link dell'operatore, con una nota.
+//  1) "Send sign-in link" manda un solo link, il magic link della web (l'email "Sign in" di sempre), dietro
+//     il captcha Turnstile (di solito pronto in silenzio): apre la sessione dell'account, operatore o
+//     account della piattaforma. Senza captcha non parte nulla.
 //  2) Il link si tocca nell'email (AppViewModel.open) o si incolla qui: la sua forma decide come entrare.
 //  Chi non ha un account lo crea qui (`setCreatingAccount`): stessa email, ma parte solo il link d'iscrizione dell'app,
 //  dietro il captcha come sul form della web; poi il passo 2 di sempre e l'onboarding (AriaSignUpView).
@@ -31,9 +31,6 @@ final class LoginViewModel {
     private(set) var errorMessage: String?
     /// Il server non si raggiunge: avviso "offline" al posto dell'errore rosso.
     private(set) var isOffline = false
-    /// Uno dei due link non è partito per un motivo risolvibile (captcha non pronto, troppi tentativi):
-    /// una nota discreta sotto "controlla l'email", non un errore.
-    private(set) var notice: String?
     private(set) var isLoading = false
     /// Cresce a ogni errore: la card si scuote.
     private(set) var shakes = 0
@@ -74,7 +71,7 @@ final class LoginViewModel {
 
     var isPrimaryEnabled: Bool { awaitsLink ? canSignIn : canSend }
 
-    /// Il captcha serve solo al passo dell'email: per il magic link della web e, obbligatorio, per l'iscrizione.
+    /// Il captcha c'è sempre al passo dell'email: lo vogliono sia il link di accesso sia quello d'iscrizione.
     var showsCaptcha: Bool { !awaitsLink }
 
     var turnstileSiteKey: String { app.backend.api.config.turnstileSiteKey }
@@ -108,14 +105,29 @@ final class LoginViewModel {
     }
 
     /// Il token, se c'è. Turnstile lavora mentre l'utente scrive: se è stato più veloce si aspetta un poco,
-    /// mai a lungo (né se serve un tocco: il link dell'operatore parte comunque). L'iscrizione aspetta di più:
-    /// senza captcha non parte nulla, e il widget appena aperto può metterci qualche secondo.
-    private func readyCaptcha(within wait: Duration = .seconds(3)) async -> String? {
+    /// mai a lungo (né se serve un tocco). Senza captcha non parte nessun link, e il widget appena aperto può
+    /// metterci qualche secondo.
+    private func readyCaptcha(within wait: Duration = .seconds(8)) async -> String? {
         let deadline = ContinuousClock.now + wait
         while captcha == nil, !captchaFailed, !captchaNeedsInteraction, ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(150))
         }
         return captcha
+    }
+
+    /// Il token per un invio. Se non c'è, dice alla persona cosa fare e restituisce `nil`; `focus` è il campo
+    /// da mettere a fuoco (nessuno se il riquadro del captcha aspetta un tocco: la tastiera lo coprirebbe).
+    private func captchaForSending(_ step: StaticString) async -> (token: String?, focus: LoginField?) {
+        if let token = await readyCaptcha() { return (token, nil) }
+        AriaAuthTrace.step(step, "captcha non pronto, serve un tocco=\(captchaNeedsInteraction)")
+        if captchaNeedsInteraction {
+            errorMessage = String(localized: "Complete the security check below, then try again.")
+            shakes += 1
+            return (nil, nil)
+        }
+        if captchaFailed { renewCaptcha() }
+        let focus = handle(.failure(String(localized: "The security check isn't ready yet. Try again in a moment.")), field: .email)
+        return (nil, focus)
     }
 
     /// Il token vale una volta sola: dopo ogni invio se ne genera uno nuovo.
@@ -142,21 +154,19 @@ final class LoginViewModel {
         isCreatingAccount = creating
         errorMessage = nil
         isOffline = false
-        notice = nil
     }
 
-    /// Passo 1: i due link insieme. Basta che ne parta uno.
+    /// Passo 1: il link di accesso, uno solo (il magic link della web) e solo con il captcha.
     func sendLink() async -> LoginField? {
         guard canSend else { return nil }
         startRequest()
-        notice = nil
         defer { isLoading = false }
-        let token = await readyCaptcha()
-        AriaAuthTrace.step("login.sendLink", "server=\(app.backend.authURL.absoluteString) captcha=\(token != nil)")
+        let captcha = await captchaForSending("login.sendLink")
+        guard let token = captcha.token else { return captcha.focus }
+        AriaAuthTrace.step("login.sendLink", "server=\(app.backend.authURL.absoluteString)")
         renewCaptcha()
         do {
-            let delivery = try await app.backend.sendSignInLink(email: email, captcha: token)
-            notice = delivery.note
+            try await app.backend.sendSignInLink(email: email, captcha: token)
             return .link
         } catch {
             AriaAuthTrace.failure("login.sendLink.failed", error)
@@ -169,19 +179,9 @@ final class LoginViewModel {
     func sendSignUpLink() async -> LoginField? {
         guard canSend else { return nil }
         startRequest()
-        notice = nil
         defer { isLoading = false }
-        guard let token = await readyCaptcha(within: .seconds(8)) else {
-            AriaAuthTrace.step("signUp.sendLink", "captcha non pronto, serve un tocco=\(captchaNeedsInteraction)")
-            if captchaNeedsInteraction {
-                // Il riquadro è visibile: niente tastiera sopra, la persona lo tocca e riprova.
-                errorMessage = String(localized: "Complete the security check below, then try again.")
-                shakes += 1
-                return nil
-            }
-            if captchaFailed { renewCaptcha() }
-            return handle(.failure(String(localized: "The security check isn't ready yet. Try again in a moment.")), field: .email)
-        }
+        let captcha = await captchaForSending("signUp.sendLink")
+        guard let token = captcha.token else { return captcha.focus }
         AriaAuthTrace.step("signUp.sendLink", "server=\(app.backend.authURL.absoluteString)")
         renewCaptcha()
         do {
@@ -236,14 +236,13 @@ final class LoginViewModel {
         return handle(result, field: .link)
     }
 
-    /// Torna al passo dell'email, per chiedere nuovi link.
+    /// Torna al passo dell'email, per chiedere un nuovo link.
     func useDifferentEmail() {
         app.backend.cancelPendingLink()
         pastedLink = ""
         failedLink = nil
         errorMessage = nil
         isOffline = false
-        notice = nil
     }
 
     private func startRequest() {

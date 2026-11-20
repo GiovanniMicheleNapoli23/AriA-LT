@@ -168,7 +168,7 @@ struct AriaConnectionForm: View {
         busy = true
         defer { busy = false }
         do {
-            try await backend.sendSignInLink(email: email)
+            try await backend.sendOperatorLink(email: email)
             error = nil
         } catch {
             self.error = error.localizedDescription

@@ -29,8 +29,10 @@
 //    `callbackURL` è `/?from=aria-ios`: l'apple-app-site-association della web apre nell'app solo
 //    /api/auth/magic-link/verify con `callbackURL=*aria-ios*`, così il link toccato nell'email torna qui.
 //
-//  L'app manda le due richieste insieme (AriaBackend.sendSignInLink): solo quella del tipo di account
-//  giusto spedisce un'email, e la forma del link che arriva decide come si completa l'accesso.
+//  Dalla schermata di login l'app chiede un solo link, il magic link della web (AriaBackend.sendSignInLink):
+//  a chi ha i due accessi le due richieste insieme portavano due email per la stessa sessione. Il link
+//  dell'operatore si chiede dal modulo di collegamento (AriaBackend.sendOperatorLink). La forma del link
+//  che arriva decide come si completa l'accesso.
 //
 //  Mai un cookie storage: la sessione dell'operatore va come Bearer, il cookie della web a mano
 //  nell'header `Cookie`. Il JWT resta in memoria e si rinnova 13' dopo il conio (orologio monotono:
@@ -249,7 +251,7 @@ actor AriaAuth {
         try Self.checkLink(response, data)
     }
 
-    /// Passo 1 dell'account della piattaforma, come il form della web: better-auth manda l'email col link
+    /// Passo 1 dalla schermata di login, come il form della web: better-auth manda l'email col link
     /// (valido 10', una volta). Il captcha Turnstile vale una volta sola: ogni invio ne vuole uno nuovo.
     func requestWebLink(email: String, captcha: String) async throws {
         var req = webRequest("api/auth/sign-in/magic-link", method: "POST")
@@ -725,7 +727,8 @@ actor AriaAuth {
         }
     }
 
-    /// Errori del magic link della web (better-auth): captcha mancante o rifiutato, troppi tentativi.
+    /// Errori del magic link della web (better-auth), alla richiesta e alla verifica: captcha mancante o
+    /// rifiutato, troppi tentativi, o il rifiuto del server.
     private static func checkWebLink(_ response: URLResponse, _ data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }
         if let offline = AriaHTTP.hostDownError(response) { throw offline }

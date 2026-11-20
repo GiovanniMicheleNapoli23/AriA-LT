@@ -9,9 +9,10 @@
 //  un pulsante. Entra con una breve animazione. Tocca fuori per chiudere la tastiera.
 //
 //  Solo email, niente password, un solo campo per operatori e account della web:
-//  1) si scrive l'email e si mandano i link (il captcha della web lavora in silenzio sotto la card);
+//  1) si scrive l'email e si manda il link di accesso, uno solo (il captcha della web lavora in silenzio
+//     sotto la card: compare solo se chiede un tocco);
 //  2) si tocca il link nell'email (AppViewModel.open) o lo si incolla qui.
-//  "Crea un account" usa lo stesso campo per il link d'iscrizione; il captcha allora è obbligatorio.
+//  "Crea un account" usa lo stesso campo e lo stesso captcha per il link d'iscrizione.
 //  Tutta la logica è in LoginViewModel; qui restano il fuoco dei campi, lo scorrimento e le animazioni.
 //
 
@@ -114,12 +115,6 @@ struct LoginView: View {
                     Text("Check your email: we sent a sign-in link to \(sentTo).")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    if let notice = model.notice {
-                        Label(notice, systemImage: "info.circle")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .transition(.opacity)
-                    }
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
@@ -193,7 +188,6 @@ struct LoginView: View {
         .animation(.snappy(duration: 0.25), value: model.errorMessage)
         .animation(.snappy(duration: 0.25), value: model.isOffline)
         .animation(.snappy(duration: 0.25), value: model.awaitsLink)
-        .animation(.snappy(duration: 0.25), value: model.notice)
         .animation(.snappy(duration: 0.25), value: model.captchaNeedsInteraction)
         .animation(.snappy(duration: 0.25), value: model.isCreatingAccount)
     }
@@ -254,7 +248,7 @@ struct LoginView: View {
         }
     }
 
-    /// Captcha della web per il magic link e per l'iscrizione: invisibile finché Turnstile non chiede un tocco.
+    /// Captcha della web per il link di accesso e per l'iscrizione: invisibile finché Turnstile non chiede un tocco.
     /// Un token nuovo dopo ogni invio (`captchaGeneration`).
     private var captcha: some View {
         AriaTurnstileView(siteKey: model.turnstileSiteKey, origin: model.turnstileOrigin) { event in

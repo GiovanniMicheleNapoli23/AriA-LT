@@ -13,17 +13,6 @@
 import Foundation
 import Observation
 
-/// Esito dell'invio dei link di accesso: almeno uno è partito.
-nonisolated struct AriaLinkDelivery: Sendable, Equatable {
-    /// Link dell'operatore accettato (202 anche per un indirizzo che non è di un operatore).
-    let mobileSent: Bool
-    /// Magic link della web accettato.
-    let webSent: Bool
-    /// L'altro link non è partito per un motivo che l'utente può risolvere (captcha non pronto, troppi
-    /// tentativi): una nota sotto "controlla l'email", non un errore.
-    let note: String?
-}
-
 /// Il link di accesso non corrisponde alla richiesta fatta da questo dispositivo.
 nonisolated enum AriaSignInError: LocalizedError, Sendable {
     /// Nessun link chiesto da qui (negli ultimi 15'): un link altrui aprirebbe l'account di chi lo manda.
@@ -103,6 +92,10 @@ final class AriaBackend {
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {
             pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
+        } else {
+            // Richiesta scaduta o mai conclusa: l'email non resta salvata.
+            UserDefaults.standard.removeObject(forKey: Self.linkEmailKey)
+            UserDefaults.standard.removeObject(forKey: Self.linkSentAtKey)
         }
         isSigningUp = isSignedIn && UserDefaults.standard.bool(forKey: Self.signingUpKey)
         listenForAccessChanges()
@@ -186,46 +179,24 @@ final class AriaBackend {
         }
     }
 
-    /// Passo 1: manda insieme il link dell'operatore e, con un captcha Turnstile, il magic link della web.
-    /// Solo quello del tipo di account giusto spedisce un'email (request-link risponde 202 a ogni indirizzo).
-    /// Basta che uno parta; se non parte nessuno vale l'errore dell'operatore (i suoi messaggi su rete
-    /// e 429 sono i più chiari). Senza `captcha` parte solo il link dell'operatore.
-    @discardableResult
-    func sendSignInLink(email: String, captcha: String? = nil) async throws -> AriaLinkDelivery {
+    /// Passo 1 dalla schermata di login: un solo link, il magic link della web (l'email "Sign in" di sempre),
+    /// dietro il captcha Turnstile come sul form del sito. Apre la sessione dell'account, operatore o account
+    /// della piattaforma. Il link dell'operatore non parte insieme: a chi ha i due accessi arrivavano due email
+    /// per la stessa sessione.
+    func sendSignInLink(email: String, captcha: String) async throws {
         let email = Self.normalized(email)
-        let auth = api.auth
-        async let mobileFailure = Self.failure { try await auth.requestLink(email: email) }
-        async let webFailure = Self.failure {
-            guard let captcha else { throw AriaError.captchaRejected }
-            try await auth.requestWebLink(email: email, captcha: captcha)
-        }
-        let (mobile, web) = await (mobileFailure, webFailure)
-        if let mobile, web != nil { throw mobile }
-
+        try await api.auth.requestWebLink(email: email, captcha: captcha)
         setPendingLink(email)
-        let delivery = AriaLinkDelivery(mobileSent: mobile == nil, webSent: web == nil,
-                                        note: mobile.map(\.localizedDescription) ?? web.flatMap(Self.webNote))
-        AriaAuthTrace.step("link.sent", "operatore=\(delivery.mobileSent) web=\(delivery.webSent)")
-        return delivery
+        AriaAuthTrace.step("link.sent", "web")
     }
 
-    /// L'errore di un invio, o `nil` se è andato.
-    private nonisolated static func failure(_ send: @Sendable () async throws -> Void) async -> (any Error)? {
-        do {
-            try await send()
-            return nil
-        } catch {
-            return error
-        }
-    }
-
-    /// Il magic link della web non è partito: lo si dice solo se l'utente può farci qualcosa.
-    /// Altri rifiuti (es. un indirizzo senza account della web) non dicono nulla a un operatore.
-    private static func webNote(_ error: any Error) -> String? {
-        switch error as? AriaError {
-        case .captchaRejected?, .tooManyAttempts?: error.localizedDescription
-        default: nil
-        }
+    /// Il link dell'operatore (POST /api/auth/mobile/request-link), senza captcha: per il modulo di collegamento
+    /// delle impostazioni. Risponde 202 a ogni indirizzo, quindi un esito positivo non dice niente sull'account.
+    func sendOperatorLink(email: String) async throws {
+        let email = Self.normalized(email)
+        try await api.auth.requestLink(email: email)
+        setPendingLink(email)
+        AriaAuthTrace.step("link.sent", "operatore")
     }
 
     /// Iscrizione: il link dell'app all'email scritta qui, dietro il captcha (POST /api/auth/mobile/sign-up-link).

@@ -91,7 +91,7 @@ enum TestEnv {
     /// Il link chiesto da questo dispositivo: senza, `completeSignIn` del backend rifiuta ogni link.
     static func requestLink(_ backend: AriaBackend, email: String = "mario@acme.test") async throws {
         StubServer.shared.route("POST /api/auth/mobile/request-link", .json("{}", status: 202))
-        try await backend.sendSignInLink(email: email)
+        try await backend.sendOperatorLink(email: email)
     }
 
     /// Un ordine nel formato di GET /v1/work-orders.
