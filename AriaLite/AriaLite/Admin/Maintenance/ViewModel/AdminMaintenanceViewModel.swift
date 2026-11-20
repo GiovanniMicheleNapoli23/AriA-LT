@@ -26,8 +26,16 @@ final class AdminMaintenanceViewModel {
     private(set) var lastUpdated: Date?
     /// Il `loadKey` della lista a schermo.
     @ObservationIgnored private var loadedKey: String?
+    /// Quando rileggere entrando nella sezione (vedi AriaFreshness).
+    @ObservationIgnored private var freshness = AriaFreshness()
+    /// Sale a ogni modifica di `plans`: è la chiave che invalida le liste calcolate.
+    private var plansRevision = 0
 
+    /// Il testo del campo di ricerca (legato alla vista); i filtri usano `appliedQuery`, che lo segue con ritardo.
     var searchText = ""
+    /// La ricerca applicata alla lista, già senza spazi ai bordi.
+    private(set) var appliedQuery = ""
+    @ObservationIgnored private let searchDebouncer = AriaDebouncer()
     var statusFilter: AdminMaintenanceStatus = .approved
     /// La scelta esplicita dello stabilimento (vedi `plantFilter`). Senza scelta vale quello attivo dell'app.
     private var hasChosenPlant = false
@@ -67,30 +75,61 @@ final class AdminMaintenanceViewModel {
     /// Il filtro stabilimento è diverso dal predefinito (lo stabilimento attivo): la chip si evidenzia.
     var isPlantFilterCustom: Bool { plantFilter != backend.activePlantId }
 
-    /// Piani dello stabilimento scelto; quelli senza `plant_id` valgono per tutti.
-    private var plantPlans: [AdminMaintenancePlan] {
-        guard let plant = plantFilter else { return plans }
-        return plans.filter { $0.plantId == nil || $0.plantId == plant }
+    /// Ciò che serve alla vista, calcolato una volta per ogni combinazione di ingressi.
+    private struct Derived {
+        var assetTags: [String] = []
+        /// Tutti i filtri tranne la scadenza: sono i piani su cui contano le tile.
+        var filteredCount = 0
+        var dueCounts: [AdminMaintenanceDueState: Int] = [:]
+        /// Per scadenza (le più vicine in alto, quelle senza data in fondo), poi per nome.
+        var visible: [AdminMaintenancePlan] = []
     }
 
-    /// Gli asset dei piani dello stabilimento, per il filtro.
-    var assetTags: [String] {
-        Set(plantPlans.compactMap(\.assetTag)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    private struct DerivedKey: Equatable {
+        let revision: Int
+        let plant: String?
+        let asset: String?
+        let frequency: AdminMaintenanceFrequency?
+        let due: AdminMaintenanceDueState?
+        let query: String
+        /// La scadenza dipende dall'ora: si ricalcola almeno una volta all'ora.
+        let hour: Int
     }
 
-    /// Tutti i filtri tranne la scadenza: sono i piani su cui contano le tile.
-    private var filteredPlans: [AdminMaintenancePlan] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return plantPlans
-            .filter { assetFilter == nil || $0.assetTag == assetFilter }
-            .filter { frequencyFilter == nil || $0.frequency == frequencyFilter?.rawValue }
-            .filter { query.isEmpty || $0.searchableFields.contains { $0.localizedStandardContains(query) } }
+    @ObservationIgnored private var derivedKey: DerivedKey?
+    @ObservationIgnored private var derivedCache = Derived()
+
+    /// Leggere gli ingressi qui dentro li fa osservare alla vista; il calcolo vero avviene solo a cache vuota.
+    private var derived: Derived {
+        let key = DerivedKey(revision: plansRevision, plant: plantFilter, asset: assetFilter,
+                             frequency: frequencyFilter, due: dueFilter, query: appliedQuery,
+                             hour: Int(Date.now.timeIntervalSince1970 / 3600))
+        if derivedKey != key {
+            derivedCache = computeDerived(for: key)
+            derivedKey = key
+        }
+        return derivedCache
     }
 
-    /// Per scadenza (le più vicine in alto, quelle senza data in fondo), poi per nome.
-    var visiblePlans: [AdminMaintenancePlan] {
-        filteredPlans
-            .filter { dueFilter == nil || $0.dueState == dueFilter }
+    private func computeDerived(for key: DerivedKey) -> Derived {
+        // Piani dello stabilimento scelto; quelli senza `plant_id` valgono per tutti.
+        let plantPlans = key.plant.map { plant in plans.filter { $0.plantId == nil || $0.plantId == plant } } ?? plans
+        let assetTags = Set(plantPlans.compactMap(\.assetTag)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        let filtered = plantPlans
+            .filter { key.asset == nil || $0.assetTag == key.asset }
+            .filter { key.frequency == nil || $0.frequency == key.frequency?.rawValue }
+            .filter { key.query.isEmpty || $0.searchableFields.contains { $0.localizedStandardContains(key.query) } }
+        var counts: [AdminMaintenanceDueState: Int] = [:]
+        var withState: [(plan: AdminMaintenancePlan, state: AdminMaintenanceDueState)] = []
+        withState.reserveCapacity(filtered.count)
+        for plan in filtered {
+            let state = plan.dueState
+            counts[state, default: 0] += 1
+            withState.append((plan, state))
+        }
+        let visible = withState
+            .filter { key.due == nil || $0.state == key.due }
+            .map { $0.plan }
             .sorted { a, b in
                 switch (a.nextDueAt, b.nextDueAt) {
                 case let (x?, y?) where x != y: x < y
@@ -99,9 +138,34 @@ final class AdminMaintenanceViewModel {
                 default: a.name.localizedStandardCompare(b.name) == .orderedAscending
                 }
             }
+        return Derived(assetTags: assetTags, filteredCount: filtered.count, dueCounts: counts, visible: visible)
     }
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    /// Gli asset dei piani dello stabilimento, per il filtro.
+    var assetTags: [String] { derived.assetTags }
+
+    var visiblePlans: [AdminMaintenancePlan] { derived.visible }
+
+    /// Chiamata a ogni cambio del testo: svuotato si applica subito, altrimenti dopo una pausa di battitura.
+    func searchTextChanged() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query != appliedQuery else {
+            searchDebouncer.cancel()
+            return
+        }
+        if query.isEmpty {
+            searchDebouncer.flush { appliedQuery = "" }
+        } else {
+            searchDebouncer.schedule { [weak self] in self?.applySearch() }
+        }
+    }
+
+    private func applySearch() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query != appliedQuery { appliedQuery = query }
+    }
+
+    var isSearching: Bool { !appliedQuery.isEmpty }
     var hasLocalFilters: Bool {
         assetFilter != nil || frequencyFilter != nil || dueFilter != nil || isPlantFilterCustom
     }
@@ -128,10 +192,10 @@ final class AdminMaintenanceViewModel {
 
     // MARK: Tile
 
-    var totalCount: Int { filteredPlans.count }
+    var totalCount: Int { derived.filteredCount }
 
     func count(_ state: AdminMaintenanceDueState) -> Int {
-        filteredPlans.filter { $0.dueState == state }.count
+        derived.dueCounts[state] ?? 0
     }
 
     /// Un tocco su una tile filtra la lista; un secondo tocco toglie il filtro.
@@ -146,15 +210,25 @@ final class AdminMaintenanceViewModel {
 
     // MARK: Caricamento
 
+    /// Entrando nella sezione: rilegge solo la prima volta, cambiati azienda o stato, o se i dati sono vecchi.
+    /// I dati già a schermo restano mentre arrivano i nuovi.
+    func loadIfNeeded() async {
+        guard loadKey != loadedKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata (tirare per aggiornare, "Retry").
     func load() async {
         let status = statusFilter
         // Altra azienda o altro stato: la lista vecchia non vale, non si mostra mentre arriva la nuova.
         let key = loadKey
         if key != loadedKey {
             plans = []
+            plansRevision &+= 1
             hasLoaded = false
             errorMessage = nil
             loadedKey = key
+            freshness.invalidate()
         }
         isLoading = true
         defer { isLoading = false }
@@ -163,13 +237,16 @@ final class AdminMaintenanceViewModel {
             // Lo stato è cambiato durante la richiesta: questa risposta non vale più.
             guard status == statusFilter, !Task.isCancelled else { return }
             plans = response.items
+            plansRevision &+= 1
             hasLoaded = true
+            freshness.markLoaded()
             errorMessage = nil
             lastUpdated = .now
             if let asset = assetFilter, !assetTags.contains(asset) { assetFilter = nil }
         } catch {
             guard status == statusFilter, let message = AdminMaintenanceFailure.message(for: error, backend: backend) else { return }
             errorMessage = message
+            freshness.invalidate()
         }
     }
 
@@ -180,11 +257,15 @@ final class AdminMaintenanceViewModel {
     func apply(_ plan: AdminMaintenancePlan) {
         plans.removeAll { $0.id == plan.id }
         if plan.status == nil || plan.status == statusFilter.rawValue { plans.append(plan) }
+        plansRevision &+= 1
+        freshness.invalidate()
     }
 
     /// Un piano eliminato dal dettaglio: esce dalla lista.
     func remove(_ plan: AdminMaintenancePlan) {
         plans.removeAll { $0.id == plan.id }
+        plansRevision &+= 1
+        freshness.invalidate()
     }
 
     /// `plant_id` è obbligatorio alla creazione.
@@ -203,6 +284,10 @@ final class AdminMaintenanceViewModel {
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {
         plans = []
+        plansRevision &+= 1
+        freshness.invalidate()
+        searchDebouncer.cancel()
+        appliedQuery = ""
         isLoading = false
         hasLoaded = false
         errorMessage = nil

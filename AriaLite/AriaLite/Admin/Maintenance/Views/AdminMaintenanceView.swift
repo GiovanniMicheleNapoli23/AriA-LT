@@ -47,6 +47,7 @@ struct AdminMaintenanceView: View {
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Name, asset, category, zone"))
+            .onChange(of: viewModel.searchText) { viewModel.searchTextChanged() }
             .sheet(isPresented: $isCreating) {
                 AdminMaintenanceFormView(viewModel: viewModel.makeFormViewModel()) { created in
                     viewModel.apply(created)
@@ -54,7 +55,7 @@ struct AdminMaintenanceView: View {
                 }
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     // MARK: Contenuto
@@ -94,7 +95,7 @@ struct AdminMaintenanceView: View {
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: 8) {
             Text(viewModel.subtitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)

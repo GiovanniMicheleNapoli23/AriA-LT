@@ -37,7 +37,7 @@ extension AdminTaskboardViewModel {
 
     private func assigneeKey(_ order: AdminWorkOrder) -> AssigneeKey {
         if let userId = order.assignedToUserId, !userId.isEmpty {
-            let name = members.first { $0.id == userId }?.displayName ?? directory.personName(userId)
+            let name = memberNames[userId] ?? directory.personName(userId)
                 ?? order.assignedTo ?? String(localized: "Unknown person")
             return AssigneeKey(id: "user:\(userId)", kind: .person, name: name)
         }
