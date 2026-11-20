@@ -211,12 +211,8 @@ struct AriaShellView: View {
         .onChange(of: viewModel.adminUsage.isClosed) { _, closed in
             if closed, destination == .adminUsage { select(.chat) }
         }
-        // Con l'app attiva i diritti si rileggono anche da soli: un'azione tolta o ridata dall'admin si vede
-        // senza che parta una chiamata. Il task finisce quando l'app esce dal primo piano.
-        .task(id: scenePhase == .active) {
-            guard scenePhase == .active else { return }
-            await viewModel.backend.watchAccess()
-        }
+        // I diritti non si rileggono a intervalli: solo quando succede qualcosa (sidebar aperta, sezione scelta,
+        // ritorno in primo piano, `X-Access-Version` nuovo o 403 su una chiamata) o con il pull-to-refresh.
         // Aprendo la sidebar (le sezioni che il ruolo concede) o una sezione (i suoi pulsanti) non si aspetta il giro.
         .onChange(of: sidebar.isOpen) { _, open in
             if open { Task { await viewModel.backend.refreshMembershipIfStale() } }

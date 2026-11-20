@@ -112,14 +112,40 @@ final class AdminWorkOrderDetailViewModel {
     var typeLabel: String? { order.type.map(\.localized) }
     var place: String { AdminWorkOrderFormat.joined([order.assetTag, directory.asset(order.assetTag)?.name, order.zone]) }
 
-    /// La scadenza sotto il titolo, in rosso se superata.
-    var dueLabel: String? {
+    /// La data di scadenza nell'intestazione (solo la data: l'etichetta dice già "Due" o "Overdue").
+    var dueText: String? {
         guard let due = order.dueDate, !order.isClosed else { return nil }
-        let text = AdminWorkOrderFormat.dateTime(due)
-        return order.isOverdue() ? String(localized: "Overdue · \(text)") : String(localized: "Due \(text)")
+        return AdminWorkOrderFormat.dateTime(due)
     }
 
+    /// L'etichetta sopra la data: "Overdue" (in rosso) se superata.
+    var dueTitle: String { isOverdue ? String(localized: "Overdue") : String(localized: "Due") }
+
     var isOverdue: Bool { order.isOverdue() }
+
+    /// I fatti principali sotto le pillole, nell'ordine in cui si leggono.
+    var headerFacts: [AdminWorkOrderHeaderFact] {
+        var facts: [AdminWorkOrderHeaderFact] = []
+        if !place.isEmpty {
+            facts.append(AdminWorkOrderHeaderFact(id: "asset", label: String(localized: "Asset"), value: place,
+                                                  icon: "gearshape.2"))
+        }
+        let assignee = assigneeName
+        facts.append(AdminWorkOrderHeaderFact(id: "assignee", label: String(localized: "Assignee"),
+                                              value: assignee ?? String(localized: "Unassigned"),
+                                              icon: assignee == nil ? "person.badge.plus" : "person",
+                                              isPlaceholder: assignee == nil))
+        if let due = dueText {
+            facts.append(AdminWorkOrderHeaderFact(id: "due", label: dueTitle, value: due,
+                                                  icon: isOverdue ? "exclamationmark.clock.fill" : "clock",
+                                                  isAlert: isOverdue))
+        }
+        if let progress = progressShort {
+            facts.append(AdminWorkOrderHeaderFact(id: "steps", label: String(localized: "Steps"), value: progress,
+                                                  icon: "list.bullet"))
+        }
+        return facts
+    }
 
     var assigneeName: String? { directory.assigneeName(for: order) }
 

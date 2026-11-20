@@ -95,6 +95,10 @@ final class AriaDictation {
     var error: String?
 
     @ObservationIgnored private let engine = AVAudioEngine()
+    /// Vero solo dopo che la dettatura ha attivato la sessione audio. Senza, `tearDownAudio` non tocca
+    /// `engine.inputNode`: leggerlo a motore spento crea l'unità audio con la categoria di default
+    /// (`.soloAmbient`) e ferma la musica delle altre app (es. uscendo dalla chat o mandando un messaggio).
+    @ObservationIgnored private var audioActive = false
     /// La richiesta del riconoscitore che riceve l'audio: il tap la legge da qui, così si può sostituire
     /// quando il riconoscitore si ferma da solo (dopo circa un minuto) mentre si registra ancora.
     @ObservationIgnored private let sink = AriaRecognitionSink()
@@ -185,6 +189,7 @@ final class AriaDictation {
 
         do {
             try await Self.activateAudioSession()
+            audioActive = true
             let input = engine.inputNode
             let format = input.outputFormat(forBus: 0)
 
@@ -325,15 +330,18 @@ final class AriaDictation {
     private func tearDownAudio() {
         limit?.cancel()
         limit = nil
-        if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if audioActive {
+            if engine.isRunning { engine.stop() }
+            engine.inputNode.removeTap(onBus: 0)
+            audioActive = false
+            Self.deactivateAudioSession()
+        }
         sink.request?.endAudio()
         sink.request = nil
         recognizer = nil
         isListening = false
         startedAt = nil
         level = 0
-        Self.deactivateAudioSession()
     }
 
     /// Testo dal vivo. Il riconoscitore si ferma da solo (silenzio, o circa un minuto di parlato): senza

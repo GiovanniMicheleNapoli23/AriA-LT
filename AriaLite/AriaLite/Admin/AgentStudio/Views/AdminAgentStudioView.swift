@@ -25,7 +25,6 @@ struct AdminAgentStudioView: View {
                         if viewModel.hasLoaded { AdminAgentStudioAttentionSection(viewModel: viewModel) }
                         AdminAgentStudioWorkflowsSection(viewModel: viewModel)
                             .id(TourScrollTarget.workflows)
-                            .ariaSetupTourAnchor(.workflows)
                         AdminAgentStudioConfigurationSection()
                             .id(TourScrollTarget.configuration)
                     }

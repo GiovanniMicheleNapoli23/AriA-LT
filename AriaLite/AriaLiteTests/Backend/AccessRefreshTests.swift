@@ -142,33 +142,6 @@ extension BackendTests {
             #expect(await TestEnv.waitUntil { backend.rights.can(.approve, in: .alarms) })
         }
 
-        @Test func withoutAnyCallTheRightsAreRereadOnTheirOwn() async throws {
-            let approve = #"{"alarms":{"granted":true,"actions":["approve"]}}"#
-            let (backend, _) = try await TestEnv.signedInStore()
-            await TestEnv.grant(TestEnv.accessJSON(sections: #"{"alarms":{"granted":true,"actions":[]}}"#), to: backend)
-            #expect(!backend.rights.can(.approve, in: .alarms))
-
-            // Il ruolo ridà "approve" mentre la schermata è ferma: nessuna chiamata porta la versione nuova.
-            server.route("GET /v1/me", .json(#"{"id":"u1","membership":{"role":"member","restricted":true},"access":\#(TestEnv.accessJSON(sections: approve, version: "v2"))}"#))
-            let watch = Task { await backend.watchAccess(every: .milliseconds(50)) }
-            defer { watch.cancel() }
-
-            #expect(await TestEnv.waitUntil { backend.rights.can(.approve, in: .alarms) })
-        }
-
-        @Test func theWatchStopsWhenItsTaskEnds() async throws {
-            let (backend, _) = try await TestEnv.signedInStore()
-            await TestEnv.grant(TestEnv.accessJSON(), to: backend)
-            let before = meCalls()
-            let watch = Task { await backend.watchAccess(every: .milliseconds(30)) }
-            #expect(await TestEnv.waitUntil { meCalls() >= before + 2 }, "una lettura a ogni giro")
-            watch.cancel()
-            await watch.value
-            let after = meCalls()
-            try await Task.sleep(for: .milliseconds(150))
-            #expect(meCalls() == after, "l'app in background non rilegge")
-        }
-
         @Test func aSignalFromAStreamRereadsTheRights() async throws {
             let (backend, _) = try await TestEnv.signedInStore()
             await TestEnv.grant(TestEnv.accessJSON(), to: backend)

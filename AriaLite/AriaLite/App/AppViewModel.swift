@@ -132,6 +132,15 @@ class AppViewModel {
         showsOnboarding = !onboarding.isSeen
     }
 
+    // MARK: - Sidebar
+
+    /// Pull-to-refresh della sidebar: sezioni (diritti) e conversazioni si rileggono solo quando lo chiede l'utente
+    /// o succede qualcosa, mai a intervalli.
+    func refreshSidebar() async {
+        await backend.refreshMembership()
+        await sessions.load()
+    }
+
     // MARK: - Presentazione
 
     /// Finita, saltata o superata da un accesso: non torna più da sola, si rivede dal profilo.

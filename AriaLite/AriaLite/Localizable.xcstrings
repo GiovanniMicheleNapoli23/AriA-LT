@@ -6173,6 +6173,16 @@
         }
       }
     },
+    "Appearance" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aspetto"
+          }
+        }
+      }
+    },
     "Applied" : {
       "localizations" : {
         "it" : {
@@ -12852,6 +12862,16 @@
         }
       }
     },
+    "Dark" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scuro"
+          }
+        }
+      }
+    },
     "Dashboard" : {
       "localizations" : {
         "it" : {
@@ -16975,6 +16995,16 @@
         }
       }
     },
+    "Guides" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide"
+          }
+        }
+      }
+    },
     "Has a role" : {
       "localizations" : {
         "it" : {
@@ -19100,6 +19130,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Licenza"
+          }
+        }
+      }
+    },
+    "Light" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chiaro"
           }
         }
       }
@@ -42026,6 +42066,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Carico di lavoro"
+          }
+        }
+      }
+    },
+    "Workspace" : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Area di lavoro"
           }
         }
       }
