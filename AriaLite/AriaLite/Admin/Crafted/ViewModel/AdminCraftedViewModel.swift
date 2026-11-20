@@ -65,17 +65,18 @@ final class AdminCraftedViewModel {
 
     // MARK: Azienda
 
-    /// Gli store sono per azienda: cambiata l'azienda, se ne apre uno nuovo (e quello vecchio lascia finire i suoi turni).
+    /// Gli store sono per azienda e per account: cambiata l'azienda (o chi è entrato), se ne apre uno nuovo
+    /// (e quello vecchio lascia finire i suoi turni).
     func syncCompany() {
-        guard let companyId = backend.activeCompanyId else {
+        guard let companyId = backend.activeCompanyId, let accountId = backend.mobileAccount?.id else {
             dropStores()
             return
         }
-        guard store?.companyId != companyId else { return }
+        guard store?.companyId != companyId || store?.accountId != accountId else { return }
         dropStores()
-        let newStore = AdminCraftedArtifactStore(companyId: companyId)
+        let newStore = AdminCraftedArtifactStore(companyId: companyId, accountId: accountId)
         store = newStore
-        reportVersions = AdminCraftedReportVersionStore(companyId: companyId)
+        reportVersions = AdminCraftedReportVersionStore(companyId: companyId, accountId: accountId)
         generator = AdminCraftedGenerator(backend: backend, store: newStore)
     }
 

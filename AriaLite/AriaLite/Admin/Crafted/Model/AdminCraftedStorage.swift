@@ -5,7 +5,7 @@
 //  Created by Giovanni Michele on 23/10/26.
 //
 //  Dove e come si tengono sul dispositivo gli artifact e le versioni di Crafted: file JSON in
-//  Application Support/Crafted/<azienda>/, scritti in modo atomico. Un file danneggiato si legge
+//  Application Support/Crafted/<azienda>/<account>/, scritti in modo atomico. Un file danneggiato si legge
 //  come vuoto, mai come un crash. Le date sono ISO 8601 con i millisecondi, come le scrive la web.
 //
 
@@ -20,10 +20,17 @@ nonisolated enum AdminCraftedStorage {
         return support.appendingPathComponent("Crafted", isDirectory: true)
     }
 
-    /// `<base>/<azienda>/<nome>`; dall'id si tolgono i caratteri che non vanno in un percorso.
-    static func fileURL(baseURL: URL, companyId: String, name: String) -> URL {
-        let safe = String(companyId.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "_" })
-        return baseURL.appendingPathComponent(safe.isEmpty ? "_" : safe, isDirectory: true).appendingPathComponent(name)
+    /// `<base>/<azienda>/<account>/<nome>`: i file sono di chi li ha creati, e un altro account della stessa
+    /// azienda sullo stesso dispositivo non li vede. Dagli id si tolgono i caratteri che non vanno in un percorso.
+    static func fileURL(baseURL: URL, companyId: String, accountId: String, name: String) -> URL {
+        baseURL.appendingPathComponent(folderName(companyId), isDirectory: true)
+            .appendingPathComponent(folderName(accountId), isDirectory: true)
+            .appendingPathComponent(name)
+    }
+
+    private static func folderName(_ id: String) -> String {
+        let safe = String(id.map { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" ? $0 : "_" })
+        return safe.isEmpty ? "_" : safe
     }
 
     /// Il contenuto del file, o `nil` se non c'è o non si legge.
