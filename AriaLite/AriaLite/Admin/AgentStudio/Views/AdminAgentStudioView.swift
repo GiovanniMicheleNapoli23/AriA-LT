@@ -62,7 +62,7 @@ struct AdminAgentStudioView: View {
         // Il giro guidato si fa da parte con una schermata di dettaglio o il foglio delle notifiche aperti.
         .ariaSetupTourAside(!path.isEmpty, source: "agentStudio.path")
         .ariaSetupTourAside(showsNotifications, source: "agentStudio.notifications")
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     /// Dove scorrere per mostrare l'elemento di un passo del giro guidato.

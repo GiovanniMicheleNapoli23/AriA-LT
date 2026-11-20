@@ -41,7 +41,7 @@ struct AdminUsageView: View {
                     async let controls: Void = billing.refresh()
                     _ = await (page, controls)
                 }
-                .task(id: viewModel.loadKey) { await viewModel.load() }
+                .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
             }
             .liteBackground()
             .navigationTitle("LLM Usage")

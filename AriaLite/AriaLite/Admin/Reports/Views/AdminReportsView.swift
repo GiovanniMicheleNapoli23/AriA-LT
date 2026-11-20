@@ -51,6 +51,6 @@ struct AdminReportsView: View {
                 Text(viewModel.actionError ?? "")
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 }

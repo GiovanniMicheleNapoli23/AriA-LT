@@ -50,6 +50,9 @@ final class AdminAgentStudioViewModel {
     private(set) var hasLoaded = false
     private(set) var lastUpdated: Date?
     @ObservationIgnored private var loadedKey: String?
+    /// Da quando i dati a schermo sono freschi, e per quale azienda e sito: rientrando prima non si rileggono.
+    @ObservationIgnored private var freshness = AriaFreshness()
+    @ObservationIgnored private var freshnessKey: String?
 
     /// Errore di un'azione veloce (segna come letta): si mostra in un avviso.
     var actionError: String?
@@ -72,13 +75,25 @@ final class AdminAgentStudioViewModel {
 
     // MARK: Caricamento
 
+    /// All'entrata nella sezione: legge se mai letta, se è cambiata l'azienda o il sito, o se i dati hanno più di 45 s.
+    /// Con i dati già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        guard !hasLoaded || loadedKey != loadKey || freshnessKey != currentFreshnessKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    private var currentFreshnessKey: String { "\(loadKey)|\(backend.activePlantId ?? "-")" }
+
+    /// Lettura forzata: tirare per aggiornare, "Riprova", ritorno da un foglio.
     func load() async {
         let key = loadKey
         // Altra azienda: i dati vecchi non valgono, non si mostrano mentre arrivano i nuovi.
         if key != loadedKey {
             clearData()
+            freshness.invalidate()
             loadedKey = key
         }
+        let freshKey = currentFreshnessKey
         isLoading = true
         defer { isLoading = false }
         let api = backend.api
@@ -109,6 +124,15 @@ final class AdminAgentStudioViewModel {
 
         hasLoaded = true
         lastUpdated = .now
+        // Con un blocco in errore la prossima entrata riprova.
+        let failed = [results.0.isFailure, results.1.isFailure, results.2.isFailure,
+                      results.3.isFailure, results.4.isFailure, results.5.isFailure].contains(true)
+        if failed {
+            freshness.invalidate()
+        } else {
+            freshness.markLoaded()
+            freshnessKey = freshKey
+        }
     }
 
     /// Dopo un'azione in un dettaglio (run avviato o annullato, approvazione decisa): run e approvazioni.
@@ -319,6 +343,8 @@ final class AdminAgentStudioViewModel {
         loadedApprovalsKey = nil
         hasLoaded = false
         lastUpdated = nil
+        freshness.invalidate()
+        freshnessKey = nil
     }
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
@@ -332,5 +358,11 @@ final class AdminAgentStudioViewModel {
         showsUnreadOnly = false
         prompts.reset()
         launches.removeAll()
+    }
+}
+
+private extension Result {
+    var isFailure: Bool {
+        if case .failure = self { true } else { false }
     }
 }

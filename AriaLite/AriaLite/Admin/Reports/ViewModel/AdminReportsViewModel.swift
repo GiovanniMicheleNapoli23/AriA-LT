@@ -27,6 +27,8 @@ final class AdminReportsViewModel {
     private(set) var lastUpdated: Date?
     @ObservationIgnored private var loadedKey: String?
     @ObservationIgnored private var loadedCompanyId: String?
+    /// Da quando i dati a schermo sono freschi: rientrando prima la sezione non li richiede.
+    @ObservationIgnored private var freshness = AriaFreshness()
 
     // Eliminazione di un widget, sempre con conferma.
     var widgetToDelete: AdminCraftedWidget?
@@ -51,13 +53,21 @@ final class AdminReportsViewModel {
 
     // MARK: Caricamento
 
-    /// Richiede le quattro parti insieme, ognuna con il suo esito.
+    /// All'entrata nella sezione: legge se mai letti, se è cambiato filtro o azienda o se i dati hanno più di 45 s.
+    /// Con i dati già a schermo l'aggiornamento è silenzioso (le parti già arrivate restano).
+    func loadIfNeeded() async {
+        guard loadedKey != loadKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Richiede le quattro parti insieme, ognuna con il suo esito. Lettura forzata: tirare per aggiornare, "Riprova".
     func load() async {
         // Lo stabilimento scelto non c'è più (altra azienda): si torna a "tutti".
         if let id = plantFilterId, !plants.contains(where: { $0.id == id }) { plantFilterId = nil }
         let key = loadKey
         if key != loadedKey {
             // Altro filtro o altra azienda: i numeri vecchi non valgono, non si mostrano mentre arrivano i nuovi.
+            freshness.invalidate()
             overview.clear()
             workOrders.clear()
             assets.clear()
@@ -90,6 +100,10 @@ final class AdminReportsViewModel {
         assets.finish(results.2)
         widgets.finish(results.3)
         if overview.value != nil || workOrders.value != nil || assets.value != nil { lastUpdated = .now }
+        // Una parte fallita: la prossima entrata riprova.
+        let failed = [overview.errorMessage, workOrders.errorMessage, assets.errorMessage, widgets.errorMessage]
+            .contains { $0 != nil }
+        if failed { freshness.invalidate() } else { freshness.markLoaded() }
     }
 
     /// Il report degli asset; se le righe di top_failing non hanno il nome si prende da /v1/assets
@@ -131,6 +145,7 @@ final class AdminReportsViewModel {
         lastUpdated = nil
         loadedKey = nil
         loadedCompanyId = nil
+        freshness.invalidate()
         widgetToDelete = nil
         showsDeleteConfirmation = false
         deletingId = nil

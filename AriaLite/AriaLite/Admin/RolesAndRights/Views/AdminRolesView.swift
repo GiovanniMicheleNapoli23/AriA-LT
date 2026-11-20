@@ -51,7 +51,7 @@ struct AdminRolesView: View {
             AdminRoleAddPeopleView(viewModel: form)
         }
         .adminRolesToast(viewModel)
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     @ViewBuilder

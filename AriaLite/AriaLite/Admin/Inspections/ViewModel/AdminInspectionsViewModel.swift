@@ -26,6 +26,8 @@ final class AdminInspectionsViewModel {
     private(set) var lastUpdated: Date?
     /// Il `loadKey` della lista a schermo.
     @ObservationIgnored private var loadedKey: String?
+    /// Da quando la lista a schermo è fresca: rientrando prima la sezione non la richiede.
+    @ObservationIgnored private var freshness = AriaFreshness()
 
     var searchText = ""
     /// Valore grezzo dello stato (`nil` = tutti): gli stati disponibili sono quelli presenti nei dati.
@@ -161,10 +163,19 @@ final class AdminInspectionsViewModel {
 
     // MARK: Caricamento
 
+    /// All'entrata nella sezione: legge se mai letta, se è cambiata l'azienda o se la lista ha più di 45 s.
+    /// Con la lista già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        guard !hasLoaded || loadedKey != loadKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata: tirare per aggiornare, "Riprova", ritorno da un foglio.
     func load() async {
         // Un'altra azienda: la lista vecchia non vale, non si mostra mentre arriva la nuova.
         let key = loadKey
         if key != loadedKey {
+            freshness.invalidate()
             inspections = []
             hasLoaded = false
             errorMessage = nil
@@ -180,8 +191,10 @@ final class AdminInspectionsViewModel {
             hasLoaded = true
             errorMessage = nil
             lastUpdated = .now
+            freshness.markLoaded()
             dropStaleFilters()
         } catch {
+            freshness.invalidate()
             guard key == loadKey, let message = AdminInspectionsFailure.message(for: error, backend: backend) else { return }
             errorMessage = message
         }
@@ -230,6 +243,7 @@ final class AdminInspectionsViewModel {
         errorMessage = nil
         lastUpdated = nil
         loadedKey = nil
+        freshness.invalidate()
         searchText = ""
         clearFilters()
     }
