@@ -26,6 +26,7 @@ enum TestEnv {
     static let defaultsKeys = ["aria.company_id", "aria.plant_id", "aria.operator_account", "aria.mobile_account",
                                "aria.install_marker", "aria.legacy_keys_purged",
                                "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference", "aria.availability_pending",
+                               "aria.availability_account",
                                "aria.api_base_url", "aria.auth_base_url",
                                "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session",
                                "aria.signing_up"]

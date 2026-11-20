@@ -114,6 +114,33 @@ extension BackendTests {
             #expect(!store.isUpdatingAvailability)
         }
 
+        @Test func theChoiceOfAnotherOperatorOnTheSameDeviceIsNotInherited() async throws {
+            // Un altro operatore ha scelto "busy" senza rete ed è uscito: la scelta è ancora da mandare.
+            UserDefaults.standard.set("busy", forKey: "aria.availability_preference")
+            UserDefaults.standard.set(true, forKey: "aria.availability_pending")
+            UserDefaults.standard.set("someone-else", forKey: "aria.availability_account")
+            let (_, store) = try await TestEnv.signedInStore()
+            stubHome()
+            await store.sync()
+            #expect(store.preferredAvailability == .available)
+            #expect(UserDefaults.standard.string(forKey: "aria.availability_preference") == nil)
+            #expect(!UserDefaults.standard.bool(forKey: "aria.availability_pending"))
+            let puts = server.calls("PUT /v1/me/availability")
+            #expect(puts.allSatisfy { $0.json as? [String: String] == ["availability": "available"] },
+                    "la scelta dell'altro non parte a nome di chi è entrato")
+        }
+
+        @Test func theChoiceIsRememberedWithItsOwner() async throws {
+            let (backend, store) = try await TestEnv.signedInStore()
+            stubHome(availability: "off_duty")
+            await store.setAvailability(.offDuty)
+            #expect(UserDefaults.standard.string(forKey: "aria.availability_account") == backend.mobileAccount?.id)
+            // Lo stesso operatore, rientrando, la ritrova.
+            store.reset()
+            store.restoreIfNeeded()
+            #expect(store.preferredAvailability == .offDuty)
+        }
+
         @Test func serverRefusingTheChangeKeepsThePreviousChoice() async throws {
             let (_, store) = try await TestEnv.signedInStore()
             stubHome()

@@ -97,6 +97,8 @@ final class AriaWorkOrderStore {
     static let preferenceKey = "aria.availability_preference"
     /// La disponibilità scelta offline non è ancora arrivata al server.
     static let availabilityPendingKey = "aria.availability_pending"
+    /// L'account che ha fatto la scelta: un altro operatore sullo stesso telefono non la eredita.
+    static let availabilityOwnerKey = "aria.availability_account"
     /// Una lista più fresca di così non si riscarica al ritorno in primo piano (il pull-to-refresh sì).
     static let listFreshness: TimeInterval = 60
     /// Un dettaglio più fresco di così non si riscarica aprendolo.
@@ -243,7 +245,7 @@ final class AriaWorkOrderStore {
         preferredAvailability = value
         guard network.isOnline else {
             // Offline: la scelta resta e parte al ritorno della rete.
-            UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+            savePreference(value)
             UserDefaults.standard.set(true, forKey: Self.availabilityPendingKey)
             return
         }
@@ -252,7 +254,7 @@ final class AriaWorkOrderStore {
         guard await prepare() else { return restore(previous) }
         do {
             try await putAvailability(value)
-            UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+            savePreference(value)
             // Cambiata la disponibilità, cambia anche cosa arriva: si ricarica la lista.
             await loadOrders()
         } catch {
@@ -264,6 +266,28 @@ final class AriaWorkOrderStore {
     /// Il server non ha accettato il cambio: resta la scelta di prima.
     private func restore(_ previous: AriaAvailability) {
         preferredAvailability = previous
+    }
+
+    /// La scelta e di chi è.
+    private func savePreference(_ value: AriaAvailability) {
+        UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+        UserDefaults.standard.set(account, forKey: Self.availabilityOwnerKey)
+    }
+
+    /// La scelta salvata vale solo per chi l'ha fatta: quella di un altro account (anche se ancora da mandare)
+    /// si dimentica e si torna a "disponibile". Una scelta salvata prima che si ricordasse di chi era resta
+    /// a chi è entrato.
+    private func keepOwnAvailabilityChoice(for account: String) {
+        let defaults = UserDefaults.standard
+        guard let owner = defaults.string(forKey: Self.availabilityOwnerKey) else {
+            if defaults.object(forKey: Self.preferenceKey) != nil { defaults.set(account, forKey: Self.availabilityOwnerKey) }
+            return
+        }
+        guard owner != account else { return }
+        for key in [Self.preferenceKey, Self.availabilityPendingKey, Self.availabilityOwnerKey] {
+            defaults.removeObject(forKey: key)
+        }
+        preferredAvailability = .available
     }
 
     /// Dettaglio aggiornato (con le modifiche in coda). Offline, o se appena scaricato, quello salvato.
@@ -432,6 +456,7 @@ final class AriaWorkOrderStore {
         loadedAccount = account
         // Un altro operatore sullo stesso telefono non eredita niente.
         offline.keepOnly(accountId: account)
+        keepOwnAvailabilityChoice(for: account)
         profile = offline.value("me", accountId: account)
             .flatMap { try? JSONDecoder().decode(AriaMobileProfile.self, from: $0.data) }
         let openList = offline.value("list.open", accountId: account)
