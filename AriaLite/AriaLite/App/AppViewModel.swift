@@ -54,6 +54,9 @@ class AppViewModel {
     @ObservationIgnored private(set) lazy var adminTeams: AdminTeamsViewModel = track(AdminTeamsViewModel(backend: backend)) { $0.reset() }
     @ObservationIgnored private(set) lazy var adminUsers: AdminUsersViewModel = track(AdminUsersViewModel(backend: backend)) { $0.reset() }
     @ObservationIgnored private(set) lazy var adminRoles: AdminRolesViewModel = track(AdminRolesViewModel(backend: backend)) { $0.reset() }
+    /// La sezione Users con le viste Users e Roles: quale si mostra e quale si è scelta.
+    @ObservationIgnored private(set) lazy var adminUsersSection: AdminUsersSectionViewModel =
+        track(AdminUsersSectionViewModel(backend: backend, users: adminUsers)) { $0.reset() }
     @ObservationIgnored private var resetters: [() -> Void] = []
 
     /// Registra un modello creato alla prima lettura, perché il logout lo azzeri.

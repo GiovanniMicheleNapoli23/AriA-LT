@@ -36,15 +36,28 @@ struct RolesAndRightsPureTests {
         #expect(!AriaRights(access: nil).canOpenRolesAndRights, "access non letto")
     }
 
-    @Test func theSidebarOffersRolesAndRightsInBothLayouts() throws {
+    @Test func rolesLiveInsideUsersInBothLayouts() throws {
+        // Niente più voce "Roles & Rights": chi gestisce i ruoli trova la sezione Users, con la vista Roles.
         let admin = try rights(admin: true)
-        #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: admin).contains(.adminRoles))
+        #expect(AriaSidebarSections.destinations(operatorLayout: false, rights: admin).contains(.adminUsers))
+        #expect(AdminUsersRules.tabs(usersOpen: AdminUsersRules.usersViewOpen(admin, operatorLayout: false),
+                                     rolesOpen: AdminUsersRules.rolesViewOpen(admin)) == [.users, .roles])
+        // Un ruolo alto che gestisce i ruoli ma non ha Members: Users c'è, con la sola vista Roles.
         let high = try rights(set: "high")
-        #expect(AriaSidebarSections.destinations(operatorLayout: true, rights: high).contains(.adminRoles))
+        #expect(AriaSidebarSections.destinations(operatorLayout: true, rights: high).contains(.adminUsers))
+        #expect(AdminUsersRules.tabs(usersOpen: AdminUsersRules.usersViewOpen(high, operatorLayout: true),
+                                     rolesOpen: AdminUsersRules.rolesViewOpen(high)) == [.roles])
+        // Un ruolo base senza Members: niente Users.
         let low = try rights(set: "low", canManage: false)
-        #expect(!AriaSidebarSections.destinations(operatorLayout: true, rights: low).contains(.adminRoles))
-        #expect(!AriaSidebarSections.destinations(operatorLayout: false, rights: .unrestricted).contains(.adminRoles),
-                "un backend senza `access`: niente sezione")
+        #expect(!AriaSidebarSections.destinations(operatorLayout: true, rights: low).contains(.adminUsers))
+        #expect(!AdminUsersRules.rolesViewOpen(.unrestricted), "un backend senza `access`: niente vista Roles")
+    }
+
+    @Test func theShownViewFallsBackToTheOneThatOpens() {
+        #expect(AdminUsersRules.current(selected: .roles, in: [.users, .roles]) == .roles)
+        #expect(AdminUsersRules.current(selected: .roles, in: [.users]) == .users, "Roles non si apre: le persone")
+        #expect(AdminUsersRules.current(selected: .users, in: [.roles]) == .roles, "solo i ruoli")
+        #expect(AdminUsersRules.tabs(usersOpen: false, rolesOpen: false).isEmpty)
     }
 
     @Test func theViewerComesFromTheAccessBlock() throws {

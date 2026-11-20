@@ -42,8 +42,8 @@ nonisolated enum AriaDestination: Hashable, Sendable {
     case adminPlants
     case adminCategories
     case adminTeams
+    /// Users: le persone e (vista Roles) i ruoli, l'ex sezione Roles & Rights.
     case adminUsers
-    case adminRoles
 }
 
 /// Stato di apertura della sidebar: un modello osservabile al posto di una closure
@@ -158,7 +158,11 @@ struct AriaShellView: View {
             membershipRead: viewModel.backend.membership != nil,
             access: AriaSetupTourAccess(backend: viewModel.backend, offered: sections),
             locked: viewModel.lock != .none,
-            onStep: { select($0.destination) },
+            onStep: { step in
+                // "Invita" indica "Add user", che sta nella vista Users della sezione.
+                if step == .invite { viewModel.adminUsersSection.showUsers() }
+                select(step.destination)
+            },
             onFinish: { select(.chat) }
         ))
         .sensoryFeedback(.impact(weight: .light), trigger: sidebar.isOpen)
@@ -185,17 +189,17 @@ struct AriaShellView: View {
             guard isOperator, granted else { return }
             Task { await viewModel.ariaWorkOrders.sync() }
         }
-        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat. Roles & Rights resta aperta (in caricamento)
+        // Una sezione tolta dal ruolo mentre è aperta: si torna alla chat. Users resta aperta (in caricamento)
         // finché GET /v1/me non risponde: un `access` non letto non vuol dire "niente accesso".
         .onChange(of: sections) { _, offered in
             guard destination != .chat, destination != .chats, !offered.contains(destination) else { return }
-            guard destination != .adminRoles || viewModel.backend.access != nil else { return }
             guard destination != .adminUsers || viewModel.backend.access != nil else { return }
             select(.chat)
         }
-        // Users: l'elenco ha risposto 403 (o la sessione è finita per l'azienda): la sezione si chiude (§2).
+        // Users: l'elenco ha risposto 403 (o la sessione è finita per l'azienda). Se restano i ruoli la sezione
+        // mostra quelli; altrimenti si chiude (§2).
         .onChange(of: viewModel.adminUsers.isClosed) { _, closed in
-            if closed, destination == .adminUsers { select(.chat) }
+            if closed, destination == .adminUsers, !viewModel.adminUsersSection.rolesOpen { select(.chat) }
         }
         // Usage: 403 `operation_forbidden` o rotte assenti, la sezione si chiude (contratto Usage §7).
         .onChange(of: viewModel.adminUsage.isClosed) { _, closed in
@@ -325,9 +329,8 @@ struct AriaShellView: View {
         case .adminTeams:
             AdminTeamsView(viewModel: viewModel.adminTeams)
         case .adminUsers:
-            AdminUsersView(viewModel: viewModel.adminUsers)
-        case .adminRoles:
-            AdminRolesView(viewModel: viewModel.adminRoles, members: viewModel.adminUsers)
+            AdminUsersSectionView(section: viewModel.adminUsersSection, users: viewModel.adminUsers,
+                                  roles: viewModel.adminRoles)
         }
     }
 
