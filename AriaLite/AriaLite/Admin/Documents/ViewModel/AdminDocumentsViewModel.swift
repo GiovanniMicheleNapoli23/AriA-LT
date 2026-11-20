@@ -7,7 +7,9 @@
 //  La libreria documenti dell'azienda, come la pagina /knowledge della web.
 //  Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
 //  Lo stabilimento si chiede al server; stato e ricerca filtrano qui sui documenti scaricati.
-//  Finché un documento è in elaborazione la lista si riaggiorna da sola ogni pochi secondi.
+//  Finché un documento è in elaborazione la lista si riaggiorna da sola (4, 8, 15, 30 s: AdminDocumentPollSchedule),
+//  ma non con un dettaglio aperto sopra (si aggiorna lui e passa le novità alla lista), non con l'app non attiva
+//  e non senza rete. Rientrando nella sezione la lista si rilegge solo se ha più di 45 s.
 //  I caricamenti (AdminDocumentUploadCenter) vivono qui: continuano a foglio chiuso e app in background.
 //
 
@@ -22,9 +24,6 @@ final class AdminDocumentsViewModel {
     let uploads: AdminDocumentUploadCenter
 
     static let pageSize = 50
-    /// Ogni quanto si riaggiorna la lista mentre qualcosa è in elaborazione.
-    static let pollInterval: Duration = .seconds(5)
-
     private(set) var documents: [AdminDocument] = []
     /// Quanti sono sul server con questi filtri, se lo dice.
     private(set) var total: Int?
@@ -37,6 +36,16 @@ final class AdminDocumentsViewModel {
     private var lastPageWasFull = false
     @ObservationIgnored private var loadedKey: String?
     @ObservationIgnored private var reloadTask: Task<Void, Never>?
+    /// Da quando la lista a schermo è fresca: rientrando prima la sezione non la richiede.
+    @ObservationIgnored private var freshness = AriaFreshness()
+    @ObservationIgnored let network: AriaNetworkMonitor
+
+    /// La vista dice se un dettaglio è aperto sopra la lista (lì si aggiorna lui) e se l'app è attiva:
+    /// in entrambi i casi il ciclo di aggiornamento della lista sta fermo.
+    var isDetailOpen = false
+    var isAppActive = true
+    /// Cresce a ogni lettura forzata: un ciclo fermo per troppa calma riparte.
+    private(set) var pollEpoch = 0
 
     var searchText = ""
     var statusFilter: AdminDocumentStatusGroup?
@@ -55,8 +64,9 @@ final class AdminDocumentsViewModel {
         case plant(String)
     }
 
-    init(backend: AriaBackend) {
+    init(backend: AriaBackend, network: AriaNetworkMonitor = .shared) {
         self.backend = backend
+        self.network = network
         uploads = AdminDocumentUploadCenter(backend: backend)
         uploads.onUploaded = { [weak self] in
             self?.scheduleReload()
@@ -70,7 +80,10 @@ final class AdminDocumentsViewModel {
     var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(plantId ?? "*")" }
 
     /// Cambia quando parte o finisce un'elaborazione: la vista ci appende il ciclo di aggiornamento.
-    var pollKey: String { "\(loadKey)|\(hasProcessing)" }
+    var pollKey: String { "\(loadKey)|\(hasProcessing)|\(canPoll)|\(pollEpoch)" }
+
+    /// Il ciclo di aggiornamento può girare: nessun dettaglio sopra e app attiva.
+    var canPoll: Bool { !isDetailOpen && isAppActive }
 
     // MARK: Filtri
 
@@ -136,7 +149,16 @@ final class AdminDocumentsViewModel {
 
     // MARK: Caricamento
 
+    /// All'entrata nella sezione: legge se mai letta, se è cambiato il contesto o se la lista ha più di 45 s.
+    /// Con la lista già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        guard !hasLoaded || loadedKey != loadKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata: tirare per aggiornare, "Riprova", dopo un caricamento.
     func load() async {
+        pollEpoch += 1
         guard let companyId = backend.activeCompanyId else {
             errorMessage = String(localized: "Choose a company first.")
             return
@@ -144,6 +166,7 @@ final class AdminDocumentsViewModel {
         let key = loadKey
         // Altra azienda o altro stabilimento: la lista vecchia non vale, non si mostra mentre arriva la nuova.
         if key != loadedKey {
+            freshness.invalidate()
             documents = []
             total = nil
             hasLoaded = false
@@ -162,7 +185,9 @@ final class AdminDocumentsViewModel {
             hasLoaded = true
             errorMessage = nil
             lastUpdated = .now
+            freshness.markLoaded()
         } catch {
+            freshness.invalidate()
             guard key == loadKey, let message = AdminDocumentsFailure.message(for: error, backend: backend) else { return }
             errorMessage = message
         }
@@ -187,12 +212,23 @@ final class AdminDocumentsViewModel {
         }
     }
 
-    /// Finché qualcosa è in elaborazione, riaggiorna in silenzio (niente spinner, niente errori a schermo).
-    /// Si ferma da solo quando tutto è finito o la vista sparisce.
+    /// Gli stati di tutti i documenti a schermo: se cambiano, è successo qualcosa e il ritmo riparte veloce.
+    private var statusSignature: [String] {
+        documents.map { "\($0.id)|\($0.ingestionState ?? "")|\($0.extractionState ?? "")" }
+    }
+
+    /// Finché qualcosa è in elaborazione, riaggiorna in silenzio (niente spinner, niente errori a schermo),
+    /// con attese crescenti (AdminDocumentPollSchedule). Senza rete salta il giro. Si ferma da solo quando tutto è
+    /// finito, la vista sparisce, un dettaglio si apre sopra, l'app non è attiva o per troppo tempo non cambia niente.
     func pollWhileProcessing() async {
-        while hasProcessing, !Task.isCancelled {
-            do { try await Task.sleep(for: Self.pollInterval) } catch { return }
+        var schedule = AdminDocumentPollSchedule()
+        while hasProcessing, canPoll, !schedule.isExhausted, !Task.isCancelled {
+            do { try await Task.sleep(for: schedule.delay) } catch { return }
+            // Offline: nessuna richiesta e nessun rallentamento, si riprova al giro dopo.
+            guard network.isOnline else { continue }
+            let before = statusSignature
             await refreshSilently()
+            schedule.recordTick(changed: statusSignature != before)
         }
     }
 
@@ -214,6 +250,7 @@ final class AdminDocumentsViewModel {
         documents = page.items.filter { !$0.isDeleted } + tail
         total = page.total ?? total
         lastUpdated = .now
+        freshness.markLoaded()
     }
 
     // MARK: Dopo una modifica
@@ -253,7 +290,7 @@ final class AdminDocumentsViewModel {
     // MARK: Altre schermate
 
     func makeDetailViewModel(for document: AdminDocument) -> AdminDocumentDetailViewModel {
-        AdminDocumentDetailViewModel(backend: backend, document: document,
+        AdminDocumentDetailViewModel(backend: backend, document: document, network: network,
                                      onChange: { [weak self] in self?.apply($0) },
                                      onDelete: { [weak self] in self?.remove(id: $0) })
     }
@@ -299,6 +336,8 @@ final class AdminDocumentsViewModel {
         lastUpdated = nil
         lastPageWasFull = false
         loadedKey = nil
+        freshness.invalidate()
+        isDetailOpen = false
         searchText = ""
         statusFilter = nil
         plantChoice = .active
