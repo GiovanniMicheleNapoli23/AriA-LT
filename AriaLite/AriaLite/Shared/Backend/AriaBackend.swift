@@ -400,8 +400,8 @@ final class AriaBackend {
             let pick = companies.first { $0.id == activeCompanyId }
                 ?? companies.first { $0.myRole == "owner" }
                 ?? companies.first
-            try await loadPlants(for: pick?.id)
-            await refreshMembership()
+            // Stabilimenti e diritti dell'azienda scelta non dipendono l'uno dall'altro: partono insieme.
+            try await loadCompanyData(for: pick?.id)
             didBootstrap = true
             lastError = nil
             AriaAuthTrace.step("bootstrap.ok", "aziende=\(companies.count) stabilimenti=\(plants.count)")
@@ -449,8 +449,13 @@ final class AriaBackend {
     }
 
     func selectCompany(_ id: String?) async {
-        do { try await loadPlants(for: id) } catch { handle(error) }
-        await refreshMembership()
+        do {
+            try await loadCompanyData(for: id)
+        } catch {
+            handle(error)
+            // Gli stabilimenti non sono arrivati, i diritti dell'azienda nuova servono lo stesso.
+            await refreshMembership()
+        }
     }
 
     /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva (le altre funzionano ancora).
@@ -477,13 +482,31 @@ final class AriaBackend {
     /// l'accesso. Senza rete restano gli ultimi letti; un rifiuto li toglie.
     func refreshMembership() async {
         guard isSignedIn, let companyId = activeCompanyId else {
-            membership = nil
-            access = nil
-            await api.context.setAccess(version: nil, followsRole: false)
+            await clearMembership()
             return
         }
+        await applyMembership(await readMe(), for: companyId)
+    }
+
+    /// GET /v1/me per l'azienda attiva, senza toccare lo stato: l'esito si applica con `applyMembership`.
+    private func readMe() async -> Result<AriaMe, any Error> {
         do {
-            let me: AriaMe = try await api.get("v1/me")
+            return .success(try await api.get("v1/me"))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func clearMembership() async {
+        membership = nil
+        access = nil
+        await api.context.setAccess(version: nil, followsRole: false)
+    }
+
+    /// L'esito di una lettura di GET /v1/me fatta per `companyId`: se nel frattempo l'azienda è cambiata non vale.
+    private func applyMembership(_ result: Result<AriaMe, any Error>, for companyId: String) async {
+        switch result {
+        case .success(let me):
             guard companyId == activeCompanyId else { return }
             let followed = rights.followsRole
             // Operatore o no lo dice GET /v1/me, non il link usato: chi entra col link dell'app (un owner, o chi si è
@@ -510,7 +533,7 @@ final class AriaBackend {
                 usage.resetAvailability()
             }
             await api.context.setAccess(version: me.access?.version, followsRole: rights.followsRole)
-        } catch {
+        case .failure(let error):
             guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
             AriaAuthTrace.failure("me.membership.failed", error)
             if membership != nil { membership = nil }
@@ -567,6 +590,32 @@ final class AriaBackend {
     }
 
     private func loadPlants(for companyId: String?) async throws {
+        await prepareCompany(companyId)
+        try await fetchPlants()
+    }
+
+    /// Azienda scelta: stabilimenti (GET /v1/plants) e diritti (GET /v1/me) si leggono insieme, dopo che l'azienda è
+    /// attiva nel contesto. Lo stato finale è quello di prima: gli stabilimenti si applicano per primi e, se la loro
+    /// lettura fallisce, l'errore esce senza toccare i diritti.
+    private func loadCompanyData(for companyId: String?) async throws {
+        await prepareCompany(companyId)
+        guard isSignedIn, let readFor = activeCompanyId else {
+            try await fetchPlants()
+            await refreshMembership()
+            return
+        }
+        async let me = readMe()
+        do {
+            try await fetchPlants()
+        } catch {
+            _ = await me
+            throw error
+        }
+        await applyMembership(await me, for: readFor)
+    }
+
+    /// La parte che va prima di ogni lettura dell'azienda: contesto, diritti e vocabolario dell'altra azienda spariscono.
+    private func prepareCompany(_ companyId: String?) async {
         // Il vocabolario della dettatura è dell'azienda: con un'altra si richiede.
         if companyId != activeCompanyId {
             dictationSupport = nil
@@ -579,7 +628,10 @@ final class AriaBackend {
         activeCompanyId = companyId
         // Un'altra azienda (o il primo avvio dopo l'accesso): i crediti dell'altra non valgono, si rileggono (contratto 3.6).
         if companyChanged || !didBootstrap { usage.companyChanged() }
-        if companyId == nil {
+    }
+
+    private func fetchPlants() async throws {
+        if activeCompanyId == nil {
             plants = []
         } else {
             do {
