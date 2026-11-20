@@ -151,6 +151,26 @@ extension BackendTests {
             #expect(!AdminMarketplaceViewModel.canManage(backend))
         }
 
+        @Test func marketplaceSearchWaitsForAPauseAndTheShelvesFollowTheAppliedQuery() async throws {
+            let backend = try await connected()
+            let model = AdminMarketplaceViewModel(backend: backend, catalog: AdminMarketplaceCatalog.load())
+            try #require(!model.catalog.isEmpty)
+            let shelfCount = model.shelves.count
+            #expect(model.shelves.count == shelfCount, "stessi filtri: stesso risultato dalla memoria")
+
+            model.searchText = "zzzz-no-match-zzzz"
+            #expect(model.appliedQuery.isEmpty, "non si rifiltra a ogni tasto")
+            #expect(model.shelves.count == shelfCount)
+            for _ in 0..<40 where model.appliedQuery.isEmpty { try await Task.sleep(for: .milliseconds(50)) }
+            #expect(model.appliedQuery == "zzzz-no-match-zzzz")
+            #expect(model.shelves.isEmpty)
+            #expect(model.kindChips.first?.count == 0)
+
+            model.searchText = ""
+            #expect(model.appliedQuery.isEmpty, "il campo svuotato si applica subito")
+            #expect(model.shelves.count == shelfCount)
+        }
+
         // MARK: Crafted
 
         private static let oneReview = #"{"sessions":[{"sessionId":"s1","title":"Pump trip"}]}"#
