@@ -1,46 +1,35 @@
 //
-//  AriaCreditsSheet.swift
+//  AriaCreditsView.swift
 //  AriaLite
 //
 //  Created by Giovanni Michele on 18/11/26.
 //
-//  Il foglio "AI Operational Credits" aperto dal profilo: la cifra grande, l'eventuale avviso di stato, le ore e il
-//  ciclo (o la prova) con le barre, e gli ultimi sette giorni. Se il saldo non si legge: "Can't read your credits"
+//  La pagina "AI Operational Credits", con un push dalle impostazioni o nel suo foglio (AriaCreditsSheet): la cifra
+//  grande, l'eventuale avviso di stato, le ore e il ciclo (o la prova) con le barre, e gli ultimi sette giorni. Se il saldo non si legge: "Can't read your credits"
 //  e "Try again". Tira per rileggere. La logica sta in AriaCreditsViewModel.
 //
 
 import SwiftUI
 
-struct AriaCreditsSheet: View {
+struct AriaCreditsView: View {
     let model: AriaCreditsViewModel
 
-    @Environment(\.dismiss) private var dismiss
-
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.liteBackground.ignoresSafeArea()
-                ScrollView {
-                    content
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .ariaReadableWidth()
-                }
-                .scrollBounceBehavior(.basedOnSize)
-                .refreshable { await model.refresh() }
+        ZStack {
+            Color.liteBackground.ignoresSafeArea()
+            ScrollView {
+                content
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .ariaReadableWidth()
             }
-            .navigationTitle("AI Operational Credits")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            // Il profilo sotto rilegge ogni 60 s; qui una lettura fresca all'apertura.
-            .task { await model.refresh() }
+            .scrollBounceBehavior(.basedOnSize)
+            .refreshable { await model.refresh() }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .navigationTitle("AI Operational Credits")
+        .navigationBarTitleDisplayMode(.inline)
+        // Le impostazioni rileggono ogni 60 s; qui una lettura fresca all'apertura.
+        .task { await model.refresh() }
     }
 
     @ViewBuilder

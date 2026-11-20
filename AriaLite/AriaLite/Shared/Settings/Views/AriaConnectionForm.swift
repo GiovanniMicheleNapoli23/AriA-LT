@@ -1,5 +1,5 @@
 //
-//  AriaConnectionSheet.swift
+//  AriaConnectionForm.swift
 //  AriaLite
 //
 //  Created by Giovanni Michele on 25/09/26.
@@ -7,15 +7,15 @@
 //  Collegamento al backend Aria: chi è collegato (operatore o account della piattaforma), azienda
 //  e stabilimento. Da scollegati, il link via email dell'operatore (senza password e senza captcha:
 //  il magic link della web si chiede dalla schermata di login); si incolla l'uno o l'altro link.
-//  In DEBUG anche server personalizzati e access token incollato.
+//  In DEBUG anche server personalizzati e access token incollato. Il modulo si apre con un push dalle impostazioni
+//  o nel suo foglio (AriaConnectionSheet).
 //
 
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct AriaConnectionSheet: View {
+struct AriaConnectionForm: View {
     let backend: AriaBackend
-    @Environment(\.dismiss) private var dismiss
 
     @State private var email = ""
     @State private var pastedLink = ""
@@ -30,35 +30,27 @@ struct AriaConnectionSheet: View {
     #endif
 
     var body: some View {
-        NavigationStack {
-            Form {
-                if backend.isSignedIn {
-                    connectedSections
-                } else {
-                    magicLinkSection
-                    #if DEBUG
-                    developerSection
-                    #endif
-                }
+        Form {
+            if backend.isSignedIn {
+                connectedSections
+            } else {
+                magicLinkSection
+                #if DEBUG
+                developerSection
+                #endif
+            }
 
-                if let message = error ?? backend.lastError {
-                    Section {
-                        Label(message, systemImage: "exclamationmark.triangle.fill")
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                    }
+            if let message = error ?? backend.lastError {
+                Section {
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Aria server")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .task { await backend.bootstrapIfNeeded() }
         }
-        .presentationDetents([.medium, .large])
+        .navigationTitle("Aria server")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await backend.bootstrapIfNeeded() }
     }
 
     // MARK: Collegato
