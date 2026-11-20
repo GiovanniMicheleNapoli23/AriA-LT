@@ -11,42 +11,17 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct AriaWorkOrdersView: View {
     let store: AriaWorkOrderStore
 
-    @State private var searchText = ""
+    @State private var viewModel: AriaWorkOrdersViewModel
     @State private var path: [AriaWorkOrder] = []
 
-    private func matches(_ order: AriaWorkOrder) -> Bool {
-        let query = searchText.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return true }
-        return [order.title, order.assetTag, order.zone, order.category].contains {
-            $0?.localizedStandardContains(query) == true
-        }
-    }
-
-    private var openOrders: [AriaWorkOrder] { store.orders.filter(matches) }
-    private var closedOrders: [AriaWorkOrder] { store.closedOrders.filter(matches) }
-
-    /// Da fare oggi: scadenza oggi, già scaduti e senza data (l'ordine è quello del server).
-    private var todayOrders: [AriaWorkOrder] {
-        let endOfToday = Calendar.current.startOfDay(for: .now).addingTimeInterval(24 * 3600)
-        return openOrders.filter { ($0.dueDate ?? .distantPast) < endOfToday }
-    }
-
-    private var upcomingOrders: [AriaWorkOrder] {
-        let endOfToday = Calendar.current.startOfDay(for: .now).addingTimeInterval(24 * 3600)
-        return openOrders.filter { ($0.dueDate ?? .distantPast) >= endOfToday }
-    }
-
-    /// Chiusi per giorno, dal più recente: conta l'ultimo aggiornamento (la chiusura).
-    private var pastByDay: [(day: Date, orders: [AriaWorkOrder])] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: closedOrders) {
-            calendar.startOfDay(for: $0.updatedAt ?? $0.dueDate ?? $0.createdAt ?? .distantPast)
-        }
-        return grouped.sorted { $0.key > $1.key }.map { (day: $0.key, orders: $0.value) }
+    init(store: AriaWorkOrderStore) {
+        self.store = store
+        _viewModel = State(initialValue: AriaWorkOrdersViewModel(store: store))
     }
 
     var body: some View {
@@ -70,9 +45,19 @@ struct AriaWorkOrdersView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
             }
-            .searchable(text: $searchText, prompt: Text("Search tasks..."))
+            .searchable(text: $viewModel.searchText, prompt: Text("Search tasks..."))
         }
         .task(id: store.openRequest) { await openRequested() }
+        // La copia locale si legge al primo uso: qui, se non l'ha già chiesta la sincronizzazione.
+        .onAppear {
+            store.restoreIfNeeded()
+            viewModel.rebuildSections()
+        }
+        .onChange(of: store.listRevision) { _, _ in viewModel.rebuildSections() }
+        // Passata la mezzanotte, "oggi" è un altro giorno.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            viewModel.rebuildSections()
+        }
     }
 
     /// Lavoro toccato in una notifica: si apre il dettaglio aggiornato. Se l'ordine non è più
@@ -113,66 +98,70 @@ struct AriaWorkOrdersView: View {
                 }
                 .padding(.top, 40)
             }
-        } else if !searchText.isEmpty, openOrders.isEmpty, closedOrders.isEmpty {
-            ContentUnavailableView.search(text: searchText)
+        } else if viewModel.hasNoSearchResults {
+            ContentUnavailableView.search(text: viewModel.appliedText)
         } else {
             scheduled
         }
     }
 
     private var scheduled: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let sections = viewModel.sections
+        return VStack(alignment: .leading, spacing: 0) {
 
             // MARK: - Today
             sectionHeader(
                 title: String(localized: "Today"),
-                subtitle: countSubtitle(todayOrders.count),
+                subtitle: countSubtitle(sections.today.count),
                 icon: "calendar",
                 color: Color.liteAccent
             )
             .padding(.top, 12)
 
-            if todayOrders.isEmpty {
+            if sections.today.isEmpty {
                 emptyState(icon: "tray", message: String(localized: "No tasks for today"))
             } else {
-                rows(todayOrders)
+                rows(sections.today)
                     .padding(.bottom, 8)
             }
 
             // MARK: - Upcoming
-            if !upcomingOrders.isEmpty {
+            if !sections.upcoming.isEmpty {
                 sectionHeader(
                     title: String(localized: "Upcoming"),
-                    subtitle: countSubtitle(upcomingOrders.count),
+                    subtitle: countSubtitle(sections.upcoming.count),
                     icon: "calendar.badge.clock",
                     color: .secondary
                 )
                 .padding(.top, 12)
-                rows(upcomingOrders)
+                rows(sections.upcoming)
                     .padding(.bottom, 8)
             }
 
             // MARK: - Past
-            if !pastByDay.isEmpty {
+            if !sections.pastByDay.isEmpty {
                 sectionHeader(
                     title: String(localized: "Past"),
-                    subtitle: String(localized: "\(closedOrders.count) archived tasks"),
+                    subtitle: String(localized: "\(sections.closedCount) archived tasks"),
                     icon: "clock.arrow.circlepath",
                     color: .secondary
                 )
                 .padding(.top, 12)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(pastByDay, id: \.day) { item in
-                        Text(item.day.formatted(date: .abbreviated, time: .omitted))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                            .padding(.horizontal, 20)
-                            .padding(.top, 16)
-                            .padding(.bottom, 6)
-                        rows(item.orders, isPast: true)
+                // Fino a 200 chiusi: le righe si costruiscono mentre scorrono.
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(sections.pastByDay) { item in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(item.day.formatted(date: .abbreviated, time: .omitted))
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                                .padding(.horizontal, 20)
+                                .padding(.top, 16)
+                                .padding(.bottom, 6)
+                            rows(item.orders, isPast: true)
+                        }
                     }
                 }
                 .padding(.bottom, 24)
@@ -188,16 +177,24 @@ struct AriaWorkOrdersView: View {
         }
     }
 
+    /// I chiusi (fino a 200) in uno stack pigro; oggi e in arrivo sono pochi e restano in uno normale.
+    @ViewBuilder
     private func rows(_ orders: [AriaWorkOrder], isPast: Bool = false) -> some View {
-        VStack(spacing: 8) {
-            ForEach(orders) { order in
-                NavigationLink(value: order) {
-                    AriaWorkOrderRow(order: order)
-                        .opacity(isPast ? 0.6 : 1)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
+        if isPast {
+            LazyVStack(spacing: 8) { rowLinks(orders, isPast: true) }
+        } else {
+            VStack(spacing: 8) { rowLinks(orders, isPast: false) }
+        }
+    }
+
+    private func rowLinks(_ orders: [AriaWorkOrder], isPast: Bool) -> some View {
+        ForEach(orders) { order in
+            NavigationLink(value: order) {
+                AriaWorkOrderRow(order: order)
+                    .opacity(isPast ? 0.6 : 1)
             }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
         }
     }
 

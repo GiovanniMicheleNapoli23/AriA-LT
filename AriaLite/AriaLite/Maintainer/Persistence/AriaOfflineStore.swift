@@ -94,7 +94,7 @@ final class AriaOutboxEntry {
 
 final class AriaOfflineStore {
     /// Un ordine salvato, già letto dal database.
-    struct CachedOrder {
+    nonisolated struct CachedOrder: Sendable {
         let orderId: String
         let bucket: String
         let position: Int
@@ -109,33 +109,100 @@ final class AriaOfflineStore {
         }
     }
 
+    /// Lo stato leggero di una riga, senza i payload: basta a sapere se la copia già decodificata è ancora buona
+    /// (le date cambiano a ogni scrittura della riga) e dove va l'ordine (lista e posizione).
+    nonisolated struct OrderStamp: Sendable, Equatable {
+        let orderId: String
+        let bucket: String
+        let position: Int
+        let listFetchedAt: Date?
+        let detailFetchedAt: Date?
+    }
+
+    /// Una riga coi payload ancora in `Data`: la decodifica (costosa) si può fare fuori dal main thread.
+    nonisolated struct RawOrder: Sendable {
+        let orderId: String
+        let bucket: String
+        let position: Int
+        let listPayload: Data?
+        let listFetchedAt: Date?
+        let detailPayload: Data?
+        let detailFetchedAt: Date?
+
+        func decoded() -> CachedOrder {
+            CachedOrder(orderId: orderId, bucket: bucket, position: position,
+                        list: listPayload.flatMap(AriaOfflineStore.json), listFetchedAt: listFetchedAt,
+                        detail: detailPayload.flatMap(AriaOfflineStore.json), detailFetchedAt: detailFetchedAt)
+        }
+    }
+
     static let shared = AriaOfflineStore()
 
-    private let container: ModelContainer
+    /// Si apre al primo uso, non alla creazione: `shared` è il valore di default dello store dei lavori, che nasce
+    /// all'avvio dell'app anche per un admin o dietro Face ID, e non ne ha bisogno.
+    private lazy var container: ModelContainer = Self.makeContainer(inMemory: inMemory)
+    private let inMemory: Bool
     private var context: ModelContext { container.mainContext }
 
     /// `inMemory`: niente file su disco (test e anteprime).
     init(inMemory: Bool = false) {
+        self.inMemory = inMemory
+    }
+
+    private static func makeContainer(inMemory: Bool) -> ModelContainer {
         let schema = Schema([AriaCachedOrder.self, AriaCachedValue.self, AriaOutboxEntry.self])
         let config = ModelConfiguration("AriaOffline", schema: schema, isStoredInMemoryOnly: inMemory)
         if let container = try? ModelContainer(for: schema, configurations: config) {
-            self.container = container
-        } else {
-            // Archivio illeggibile: si lavora in memoria finché l'app resta aperta, ma l'app non si ferma.
-            let memory = ModelConfiguration("AriaOffline", schema: schema, isStoredInMemoryOnly: true)
-            self.container = try! ModelContainer(for: schema, configurations: memory)
+            return container
         }
+        // Archivio illeggibile: si lavora in memoria finché l'app resta aperta, ma l'app non si ferma.
+        let memory = ModelConfiguration("AriaOffline", schema: schema, isStoredInMemoryOnly: true)
+        return try! ModelContainer(for: schema, configurations: memory)
     }
 
     // MARK: Ordini
 
-    func orders(accountId: String) -> [CachedOrder] {
-        let descriptor = FetchDescriptor<AriaCachedOrder>(predicate: #Predicate { $0.accountId == accountId },
-                                                          sortBy: [SortDescriptor(\.position)])
-        return ((try? context.fetch(descriptor)) ?? []).map { row in
+    /// Gli ordini salvati, decodificati. `bucket`: solo `open` o solo `closed` (il prefetch guarda solo gli aperti,
+    /// senza decodificare anche i duecento chiusi).
+    func orders(accountId: String, bucket: String? = nil) -> [CachedOrder] {
+        let rows: [AriaCachedOrder]
+        if let bucket {
+            rows = (try? context.fetch(FetchDescriptor<AriaCachedOrder>(
+                predicate: #Predicate { $0.accountId == accountId && $0.bucket == bucket },
+                sortBy: [SortDescriptor(\.position)]))) ?? []
+        } else {
+            rows = (try? context.fetch(FetchDescriptor<AriaCachedOrder>(
+                predicate: #Predicate { $0.accountId == accountId },
+                sortBy: [SortDescriptor(\.position)]))) ?? []
+        }
+        return rows.map { row in
             CachedOrder(orderId: row.orderId, bucket: row.bucket, position: row.position,
                         list: row.listPayload.flatMap(Self.json), listFetchedAt: row.listFetchedAt,
                         detail: row.detailPayload.flatMap(Self.json), detailFetchedAt: row.detailFetchedAt)
+        }
+    }
+
+    /// Tutte le righe dell'account nell'ordine del server, senza i payload (che non vengono nemmeno letti dal database).
+    func orderStamps(accountId: String) -> [OrderStamp] {
+        var descriptor = FetchDescriptor<AriaCachedOrder>(predicate: #Predicate { $0.accountId == accountId },
+                                                          sortBy: [SortDescriptor(\.position)])
+        descriptor.propertiesToFetch = [\.orderId, \.bucket, \.position, \.listFetchedAt, \.detailFetchedAt]
+        return ((try? context.fetch(descriptor)) ?? []).map {
+            OrderStamp(orderId: $0.orderId, bucket: $0.bucket, position: $0.position,
+                       listFetchedAt: $0.listFetchedAt, detailFetchedAt: $0.detailFetchedAt)
+        }
+    }
+
+    /// Le righe di questi ordini coi payload non decodificati (una sola lettura per tutte).
+    func rawOrders(ids: [String], accountId: String) -> [RawOrder] {
+        guard !ids.isEmpty else { return [] }
+        let descriptor = FetchDescriptor<AriaCachedOrder>(
+            predicate: #Predicate { $0.accountId == accountId && ids.contains($0.orderId) },
+            sortBy: [SortDescriptor(\.position)])
+        return ((try? context.fetch(descriptor)) ?? []).map {
+            RawOrder(orderId: $0.orderId, bucket: $0.bucket, position: $0.position,
+                     listPayload: $0.listPayload, listFetchedAt: $0.listFetchedAt,
+                     detailPayload: $0.detailPayload, detailFetchedAt: $0.detailFetchedAt)
         }
     }
 
@@ -225,8 +292,9 @@ final class AriaOfflineStore {
     }
 
     private static func queued(_ entries: [AriaOutboxEntry]) -> [AriaQueuedChange] {
-        entries.compactMap { entry in
-            guard let change = try? JSONDecoder().decode(AriaPendingChange.self, from: entry.payload) else { return nil }
+        let decoder = JSONDecoder()
+        return entries.compactMap { entry in
+            guard let change = try? decoder.decode(AriaPendingChange.self, from: entry.payload) else { return nil }
             return AriaQueuedChange(id: entry.id, orderId: entry.orderId, change: change)
         }
     }
@@ -272,11 +340,23 @@ final class AriaOfflineStore {
     /// Le foto di un passo ancora da caricare, nell'ordine in cui sono state aggiunte.
     func pendingPhotos(orderId: String, stepId: String, accountId: String) -> [(localId: String, jpeg: Data)] {
         let entries = entries(accountId: accountId).filter { $0.orderId == orderId }
+        let decoder = JSONDecoder()
         return entries.compactMap { entry in
-            guard case .addPhoto(stepId, let localId)? = try? JSONDecoder().decode(AriaPendingChange.self, from: entry.payload),
+            guard case .addPhoto(stepId, let localId)? = try? decoder.decode(AriaPendingChange.self, from: entry.payload),
                   let jpeg = entry.photo else { return nil }
             return (localId, jpeg)
         }
+    }
+
+    /// Il JPEG di una foto ancora da caricare (la miniatura e l'anteprima lo leggono quando servono, non a ogni disegno).
+    func pendingPhoto(localId: String, orderId: String, accountId: String) -> Data? {
+        let decoder = JSONDecoder()
+        for entry in entries(accountId: accountId) where entry.orderId == orderId {
+            if case .addPhoto(_, localId)? = try? decoder.decode(AriaPendingChange.self, from: entry.payload) {
+                return entry.photo
+            }
+        }
+        return nil
     }
 
     /// Un tentativo andato male che si riproverà (rete, server giù).

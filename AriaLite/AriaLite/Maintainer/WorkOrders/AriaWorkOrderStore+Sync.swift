@@ -29,6 +29,8 @@ extension AriaWorkOrderStore {
     func flush() async {
         flushTask?.cancel()
         flushTask = nil
+        // I titoli dei problemi di sincronizzazione vengono dalle liste: devono essere già lette.
+        restoreIfNeeded()
         // Senza `work_orders` (ruolo tolto o in pausa) la coda resta sul telefono: partirebbe solo per essere
         // rifiutata e scartata. Parte quando il ruolo torna.
         guard !isSyncingChanges, network.isOnline, hasWorkOrders, let account, !offline.queue(accountId: account).isEmpty,
@@ -71,7 +73,7 @@ extension AriaWorkOrderStore {
                                                 change: next.change.summary, message: message))
                 }
             }
-            pendingCount = offline.pendingCount(accountId: account)
+            refreshQueueSummary()
             if stoppedEarly { break }
         }
 
@@ -195,8 +197,8 @@ extension AriaWorkOrderStore {
     @discardableResult
     func prefetchDetails(rebuilding: Bool = true) async -> Bool {
         guard network.isOnline, !network.status.isConstrained, let account else { return false }
-        let stale = offline.orders(accountId: account).filter { cached in
-            guard cached.bucket == "open" else { return false }
+        // Solo gli aperti: i chiusi (fino a 200) non si prefetchano, quindi nemmeno si decodificano.
+        let stale = offline.orders(accountId: account, bucket: "open").filter { cached in
             guard let detail = cached.detail else { return true }
             let listStamp = cached.list?["updatedAt"]?.stringValue.flatMap(AriaWireDate.parse)
             let detailStamp = detail["updatedAt"]?.stringValue.flatMap(AriaWireDate.parse)
@@ -225,7 +227,7 @@ extension AriaWorkOrderStore {
         }
         // Un solo commit per tutti i dettagli (prima uno per ordine).
         offline.saveDetails(fetched, accountId: account)
-        if rebuilding { rebuild() }
+        if rebuilding { await rebuildOffMain() }
         return true
     }
 }

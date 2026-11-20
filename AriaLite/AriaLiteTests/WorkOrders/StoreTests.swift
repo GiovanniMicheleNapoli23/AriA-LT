@@ -92,6 +92,21 @@ extension BackendTests {
             #expect(server.calls("GET /v1/work-orders").allSatisfy { $0.header("company-id") == "c1" })
         }
 
+        @Test func refreshesThatArriveWhileOneIsRunningShareIt() async throws {
+            let (_, store) = try await TestEnv.signedInStore()
+            stubHome(open: [TestEnv.orderJSON()])
+            server.route(openKey, .json("[\(TestEnv.orderJSON())]", delay: 0.3))
+
+            async let first: Void = store.refresh()
+            async let second: Void = store.refresh()
+            async let third: Void = store.refresh()
+            _ = await (first, second, third)
+
+            #expect(server.calls("GET /v1/work-orders").filter { $0.query == "status_group=open&limit=50&offset=0" }.count == 1,
+                    "tre notifiche push di fila rileggono la lista una volta")
+            #expect(store.orders.count == 1)
+        }
+
         @Test func signedOutStoreDoesNothing() async {
             let store = AriaWorkOrderStore(backend: AriaBackend(), network: AriaNetworkMonitor(monitoring: false),
                                            offline: AriaOfflineStore(inMemory: true))
