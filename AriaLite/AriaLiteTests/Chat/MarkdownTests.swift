@@ -69,6 +69,31 @@ struct MarkdownTests {
         #expect(shape(AriaMarkdown.blocks("alpha")) == ["paragraph alpha"])
     }
 
+    /// Un testo che cresce un pezzo alla volta (come in streaming) dà a ogni passo gli stessi blocchi del parsing intero.
+    @Test func aGrowingTextParsesLikeTheWholeAtEveryStep() {
+        let text = Self.sample + "\n\n**Probable causes:**\n\n- one\n  continued\n- two\n\n```swift\n\nlet a = 1\n\n```\n\nlast \(UUID().uuidString)"
+        var end = text.startIndex
+        while end < text.endIndex {
+            end = text.index(end, offsetBy: 7, limitedBy: text.endIndex) ?? text.endIndex
+            let partial = String(text[..<end])
+            #expect(shape(AriaMarkdown.blocks(partial)) == shape(AriaMarkdown.parse(partial)))
+        }
+    }
+
+    @Test func aBlankLineInsideACodeFenceIsNotAStablePoint() {
+        let head = "intro \(UUID().uuidString)\n\n```\nfirst\n\nsecond"
+        #expect(shape(AriaMarkdown.blocks(head)) == shape(AriaMarkdown.parse(head)))
+        let more = head + "\n```\n\nafter"
+        #expect(shape(AriaMarkdown.blocks(more)) == shape(AriaMarkdown.parse(more)))
+        #expect(shape(AriaMarkdown.blocks(more)).contains("code first\n\nsecond"))
+    }
+
+    @Test func windowsLineEndingsParseLikeUnixOnes() {
+        let unix = "Title \(UUID().uuidString)\n\n- a\n- b\n\nend"
+        let windows = unix.replacingOccurrences(of: "\n", with: "\r\n")
+        #expect(shape(AriaMarkdown.blocks(windows)) == shape(AriaMarkdown.parse(unix)))
+    }
+
     @Test func inlineKeepsBoldAndCodeAndIsStableAcrossCalls() {
         let text = "Use **bold** and `code` here \(UUID().uuidString)"
         let first = AriaMarkdown.inline(text)

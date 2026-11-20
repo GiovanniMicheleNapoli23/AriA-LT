@@ -23,6 +23,7 @@ struct AriaAgentMessageView: View {
     @State private var model: AriaAgentMessageViewModel
 
     /// Un view model per messaggio: la lista è un `ForEach` per id, quindi nasce e muore con il messaggio.
+    /// L'init gira solo quando la riga (Equatable, vedi AriaChatMessageRow) cambia: non a ogni pezzo in streaming di tutte le righe.
     init(message: AriaAgentMessage, chat: AriaAgentChat, webBase: URL, isLast: Bool, orbNamespace: Namespace.ID? = nil) {
         self.message = message
         self.isLast = isLast
@@ -55,9 +56,20 @@ struct AriaAgentMessageView: View {
 
     // MARK: Assistente
 
+    /// Le card del messaggio: prima i file da consegnare, poi il resto. Azioni e filtri solo se ci sono card.
+    @ViewBuilder
+    private var artifactCards: some View {
+        if !message.artifacts.isEmpty {
+            let actions = model.artifactActions(messageId: message.id) { openURL($0) }
+            let deliverables = message.artifacts.filter(\.isDeliverable)
+            let others = message.artifacts.filter { !$0.isDeliverable }
+            ForEach(deliverables) { AriaArtifactView(artifact: $0, actions: actions) }
+            ForEach(others) { AriaArtifactView(artifact: $0, actions: actions) }
+        }
+    }
+
     /// Come Claude: il testo occupa tutta la larghezza e il blob di Aria sta sotto l'ultima risposta.
     private var assistant: some View {
-        let actions = model.artifactActions(messageId: message.id) { openURL($0) }
         // Costa (regex): una volta per body, non a ogni uso.
         let display = message.displayText
         return VStack(alignment: .leading, spacing: 10) {
@@ -75,8 +87,7 @@ struct AriaAgentMessageView: View {
                 AriaMessageFactsUsed(facts: message.memoryFactsUsed, isExpanded: $model.showFacts)
             }
 
-            ForEach(message.artifacts.filter(\.isDeliverable)) { AriaArtifactView(artifact: $0, actions: actions) }
-            ForEach(message.artifacts.filter { !$0.isDeliverable }) { AriaArtifactView(artifact: $0, actions: actions) }
+            artifactCards
 
             if !message.images.isEmpty { AriaMessageImages(images: message.images) }
             AriaMessageCMMSNotices(pipeline: message.pipeline) { type, id in

@@ -109,9 +109,9 @@ struct AriaMessageImages: View {
                         Link(destination: url) {
                             VStack(alignment: .leading, spacing: 4) {
                                 // Si scarica solo da https; il link resta valido anche con http.
-                                AsyncImage(url: AriaURLPolicy.image(url)) { phase in
-                                    if let picture = phase.image {
-                                        picture.resizable().scaledToFill()
+                                Group {
+                                    if let imageURL = AriaURLPolicy.image(url) {
+                                        AriaRemoteThumbnail(url: imageURL, size: CGSize(width: 150, height: 110))
                                     } else {
                                         Color(.tertiarySystemFill)
                                     }

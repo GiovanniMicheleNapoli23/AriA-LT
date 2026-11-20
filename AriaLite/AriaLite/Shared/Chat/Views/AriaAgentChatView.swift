@@ -32,7 +32,7 @@ struct AriaAgentChatView: View {
         ScrollViewReader { proxy in
             messagesArea(proxy)
                 // Primo invio: la sfera grande diventa quella piccola sotto la risposta.
-                .animation(.spring(response: 0.55, dampingFraction: 0.82), value: model.messages.isEmpty)
+                .animation(.spring(response: 0.55, dampingFraction: 0.82), value: model.hasMessages)
                 .overlay(alignment: .bottom) { jumpToBottomButton(proxy) }
                 // Il fondo sta sopra i messaggi, non sotto: con il vetro della barra si vedono scorrere dietro.
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -58,7 +58,6 @@ struct AriaAgentChatView: View {
         .onChange(of: model.chat.learningReveal) { model.revealLearning() }
         .onAppear { model.showCurrentLearning() }
         .ariaChatHaptics(model)
-        .ariaLinks(model.webURL)
         .task { await model.restore() }
         .sheet(item: Binding(get: { model.lotoInterrupt.map(LotoItem.init) }, set: { _ in })) { item in
             AriaLotoSheet(interrupt: item.interrupt) { model.resumeLoto($0) }
@@ -66,6 +65,9 @@ struct AriaAgentChatView: View {
         .sheet(item: $model.pendingCloseout) { choice in
             AriaCloseoutSheet(chat: model.chat, choice: choice)
         }
+        // Dopo i fogli: prendono l'ambiente da qui, e anche i link nel loro testo (l'avviso LOTO è markdown)
+        // passano dal filtro degli schemi.
+        .ariaLinks(model.webURL)
     }
 
     private struct LotoItem: Identifiable {
@@ -81,7 +83,7 @@ struct AriaAgentChatView: View {
         if model.isLoadingHistory {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if model.messages.isEmpty && showsEmptyState {
+        } else if !model.hasMessages && showsEmptyState {
             AriaChatEmptyState(model: model, orbNamespace: orbNamespace) { suggestion in
                 inputFocused = false
                 model.sendSuggestion(suggestion)
