@@ -26,31 +26,41 @@ class AppViewModel {
     let setupTour: AriaSetupTourViewModel
 
     /// Sezioni della web: tutte per gli account della piattaforma, una parte per l'operatore (AriaSidebarSections).
-    let adminDocuments: AdminDocumentsViewModel
-    let adminAgentStudio: AdminAgentStudioViewModel
-    let adminMarketplace: AdminMarketplaceViewModel
-    let adminExtractionReview: AdminExtractionReviewViewModel
-    let adminLearnedKnowledge: AdminLearnedKnowledgeViewModel
-    let adminScenarioAnalysis: AdminScenarioAnalysisViewModel
-    let adminCrafted: AdminCraftedViewModel
-    let adminWorkOrders: AdminWorkOrdersViewModel
-    let adminMaintenance: AdminMaintenanceViewModel
-    let adminInspections: AdminInspectionsViewModel
-    let adminTaskboard: AdminTaskboardViewModel
-    let adminAssets: AdminAssetsViewModel
-    let adminSpareParts: AdminSparePartsViewModel
-    let adminPurchaseOrders: AdminPurchaseOrdersViewModel
-    let adminVendors: AdminVendorsViewModel
-    let adminAlarms: AdminAlarmsViewModel
-    let adminReports: AdminReportsViewModel
-    /// La sezione Usage (crediti del ciclo) e i controlli di fatturazione dei titolari.
-    let adminUsage: AdminUsageViewModel
-    let adminUsageBilling: AdminUsageBillingViewModel
-    let adminPlants: AdminPlantsViewModel
-    let adminCategories: AdminCategoriesViewModel
-    let adminTeams: AdminTeamsViewModel
-    let adminUsers: AdminUsersViewModel
-    let adminRoles: AdminRolesViewModel
+    /// Si creano alla prima lettura (di solito quando la sezione si apre), non tutte all'avvio: la shell ne ha ~24 e
+    /// l'app deve mostrare il primo fotogramma.
+    /// Al logout si azzerano solo quelle già create (`resetters`); fa eccezione Documents, il cui archivio dei
+    /// caricamenti sta su disco ed è di chi esce anche se la sezione non è mai stata aperta.
+    @ObservationIgnored private(set) lazy var adminDocuments: AdminDocumentsViewModel = AdminDocumentsViewModel(backend: backend)
+    @ObservationIgnored private(set) lazy var adminAgentStudio: AdminAgentStudioViewModel = track(AdminAgentStudioViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminMarketplace: AdminMarketplaceViewModel = track(AdminMarketplaceViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminExtractionReview: AdminExtractionReviewViewModel = track(AdminExtractionReviewViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminLearnedKnowledge: AdminLearnedKnowledgeViewModel = track(AdminLearnedKnowledgeViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminScenarioAnalysis: AdminScenarioAnalysisViewModel = track(AdminScenarioAnalysisViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminCrafted: AdminCraftedViewModel = track(AdminCraftedViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminWorkOrders: AdminWorkOrdersViewModel = track(AdminWorkOrdersViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminMaintenance: AdminMaintenanceViewModel = track(AdminMaintenanceViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminInspections: AdminInspectionsViewModel = track(AdminInspectionsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminTaskboard: AdminTaskboardViewModel = track(AdminTaskboardViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminAssets: AdminAssetsViewModel = track(AdminAssetsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminSpareParts: AdminSparePartsViewModel = track(AdminSparePartsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminPurchaseOrders: AdminPurchaseOrdersViewModel = track(AdminPurchaseOrdersViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminVendors: AdminVendorsViewModel = track(AdminVendorsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminAlarms: AdminAlarmsViewModel = track(AdminAlarmsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminReports: AdminReportsViewModel = track(AdminReportsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminUsage: AdminUsageViewModel = track(AdminUsageViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminUsageBilling: AdminUsageBillingViewModel = track(AdminUsageBillingViewModel(backend: backend, page: adminUsage)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminPlants: AdminPlantsViewModel = track(AdminPlantsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminCategories: AdminCategoriesViewModel = track(AdminCategoriesViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminTeams: AdminTeamsViewModel = track(AdminTeamsViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminUsers: AdminUsersViewModel = track(AdminUsersViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private(set) lazy var adminRoles: AdminRolesViewModel = track(AdminRolesViewModel(backend: backend)) { $0.reset() }
+    @ObservationIgnored private var resetters: [() -> Void] = []
+
+    /// Registra un modello creato alla prima lettura, perché il logout lo azzeri.
+    private func track<M: AnyObject>(_ model: M, reset: @escaping (M) -> Void) -> M {
+        resetters.append { reset(model) }
+        return model
+    }
 
     /// Operatore o account della piattaforma: decide le sezioni della sidebar.
     var accountKind: AriaAccountKind { backend.accountKind }
@@ -91,31 +101,6 @@ class AppViewModel {
         sessions = AriaSessionStore(backend: backend)
         ariaWorkOrders = AriaWorkOrderStore(backend: backend)
         setupTour = AriaSetupTourViewModel()
-        adminDocuments = AdminDocumentsViewModel(backend: backend)
-        adminAgentStudio = AdminAgentStudioViewModel(backend: backend)
-        adminMarketplace = AdminMarketplaceViewModel(backend: backend)
-        adminExtractionReview = AdminExtractionReviewViewModel(backend: backend)
-        adminLearnedKnowledge = AdminLearnedKnowledgeViewModel(backend: backend)
-        adminScenarioAnalysis = AdminScenarioAnalysisViewModel(backend: backend)
-        adminCrafted = AdminCraftedViewModel(backend: backend)
-        adminWorkOrders = AdminWorkOrdersViewModel(backend: backend)
-        adminMaintenance = AdminMaintenanceViewModel(backend: backend)
-        adminInspections = AdminInspectionsViewModel(backend: backend)
-        adminTaskboard = AdminTaskboardViewModel(backend: backend)
-        adminAssets = AdminAssetsViewModel(backend: backend)
-        adminSpareParts = AdminSparePartsViewModel(backend: backend)
-        adminPurchaseOrders = AdminPurchaseOrdersViewModel(backend: backend)
-        adminVendors = AdminVendorsViewModel(backend: backend)
-        adminAlarms = AdminAlarmsViewModel(backend: backend)
-        adminReports = AdminReportsViewModel(backend: backend)
-        let usage = AdminUsageViewModel(backend: backend)
-        adminUsage = usage
-        adminUsageBilling = AdminUsageBillingViewModel(backend: backend, page: usage)
-        adminPlants = AdminPlantsViewModel(backend: backend)
-        adminCategories = AdminCategoriesViewModel(backend: backend)
-        adminTeams = AdminTeamsViewModel(backend: backend)
-        adminUsers = AdminUsersViewModel(backend: backend)
-        adminRoles = AdminRolesViewModel(backend: backend)
         #if DEBUG
         // UI test: ogni avvio parte da una chat vuota, non dall'ultima conversazione (che può avere una procedura
         // aperta al posto della barra di scrittura).
@@ -130,6 +115,15 @@ class AppViewModel {
         // Chi aveva già un accesso conosce l'app: uscendo non si ritrova la presentazione.
         if loggedInUser != nil { onboarding.markSeen() }
         showsOnboarding = !onboarding.isSeen
+    }
+
+    // MARK: - Dopo il primo fotogramma
+
+    /// Lavoro che non serve a disegnare la prima schermata: ritrovare i caricamenti di documenti lasciati
+    /// dall'esecuzione precedente (li fa Documents, che si crea qui alla prima lettura). Lo chiama la radice a
+    /// fotogramma mostrato.
+    func resumeBackgroundWork() {
+        _ = adminDocuments
     }
 
     // MARK: - Sidebar
@@ -318,29 +312,7 @@ class AppViewModel {
         sessions.reset()
         ariaWorkOrders.reset(keepOfflineWork: keepOfflineWork)
         adminDocuments.reset()
-        adminAgentStudio.reset()
-        adminMarketplace.reset()
-        adminExtractionReview.reset()
-        adminLearnedKnowledge.reset()
-        adminScenarioAnalysis.reset()
-        adminCrafted.reset()
-        adminWorkOrders.reset()
-        adminMaintenance.reset()
-        adminInspections.reset()
-        adminTaskboard.reset()
-        adminAssets.reset()
-        adminSpareParts.reset()
-        adminPurchaseOrders.reset()
-        adminVendors.reset()
-        adminAlarms.reset()
-        adminReports.reset()
-        adminUsage.reset()
-        adminUsageBilling.reset()
-        adminPlants.reset()
-        adminCategories.reset()
-        adminTeams.reset()
-        adminUsers.reset()
-        adminRoles.reset()
+        resetters.forEach { $0() }
         // File scaricati, report esportati e foto in cache non restano per chi entra dopo.
         AriaLocalFiles.removeTemporaryDocuments()
         URLCache.shared.removeAllCachedResponses()
