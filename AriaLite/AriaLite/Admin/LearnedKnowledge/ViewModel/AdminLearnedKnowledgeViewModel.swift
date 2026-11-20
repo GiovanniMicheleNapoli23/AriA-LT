@@ -24,6 +24,8 @@ final class AdminLearnedKnowledgeViewModel {
     /// Quanti fatti ci sono in tutto con lo stato scelto.
     var total: Int?
     private(set) var members: [AdminLearnedKnowledgeMember] = []
+    /// I membri per id e per email (minuscola): trovare un nome non scorre più l'elenco.
+    @ObservationIgnored private var memberIndex = MemberIndex()
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     /// La lista è arrivata almeno una volta per lo stato scelto.
@@ -32,6 +34,10 @@ final class AdminLearnedKnowledgeViewModel {
     private(set) var lastUpdated: Date?
     @ObservationIgnored private var loadedKey: String?
     @ObservationIgnored private var membersCompanyId: String?
+    /// Quando rileggere entrando nella sezione (vedi AriaFreshness).
+    @ObservationIgnored var freshness = AriaFreshness()
+    /// Sale a ogni modifica di fatti, traduzioni o membri: è la chiave che invalida le liste calcolate.
+    private var dataRevision = 0
 
     // MARK: Traduzioni (vedi +Translations)
 
@@ -54,7 +60,11 @@ final class AdminLearnedKnowledgeViewModel {
 
     // MARK: Filtri
 
+    /// Il testo del campo di ricerca (legato alla vista); i filtri usano `appliedQuery`, che lo segue con ritardo.
     var searchText = ""
+    /// La ricerca applicata alla lista, già senza spazi ai bordi.
+    private(set) var appliedQuery = ""
+    @ObservationIgnored private let searchDebouncer = AriaDebouncer()
     /// `nil`: tutti gli stati (il parametro non si manda).
     var statusFilter: AdminMemoryFactStatus?
     var plantFilter: String?
@@ -69,19 +79,96 @@ final class AdminLearnedKnowledgeViewModel {
     /// Cambia quando va richiesta la lista: azienda o stato scelto (la vista ci appende un `.task`).
     var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(statusFilter?.rawValue ?? "all")" }
 
-    var visibleFacts: [AdminMemoryFact] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return facts
-            .filter { plantFilter == nil || $0.plantId == nil || $0.plantId == plantFilter }
-            .filter { authorFilter == nil || $0.authorKey == authorFilter }
-            .filter { query.isEmpty || searchableFields(of: $0).contains { $0.localizedStandardContains(query) } }
+    /// I membri indicizzati per cercarli in tempo costante: `matches(_:)` di AdminLearnedKnowledgeMember, ma con due dizionari.
+    private struct MemberIndex {
+        var byId: [String: AdminLearnedKnowledgeMember] = [:]
+        var byEmail: [String: AdminLearnedKnowledgeMember] = [:]
+
+        init() {}
+
+        init(_ members: [AdminLearnedKnowledgeMember]) {
+            for member in members {
+                if let id = member.id, byId[id] == nil { byId[id] = member }
+                let email = member.email.lowercased()
+                if byEmail[email] == nil { byEmail[email] = member }
+            }
+        }
+
+        func member(for key: String) -> AdminLearnedKnowledgeMember? {
+            byId[key] ?? byEmail[key.lowercased()]
+        }
     }
+
+    /// Ciò che serve alla vista, calcolato una volta per ogni combinazione di ingressi.
+    private struct Derived {
+        var visible: [AdminMemoryFact] = []
+        var authors: [(key: String, name: String)] = []
+    }
+
+    private struct DerivedKey: Equatable {
+        let revision: Int
+        let plant: String?
+        let author: String?
+        let query: String
+    }
+
+    @ObservationIgnored private var derivedKey: DerivedKey?
+    @ObservationIgnored private var derivedCache = Derived()
+
+    /// Leggere gli ingressi qui dentro li fa osservare alla vista; il calcolo vero avviene solo a cache vuota.
+    private var derived: Derived {
+        let key = DerivedKey(revision: dataRevision, plant: plantFilter, author: authorFilter, query: appliedQuery)
+        if derivedKey != key {
+            derivedCache = computeDerived(for: key)
+            derivedKey = key
+        }
+        return derivedCache
+    }
+
+    private func computeDerived(for key: DerivedKey) -> Derived {
+        let visible = facts
+            .filter { key.plant == nil || $0.plantId == nil || $0.plantId == key.plant }
+            .filter { key.author == nil || $0.authorKey == key.author }
+            .filter { key.query.isEmpty || searchableFields(of: $0).contains { $0.localizedStandardContains(key.query) } }
+        var seen: Set<String> = []
+        var authors: [(key: String, name: String)] = []
+        for fact in facts {
+            guard let authorKey = fact.authorKey, seen.insert(authorKey).inserted else { continue }
+            authors.append((authorKey, memberName(for: authorKey) ?? fact.creator ?? authorKey))
+        }
+        authors.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        return Derived(visible: visible, authors: authors)
+    }
+
+    var visibleFacts: [AdminMemoryFact] { derived.visible }
+
+    /// Da chiamare dopo ogni modifica di `facts` o `translations`: invalida le liste calcolate.
+    func touch() { dataRevision &+= 1 }
 
     private func searchableFields(of fact: AdminMemoryFact) -> [String] {
         [fact.content, translations[fact.id], fact.context, fact.category, authorName(for: fact)].compactMap { $0 }
     }
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    /// Chiamata a ogni cambio del testo: svuotato si applica subito, altrimenti dopo una pausa di battitura.
+    func searchTextChanged() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query != appliedQuery else {
+            searchDebouncer.cancel()
+            return
+        }
+        if query.isEmpty {
+            searchDebouncer.flush { appliedQuery = "" }
+        } else {
+            searchDebouncer.schedule { [weak self] in self?.applySearch() }
+        }
+    }
+
+    private func applySearch() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query != appliedQuery { appliedQuery = query }
+    }
+
+    var isSearching: Bool { !appliedQuery.isEmpty }
     var hasLocalFilters: Bool { plantFilter != nil || authorFilter != nil }
 
     func clearFilters() {
@@ -97,11 +184,7 @@ final class AdminLearnedKnowledgeViewModel {
     }
 
     /// Gli autori dei fatti scaricati, per il filtro: (chiave, nome), in ordine di nome.
-    var authors: [(key: String, name: String)] {
-        let keys = Set(facts.compactMap(\.authorKey))
-        return keys.map { key in (key, memberName(for: key) ?? facts.first { $0.authorKey == key }?.creator ?? key) }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
+    var authors: [(key: String, name: String)] { derived.authors }
 
     var statusFilterLabel: String { statusFilter?.label ?? String(localized: "All") }
     var plantFilterLabel: String { plantName(plantFilter) ?? String(localized: "All sites") }
@@ -119,7 +202,7 @@ final class AdminLearnedKnowledgeViewModel {
     // MARK: Nomi
 
     private func memberName(for key: String) -> String? {
-        members.first { $0.matches(key) }?.displayName
+        memberIndex.member(for: key)?.displayName
     }
 
     /// Chi ha proposto il fatto: il membro, altrimenti il nome scritto o l'id.
@@ -137,10 +220,14 @@ final class AdminLearnedKnowledgeViewModel {
 
     func fact(id: String) -> AdminMemoryFact? { knownFacts[id] }
 
+    /// Lo stile della data relativa, creato una volta sola (la lingua segue quella del telefono).
+    private static let relativeDate = Date.RelativeFormatStyle(presentation: .named)
+
     /// "Marco Rossi · Linea 2 · 3 giorni fa": la riga sotto il testo nella lista.
+    /// La data resta viva (si ricalcola a ogni lettura) ma costa poco: la leggono solo le righe a schermo.
     func metaLine(for fact: AdminMemoryFact) -> String {
         [authorName(for: fact), plantName(fact.plantId),
-         fact.createdAt?.formatted(.relative(presentation: .named))].compactMap { $0 }.joined(separator: " · ")
+         fact.createdAt.map { Self.relativeDate.format($0) }].compactMap { $0 }.joined(separator: " · ")
     }
 
     // MARK: Caricamento
@@ -150,6 +237,14 @@ final class AdminLearnedKnowledgeViewModel {
         return facts.count < total
     }
 
+    /// Entrando nella sezione: rilegge solo la prima volta, cambiati azienda o stato, o se i dati sono vecchi.
+    /// I dati già a schermo restano mentre arrivano i nuovi.
+    func loadIfNeeded() async {
+        guard loadKey != loadedKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata (tirare per aggiornare, "Retry").
     func load() async {
         guard let companyId = backend.activeCompanyId else {
             errorMessage = AriaError.missingCompany.localizedDescription
@@ -160,10 +255,12 @@ final class AdminLearnedKnowledgeViewModel {
         let key = loadKey
         if key != loadedKey {
             facts = []
+            touch()
             total = nil
             hasLoaded = false
             errorMessage = nil
             loadedKey = key
+            freshness.invalidate()
         }
         isLoading = true
         defer { isLoading = false }
@@ -174,9 +271,11 @@ final class AdminLearnedKnowledgeViewModel {
             // Lo stato è cambiato durante la richiesta: questa risposta non vale più.
             guard key == loadKey, !Task.isCancelled else { await membersLoad; return }
             facts = page.facts
+            touch()
             total = page.total
             remember(page.facts)
             hasLoaded = true
+            freshness.markLoaded()
             errorMessage = nil
             lastUpdated = .now
             if let author = authorFilter, !authors.contains(where: { $0.key == author }) { authorFilter = nil }
@@ -184,6 +283,7 @@ final class AdminLearnedKnowledgeViewModel {
         } catch {
             if key == loadKey, let message = AdminLearnedKnowledgeFailure.message(for: error, backend: backend) {
                 errorMessage = message
+                freshness.invalidate()
             }
         }
         await membersLoad
@@ -202,6 +302,7 @@ final class AdminLearnedKnowledgeViewModel {
             let known = Set(facts.map(\.id))
             let fresh = page.facts.filter { !known.contains($0.id) }
             facts += fresh
+            touch()
             errorMessage = nil
             if let pageTotal = page.total { total = pageTotal }
             // Pagina vuota: il totale era vecchio, non si chiede altro.
@@ -219,7 +320,9 @@ final class AdminLearnedKnowledgeViewModel {
         guard membersCompanyId != companyId else { return }
         guard let rows = try? await backend.api.call(AdminLearnedKnowledgeAPI.members()) else { return }
         members = rows.items
+        memberIndex = MemberIndex(rows.items)
         membersCompanyId = companyId
+        touch()
     }
 
     func remember(_ rows: [AdminMemoryFact]) {
@@ -247,6 +350,10 @@ final class AdminLearnedKnowledgeViewModel {
         knownFacts = [:]
         total = nil
         members = []
+        memberIndex = MemberIndex()
+        freshness.invalidate()
+        searchDebouncer.cancel()
+        appliedQuery = ""
         isLoading = false
         isLoadingMore = false
         hasLoaded = false
@@ -257,6 +364,7 @@ final class AdminLearnedKnowledgeViewModel {
         translations = [:]
         requestedTranslations = []
         showsOriginals = false
+        touch()
         busyFactIds = []
         actionError = nil
         actionNotice = nil

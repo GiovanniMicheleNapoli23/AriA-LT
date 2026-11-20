@@ -27,8 +27,14 @@ final class AdminAgentStudioRunViewModel {
     let source: Source
     let workflowId: String?
 
-    /// Lo stato in streaming, pubblicato al massimo ogni ~100 ms.
+    /// Lo stato in streaming, pubblicato al massimo ogni ~100 ms e solo se è cambiato qualcosa che la vista mostra.
+    /// È una copia leggera: testo del riassunto e registro non ci sono (si leggono da `narrativeText` e `logEvents`).
     private(set) var live: AdminAgentStudioLiveRun
+    /// Versioni pubblicate di testo e registro: chi li legge si aggiorna solo quando cambiano, senza copiarli.
+    private(set) var narrativeVersion = 0
+    /// Il riassunto dallo stream ha del testo: cambia una volta sola, così la scheda compare senza seguire ogni delta.
+    private(set) var hasStreamedNarrative = false
+    private(set) var logVersion = 0
     /// Il record salvato del run (si legge a fine stream e mentre si fa polling).
     private(set) var run: AdminAgentStudioRun?
     private(set) var runError: String?
@@ -58,18 +64,24 @@ final class AdminAgentStudioRunViewModel {
     /// Questo VM ha visto il run vivo: solo allora la sua fine va notificata (non se si apre un run già concluso).
     @ObservationIgnored private var observedActive = false
     @ObservationIgnored private var hasCheckedAttach = false
+    @ObservationIgnored private let network: AriaNetworkMonitor
+    /// L'app è in primo piano (lo dice la schermata): in background il record non si rilegge.
+    @ObservationIgnored var isInForeground = true
     @ObservationIgnored private let onActivityChanged: () async -> Void
 
-    /// Ogni quanto si rilegge il record se gli eventi non arrivano più.
-    private static let pollInterval: Duration = .seconds(4)
+    /// Ogni quanto si rilegge il record se gli eventi non arrivano più: si rallenta se non cambia niente.
+    private static let pollIntervals: [Duration] = [.seconds(4), .seconds(8), .seconds(15)]
     /// Attese tra un tentativo di riconnessione e l'altro (al massimo tre).
     private static let backoff: [Duration] = [.seconds(1), .seconds(2), .seconds(4)]
     private static let publishInterval: Duration = .milliseconds(100)
 
     init(backend: AriaBackend, source: Source, workflowId: String? = nil, workflowName: String? = nil,
          workflowSteps: [AdminAgentStudioWorkflowStep] = [],
+         network: AriaNetworkMonitor? = nil,
          onActivityChanged: @escaping () async -> Void) {
         self.backend = backend
+        // `nil` = la rete del telefono: un valore di default si valuta fuori dal MainActor, dove `.shared` non si legge.
+        self.network = network ?? .shared
         self.source = source
         self.onActivityChanged = onActivityChanged
         self.workflowSteps = workflowSteps
@@ -84,7 +96,7 @@ final class AdminAgentStudioRunViewModel {
             self.workflowName = workflowName
             initial = AdminAgentStudioLiveRun(runId: runId)
         }
-        live = initial
+        live = initial.displaySnapshot()
         pending = initial
     }
 
@@ -226,14 +238,40 @@ final class AdminAgentStudioRunViewModel {
         return true
     }
 
+    /// Rilegge il record finché il run è vivo; finisce con il task (la schermata chiusa), con la fine del run o
+    /// quando si torna agli eventi. Offline o in background non chiama; senza novità aspetta di più (4, 8, 15 s).
     private func pollRecord() async {
+        var step = 0
         while pending.isActive, !Task.isCancelled {
-            try? await Task.sleep(for: Self.pollInterval)
+            try? await Task.sleep(for: Self.pollIntervals[step])
             guard !Task.isCancelled else { return }
+            guard network.isOnline, isInForeground else {
+                step = min(step + 1, Self.pollIntervals.count - 1)
+                continue
+            }
+            let before = RecordSignature(run)
             await loadRecord()
             if endIfRecordInactive() { return }
             // Fermo su un'approvazione e ripartito altrove: si riaggancia agli eventi.
             if pending.phase == .paused, run?.status?.lowercased() == "running" { return }
+            step = RecordSignature(run) == before ? min(step + 1, Self.pollIntervals.count - 1) : 0
+        }
+    }
+
+    /// Ciò che del record dice se è cambiato qualcosa tra due letture.
+    private struct RecordSignature: Equatable {
+        let status: String?
+        let finishedAt: Date?
+        let steps: [AdminAgentStudioRunStep]
+        let tokens: Int?
+        let costEur: Double?
+
+        init(_ run: AdminAgentStudioRun?) {
+            status = run?.status
+            finishedAt = run?.finishedAt
+            steps = run?.steps ?? []
+            tokens = run.map { ($0.inputTokens ?? 0) + ($0.outputTokens ?? 0) }
+            costEur = run?.costEur
         }
     }
 
@@ -270,7 +308,14 @@ final class AdminAgentStudioRunViewModel {
     private func publish() {
         flushTask?.cancel()
         flushTask = nil
-        live = pending
+        // Si pubblica solo ciò che è cambiato: nessuna copia di registro e testo, nessun rinnovo inutile della vista.
+        if pending.displayRevision != live.displayRevision { live = pending.displaySnapshot() }
+        if pending.narrativeRevision != narrativeVersion {
+            narrativeVersion = pending.narrativeRevision
+            let hasText = !pending.narrative.isEmpty
+            if hasText != hasStreamedNarrative { hasStreamedNarrative = hasText }
+        }
+        if pending.eventsRevision != logVersion { logVersion = pending.eventsRevision }
         lastPublish = .now
     }
 
@@ -338,6 +383,18 @@ final class AdminAgentStudioRunViewModel {
     // MARK: Stato per la vista
 
     var runId: String? { live.runId }
+
+    /// Il riassunto dallo stream. Legge la versione pubblicata (per essere osservato) e il testo da chi lo somma.
+    var streamedNarrative: String {
+        _ = narrativeVersion
+        return pending.narrative
+    }
+
+    /// Il registro tecnico: stesso schema di `streamedNarrative`.
+    var streamedEvents: [AdminAgentStudioRunEvent] {
+        _ = logVersion
+        return pending.events
+    }
 
     var title: String {
         workflowName ?? run?.workflowName ?? String(localized: "Run")
@@ -439,8 +496,10 @@ final class AdminAgentStudioRunViewModel {
         return rows
     }
 
+    private static let abbreviatedDurationStyle: Duration.UnitsFormatStyle = .units(allowed: [.hours, .minutes, .seconds], width: .abbreviated)
+
     private var durationText: String? {
-        let units: Duration.UnitsFormatStyle = .units(allowed: [.hours, .minutes, .seconds], width: .abbreviated)
+        let units = Self.abbreviatedDurationStyle
         if let ms = run?.durationMs ?? live.summary?.durationMs { return Duration.milliseconds(ms).formatted(units) }
         guard let start = run?.startedAt, let end = run?.finishedAt, end >= start else { return nil }
         return Duration.seconds(end.timeIntervalSince(start)).formatted(units)

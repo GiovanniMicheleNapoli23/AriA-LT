@@ -51,7 +51,7 @@ struct AdminInspectionsView: View {
                 }
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     // MARK: Contenuto

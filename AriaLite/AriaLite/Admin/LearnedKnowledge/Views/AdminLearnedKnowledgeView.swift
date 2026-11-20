@@ -37,6 +37,7 @@ struct AdminLearnedKnowledgeView: View {
             }
             .toolbar { toolbar }
             .searchable(text: $viewModel.searchText, prompt: Text("Fact, context, category, author"))
+            .onChange(of: viewModel.searchText) { viewModel.searchTextChanged() }
             .sheet(isPresented: $isCreating) {
                 AdminMemoryFactFormView(viewModel: viewModel.makeCreateForm()) { viewModel.didCreate($0) }
             }
@@ -44,7 +45,7 @@ struct AdminLearnedKnowledgeView: View {
                 AdminMemoryFactFormView(viewModel: form) { viewModel.apply($0) }
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
         // Sullo stack e non sulla lista: valgono anche col dettaglio aperto, che usa le stesse azioni.
         .alert(viewModel.pendingConfirmation?.title ?? "", isPresented: $viewModel.showsConfirmation,
                presenting: viewModel.pendingConfirmation) { confirmation in
@@ -121,7 +122,7 @@ struct AdminLearnedKnowledgeView: View {
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: 8) {
             Text(viewModel.subtitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -129,21 +130,8 @@ struct AdminLearnedKnowledgeView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
             ForEach(viewModel.visibleFacts) { fact in
-                NavigationLink(value: fact.id) {
-                    AdminMemoryFactRow(fact: fact, text: viewModel.displayText(for: fact),
-                                       isTranslated: viewModel.isTranslated(fact),
-                                       metaLine: viewModel.metaLine(for: fact), isBusy: viewModel.isBusy(fact))
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    AdminMemoryFactActionButtons(
-                        canApprove: viewModel.canApprove(fact), canReject: viewModel.canReject(fact),
-                        onApprove: { Task { await viewModel.approve(fact) } },
-                        onReject: { viewModel.askToReject(fact) },
-                        onEdit: { editForm = viewModel.makeEditForm(for: fact) },
-                        onDelete: { viewModel.askToDelete(fact) })
-                }
-                .padding(.horizontal, 20)
+                AdminMemoryFactListRow(viewModel: viewModel, fact: fact) { editForm = viewModel.makeEditForm(for: $0) }
+                    .padding(.horizontal, 20)
             }
             loadMoreButton
             if let updated = viewModel.lastUpdated {

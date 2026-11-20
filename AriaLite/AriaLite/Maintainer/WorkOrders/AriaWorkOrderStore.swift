@@ -21,6 +21,13 @@
 //    (sempre) e quando arriva una notifica push. Il tocco su una notifica passa da `openRequest`.
 //  • 404 sul dettaglio = l'ordine non è più dell'operatore (riassegnato): sparisce dalla lista, senza errori.
 //
+//  Costi (tutto resta sul MainActor tranne la decodifica a lotti):
+//  • La copia locale si apre al primo uso (`restoreIfNeeded`), non alla creazione dello store: un admin, o chi sta
+//    dietro Face ID, non paga né il database né la lettura.
+//  • Gli ordini decodificati si ricordano per riga (`decodedCache`, chiave = date di scrittura della riga + coda
+//    dell'ordine): un rebuild rifà solo quelli cambiati. Dopo una lista nuova la decodifica va fuori dal main thread.
+//  • Le foto in coda per passo sono in `queuedPhotoMap`, aggiornata con la coda: le viste non leggono il database.
+//
 
 import Foundation
 import Observation
@@ -62,15 +69,21 @@ final class AriaWorkOrderStore {
     /// La lista c'è (dal server o dalla copia locale): distingue "vuota" da "non ancora caricata".
     private(set) var hasLoaded = false
     private(set) var errorMessage: String?
+    /// Sale a ogni ricalcolo delle liste: chi deriva qualcosa da `orders` / `closedOrders` (AriaWorkOrdersViewModel)
+    /// ricalcola quando cambia, invece di confrontare gli array.
+    private(set) var listRevision = 0
     /// Ultimo caricamento della lista riuscito (anche in un avvio precedente).
     private(set) var lastUpdated: Date?
     private(set) var isUpdatingAvailability = false
     /// Ordine da aprire chiesto da fuori (tocco su una notifica): la lista lo apre e lo azzera.
     var openRequest: String?
 
-    /// Modifiche ancora sul telefono.
-    /// (Le quattro proprietà della coda le scrive anche AriaWorkOrderStore+Sync: niente `private(set)`.)
-    var pendingCount = 0
+    /// Modifiche ancora sul telefono (la coda letta al ripristino e a ogni rebuild).
+    private(set) var queuedCount = 0
+    /// Foto ancora sul telefono, per passo: "ordine|passo" → id locali, nell'ordine in cui sono state aggiunte.
+    /// Si aggiorna con la coda (`applyQueue`): le viste la leggono, non interrogano il database a ogni disegno.
+    private(set) var queuedPhotoMap: [String: [String]] = [:]
+    /// (Le tre proprietà che seguono le scrive anche AriaWorkOrderStore+Sync: niente `private(set)`.)
     /// La coda sta partendo verso il server.
     var isSyncingChanges = false
     /// Ultima volta che la coda è arrivata tutta al server.
@@ -93,10 +106,29 @@ final class AriaWorkOrderStore {
     /// L'account di cui sono caricati i dati locali.
     @ObservationIgnored var loadedAccount: String?
     @ObservationIgnored private var networkObserver: UUID?
+    /// Un ordine già decodificato con le date di scrittura della riga e la coda con cui è stato calcolato.
+    nonisolated struct DecodedEntry: Sendable {
+        let listFetchedAt: Date?
+        let detailFetchedAt: Date?
+        let changes: [AriaPendingChange]
+        let order: AriaWorkOrder?
+    }
+    @ObservationIgnored private var decodedCache: [String: DecodedEntry] = [:]
+    /// Cambia quando la cache non vale più (altro account, uscita): i risultati fuori dal main thread arrivati dopo si scartano.
+    @ObservationIgnored private var cacheEpoch = 0
+    /// Il refresh in corso: chi chiama `refresh()` mentre è in corso lo aspetta invece di farne un altro.
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var refreshStartedAt: ContinuousClock.Instant?
+    @ObservationIgnored private var refreshAgain = false
+    /// Una chiamata a `refresh()` arrivata prima di questo tempo da quello in corso non ne chiede un altro.
+    /// `.zero` = niente unione: ogni chiamata fa il suo giro (i test sulle risposte superate lo usano).
+    @ObservationIgnored var refreshCoalescing: Duration = .seconds(1)
 
     static let preferenceKey = "aria.availability_preference"
     /// La disponibilità scelta offline non è ancora arrivata al server.
     static let availabilityPendingKey = "aria.availability_pending"
+    /// L'account che ha fatto la scelta: un altro operatore sullo stesso telefono non la eredita.
+    static let availabilityOwnerKey = "aria.availability_account"
     /// Una lista più fresca di così non si riscarica al ritorno in primo piano (il pull-to-refresh sì).
     static let listFreshness: TimeInterval = 60
     /// Un dettaglio più fresco di così non si riscarica aprendolo.
@@ -114,9 +146,9 @@ final class AriaWorkOrderStore {
         self.offline = offline
         preferredAvailability = UserDefaults.standard.string(forKey: Self.preferenceKey)
             .flatMap(AriaAvailability.init(rawValue:)) ?? .available
-        // La copia locale è dell'operatore: un account admin non la legge all'avvio (costa keepOnly, tre fetch e
-        // un rebuild). Se serve, sync/refresh/detail/enqueue chiamano comunque restoreIfNeeded() al primo uso.
-        if backend.accountKind == .operator { restoreIfNeeded() }
+        // La copia locale non si legge qui: costa keepOnly, tre fetch e la decodifica di tutti gli ordini, e un admin
+        // o chi è ancora dietro Face ID non la usa. Sync, refresh, dettaglio, coda e le viste dei task chiamano
+        // `restoreIfNeeded()` al primo uso; `pendingCount` intanto la legge dal database.
         // Torna la rete: parte la coda e, se è vecchia, si ricarica la lista.
         networkObserver = network.observe { [weak self] old, new in
             guard let self, !old.isOnline, new.isOnline else { return }
@@ -135,6 +167,13 @@ final class AriaWorkOrderStore {
 
     var isOffline: Bool { !network.isOnline }
 
+    /// Modifiche ancora sul telefono. Prima del ripristino la coda c'è già nel database: la legge da lì (serve a
+    /// "Esci" per avvisare che si perderebbero).
+    var pendingCount: Int {
+        if let account, account != loadedAccount { return offline.pendingCount(accountId: account) }
+        return queuedCount
+    }
+
     /// La disponibilità è dell'operatore mobile (PUT /v1/me/availability risponde col profilo operatore): un membro
     /// entrato col link della web ha il layout dell'operatore ma non la imposta (Impostazioni non la mostrano).
     private var setsAvailability: Bool { backend.accountKind == .operator }
@@ -151,7 +190,7 @@ final class AriaWorkOrderStore {
     func canClearReport(step stepId: String, of orderId: String) -> Bool {
         guard !canManagePhotos else { return true }
         let step = current(orderId)?.procedure?.steps.first { $0.id == stepId }
-        return (step?.report?.photos.isEmpty ?? true) && pendingPhotos(step: stepId, of: orderId).isEmpty
+        return (step?.report?.photos.isEmpty ?? true) && queuedPhotoIds(step: stepId, of: orderId).isEmpty
     }
 
     /// Chiudere un ordine: serve l'azione `complete` del ruolo. Senza, il pulsante non c'è.
@@ -178,38 +217,69 @@ final class AriaWorkOrderStore {
         defer { isSyncing = false }
         restoreIfNeeded()
         guard network.isOnline, await prepare() else { return }
+        // La coda parte per prima (le liste tornano già aggiornate); la disponibilità non aspetta la lista: sono
+        // chiamate indipendenti e girano insieme.
         await flush()
-        await syncAvailability()
-        guard hasWorkOrders else { return }
-        if let lastUpdated, Date.now.timeIntervalSince(lastUpdated) < Self.listFreshness { return }
-        await reloadLists()
+        async let availability: Void = syncAvailability()
+        let isListFresh = lastUpdated.map { Date.now.timeIntervalSince($0) < Self.listFreshness } ?? false
+        if hasWorkOrders, !isListFresh { await reloadLists() }
+        await availability
     }
 
-    /// Lista degli aperti (si vede subito, con un suo rebuild), poi chiusi e dettagli: per questi due
-    /// il rebuild è uno solo alla fine, e solo se la copia locale è cambiata.
+    /// Lista degli aperti (si vede subito, con un suo rebuild), poi chiusi e dettagli insieme (non dipendono
+    /// l'uno dall'altro): per questi il rebuild è uno solo alla fine, e solo se la copia locale è cambiata.
     private func reloadLists() async {
         await loadOrders()
-        let closedChanged = await loadClosedOrders(rebuilding: false)
-        let detailsChanged = await prefetchDetails(rebuilding: false)
-        if closedChanged || detailsChanged { rebuild() }
+        async let closed = loadClosedOrders(rebuilding: false)
+        async let details = prefetchDetails(rebuilding: false)
+        let (closedChanged, detailsChanged) = await (closed, details)
+        if closedChanged || detailsChanged { await rebuildOffMain() }
     }
 
-    /// Pull-to-refresh: sempre, se c'è rete.
+    /// Pull-to-refresh: sempre, se c'è rete. Più chiamate ravvicinate (es. tre notifiche push di fila) diventano
+    /// una: chi arriva mentre un refresh è in corso lo aspetta; se quello è partito da più di un secondo ne segue
+    /// uno solo (il dato arrivato dopo non era nella sua risposta).
     func refresh() async {
+        guard refreshCoalescing > .zero else { return await performRefresh() }
+        if let refreshTask {
+            if let started = refreshStartedAt, ContinuousClock.now - started >= refreshCoalescing { refreshAgain = true }
+            await refreshTask.value
+            return
+        }
+        refreshAgain = false
+        refreshStartedAt = .now
+        let task = Task { [self] in
+            while true {
+                await performRefresh()
+                guard refreshAgain else { break }
+                refreshAgain = false
+                refreshStartedAt = .now
+            }
+            refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    private func performRefresh() async {
         restoreIfNeeded()
         guard network.isOnline, await prepare() else { return }
         await flush()
-        if setsAvailability {
-            await run {
-                if UserDefaults.standard.bool(forKey: Self.availabilityPendingKey) {
-                    try await self.putAvailability(self.preferredAvailability)
-                } else {
-                    try await self.getProfile()
-                }
+        async let availability: Void = refreshAvailability()
+        if hasWorkOrders { await reloadLists() }
+        await availability
+    }
+
+    /// Pull-to-refresh: manda la scelta fatta offline, altrimenti rilegge il profilo (niente rinnovo delle 12 ore).
+    private func refreshAvailability() async {
+        guard setsAvailability else { return }
+        await run {
+            if UserDefaults.standard.bool(forKey: Self.availabilityPendingKey) {
+                try await self.putAvailability(self.preferredAvailability)
+            } else {
+                try await self.getProfile()
             }
         }
-        guard hasWorkOrders else { return }
-        await reloadLists()
     }
 
     /// Task chiusi (completati, verificati, annullati) per la sezione "Past", fino a 200: il massimo di GET /v1/work-orders (una pagina).
@@ -217,6 +287,7 @@ final class AriaWorkOrderStore {
     /// Restituisce se la copia locale è cambiata.
     @discardableResult
     func loadClosedOrders(rebuilding: Bool = true) async -> Bool {
+        restoreIfNeeded()
         guard !isLoadingClosed, network.isOnline, await prepare(), let account else { return false }
         isLoadingClosed = true
         defer { isLoadingClosed = false }
@@ -224,9 +295,9 @@ final class AriaWorkOrderStore {
             let list = try await fetchList(.closed, pageSize: 200, maxPages: 1)
             offline.saveList(list, bucket: "closed", accountId: account)
             offline.saveValue(Data(), name: "list.closed", accountId: account)
-            if rebuilding { rebuild() }
             hasLoadedClosed = true
             closedError = nil
+            if rebuilding { await rebuildOffMain() }
             return true
         } catch {
             if error is CancellationError || (error as? URLError)?.code == .cancelled { return false }
@@ -243,7 +314,7 @@ final class AriaWorkOrderStore {
         preferredAvailability = value
         guard network.isOnline else {
             // Offline: la scelta resta e parte al ritorno della rete.
-            UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+            savePreference(value)
             UserDefaults.standard.set(true, forKey: Self.availabilityPendingKey)
             return
         }
@@ -252,7 +323,7 @@ final class AriaWorkOrderStore {
         guard await prepare() else { return restore(previous) }
         do {
             try await putAvailability(value)
-            UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+            savePreference(value)
             // Cambiata la disponibilità, cambia anche cosa arriva: si ricarica la lista.
             await loadOrders()
         } catch {
@@ -264,6 +335,28 @@ final class AriaWorkOrderStore {
     /// Il server non ha accettato il cambio: resta la scelta di prima.
     private func restore(_ previous: AriaAvailability) {
         preferredAvailability = previous
+    }
+
+    /// La scelta e di chi è.
+    private func savePreference(_ value: AriaAvailability) {
+        UserDefaults.standard.set(value.rawValue, forKey: Self.preferenceKey)
+        UserDefaults.standard.set(account, forKey: Self.availabilityOwnerKey)
+    }
+
+    /// La scelta salvata vale solo per chi l'ha fatta: quella di un altro account (anche se ancora da mandare)
+    /// si dimentica e si torna a "disponibile". Una scelta salvata prima che si ricordasse di chi era resta
+    /// a chi è entrato.
+    private func keepOwnAvailabilityChoice(for account: String) {
+        let defaults = UserDefaults.standard
+        guard let owner = defaults.string(forKey: Self.availabilityOwnerKey) else {
+            if defaults.object(forKey: Self.preferenceKey) != nil { defaults.set(account, forKey: Self.availabilityOwnerKey) }
+            return
+        }
+        guard owner != account else { return }
+        for key in [Self.preferenceKey, Self.availabilityPendingKey, Self.availabilityOwnerKey] {
+            defaults.removeObject(forKey: key)
+        }
+        preferredAvailability = .available
     }
 
     /// Dettaglio aggiornato (con le modifiche in coda). Offline, o se appena scaricato, quello salvato.
@@ -314,6 +407,7 @@ final class AriaWorkOrderStore {
 
     /// Annulla il risultato di un passo (e le sue foto).
     func clearReport(step stepId: String, of orderId: String) async -> Change {
+        restoreIfNeeded()
         guard canClearReport(step: stepId, of: orderId) else { return Self.notAllowed(.stepPhotos) }
         return await enqueue(.clearReport(stepId: stepId), orderId: orderId)
     }
@@ -322,10 +416,11 @@ final class AriaWorkOrderStore {
     func addPhoto(jpeg: Data, step stepId: String, of orderId: String) async -> Change {
         guard canManagePhotos else { return Self.notAllowed(.stepPhotos) }
         guard jpeg.count <= 10 * 1024 * 1024 else { return .failed(AriaServerCode.photoTooLarge.localized) }
+        restoreIfNeeded()
         if let order = current(orderId), let step = order.procedure?.steps.first(where: { $0.id == stepId }) {
             guard step.report != nil else { return .failed(AriaServerCode.stepNotReported.localized) }
             let count = step.report?.photos.count ?? 0
-            guard count + pendingPhotos(step: stepId, of: orderId).count < 3 else {
+            guard count + queuedPhotoIds(step: stepId, of: orderId).count < 3 else {
                 return .failed(AriaServerCode.photoLimitReached.localized)
             }
         }
@@ -338,16 +433,31 @@ final class AriaWorkOrderStore {
         await enqueue(.removePhoto(stepId: stepId, photoId: photoId), orderId: orderId)
     }
 
-    /// Le foto di un passo ancora sul telefono.
+    /// Le foto di un passo ancora sul telefono, coi file (legge il database: per le viste c'è `queuedPhotoIds`).
     func pendingPhotos(step stepId: String, of orderId: String) -> [(localId: String, jpeg: Data)] {
         guard let account else { return [] }
         return offline.pendingPhotos(orderId: orderId, stepId: stepId, accountId: account)
     }
 
+    /// Gli id delle foto di un passo ancora sul telefono, dalla mappa in memoria (osservabile, nessuna lettura del
+    /// database): si aggiorna a ogni modifica della coda.
+    func queuedPhotoIds(step stepId: String, of orderId: String) -> [String] {
+        queuedPhotoMap[Self.photoKey(order: orderId, step: stepId)] ?? []
+    }
+
+    /// Il JPEG di una foto ancora sul telefono: la miniatura e l'anteprima lo chiedono una volta, non a ogni disegno.
+    func pendingPhotoData(_ localId: String, of orderId: String) -> Data? {
+        guard let account else { return nil }
+        return offline.pendingPhoto(localId: localId, orderId: orderId, accountId: account)
+    }
+
+    private static func photoKey(order orderId: String, step stepId: String) -> String { "\(orderId)|\(stepId)" }
+
     /// Chiude l'ordine: è la fine della procedura, quindi parte subito tutto il lotto.
     /// Online gli errori del server (es. `steps_incomplete`) arrivano qui; offline la chiusura aspetta in coda.
     func complete(_ orderId: String, resolutionNotes: String) async -> Change {
         guard canComplete else { return Self.notAllowed(.complete) }
+        restoreIfNeeded()
         let notes = resolutionNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !notes.isEmpty else { return .failed(AriaServerCode.resolutionNotesRequired.localized) }
         if let procedure = current(orderId)?.procedure, !procedure.isFullyReported {
@@ -403,19 +513,24 @@ final class AriaWorkOrderStore {
         generation += 1
         flushTask?.cancel()
         flushTask = nil
+        refreshAgain = false
+        cacheEpoch += 1
+        decodedCache = [:]
         if !keepOfflineWork { offline.wipe() }
         loadedAccount = nil
         profile = nil
         openRequest = nil
         orders = []
         closedOrders = []
+        listRevision &+= 1
         hasLoadedClosed = false
         closedError = nil
         hasLoaded = false
         isLoading = false
         errorMessage = nil
         lastUpdated = nil
-        pendingCount = 0
+        queuedCount = 0
+        queuedPhotoMap = [:]
         syncIssues = []
         lastSyncedAt = nil
     }
@@ -430,8 +545,11 @@ final class AriaWorkOrderStore {
     func restoreIfNeeded() {
         guard let account, account != loadedAccount else { return }
         loadedAccount = account
+        cacheEpoch += 1
+        decodedCache = [:]
         // Un altro operatore sullo stesso telefono non eredita niente.
         offline.keepOnly(accountId: account)
+        keepOwnAvailabilityChoice(for: account)
         profile = offline.value("me", accountId: account)
             .flatMap { try? JSONDecoder().decode(AriaMobileProfile.self, from: $0.data) }
         let openList = offline.value("list.open", accountId: account)
@@ -441,28 +559,138 @@ final class AriaWorkOrderStore {
         rebuild()
     }
 
-    /// Ricalcola le liste dalla copia locale con la coda applicata.
+    /// Ricalcola le liste dalla copia locale con la coda applicata. Decodifica solo gli ordini la cui riga o la
+    /// cui coda sono cambiate dall'ultima volta (gli altri vengono dalla cache): dopo un tocco su un passo è uno solo.
     func rebuild() {
         guard let account else { return }
         let queue = offline.queue(accountId: account)
-        let changes = Dictionary(grouping: queue, by: \.orderId)
+        let changes = Self.changes(in: queue)
+        let stamps = offline.orderStamps(accountId: account)
+        let missing = stamps.filter { cachedEntry(for: $0, changes: changes) == nil }.map(\.orderId)
+        if !missing.isEmpty {
+            // Qui sul main thread: sono pochi (un tocco, un dettaglio). I lotti grandi passano da `rebuildOffMain`.
+            for raw in offline.rawOrders(ids: missing, accountId: account) {
+                remember(Self.materialise(raw, changes: changes[raw.orderId] ?? []))
+            }
+        }
+
         var open: [(rank: Int, order: AriaWorkOrder)] = []
         var closed: [(rank: Int, order: AriaWorkOrder)] = []
-        for cached in offline.orders(accountId: account) {
-            guard let base = cached.merged else { continue }
-            let json = AriaWorkOrderOverlay.apply(changes[cached.orderId]?.map(\.change) ?? [], to: base)
-            guard let order = try? json.decoded(as: AriaWorkOrder.self) else { continue }
+        for stamp in stamps {
+            guard let order = cachedEntry(for: stamp, changes: changes)?.order else { continue }
             if order.isClosed {
                 // Chiuso qui ma ancora nella lista degli aperti del server: è il più recente, va in cima.
-                closed.append((cached.bucket == "closed" ? cached.position : -1_000_000 + cached.position, order))
+                closed.append((stamp.bucket == "closed" ? stamp.position : -1_000_000 + stamp.position, order))
             } else {
                 // Un ordine visto solo nel dettaglio (es. da una notifica) va in fondo.
-                open.append((cached.position < 0 ? Int.max : cached.position, order))
+                open.append((stamp.position < 0 ? Int.max : stamp.position, order))
             }
+        }
+        if decodedCache.count != stamps.count {
+            let live = Set(stamps.map(\.orderId))
+            decodedCache = decodedCache.filter { live.contains($0.key) }
         }
         orders = open.sorted { $0.rank < $1.rank }.map(\.order)
         closedOrders = closed.sorted { $0.rank < $1.rank }.map(\.order)
-        pendingCount = queue.count
+        listRevision &+= 1
+        applyQueue(queue)
+    }
+
+    /// Come `rebuild()`, ma gli ordini da decodificare (dopo una lista nuova sono centinaia) li decodifica fuori dal
+    /// main thread; `rebuild()` poi li trova già pronti. Solo i risultati ancora validi entrano nella cache.
+    func rebuildOffMain() async {
+        let epoch = cacheEpoch
+        await warmDecodedCache()
+        guard epoch == cacheEpoch else { return }
+        rebuild()
+    }
+
+    /// Decodifica fuori dal main thread gli ordini che la cache non ha (o ha vecchi). Restituisce falso se nel
+    /// frattempo l'account è cambiato o è stato un logout: il risultato non vale e non si usa.
+    @discardableResult
+    private func warmDecodedCache() async -> Bool {
+        guard let account else { return false }
+        let epoch = cacheEpoch
+        let changes = Self.changes(in: offline.queue(accountId: account))
+        let missing = offline.orderStamps(accountId: account).filter { cachedEntry(for: $0, changes: changes) == nil }.map(\.orderId)
+        guard !missing.isEmpty else { return true }
+        let jobs = offline.rawOrders(ids: missing, accountId: account).map {
+            MaterialiseJob(raw: $0, changes: changes[$0.orderId] ?? [])
+        }
+        let results = await Self.materialise(jobs)
+        guard epoch == cacheEpoch else { return false }
+        for result in results { decodedCache[result.orderId] = result.entry }
+        return true
+    }
+
+    /// Le modifiche in coda raggruppate per ordine, nell'ordine di invio.
+    private static func changes(in queue: [AriaQueuedChange]) -> [String: [AriaPendingChange]] {
+        Dictionary(grouping: queue, by: \.orderId).mapValues { $0.map(\.change) }
+    }
+
+    /// L'ordine decodificato per questa riga, se la cache lo ha calcolato con gli stessi dati e la stessa coda.
+    private func cachedEntry(for stamp: AriaOfflineStore.OrderStamp, changes: [String: [AriaPendingChange]]) -> DecodedEntry? {
+        guard let entry = decodedCache[stamp.orderId],
+              entry.listFetchedAt == stamp.listFetchedAt, entry.detailFetchedAt == stamp.detailFetchedAt,
+              entry.changes == (changes[stamp.orderId] ?? []) else { return nil }
+        return entry
+    }
+
+    private func remember(_ result: MaterialiseResult) {
+        decodedCache[result.orderId] = result.entry
+    }
+
+    /// Un ordine da decodificare, con la sua coda: tutto Sendable, per passare fuori dal main thread.
+    nonisolated struct MaterialiseJob: Sendable {
+        let raw: AriaOfflineStore.RawOrder
+        let changes: [AriaPendingChange]
+    }
+
+    nonisolated struct MaterialiseResult: Sendable {
+        let orderId: String
+        let listFetchedAt: Date?
+        let detailFetchedAt: Date?
+        let changes: [AriaPendingChange]
+        let order: AriaWorkOrder?
+
+        var entry: DecodedEntry {
+            DecodedEntry(listFetchedAt: listFetchedAt, detailFetchedAt: detailFetchedAt, changes: changes, order: order)
+        }
+    }
+
+    /// Lista + dettaglio + coda → ordine: gli stessi passaggi di sempre (merge, overlay, modello).
+    nonisolated static func materialise(_ raw: AriaOfflineStore.RawOrder, changes: [AriaPendingChange]) -> MaterialiseResult {
+        var order: AriaWorkOrder?
+        if let base = raw.decoded().merged {
+            let json = AriaWorkOrderOverlay.apply(changes, to: base)
+            order = try? json.decoded(as: AriaWorkOrder.self)
+        }
+        return MaterialiseResult(orderId: raw.orderId, listFetchedAt: raw.listFetchedAt, detailFetchedAt: raw.detailFetchedAt,
+                                 changes: changes, order: order)
+    }
+
+    /// La stessa cosa per molti ordini, fuori dal main thread.
+    @concurrent
+    private static func materialise(_ jobs: [MaterialiseJob]) async -> [MaterialiseResult] {
+        jobs.map { materialise($0.raw, changes: $0.changes) }
+    }
+
+    /// Conteggio e foto in coda dalla coda letta adesso (assegna solo se cambia: niente ridisegni a vuoto).
+    func applyQueue(_ queue: [AriaQueuedChange]) {
+        var photos: [String: [String]] = [:]
+        for queued in queue {
+            if case .addPhoto(let stepId, let localId) = queued.change {
+                photos[Self.photoKey(order: queued.orderId, step: stepId), default: []].append(localId)
+            }
+        }
+        if photos != queuedPhotoMap { queuedPhotoMap = photos }
+        if queue.count != queuedCount { queuedCount = queue.count }
+    }
+
+    /// Rilegge solo la coda (durante l'invio, dopo ogni modifica partita).
+    func refreshQueueSummary() {
+        guard let account else { return }
+        applyQueue(offline.queue(accountId: account))
     }
 
     // MARK: Privato
@@ -528,6 +756,7 @@ final class AriaWorkOrderStore {
 
     private func loadOrders() async {
         guard let account else { return }
+        restoreIfNeeded()
         generation += 1
         let current = generation
         isLoading = true
@@ -537,6 +766,9 @@ final class AriaWorkOrderStore {
             guard current == generation else { return }
             offline.saveList(list, bucket: "open", accountId: account)
             offline.saveValue(Data(), name: "list.open", accountId: account)
+            // La decodifica degli ordini nuovi gira fuori dal main thread; la lista si mostra appena è pronta.
+            await warmDecodedCache()
+            guard current == generation else { return }
             rebuild()
             hasLoaded = true
             lastUpdated = .now

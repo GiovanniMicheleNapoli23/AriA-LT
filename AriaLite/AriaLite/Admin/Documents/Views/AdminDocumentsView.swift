@@ -82,8 +82,12 @@ struct AdminDocumentsView: View {
                 Text(viewModel.actionError ?? "")
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
         .task(id: viewModel.pollKey) { await viewModel.pollWhileProcessing() }
+        // Con un dettaglio sopra la lista sta ferma (si aggiorna il dettaglio e le novità arrivano qui),
+        // come con l'app non attiva.
+        .onChange(of: path.isEmpty, initial: true) { _, isEmpty in viewModel.isDetailOpen = !isEmpty }
+        .onChange(of: scenePhase, initial: true) { _, phase in viewModel.isAppActive = phase == .active }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await viewModel.refreshOnReturn() } }
         }

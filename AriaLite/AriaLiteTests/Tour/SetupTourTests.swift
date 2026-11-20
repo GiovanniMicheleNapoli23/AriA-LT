@@ -90,8 +90,11 @@ struct SetupTourModelTests {
     }
 
     @Test func doneAndStepKeysArePerAccountAndCaseInsensitive() {
-        #expect(AriaSetupTourProgress.doneKey(account: "Admin@Example.com") == "AriaSetupTourDone.admin@example.com")
-        #expect(AriaSetupTourProgress.stepKey(account: "Admin@Example.com") == "AriaSetupTourStep.admin@example.com")
+        #expect(AriaSetupTourProgress.doneKey(account: "Admin@Example.com") == AriaSetupTourProgress.doneKey(account: "admin@example.com"))
+        #expect(AriaSetupTourProgress.stepKey(account: "Admin@Example.com") == AriaSetupTourProgress.stepKey(account: "admin@example.com"))
+        // Nelle chiavi c'è un'impronta, non l'email: UserDefaults è un file in chiaro.
+        #expect(!AriaSetupTourProgress.doneKey(account: "Admin@Example.com").lowercased().contains("example"))
+        #expect(!AriaSetupTourProgress.stepKey(account: "Admin@Example.com").lowercased().contains("example"))
         let defaults = freshDefaults()
         let progress = AriaSetupTourProgress(defaults: defaults)
         progress.markDone(account: "Admin@Example.com")
@@ -103,6 +106,28 @@ struct SetupTourModelTests {
         #expect(progress.savedStep(account: "other@example.com") == nil)
         progress.clearStep(account: "admin@example.com")
         #expect(progress.savedStep(account: "admin@example.com") == nil)
+    }
+
+    @Test func keysWithTheEmailInClearMoveToTheFingerprint() {
+        let defaults = freshDefaults()
+        defaults.set(true, forKey: "AriaSetupTourDone.admin@example.com")
+        defaults.set("teams", forKey: "AriaSetupTourStep.admin@example.com")
+        let progress = AriaSetupTourProgress(defaults: defaults)
+        #expect(progress.isDone(account: "Admin@Example.com"), "il giro già fatto non si ripete")
+        #expect(progress.savedStep(account: "Admin@Example.com") == "teams")
+        #expect(defaults.object(forKey: "AriaSetupTourDone.admin@example.com") == nil)
+        #expect(defaults.object(forKey: "AriaSetupTourStep.admin@example.com") == nil)
+        #expect(!defaults.dictionaryRepresentation().keys.contains { $0.contains("admin@example.com") })
+    }
+
+    /// Anche le chiavi di chi non rientra più: l'email non resta, il giro fatto sì.
+    @Test func keysOfAccountsThatNeverComeBackAreConvertedToo() {
+        let defaults = freshDefaults()
+        defaults.set(true, forKey: "AriaSetupTourDone.gone@example.com")
+        let progress = AriaSetupTourProgress(defaults: defaults)
+        #expect(!progress.isDone(account: "admin@example.com"))
+        #expect(!defaults.dictionaryRepresentation().keys.contains { $0.contains("@") })
+        #expect(progress.isDone(account: "gone@example.com"))
     }
 
     @Test func hiddenFollowsTheTipsTourKey() {

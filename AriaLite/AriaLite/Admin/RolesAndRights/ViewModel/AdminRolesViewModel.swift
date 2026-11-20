@@ -66,6 +66,9 @@ final class AdminRolesViewModel {
     private(set) var loadedCompanyId: String?
     private(set) var isLoading = false
     private(set) var loadFailed = false
+    /// Da quando i ruoli a schermo sono freschi, e il `loadKey` con cui sono stati letti.
+    @ObservationIgnored private var freshness = AriaFreshness()
+    @ObservationIgnored private var freshKey: String?
 
     /// I ruoli con una scrittura in corso, o la rilettura che la segue: i loro comandi sono spenti.
     var busyRoleIds: Set<String> = []
@@ -99,6 +102,8 @@ final class AdminRolesViewModel {
         loadedCompanyId = nil
         isLoading = false
         loadFailed = false
+        freshness.invalidate()
+        freshKey = nil
         busyRoleIds = []
         busyPeople = []
         isSettingDefault = false
@@ -147,7 +152,14 @@ final class AdminRolesViewModel {
 
     var hasLoaded: Bool { loadedCompanyId != nil && loadedCompanyId == backend.activeCompanyId }
 
-    /// All'apertura della sezione e quando cambia chi guarda: il catalogo (tenuto 5') e i ruoli.
+    /// All'entrata nella sezione: legge se mai letti, se è cambiato chi guarda o l'azienda, o se hanno più di 45 s.
+    /// Con i ruoli già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        guard !hasLoaded || freshKey != loadKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata, a ogni cambio di chi guarda e tirando per aggiornare: il catalogo (tenuto 5') e i ruoli.
     func load(forceCatalog: Bool = false) async {
         guard viewer != nil, let api = rolesAPI, let companyId = backend.activeCompanyId else { return }
         if loadedCompanyId != companyId {
@@ -174,8 +186,11 @@ final class AdminRolesViewModel {
             guard companyId == backend.activeCompanyId else { return }
             apply(fetched, companyId: companyId)
             loadFailed = false
+            freshness.markLoaded()
+            freshKey = loadKey
         } catch {
             guard companyId == backend.activeCompanyId else { return }
+            freshness.invalidate()
             if AdminRolesFailure.message(for: error, about: .role, backend: backend) != nil { loadFailed = true }
         }
     }
@@ -188,6 +203,8 @@ final class AdminRolesViewModel {
         guard viewer != nil, let api = rolesAPI, let companyId = backend.activeCompanyId else { return }
         guard let fetched = try? await api.roles(), companyId == backend.activeCompanyId else { return }
         apply(fetched, companyId: companyId)
+        freshness.markLoaded()
+        freshKey = loadKey
     }
 
     private func apply(_ fetched: [AdminRole], companyId: String) {

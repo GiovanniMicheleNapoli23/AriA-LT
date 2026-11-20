@@ -357,6 +357,12 @@ extension BackendTests {
             let relaunched = AriaWorkOrderStore(backend: backend, network: AriaNetworkMonitor(monitoring: false, initial: .offline),
                                                 offline: offline)
 
+            // La copia locale si legge al primo uso, non alla creazione dello store: fino ad allora la coda si legge
+            // comunque dal database (serve a "Esci" per avvisare), il resto no.
+            #expect(!relaunched.hasLoaded && relaunched.orders.isEmpty)
+            #expect(relaunched.pendingCount == 1)
+            relaunched.restoreIfNeeded()
+
             #expect(relaunched.hasLoaded && relaunched.lastUpdated != nil, "la lista c'è anche senza rete")
             #expect(relaunched.orders.map(\.id) == ["o1", "o2"])
             #expect(relaunched.pendingCount == 1)

@@ -22,43 +22,62 @@ struct AriaAgentMessage: Identifiable {
 
     let id: String
     let role: Role
-    var text = ""
-    var reasoning = ""
-    var sources: [AriaSourceRef] = []
-    var toolCalls: [AriaToolCall] = []
-    var artifacts: [AriaArtifact] = []
-    var uiActions: [AriaUIAction] = []
-    var images: [AriaImageReference] = []
-    var elicitation: AriaElicitation? = nil
-    var taskList: AriaTaskList? = nil
-    var memoryFactsUsed: [String] = []
-    var memoryLearned: [AriaMemoryLearned] = []
-    var memoryProposals: [AriaMemoryProposal] = []
+    /// Cresce a ogni modifica di quello che il messaggio mostra: le viste decidono con `(id, revision)` se una riga è cambiata.
+    /// Parte da un valore a caso e non da 0: un messaggio ricostruito dal server con lo stesso id (e contenuto diverso)
+    /// non deve sembrare uguale a quello che sostituisce.
+    private(set) var revision = Int.random(in: 0...(Int.max / 2))
+    var text = "" {
+        didSet {
+            revision &+= 1
+            refreshDisplayText()
+        }
+    }
+    var reasoning = "" { didSet { revision &+= 1 } }
+    var sources: [AriaSourceRef] = [] { didSet { revision &+= 1 } }
+    var toolCalls: [AriaToolCall] = [] { didSet { revision &+= 1 } }
+    var artifacts: [AriaArtifact] = [] { didSet { revision &+= 1 } }
+    var uiActions: [AriaUIAction] = [] { didSet { revision &+= 1 } }
+    var images: [AriaImageReference] = [] { didSet { revision &+= 1 } }
+    var elicitation: AriaElicitation? = nil {
+        didSet {
+            revision &+= 1
+            refreshDisplayText()
+        }
+    }
+    var taskList: AriaTaskList? = nil {
+        didSet {
+            revision &+= 1
+            refreshDisplayText()
+        }
+    }
+    var memoryFactsUsed: [String] = [] { didSet { revision &+= 1 } }
+    var memoryLearned: [AriaMemoryLearned] = [] { didSet { revision &+= 1 } }
+    var memoryProposals: [AriaMemoryProposal] = [] { didSet { revision &+= 1 } }
     /// Verdetto del gate di confidenza, con l'eventuale domanda del Real-time Learning.
-    var answerConfidence: AriaAnswerConfidence? = nil
+    var answerConfidence: AriaAnswerConfidence? = nil { didSet { revision &+= 1 } }
     /// `aria.validation_request` arrivato prima del verdetto: si aggancia appena arriva.
-    var pendingValidationRequest: AriaValidationRequest? = nil
-    var pipeline: [AriaPipelineEntry] = []
+    var pendingValidationRequest: AriaValidationRequest? = nil { didSet { revision &+= 1 } }
+    var pipeline: [AriaPipelineEntry] = [] { didSet { revision &+= 1 } }
     /// Gli `aria.turn_usage` di questa risposta, in ordine: più di uno se una pausa riprende (vedi `turnUsage`).
-    var turnUsageEvents: [AriaTurnUsage] = []
-    var interrupt: AriaInterrupt? = nil
-    var interruptOutcome: AriaInterruptOutcome? = nil
-    var usage: AriaUsage? = nil
+    var turnUsageEvents: [AriaTurnUsage] = [] { didSet { revision &+= 1 } }
+    var interrupt: AriaInterrupt? = nil { didSet { revision &+= 1 } }
+    var interruptOutcome: AriaInterruptOutcome? = nil { didSet { revision &+= 1 } }
+    var usage: AriaUsage? = nil { didSet { revision &+= 1 } }
     /// Il turno più recente di questa risposta (`resp_…`): cambia se una pausa riprende con un turno nuovo.
-    var responseId: String? = nil
+    var responseId: String? = nil { didSet { revision &+= 1 } }
     /// La risposta che ha portato la checklist: le spunte sul server hanno questa chiave (`{response_id}:{task id}`).
-    var taskListResponseId: String? = nil
+    var taskListResponseId: String? = nil { didSet { revision &+= 1 } }
     /// L'`Idempotency-Key` con cui è partito il messaggio: la stessa se lo si rimanda dopo una caduta di rete.
-    var requestId: String? = nil
-    var episode: Int? = nil
-    var finished = true
-    var error: String? = nil
+    var requestId: String? = nil { didSet { revision &+= 1 } }
+    var episode: Int? = nil { didSet { revision &+= 1 } }
+    var finished = true { didSet { revision &+= 1 } }
+    var error: String? = nil { didSet { revision &+= 1 } }
     /// L'errore è che il sistema non si raggiunge (si mostra come "offline", non come guasto).
-    var errorIsOffline = false
+    var errorIsOffline = false { didSet { revision &+= 1 } }
     /// L'errore è definitivo: rimandare la domanda non serve (402 `spend_cap_reached`: il limite di spesa è raggiunto).
-    var errorIsFinal = false
+    var errorIsFinal = false { didSet { revision &+= 1 } }
     /// Solo locale: il voto dato dall'operatore.
-    var vote: Vote? = nil
+    var vote: Vote? = nil { didSet { revision &+= 1 } }
 
     static func user(_ text: String) -> AriaAgentMessage {
         AriaAgentMessage(id: UUID().uuidString, role: .user, text: text)
@@ -70,16 +89,22 @@ struct AriaAgentMessage: Identifiable {
 
     /// Testo da mostrare: il blocco ```elicit``` diventa il pannello di domande, non testo,
     /// e gli elenchi che ripetono le opzioni della domanda o i task della checklist si tolgono
-    /// (stanno già nel pannello in basso).
-    var displayText: String {
+    /// (stanno già nel pannello in basso). Si ricalcola solo quando cambiano `text`, `elicitation` o `taskList`
+    /// (non a ogni lettura da parte delle viste).
+    private(set) var displayText = ""
+
+    private mutating func refreshDisplayText() {
         let stripped = Self.stripElicitBlock(text)
         let options = elicitation.map { question in
             (question.options + (question.steps ?? []).flatMap(\.options)).flatMap { [$0.label] + [$0.description].compactMap { $0 } }
         } ?? []
         let tasks = taskList?.tasks.map(\.text) ?? []
-        guard !options.isEmpty || !tasks.isEmpty else { return stripped }
-        return AriaPanelDedup.strip(stripped, options: options, tasks: tasks,
-                                    headings: [taskList?.stepTitle].compactMap { $0 })
+        guard !options.isEmpty || !tasks.isEmpty else {
+            displayText = stripped
+            return
+        }
+        displayText = AriaPanelDedup.strip(stripped, options: options, tasks: tasks,
+                                           headings: [taskList?.stepTitle].compactMap { $0 })
     }
 
     /// La domanda del Real-time Learning di questa risposta (answerConfidence.validation_request della web).
@@ -203,6 +228,8 @@ struct AriaAgentMessage: Identifiable {
         }
         if taskList != nil { taskListResponseId = row.responseId }
         turnUsageEvents = Self.turnUsageEvents(in: row.pipeline)
+        // Nell'init i didSet non scattano: il testo da mostrare si calcola qui.
+        refreshDisplayText()
     }
 
     /// Gli `aria.turn_usage` di una pipeline salvata (la voce è l'evento com'è arrivato); quelli illeggibili si scartano.
@@ -217,18 +244,24 @@ struct AriaAgentMessage: Identifiable {
         self.role = role
         self.text = text
         self.finished = finished
+        refreshDisplayText()
     }
 
     // MARK: - Testo
+
+    /// Compilate una volta sola (prima si ricompilavano a ogni lettura del testo di una risposta con un blocco elicit).
+    private static let closedElicitBlock = try! NSRegularExpression(pattern: #"```[ \t]*elicit[ \t]*\r?\n[\s\S]*?```"#,
+                                                                    options: .caseInsensitive)
+    private static let openElicitBlock = try! NSRegularExpression(pattern: #"```[ \t]*elicit[ \t]*[\s\S]*$"#,
+                                                                  options: .caseInsensitive)
 
     /// stripElicitBlock della web: toglie i blocchi completi e quello ancora aperto durante lo streaming.
     static func stripElicitBlock(_ text: String) -> String {
         // Senza locale: più veloce, e "elicit" è ASCII.
         guard text.range(of: "elicit", options: .caseInsensitive) != nil else { return text }
-        var out = text.replacingOccurrences(of: #"```[ \t]*elicit[ \t]*\r?\n[\s\S]*?```"#,
-                                            with: "", options: [.regularExpression, .caseInsensitive])
-        out = out.replacingOccurrences(of: #"```[ \t]*elicit[ \t]*[\s\S]*$"#,
-                                       with: "", options: [.regularExpression, .caseInsensitive])
+        var out = closedElicitBlock.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text),
+                                                             withTemplate: "")
+        out = openElicitBlock.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out), withTemplate: "")
         while out.last?.isWhitespace == true { out.removeLast() }
         return out
     }

@@ -47,6 +47,6 @@ struct AdminCraftedView: View {
                 }
                 .animation(.snappy, value: viewModel.lastRemoved != nil)
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 }

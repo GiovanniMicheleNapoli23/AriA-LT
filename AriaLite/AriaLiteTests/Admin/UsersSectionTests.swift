@@ -293,6 +293,16 @@ struct UsersSectionPureTests {
         #expect(AdminUserPresence(AdminUserLastSeen(), now: now).line == .never)
     }
 
+    @Test func theOnlineLineFollowsTheClockWithoutRebuildingTheRow() {
+        let seen = AdminUserLastSeen(web: ago(60))
+        #expect(seen.webDate == now.addingTimeInterval(-60), "le ore si leggono una volta, alla creazione")
+        #expect(seen.appDate == nil)
+        let item = AdminUserListItem(row("w", lastSeen: seen), viewer: ownerViewer)
+        #expect(item.onlineLine(at: now)?.isOnline == true)
+        #expect(item.onlineLine(at: now.addingTimeInterval(600))?.isOnline == false, "più tardi è solo \"Last seen\"")
+        #expect(AdminUserListItem(member, viewer: lowViewer).onlineLine(at: now) == nil, "solo i titolari")
+    }
+
     @Test func junkIsNeverSeenAndStampsAreReadLeniently() {
         #expect(AdminUserPresence(AdminUserLastSeen(web: "yesterday"), now: now).line == .never)
         #expect(AdminUserPresence.date(from: "2026-11-14T08:59:30.123456+00:00") == now.addingTimeInterval(-29.876544))
@@ -547,6 +557,29 @@ extension BackendTests {
             await model.loadIfNeeded()
             #expect(model.isClosed)
             #expect(model.placeholder == .failed)
+        }
+
+        @Test func enteringAgainRereadsOnlyWhenTheListIsStale() async throws {
+            let backend = try await connected()
+            let model = await ownerModel(backend, people: Self.page(Self.person("u1", level: "owner")))
+            let list = "GET \(Self.base)/users"
+            let before = server.calls(list).count
+            await model.loadIfNeeded()
+            await model.refreshIfStale()
+            #expect(server.calls(list).count == before, "dati freschi: né entrando né tornando in primo piano")
+            await model.refresh()
+            #expect(server.calls(list).count == before + 1, "tirare per aggiornare rilegge sempre")
+        }
+
+        @Test func aTransientFailureKeepsTheListAndTheSectionOpen() async throws {
+            let backend = try await connected()
+            let model = await ownerModel(backend, people: Self.page(Self.person("u1", level: "owner"), Self.person("u2")))
+            server.route("GET \(Self.base)/users", .json(#"{"detail":"Internal error"}"#, status: 500))
+            await model.refresh()
+            #expect(!model.isClosed, "un errore di rete o un 5xx non chiude la sezione")
+            #expect(model.loadFailed)
+            #expect(model.people.map(\.userId) == ["u1", "u2"], "l'elenco già letto resta")
+            #expect(model.placeholder == nil)
         }
 
         // MARK: Flussi che scrivono

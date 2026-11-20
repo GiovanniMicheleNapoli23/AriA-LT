@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 18/11/26.
 //
 //  La sezione Users (contratto del 18/11/2026): l'elenco di tutti, i posti, i titolari, i ruoli per i selettori e,
-//  per i titolari, il tetto del piano. Vive in AppViewModel. L'elenco si rilegge ogni 30 secondi mentre la sezione è
-//  aperta e in primo piano, e dopo ogni scrittura (§3.1, regola 5); "online" si ricalcola sull'orologio (`now`).
+//  per i titolari, il tetto del piano. Vive in AppViewModel. L'elenco non si rilegge a tempo: si legge entrando nella
+//  sezione (se i dati hanno più di 45 secondi), tornando in primo piano, dopo ogni scrittura (§3.1, regola 5) e
+//  tirando per aggiornare. "Online" si ricalcola sull'orologio nelle sole etichette (TimelineView), senza stato.
 //  Ricerca e filtri sono sul telefono. Le decisioni stanno in AdminUsersRules.
 //
 
@@ -17,11 +18,6 @@ import Observation
 @Observable
 final class AdminUsersViewModel {
     let backend: AriaBackend
-
-    /// Ogni quanto si rilegge l'elenco mentre la sezione è aperta.
-    static let refreshInterval: Duration = .seconds(30)
-    /// Ogni quanto si ricalcola "online" sull'orologio del telefono.
-    static let clockInterval: Duration = .seconds(15)
 
     enum Placeholder: Equatable {
         case loading
@@ -55,8 +51,11 @@ final class AdminUsersViewModel {
     private(set) var roles: [AdminRole] = []
     private(set) var hasLoadedRoles = false
 
-    /// L'ora con cui si calcola "online": avanza con l'orologio.
-    private(set) var now = Date.now
+    /// L'ora con cui si calcola "online" (filtro e schede): quella di adesso, non uno stato che invalida le righe.
+    var now: Date { .now }
+
+    /// Quando l'elenco è stato letto l'ultima volta: entrando di nuovo si rilegge solo se è vecchio.
+    @ObservationIgnored private var freshness = AriaFreshness()
 
     /// Le schede aperte sopra l'elenco.
     var path: [AdminUserRoute] = []
@@ -79,6 +78,7 @@ final class AdminUsersViewModel {
     func reset() {
         page = nil
         loadedCompanyId = nil
+        freshness.invalidate()
         isLoading = false
         loadFailed = false
         isClosed = false
@@ -111,16 +111,26 @@ final class AdminUsersViewModel {
     // MARK: - Caricamento
 
     /// Cambia quando va riletto tutto: l'azienda, e se chi guarda può aprire la sezione (cambiando azienda `access`
-    /// torna `nil` e poi arriva: la lettura parte allora, non al giro dei 30 secondi).
+    /// torna `nil` e poi arriva: la lettura parte allora).
     var loadKey: String { "\(backend.activeCompanyId ?? "-")|\(entry)" }
 
     var hasLoaded: Bool { page != nil && loadedCompanyId == backend.activeCompanyId }
 
     var people: [AdminUserRow] { hasLoaded ? page?.people ?? [] : [] }
 
+    /// Entrando nella sezione: la prima volta, dopo un errore o una chiusura, o se i dati sono vecchi.
     func loadIfNeeded() async {
         if loadedCompanyId != backend.activeCompanyId { reset() }
-        if !hasLoaded || entry == .hidden { await refresh() }
+        if needsRefresh { await refresh() }
+    }
+
+    /// Tornando in primo piano: rilegge solo se i dati hanno più di 45 secondi.
+    func refreshIfStale() async {
+        if needsRefresh { await refresh() }
+    }
+
+    private var needsRefresh: Bool {
+        !hasLoaded || isClosed || entry == .hidden || freshness.isStale()
     }
 
     /// Rilegge l'elenco e, per un titolare, il tetto; i ruoli la prima volta che servono.
@@ -143,6 +153,7 @@ final class AdminUsersViewModel {
             guard company == backend.activeCompanyId else { return }
             page = fresh
             loadedCompanyId = company
+            freshness.markLoaded()
             loadFailed = false
             isClosed = false
             dropStaleFilters()
@@ -151,6 +162,7 @@ final class AdminUsersViewModel {
         } catch {
             if let failure = AdminUsersFailure.from(error, backend: backend) {
                 // 403 (anche `permission_denied`), sessione chiusa, o un server senza la rotta (404, §9): si chiude.
+                // Un errore di rete o un 5xx non chiude: `loadFailed` e l'elenco già letto restano com'erano.
                 if failure.closesSection || failure.sessionEnded || failure.personGone || failure.reloadsRights {
                     isClosed = true
                     path = []
@@ -193,21 +205,6 @@ final class AdminUsersViewModel {
         } catch {
             // Senza ruoli i selettori mostrano solo Owner e No role: il server resta l'autorità.
             _ = AdminUsersFailure.from(error, backend: backend)
-        }
-    }
-
-    /// Mentre la sezione è aperta e in primo piano: l'orologio ogni 15 s, l'elenco ogni 30 s. Si ferma uscendo.
-    func watch() async {
-        var sinceRefresh: Duration = .zero
-        while !Task.isCancelled {
-            try? await Task.sleep(for: Self.clockInterval)
-            guard !Task.isCancelled else { return }
-            now = .now
-            sinceRefresh += Self.clockInterval
-            if sinceRefresh >= Self.refreshInterval {
-                sinceRefresh = .zero
-                await refresh()
-            }
         }
     }
 

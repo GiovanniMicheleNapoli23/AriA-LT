@@ -4,10 +4,10 @@
 //
 //  Created by Giovanni Michele on 26/10/26.
 //
-//  Il profilo nelle impostazioni: chi è entrato e con che ruolo (operatore o admin, lo dice /v1/me),
-//  dove lavora (azienda e impianto), il server Aria, le guide e l'uscita. L'aspetto (AriaAppearance) si
-//  ricorda sul telefono, fuori da qui. La disponibilità è solo degli operatori:
-//  a un admin l'assegnazione automatica non manda lavori.
+//  Le impostazioni: chi è entrato e con che ruolo (operatore o admin, lo dice /v1/me), crediti e disponibilità,
+//  dove lavora (azienda e sito, si cambiano da qui), il server Aria, le guide, la versione e l'uscita. L'aspetto
+//  (AriaAppearance) si ricorda sul telefono, fuori da qui. La disponibilità è solo degli operatori: a un admin
+//  l'assegnazione automatica non manda lavori.
 //
 
 import Foundation
@@ -19,13 +19,10 @@ final class AriaSettingsViewModel {
     let user: User
     let app: AppViewModel
 
-    var showsConnection = false
     var confirmingLogout = false
-    /// La presentazione dell'app, rivista dal profilo.
+    /// La presentazione dell'app, rivista dalle impostazioni.
     var showsOnboarding = false
-    /// Il foglio "AI Operational Credits".
-    var showsCredits = false
-    /// La card dei crediti: stato, testo e rilettura del saldo.
+    /// La riga dei crediti: stato, testo e rilettura del saldo.
     let credits: AriaCreditsViewModel
 
     init(user: User, app: AppViewModel) {
@@ -70,7 +67,11 @@ final class AriaSettingsViewModel {
         }
     }
 
-    var roleSymbol: String { isAdmin ? "person.badge.shield.checkmark.fill" : "wrench.and.screwdriver.fill" }
+    /// Come è entrato: lo decide il backend (GET /v1/me), non il link usato.
+    var accountType: String {
+        (account?.kind ?? (isAdmin ? .admin : .operator)) == .admin
+            ? String(localized: "Platform account") : String(localized: "Operator")
+    }
 
     // MARK: Dove
 
@@ -80,26 +81,81 @@ final class AriaSettingsViewModel {
 
     var plantName: String? { backend.activePlantName }
 
-    var showsWorkspace: Bool { companyName != nil || plantName != nil }
+    /// Le aziende in cui si può entrare dall'app.
+    var companies: [AriaCompany] { backend.companies.filter { $0.appAccess != false } }
+
+    var activeCompanyId: String? { backend.activeCompanyId }
+
+    var plants: [AriaPlant] { backend.plants }
+
+    var activePlantId: String? { backend.activePlantId }
+
+    /// Aziende o siti in lettura (la lista si vuota e si riempie cambiando azienda).
+    var isLoadingWorkspace: Bool { backend.isLoading }
+
+    func selectCompany(_ id: String) {
+        guard id != activeCompanyId else { return }
+        Task { await backend.selectCompany(id) }
+    }
+
+    func selectPlant(_ id: String) {
+        guard id != activePlantId else { return }
+        Task { await backend.selectPlant(id) }
+    }
+
+    /// La scelta del menu "Company" nella lista: cambiandola si rileggono siti e diritti.
+    var companySelection: String? {
+        get { activeCompanyId }
+        set { if let newValue { selectCompany(newValue) } }
+    }
+
+    /// La scelta del menu "Site" nella lista.
+    var plantSelection: String? {
+        get { activePlantId }
+        set { if let newValue { selectPlant(newValue) } }
+    }
+
+    // MARK: Disponibilità
 
     var showsAvailability: Bool { !isAdmin }
 
-    // MARK: Crediti
+    private var workOrders: AriaWorkOrderStore { app.ariaWorkOrders }
 
-    /// Quanto parte alto il foglio: profilo compatto, area di lavoro, aspetto e guide; un poco di più con la
-    /// card dei crediti o la disponibilità. Si può sempre allargare.
-    var detentFraction: Double {
-        min(0.95, (showsAvailability ? 0.78 : 0.72) + (credits.isVisible ? 0.08 : 0))
+    var availability: AriaAvailability { workOrders.availability }
+
+    var isUpdatingAvailability: Bool { workOrders.isUpdatingAvailability }
+
+    func setAvailability(_ value: AriaAvailability) {
+        Task { await workOrders.setAvailability(value) }
     }
 
-    /// Tocco sulla card: i dettagli, o un nuovo tentativo se il saldo non si legge.
-    func creditsTapped() {
-        if credits.isFailed { credits.retry() } else { showsCredits = true }
+    /// Cosa comporta la scelta: `available` dura 12 ore dall'ultimo invio.
+    var availabilityCaption: String {
+        switch availability {
+        case .available:
+            if let at = workOrders.profile?.availabilityAt {
+                let expiry = at.addingTimeInterval(12 * 3600)
+                return String(localized: "Receiving new tasks until \(expiry.formatted(date: .omitted, time: .shortened))")
+            }
+            return String(localized: "Receiving new tasks")
+        case .busy: return String(localized: "No new tasks while you are busy")
+        case .offDuty: return String(localized: "No new tasks while you are off duty")
+        }
     }
 
     // MARK: Server
 
     var isOnline: Bool { backend.isReady }
+
+    // MARK: Versione
+
+    /// "AriA 1.4 (212)", in fondo alla lista.
+    var versionText: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = info?["CFBundleVersion"] as? String
+        return ["AriA \(version)", build.map { "(\($0))" }].compactMap { $0 }.joined(separator: " ")
+    }
 
     // MARK: Giro guidato
 

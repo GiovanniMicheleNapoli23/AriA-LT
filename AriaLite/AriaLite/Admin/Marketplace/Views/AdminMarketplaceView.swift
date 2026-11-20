@@ -60,7 +60,7 @@ struct AdminMarketplaceView: View {
             // Il giro guidato si fa da parte mentre il modulo del connettore è aperto.
             .ariaSetupTourAside(viewModel.maintainXForm != nil, source: "marketplace.connector")
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     // MARK: Destinazioni

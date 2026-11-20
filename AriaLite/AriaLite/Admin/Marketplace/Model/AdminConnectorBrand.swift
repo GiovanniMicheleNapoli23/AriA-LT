@@ -17,15 +17,58 @@ nonisolated struct AdminConnectorBrand: Sendable, Hashable {
     /// Il colore del marchio, "#RRGGBB", nil se non c'è.
     let hex: String?
 
-    /// Un marchio per ogni connettore del catalogo, letto una volta sola.
+    /// Un marchio per ogni connettore del catalogo, letto una volta sola. Logo e colore non si traducono: si legge
+    /// solo quel che serve dal JSON del bundle (non il catalogo intero, che si decodifica con le traduzioni nel
+    /// Marketplace), così il primo disegno di un'icona, anche nella chat, non pesa sul main actor.
     nonisolated private static let byProvider: [String: AdminConnectorBrand] = {
+        guard let url = Bundle.main.url(forResource: "MarketplaceCatalog", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let payload = try? JSONDecoder().decode(Payload.self, from: data) else { return [:] }
         var result: [String: AdminConnectorBrand] = [:]
-        for item in AdminMarketplaceCatalog.items where item.kind == .connector {
-            result[item.sourceId] = AdminConnectorBrand(imageName: item.connector?.brandImage,
-                                                        hex: item.connector?.brandHex)
+        for entry in payload.items where entry.kind == AdminMarketplaceKind.connector.rawValue {
+            guard let provider = entry.sourceId else { continue }
+            result[provider] = AdminConnectorBrand(imageName: entry.connector?.brandImage, hex: entry.connector?.brandHex)
         }
         return result
     }()
+
+    /// Solo i campi del catalogo che servono al marchio; un elemento strano non svuota gli altri.
+    nonisolated private struct Payload: Decodable {
+        let items: [Entry]
+
+        init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            var list = try container.nestedUnkeyedContainer(forKey: .items)
+            var entries: [Entry] = []
+            while !list.isAtEnd {
+                if let entry = try? list.decode(Entry.self) { entries.append(entry) } else { _ = try? list.decode(Skip.self) }
+            }
+            items = entries
+        }
+
+        private nonisolated enum CodingKeys: String, CodingKey { case items }
+        private nonisolated struct Skip: Decodable {}
+    }
+
+    nonisolated private struct Entry: Decodable {
+        let kind: String?
+        let sourceId: String?
+        let connector: Brand?
+
+        nonisolated struct Brand: Decodable {
+            let brandImage: String?
+            let brandHex: String?
+        }
+
+        private nonisolated enum CodingKeys: String, CodingKey { case kind, sourceId, connector }
+
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            kind = try? c.decodeIfPresent(String.self, forKey: .kind)
+            sourceId = try? c.decodeIfPresent(String.self, forKey: .sourceId)
+            connector = try? c.decodeIfPresent(Brand.self, forKey: .connector)
+        }
+    }
 
     /// Il marchio del provider: dal catalogo, o solo l'asset se il provider non è più nel catalogo.
     nonisolated static func forProvider(_ provider: String) -> AdminConnectorBrand {

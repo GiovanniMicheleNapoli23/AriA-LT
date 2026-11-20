@@ -287,6 +287,40 @@ extension BackendTests {
             #expect(!auth.hasStoredSession)
         }
 
+        /// L'app chiusa (o la rete ferma) durante la chiamata non lascia la sessione sul telefono.
+        @Test func signOutForgetsTheSessionBeforeTheServerAnswers() async throws {
+            let auth = try await TestEnv.signedInAuth()
+            server.route("POST /api/auth/sign-out", .json("{}", delay: 1))
+            let signingOut = Task { await auth.signOut() }
+            #expect(await TestEnv.waitUntil { !server.calls("POST /api/auth/sign-out").isEmpty })
+            #expect(!auth.hasStoredSession, "il Keychain è già vuoto mentre il server non ha ancora risposto")
+            #expect(server.calls("POST /api/auth/sign-out").first?.header("authorization") == "Bearer SESSION")
+            await signingOut.value
+            #expect(!auth.hasStoredSession)
+        }
+
+        /// Un rinnovo partito prima dell'uscita non rimette nel Keychain la sessione prorogata dal server.
+        @Test func aRefreshFinishingAfterSignOutDoesNotBringTheSessionBack() async throws {
+            let auth = try await TestEnv.signedInAuth()
+            await auth.invalidate()
+            let tokensBefore = server.calls("GET /api/aria/token").count
+            server.route("GET /api/aria/token", TestEnv.tokenReply(headers: ["set-auth-token": "RENEWED"], delay: 0.5))
+            server.route("POST /api/auth/sign-out", .json("{}"))
+            let refreshing = Task { try await auth.validAccessToken() }
+            #expect(await TestEnv.waitUntil { server.calls("GET /api/aria/token").count > tokensBefore })
+            await auth.signOut()
+            await #expect(throws: AriaError.self) { try await refreshing.value }
+            #expect(!auth.hasStoredSession)
+            await #expect(throws: AriaError.self) { try await auth.validAccessToken() }
+        }
+
+        @Test func theKeychainSaysWhetherAValueIsProtected() {
+            #expect(AriaKeychain.set("S", for: "aria.mobile_session") == .unprotected)
+            // Con un codice sul dispositivo è protetto; senza (il simulatore dei test) si salva come gli altri.
+            #expect(AriaKeychain.set("S", for: "aria.mobile_session", protected: true) != .failed)
+            #expect(AriaKeychain.exists("aria.mobile_session"))
+        }
+
         @Test func signOutStillClearsLocalStateWhenTheServerIsUnreachable() async throws {
             let auth = try await TestEnv.signedInAuth()
             server.route("POST /api/auth/sign-out", .failing(.notConnectedToInternet))

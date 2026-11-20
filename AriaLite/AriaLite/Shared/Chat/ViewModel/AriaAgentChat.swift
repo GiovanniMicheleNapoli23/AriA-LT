@@ -15,7 +15,16 @@ import Observation
 @Observable
 final class AriaAgentChat {
     private(set) var sessionId: String
-    private(set) var messages: [AriaAgentMessage] = []
+    private(set) var messages: [AriaAgentMessage] = [] {
+        didSet { refreshMessageSummary() }
+    }
+    /// Quanti messaggi ci sono, e se ce n'è almeno uno. Valori propri (non letti da `messages`): chi li legge non si
+    /// ridisegna a ogni pezzo di una risposta in streaming, ma solo quando cambiano. Li scrive solo `refreshMessageSummary`.
+    private(set) var messageCount = 0
+    private(set) var hasMessages = false
+    /// La pausa ancora da decidere: blocca il composer finché l'operatore non risponde. Ricalcolata quando cambia
+    /// `messages`, e riassegnata solo se è cambiata.
+    private(set) var pendingInterrupt: AriaInterrupt?
     private(set) var isStreaming = false
     private(set) var isLoadingHistory = false
     var lastError: String? {
@@ -94,8 +103,12 @@ final class AriaAgentChat {
     @ObservationIgnored private var didSendContext = false
     /// Tiene la sessione tra un avvio e l'altro (solo la chat principale).
     @ObservationIgnored private let remembersSession: Bool
-    /// Dove si salvano le spunte dei task (SwiftData).
-    @ObservationIgnored private let progressStore: AriaTaskProgressStore
+    /// Dove si salvano le spunte dei task (SwiftData): quello passato dai test, altrimenti quello condiviso, che si apre
+    /// (con il suo file SwiftData) solo alla prima lettura o scrittura, non alla nascita della chat.
+    @ObservationIgnored private let injectedProgressStore: AriaTaskProgressStore?
+    private var progressStore: AriaTaskProgressStore { injectedProgressStore ?? .shared }
+    /// La conversazione di cui si sono già lette le spunte salvate (vedi `ensureProgressLoaded`).
+    @ObservationIgnored private var progressLoadedSession: String?
     /// Durante lo svuotamento/caricamento delle spunte non si riscrive il salvataggio.
     @ObservationIgnored private var isRestoringProgress = false
     /// Il turno in corso sul server: serve allo Stop e per riagganciarsi. L'id della risposta lo dà il server
@@ -121,14 +134,13 @@ final class AriaAgentChat {
     private static let currentSessionKey = "aria.chat.current_session"
 
     init(backend: AriaBackend, context: String? = nil, remembersSession: Bool = false,
-         progressStore: AriaTaskProgressStore = .shared) {
+         progressStore: AriaTaskProgressStore? = nil) {
         self.backend = backend
         self.context = context
         self.remembersSession = remembersSession
-        self.progressStore = progressStore
+        injectedProgressStore = progressStore
         style = UserDefaults.standard.string(forKey: Self.styleKey).flatMap(AriaChatStyle.init(rawValue:)) ?? .auto
         sessionId = (remembersSession ? UserDefaults.standard.string(forKey: Self.currentSessionKey) : nil) ?? AriaNanoID.make()
-        loadTaskProgress()
     }
 
     private var api: AriaChatAPI { AriaChatAPI(api: backend.api) }
@@ -140,9 +152,16 @@ final class AriaAgentChat {
         remembersSession && UserDefaults.standard.string(forKey: Self.currentSessionKey) == sessionId
     }
 
-    /// La pausa ancora da decidere: blocca il composer finché l'operatore non risponde.
-    var pendingInterrupt: AriaInterrupt? {
-        messages.last(where: { $0.role == .assistant })?.interrupt
+    /// Aggiorna conteggio, presenza e pausa in attesa dopo una modifica di `messages`. Ogni valore si riscrive solo se
+    /// è cambiato: durante lo streaming cambia il testo dell'ultimo messaggio, non questi, e le viste che li leggono
+    /// non vengono invalidate a ogni pezzo.
+    private func refreshMessageSummary() {
+        let count = messages.count
+        if messageCount != count { messageCount = count }
+        let nonEmpty = count > 0
+        if hasMessages != nonEmpty { hasMessages = nonEmpty }
+        let pause = messages.last(where: { $0.role == .assistant })?.interrupt
+        if pendingInterrupt != pause { pendingInterrupt = pause }
     }
 
     /// Domanda guidata attiva: la più recente, a turno finito e non ancora risposta.
@@ -211,6 +230,7 @@ final class AriaAgentChat {
     func send(_ text: String, toolCall: AriaToolCallRequest? = nil, requestId reused: String? = nil) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !isStreaming, pendingInterrupt == nil, !trimmed.isEmpty || toolCall != nil else { return }
+        ensureProgressLoaded()
         // Un turno nuovo chiude la card "Aria ha imparato": la prossima risposta può avere la sua domanda.
         dismissLearningOutcome()
         openedLearningId = nil
@@ -330,6 +350,8 @@ final class AriaAgentChat {
         reassignmentPlans = [:]
         contextItems = []
         resetTaskProgress()
+        // Una conversazione nuova non ha niente di salvato da leggere.
+        progressLoadedSession = sessionId
         answeredElicitations = []
         learningOutcome = nil
         openedLearningId = nil
@@ -371,6 +393,8 @@ final class AriaAgentChat {
         warmUsageConfig()
         isLoadingHistory = true
         defer { isLoadingHistory = false }
+        // Lo stato della sessione non dipende dal transcript: parte insieme e si applica dopo, a transcript a schermo.
+        async let sessionState = fetchSessionState(of: sessionId)
         do {
             try await loadTranscript()
             rememberSession()
@@ -382,7 +406,7 @@ final class AriaAgentChat {
             return
         }
         if hasServerTurns {
-            await loadSessionState()
+            await applySessionState(await sessionState, requested: sessionId)
         } else {
             // Gli altri account hanno solo il livello da leggere: non si aspetta, il transcript è già a schermo.
             let opened = sessionId
@@ -392,12 +416,16 @@ final class AriaAgentChat {
 
     /// Messaggi della sessione e, se c'è, la pausa in attesa.
     private func loadTranscript() async throws {
+        let api = self.api
+        let sessionId = self.sessionId
+        // La pausa in attesa non dipende dai messaggi: le due richieste partono insieme.
+        async let pending = api.pendingInterrupt(sessionId: sessionId)
         var restored = try await api.messages(sessionId: sessionId).map(AriaAgentMessage.init(persisted:))
         // Le domande già superate da un turno successivo non vanno riproposte.
         for (i, message) in restored.enumerated() where i < restored.count - 1 {
             if let id = message.elicitation?.id { answeredElicitations.insert(id) }
         }
-        if let pause = await api.pendingInterrupt(sessionId: sessionId) {
+        if let pause = await pending {
             if let i = restored.lastIndex(where: { $0.role == .assistant }) {
                 restored[i].interrupt = pause
                 restored[i].finished = true
@@ -414,9 +442,8 @@ final class AriaAgentChat {
     /// Spunte salvate sul server e turno ancora aperto: l'app chiusa a metà risposta la ritrova, e la sessione
     /// aperta su un altro telefono ha le stesse spunte. Una sessione mai partita (404) non ha niente da dire.
     /// Solo l'operatore (gli altri account leggono il livello salvato a parte, senza aspettare: `loadSavedEffort`).
-    private func loadSessionState() async {
-        let requested = sessionId
-        guard let state = try? await api.sessionState(sessionId: requested), requested == sessionId else { return }
+    private func applySessionState(_ state: AriaChatSessionState?, requested: String) async {
+        guard let state, requested == sessionId else { return }
         restoreEffort(state.effort)
         guard hasServerTurns else { return }
         if let checked = state.checklist?.checked { applyServerChecklist(checked) }
@@ -432,6 +459,13 @@ final class AriaAgentChat {
             await settle(await follow(active.responseId), messageId: reply.id, fallback: AriaError.serverOffline)
             endTurn(reply.id, token: token)
         }
+    }
+
+    /// La lettura dello stato (spunte e turno aperto): fallita o vuota (404, sessione mai partita) non è un errore.
+    /// Solo l'operatore (gli altri leggono il livello a parte, vedi `loadSavedEffort`): per loro non parte nessuna richiesta.
+    private func fetchSessionState(of sessionId: String) async -> AriaChatSessionState? {
+        guard hasServerTurns else { return nil }
+        return try? await api.sessionState(sessionId: sessionId)
     }
 
     /// Riprende l'ultima conversazione all'avvio, se l'app ne ricorda una.
@@ -569,6 +603,7 @@ final class AriaAgentChat {
     }
 
     func toggleTask(_ task: AriaTaskList.Task, in messageId: String) {
+        ensureProgressLoaded()
         let key = taskKey(task, in: messageId)
         if checkedTasks.contains(key) { checkedTasks.remove(key) } else { checkedTasks.insert(key) }
     }
@@ -598,7 +633,15 @@ final class AriaAgentChat {
         isRestoringProgress = false
     }
 
+    /// Le spunte salvate si leggono alla prima necessità (primo messaggio, spunta, conversazione aperta), non quando
+    /// nasce la chat: all'avvio non si apre l'archivio SwiftData.
+    private func ensureProgressLoaded() {
+        guard progressLoadedSession != sessionId else { return }
+        loadTaskProgress()
+    }
+
     private func loadTaskProgress() {
+        progressLoadedSession = sessionId
         guard remembersSession, let saved = progressStore.load(sessionId: sessionId) else { return }
         isRestoringProgress = true
         checkedTasks = saved.checked
@@ -675,6 +718,7 @@ final class AriaAgentChat {
         case .ask: "\(head): \(custom ?? "")"
         }
         if action != .ask {
+            ensureProgressLoaded()
             let key = taskKey(task, in: messageId)
             checkedTasks.remove(key)
             taskMarks[key] = action.rawValue
@@ -813,7 +857,7 @@ final class AriaAgentChat {
 
     /// Closeout, report e .docx si offrono solo se il server li ha e questa chat ha una procedura da chiudere.
     var canCloseOut: Bool { backend.isAvailable(.closeout) && !closeoutUnavailable }
-    var canDownloadReport: Bool { backend.isAvailable(.report) && !closeoutUnavailable && !messages.isEmpty }
+    var canDownloadReport: Bool { backend.isAvailable(.report) && !closeoutUnavailable && hasMessages }
 
     /// Le card dei fatti da imparare si mostrano finché il server accetta la decisione.
     var canConfirmMemory: Bool { backend.isAvailable(.memoryConfirm) }
@@ -931,13 +975,11 @@ final class AriaAgentChat {
         for attempt in 0..<3 {
             if hasServerTurns { liveTurn = (nil, messageId) }
             let playback = StreamPlayback()
-            let player = Task {
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: StreamPlayback.tick)
-                    show(playback.tick(), in: messageId)
-                }
+            let player = Task { await playback.play { show($0, in: messageId) } }
+            defer {
+                player.cancel()
+                playback.stop()
             }
-            defer { player.cancel() }
             // Il turno ha un'Idempotency-Key e va avanti sul server: solo allora c'è qualcosa da seguire.
             var background = false
             var streamStarted = false
@@ -1151,6 +1193,8 @@ final class AriaAgentChat {
         update(messageId) { m in
             for event in events { m.apply(event) }
         }
+        // Solo in DEBUG: `String(describing:)` di un evento (anche un pezzo lungo di testo) costa, e in release la traccia non esiste.
+        #if DEBUG
         for event in events {
             if case .textDelta(let text) = event {
                 AriaStreamTrace.event("apply", "textDelta", bytes: text.utf8.count)
@@ -1158,6 +1202,7 @@ final class AriaAgentChat {
                 AriaStreamTrace.event("apply", String(describing: event).prefix(while: { $0 != "(" }).description)
             }
         }
+        #endif
     }
 
     func update(_ id: String, _ mutate: (inout AriaAgentMessage) -> Void) {
@@ -1204,10 +1249,41 @@ private final class StreamPlayback {
     private var queue: [Item] = []
     private var pendingSlices = 0
 
+    /// Sveglia il ticker quando in coda arriva qualcosa: finché la coda è vuota il ticker dorme invece di girare a 50 ms.
+    private let signal: AsyncStream<Void>
+    private let wake: AsyncStream<Void>.Continuation
+
+    init() {
+        let pair = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .bufferingNewest(1))
+        signal = pair.stream
+        wake = pair.continuation
+    }
+
     var isEmpty: Bool { queue.isEmpty }
+
+    /// Il ticker: a coda vuota aspetta il prossimo evento; con qualcosa in coda esce una fetta ogni `tick`.
+    /// Non chiama `show` se un tick non ha prodotto niente. Finisce se il task è annullato o dopo `stop()`.
+    func play(_ show: ([AriaStreamEvent]) -> Void) async {
+        var signals = signal.makeAsyncIterator()
+        while !Task.isCancelled {
+            if queue.isEmpty {
+                guard await signals.next() != nil else { return }
+                continue
+            }
+            try? await Task.sleep(for: Self.tick)
+            guard !Task.isCancelled else { return }
+            let events = tick()
+            if !events.isEmpty { show(events) }
+        }
+    }
+
+    /// Chiude il ticker: se dormiva in attesa di eventi, si sveglia e finisce.
+    func stop() { wake.finish() }
 
     /// Mette in coda un evento e restituisce quelli da mostrare subito.
     func push(_ event: AriaStreamEvent) -> [AriaStreamEvent] {
+        // Se è rimasto qualcosa in coda il ticker (che dorme a coda vuota) si sveglia.
+        defer { if !queue.isEmpty { wake.yield() } }
         // Il ragionamento arriva token per token come il testo: si unisce e esce al tick (stesso ordine di coda).
         if case .reasoningDelta(let text) = event {
             if case .ready(.reasoningDelta(let previous))? = queue.last {

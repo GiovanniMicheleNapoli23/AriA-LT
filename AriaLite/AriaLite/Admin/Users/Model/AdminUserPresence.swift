@@ -28,8 +28,8 @@ nonisolated struct AdminUserPresence: Equatable, Sendable {
     }
 
     init(_ seen: AdminUserLastSeen?, now: Date) {
-        let web = seen?.web.flatMap(Self.date(from:))
-        let app = seen?.app.flatMap(Self.date(from:))
+        let web = seen?.webDate
+        let app = seen?.appDate
         func online(_ date: Date?) -> Bool { date.map { now.timeIntervalSince($0) < Self.onlineWindow } ?? false }
         self.init(web: online(web), app: online(app), lastSeen: [web, app].compactMap(\.self).max())
     }
@@ -61,16 +61,22 @@ nonisolated struct AdminUserPresence: Equatable, Sendable {
 
     // MARK: - Ore
 
+    /// Il formato dell'ora: la regex e il lettore si creano una volta sola (erano uno per ogni riga a ogni disegno).
+    private nonisolated(unsafe) static let pattern =
+        /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|z|[+-]\d{2}:?\d{2})?$/
+    private nonisolated(unsafe) static let reader: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
     /// `2026-11-18T13:41:10Z`, `…10.123456+00:00`, `…10.5` (senza fuso = UTC). `nil` se non è un'ora.
     static func date(from text: String) -> Date? {
-        let pattern = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|z|[+-]\d{2}:?\d{2})?$/
         guard let match = text.trimmingCharacters(in: .whitespaces).wholeMatch(of: pattern) else { return nil }
         var zone = match.4.map(String.init) ?? "Z"
         if zone == "z" { zone = "Z" }
         if zone != "Z", !zone.contains(":") { zone.insert(":", at: zone.index(zone.startIndex, offsetBy: 3)) }
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        guard let whole = formatter.date(from: "\(match.1)T\(match.2)\(zone)") else { return nil }
+        guard let whole = reader.date(from: "\(match.1)T\(match.2)\(zone)") else { return nil }
         let fraction = match.3.flatMap { Double("0\($0)") } ?? 0
         return whole.addingTimeInterval(fraction)
     }

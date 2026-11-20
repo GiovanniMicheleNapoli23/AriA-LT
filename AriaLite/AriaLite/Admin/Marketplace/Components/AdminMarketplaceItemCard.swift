@@ -67,7 +67,7 @@ struct AdminMarketplaceItemCard: View {
         if item.isPreview {
             pill(String(localized: "Coming soon"), systemImage: nil, tint: .blue)
         } else if item.kind == .connector, let serverStatus {
-            AdminConnectorStatusBadge(status: serverStatus)
+            AdminConnectorStatusBadge(status: serverStatus, fitsWidth: true)
         } else if ownership == .purchased {
             pill(String(localized: "Purchased"), systemImage: "checkmark.seal.fill", tint: .green)
         } else if let price = item.priceText {

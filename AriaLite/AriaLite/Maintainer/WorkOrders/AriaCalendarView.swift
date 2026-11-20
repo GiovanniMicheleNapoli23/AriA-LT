@@ -77,6 +77,8 @@ struct AriaCalendarView: View {
                 }
             }
         }
+        // La copia locale si legge al primo uso: qui, se non l'ha già chiesta la sincronizzazione.
+        .onAppear { store.restoreIfNeeded() }
     }
 
     // MARK: Mese

@@ -17,6 +17,8 @@ import Observation
 @Observable
 final class AdminCraftedArtifactStore {
     let companyId: String
+    /// Di chi sono gli artifact: i file stanno nella sua cartella.
+    let accountId: String
     /// Dal più nuovo al più vecchio.
     private(set) var list: [AdminCraftedArtifact] = []
     /// L'ultimo salvataggio su disco non è riuscito (disco pieno…): la lista in memoria resta valida.
@@ -25,10 +27,11 @@ final class AdminCraftedArtifactStore {
     private let fileURL: URL
 
     /// `baseURL` è la cartella da cui parte il file di ogni azienda (di default Application Support/Crafted); i test passano una temporanea.
-    init(companyId: String, baseURL: URL? = nil) {
+    init(companyId: String, accountId: String, baseURL: URL? = nil) {
         self.companyId = companyId
+        self.accountId = accountId
         fileURL = AdminCraftedStorage.fileURL(baseURL: baseURL ?? AdminCraftedStorage.defaultBaseURL,
-                                              companyId: companyId, name: "artifacts.json")
+                                              companyId: companyId, accountId: accountId, name: "artifacts.json")
         list = Self.load(fileURL)
     }
 

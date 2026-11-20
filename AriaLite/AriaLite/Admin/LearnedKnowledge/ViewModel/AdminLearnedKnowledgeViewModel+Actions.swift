@@ -84,6 +84,8 @@ extension AdminLearnedKnowledgeViewModel {
         facts.removeAll { $0.id == id }
         knownFacts[id] = nil
         translations[id] = nil
+        touch()
+        freshness.invalidate()
     }
 
     // MARK: Dopo una modifica
@@ -104,6 +106,8 @@ extension AdminLearnedKnowledgeViewModel {
             facts.insert(fact, at: 0)
             total = total.map { $0 + 1 }
         }
+        touch()
+        freshness.invalidate()
         refreshTranslation(of: fact, previous: previous)
     }
 

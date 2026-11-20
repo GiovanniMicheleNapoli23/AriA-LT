@@ -92,6 +92,21 @@ extension BackendTests {
             #expect(server.calls("GET /v1/work-orders").allSatisfy { $0.header("company-id") == "c1" })
         }
 
+        @Test func refreshesThatArriveWhileOneIsRunningShareIt() async throws {
+            let (_, store) = try await TestEnv.signedInStore()
+            stubHome(open: [TestEnv.orderJSON()])
+            server.route(openKey, .json("[\(TestEnv.orderJSON())]", delay: 0.3))
+
+            async let first: Void = store.refresh()
+            async let second: Void = store.refresh()
+            async let third: Void = store.refresh()
+            _ = await (first, second, third)
+
+            #expect(server.calls("GET /v1/work-orders").filter { $0.query == "status_group=open&limit=50&offset=0" }.count == 1,
+                    "tre notifiche push di fila rileggono la lista una volta")
+            #expect(store.orders.count == 1)
+        }
+
         @Test func signedOutStoreDoesNothing() async {
             let store = AriaWorkOrderStore(backend: AriaBackend(), network: AriaNetworkMonitor(monitoring: false),
                                            offline: AriaOfflineStore(inMemory: true))
@@ -112,6 +127,33 @@ extension BackendTests {
             #expect(server.calls("PUT /v1/me/availability").first?.json as? [String: String] == ["availability": "off_duty"])
             #expect(!server.calls("GET /v1/work-orders").isEmpty, "cambia la disponibilità, cambia cosa arriva")
             #expect(!store.isUpdatingAvailability)
+        }
+
+        @Test func theChoiceOfAnotherOperatorOnTheSameDeviceIsNotInherited() async throws {
+            // Un altro operatore ha scelto "busy" senza rete ed è uscito: la scelta è ancora da mandare.
+            UserDefaults.standard.set("busy", forKey: "aria.availability_preference")
+            UserDefaults.standard.set(true, forKey: "aria.availability_pending")
+            UserDefaults.standard.set("someone-else", forKey: "aria.availability_account")
+            let (_, store) = try await TestEnv.signedInStore()
+            stubHome()
+            await store.sync()
+            #expect(store.preferredAvailability == .available)
+            #expect(UserDefaults.standard.string(forKey: "aria.availability_preference") == nil)
+            #expect(!UserDefaults.standard.bool(forKey: "aria.availability_pending"))
+            let puts = server.calls("PUT /v1/me/availability")
+            #expect(puts.allSatisfy { $0.json as? [String: String] == ["availability": "available"] },
+                    "la scelta dell'altro non parte a nome di chi è entrato")
+        }
+
+        @Test func theChoiceIsRememberedWithItsOwner() async throws {
+            let (backend, store) = try await TestEnv.signedInStore()
+            stubHome(availability: "off_duty")
+            await store.setAvailability(.offDuty)
+            #expect(UserDefaults.standard.string(forKey: "aria.availability_account") == backend.mobileAccount?.id)
+            // Lo stesso operatore, rientrando, la ritrova.
+            store.reset()
+            store.restoreIfNeeded()
+            #expect(store.preferredAvailability == .offDuty)
         }
 
         @Test func serverRefusingTheChangeKeepsThePreviousChoice() async throws {

@@ -4,15 +4,18 @@
 //
 //  Created by Giovanni Michele on 18/11/26.
 //
-//  La sezione Users (§3): il pannello del tetto per i titolari (o la riga dei posti per gli altri), le persone in una
+//  La vista Users della sezione Users (§3; l'altra è Roles): il pannello del tetto per i titolari (o la riga dei posti per gli altri), le persone in una
 //  lista raggruppata con ricerca e filtri, e la scheda di una persona a tocco. "Add user" apre il foglio per aggiungere;
-//  "Revoke" sugli inviti per email chiede conferma. Si rilegge ogni 30 secondi solo con l'app in primo piano.
+//  "Revoke" sugli inviti per email chiede conferma. Si rilegge entrando e tornando in primo piano (se i dati sono
+//  vecchi) e tirando per aggiornare; mai a tempo.
 //
 
 import SwiftUI
 
 struct AdminUsersView: View {
     @Bindable var viewModel: AdminUsersViewModel
+    /// Le viste della sezione (Users e Roles): la scelta in alto, se si aprono entrambe.
+    var tabs: AdminUsersSectionViewModel? = nil
     @Environment(\.scenePhase) private var scenePhase
     @State private var showsFilters = false
 
@@ -43,8 +46,9 @@ struct AdminUsersView: View {
         }
         .adminUsersToast(viewModel)
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
-        .task(id: scenePhase == .active) {
-            if scenePhase == .active { await viewModel.watch() }
+        // Tornando in primo piano si rilegge solo se i dati sono vecchi; mai a tempo.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await viewModel.refreshIfStale() } }
         }
     }
 
@@ -119,6 +123,9 @@ struct AdminUsersView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+        if let tabs, tabs.showsTabs {
+            ToolbarItem(placement: .principal) { AdminUsersTabPicker(section: tabs) }
+        }
         if viewModel.offersFilters {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

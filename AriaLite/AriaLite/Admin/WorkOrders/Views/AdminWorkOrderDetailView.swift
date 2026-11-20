@@ -52,7 +52,7 @@ struct AdminWorkOrderDetailView: View {
             AdminWorkOrderAssistantSheet(viewModel: assistant)
         }
         .refreshable { await viewModel.refresh() }
-        .task { await viewModel.load() }
+        .task { await viewModel.loadIfNeeded() }
         .sheet(item: $viewModel.editForm) { form in
             AdminWorkOrderFormView(viewModel: form)
         }

@@ -26,6 +26,7 @@ enum TestEnv {
     static let defaultsKeys = ["aria.company_id", "aria.plant_id", "aria.operator_account", "aria.mobile_account",
                                "aria.install_marker", "aria.legacy_keys_purged",
                                "aria.magic_link_email", "aria.magic_link_sent_at", "aria.availability_preference", "aria.availability_pending",
+                               "aria.availability_account",
                                "aria.api_base_url", "aria.auth_base_url",
                                "aria.api_base_url.v2", "aria.auth_base_url.v2", "aria.chat.current_session",
                                "aria.signing_up"]
@@ -91,7 +92,7 @@ enum TestEnv {
     /// Il link chiesto da questo dispositivo: senza, `completeSignIn` del backend rifiuta ogni link.
     static func requestLink(_ backend: AriaBackend, email: String = "mario@acme.test") async throws {
         StubServer.shared.route("POST /api/auth/mobile/request-link", .json("{}", status: 202))
-        try await backend.sendSignInLink(email: email)
+        try await backend.sendOperatorLink(email: email)
     }
 
     /// Un ordine nel formato di GET /v1/work-orders.

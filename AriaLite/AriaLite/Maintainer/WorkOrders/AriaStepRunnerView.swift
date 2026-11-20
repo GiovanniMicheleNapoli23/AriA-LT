@@ -94,14 +94,13 @@ struct AriaStepRunnerView: View {
     }
 
     private func photoCount(of step: AriaProcedureStep) -> Int {
-        (step.report?.photos.count ?? 0) + queuedPhotos(of: step).count + (draftPhotos[step.id]?.count ?? 0)
+        (step.report?.photos.count ?? 0) + queuedPhotoIds(of: step).count + (draftPhotos[step.id]?.count ?? 0)
     }
 
-    /// Foto già in coda verso il server (scattate col passo segnato, anche offline).
-    private func queuedPhotos(of step: AriaProcedureStep) -> [(localId: String, jpeg: Data)] {
-        // Letto qui perché la coda non è osservabile: quando cambia, cambia il conteggio.
-        _ = store.pendingCount
-        return store.pendingPhotos(step: step.id, of: order.id)
+    /// Foto già in coda verso il server (scattate col passo segnato, anche offline). Gli id vengono dalla mappa in
+    /// memoria dello store (osservabile: quando la coda cambia la vista si aggiorna), non dal database.
+    private func queuedPhotoIds(of step: AriaProcedureStep) -> [String] {
+        store.queuedPhotoIds(step: step.id, of: order.id)
     }
 
     // MARK: Corpo
@@ -443,7 +442,7 @@ struct AriaStepRunnerView: View {
     @ViewBuilder
     private func photoStrip(_ step: AriaProcedureStep) -> some View {
         let uploaded = step.report?.photos ?? []
-        let queued = queuedPhotos(of: step)
+        let queued = queuedPhotoIds(of: step)
         let drafts = draftPhotos[step.id] ?? []
         if !uploaded.isEmpty || !queued.isEmpty || !drafts.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
@@ -466,13 +465,16 @@ struct AriaStepRunnerView: View {
                             Task { await removeUploaded(photo, from: step) }
                         }
                     }
-                    ForEach(queued, id: \.localId) { photo in
+                    ForEach(queued, id: \.self) { localId in
                         thumbnail {
-                            if let image = UIImage(data: photo.jpeg) { Image(uiImage: image).resizable().scaledToFill() }
+                            AriaQueuedPhotoImage(store: store, orderId: order.id, localId: localId)
                         } open: {
-                            previewPhoto = .local(id: photo.localId, jpeg: photo.jpeg)
+                            // Il file si legge al tocco, non a ogni disegno della vista.
+                            if let jpeg = store.pendingPhotoData(localId, of: order.id) {
+                                previewPhoto = .local(id: localId, jpeg: jpeg)
+                            }
                         } remove: {
-                            Task { await removeQueued(photo.localId, from: step) }
+                            Task { await removeQueued(localId, from: step) }
                         }
                         .overlay(alignment: .bottom) { uploadBadge }
                     }
@@ -815,6 +817,25 @@ struct AriaStepRunnerView: View {
         isBusy = true
         defer { isBusy = false }
         _ = apply(await store.removePhoto(photo.id, step: step.id, of: order.id))
+    }
+}
+
+/// La miniatura di una foto ancora sul telefono: il file si legge e si decodifica una volta (e quando cambia la foto),
+/// non a ogni disegno della scheda.
+private struct AriaQueuedPhotoImage: View {
+    let store: AriaWorkOrderStore
+    let orderId: String
+    let localId: String
+
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            if let image { Image(uiImage: image).resizable().scaledToFill() }
+        }
+        .task(id: localId) {
+            image = store.pendingPhotoData(localId, of: orderId).flatMap { UIImage(data: $0) }
+        }
     }
 }
 

@@ -18,23 +18,34 @@ final class AdminWorkOrderDirectory {
     private let backend: AriaBackend
 
     private(set) var users: [AdminWorkOrderUser] = [] {
-        didSet { usersById = Dictionary(users.map { ($0.id, $0) }) { first, _ in first } }
+        didSet {
+            usersById = Dictionary(users.map { ($0.id, $0) }) { first, _ in first }
+            revision += 1
+        }
     }
     private(set) var teams: [AdminWorkOrderTeam] = [] {
-        didSet { teamsById = Dictionary(teams.map { ($0.id, $0) }) { first, _ in first } }
+        didSet {
+            teamsById = Dictionary(teams.map { ($0.id, $0) }) { first, _ in first }
+            revision += 1
+        }
     }
     private(set) var assets: [AdminWorkOrderAsset] = [] {
         didSet { assetsByTag = Dictionary(assets.map { ($0.tag, $0) }) { first, _ in first } }
     }
     /// Gli operatori dell'app (GET /v1/mobile-operators), con disponibilità e carico: si assegnano come le persone.
     private(set) var operators: [AdminWorkOrderFormOperator] = [] {
-        didSet { operatorsById = Dictionary(operators.map { ($0.id, $0) }) { first, _ in first } }
+        didSet {
+            operatorsById = Dictionary(operators.map { ($0.id, $0) }) { first, _ in first }
+            revision += 1
+        }
     }
     /// Per dare un nome agli id di ogni riga della lista senza scorrere gli elenchi.
     private var usersById: [String: AdminWorkOrderUser] = [:]
     private var teamsById: [String: AdminWorkOrderTeam] = [:]
     private var assetsByTag: [String: AdminWorkOrderAsset] = [:]
     private var operatorsById: [String: AdminWorkOrderFormOperator] = [:]
+    /// Sale a ogni cambio di persone, squadre o operatori: le liste che tengono i nomi in cache sanno di rifarli.
+    private(set) var revision = 0
     private(set) var isLoading = false
     private(set) var hasLoaded = false
     /// Elenchi che il ruolo non può leggere: il form lo dice invece di mostrare una scelta vuota.

@@ -128,19 +128,28 @@ nonisolated struct AriaTrialOffer: Sendable, Equatable {
 
     // MARK: Formati
 
+    /// Un formattatore per lingua e stile, creato una volta sola.
+    private static let formatters = AriaLocaleFormatterCache<NumberFormatter>()
+
     static func number(_ value: Int, locale: Locale) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = locale
-        formatter.numberStyle = .decimal
+        let formatter = formatters.formatter(variant: "decimal", locale: locale) {
+            let formatter = NumberFormatter()
+            formatter.locale = locale
+            formatter.numberStyle = .decimal
+            return formatter
+        }
         return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     /// Giga con al più un decimale, come lo scrive la lingua.
     static func gigabytes(_ value: Double, locale: Locale) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = locale
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 1
+        let formatter = formatters.formatter(variant: "gigabytes", locale: locale) {
+            let formatter = NumberFormatter()
+            formatter.locale = locale
+            formatter.numberStyle = .decimal
+            formatter.maximumFractionDigits = 1
+            return formatter
+        }
         return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
@@ -148,12 +157,15 @@ nonisolated struct AriaTrialOffer: Sendable, Equatable {
     static func money(_ value: Decimal, currency: String, locale: Locale) -> String {
         let number = NSDecimalNumber(decimal: value)
         let whole = Decimal(number.intValue) == value
-        let formatter = NumberFormatter()
-        formatter.locale = locale
-        formatter.numberStyle = .currency
-        formatter.currencyCode = currency
-        formatter.minimumFractionDigits = whole ? 0 : 2
-        formatter.maximumFractionDigits = whole ? 0 : 4
+        let formatter = formatters.formatter(variant: "money|\(currency)|\(whole)", locale: locale) {
+            let formatter = NumberFormatter()
+            formatter.locale = locale
+            formatter.numberStyle = .currency
+            formatter.currencyCode = currency
+            formatter.minimumFractionDigits = whole ? 0 : 2
+            formatter.maximumFractionDigits = whole ? 0 : 4
+            return formatter
+        }
         return formatter.string(from: number) ?? "\(value)"
     }
 }

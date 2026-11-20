@@ -45,7 +45,7 @@ final class AriaChatOptionsViewModel {
     var canPrepareReport: Bool { !preparingReport && !chat.isStreaming }
 
     var canCloseOut: Bool { offersCloseOut && chat.canCloseOut }
-    var isCloseOutEnabled: Bool { !chat.messages.isEmpty && !chat.isStreaming }
+    var isCloseOutEnabled: Bool { chat.hasMessages && !chat.isStreaming }
 
     var canEndProcedure: Bool { !steps.isEmpty }
     var isEndProcedureEnabled: Bool { !chat.isStreaming && chat.pendingInterrupt == nil }

@@ -15,7 +15,7 @@ extension AdminUsersViewModel {
 
     var items: [AdminUserListItem] {
         let viewer = viewer
-        return visibleRows.map { AdminUserListItem($0, viewer: viewer, now: now) }
+        return visibleRows.map { AdminUserListItem($0, viewer: viewer) }
     }
 
     // MARK: - In alto (§3.4, §6.4)

@@ -217,11 +217,15 @@ final class AdminMaintenanceFilesViewModel {
     // MARK: Utilità
 
     /// "photo-20261022-103015.jpg": la libreria non dà il nome del file.
-    private static func photoName(_ suffix: String) -> String {
+    private static let photoStampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyyMMdd-HHmmss"
-        return "photo-\(formatter.string(from: Date()))\(suffix).jpg"
+        return formatter
+    }()
+
+    private static func photoName(_ suffix: String) -> String {
+        "photo-\(photoStampFormatter.string(from: Date()))\(suffix).jpg"
     }
 
     @concurrent

@@ -15,7 +15,8 @@ struct AriaThinkingText: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(paused: reduceMotion)) { context in
+        // 30 Hz bastano per una luce che scorre su un testo; senza intervallo girerebbe fino a 120 Hz.
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { context in
             let period = 1.8
             let phase = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: period) / period
             // La luce entra da sinistra ed esce a destra (oltre i bordi del testo).

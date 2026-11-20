@@ -13,17 +13,6 @@
 import Foundation
 import Observation
 
-/// Esito dell'invio dei link di accesso: almeno uno è partito.
-nonisolated struct AriaLinkDelivery: Sendable, Equatable {
-    /// Link dell'operatore accettato (202 anche per un indirizzo che non è di un operatore).
-    let mobileSent: Bool
-    /// Magic link della web accettato.
-    let webSent: Bool
-    /// L'altro link non è partito per un motivo che l'utente può risolvere (captcha non pronto, troppi
-    /// tentativi): una nota sotto "controlla l'email", non un errore.
-    let note: String?
-}
-
 /// Il link di accesso non corrisponde alla richiesta fatta da questo dispositivo.
 nonisolated enum AriaSignInError: LocalizedError, Sendable {
     /// Nessun link chiesto da qui (negli ultimi 15'): un link altrui aprirebbe l'account di chi lo manda.
@@ -103,6 +92,10 @@ final class AriaBackend {
         if let sentAt = UserDefaults.standard.object(forKey: Self.linkSentAtKey) as? Date,
            sentAt.timeIntervalSinceNow > -Self.linkLifetime {
             pendingLinkEmail = UserDefaults.standard.string(forKey: Self.linkEmailKey)
+        } else {
+            // Richiesta scaduta o mai conclusa: l'email non resta salvata.
+            UserDefaults.standard.removeObject(forKey: Self.linkEmailKey)
+            UserDefaults.standard.removeObject(forKey: Self.linkSentAtKey)
         }
         isSigningUp = isSignedIn && UserDefaults.standard.bool(forKey: Self.signingUpKey)
         listenForAccessChanges()
@@ -186,46 +179,24 @@ final class AriaBackend {
         }
     }
 
-    /// Passo 1: manda insieme il link dell'operatore e, con un captcha Turnstile, il magic link della web.
-    /// Solo quello del tipo di account giusto spedisce un'email (request-link risponde 202 a ogni indirizzo).
-    /// Basta che uno parta; se non parte nessuno vale l'errore dell'operatore (i suoi messaggi su rete
-    /// e 429 sono i più chiari). Senza `captcha` parte solo il link dell'operatore.
-    @discardableResult
-    func sendSignInLink(email: String, captcha: String? = nil) async throws -> AriaLinkDelivery {
+    /// Passo 1 dalla schermata di login: un solo link, il magic link della web (l'email "Sign in" di sempre),
+    /// dietro il captcha Turnstile come sul form del sito. Apre la sessione dell'account, operatore o account
+    /// della piattaforma. Il link dell'operatore non parte insieme: a chi ha i due accessi arrivavano due email
+    /// per la stessa sessione.
+    func sendSignInLink(email: String, captcha: String) async throws {
         let email = Self.normalized(email)
-        let auth = api.auth
-        async let mobileFailure = Self.failure { try await auth.requestLink(email: email) }
-        async let webFailure = Self.failure {
-            guard let captcha else { throw AriaError.captchaRejected }
-            try await auth.requestWebLink(email: email, captcha: captcha)
-        }
-        let (mobile, web) = await (mobileFailure, webFailure)
-        if let mobile, web != nil { throw mobile }
-
+        try await api.auth.requestWebLink(email: email, captcha: captcha)
         setPendingLink(email)
-        let delivery = AriaLinkDelivery(mobileSent: mobile == nil, webSent: web == nil,
-                                        note: mobile.map(\.localizedDescription) ?? web.flatMap(Self.webNote))
-        AriaAuthTrace.step("link.sent", "operatore=\(delivery.mobileSent) web=\(delivery.webSent)")
-        return delivery
+        AriaAuthTrace.step("link.sent", "web")
     }
 
-    /// L'errore di un invio, o `nil` se è andato.
-    private nonisolated static func failure(_ send: @Sendable () async throws -> Void) async -> (any Error)? {
-        do {
-            try await send()
-            return nil
-        } catch {
-            return error
-        }
-    }
-
-    /// Il magic link della web non è partito: lo si dice solo se l'utente può farci qualcosa.
-    /// Altri rifiuti (es. un indirizzo senza account della web) non dicono nulla a un operatore.
-    private static func webNote(_ error: any Error) -> String? {
-        switch error as? AriaError {
-        case .captchaRejected?, .tooManyAttempts?: error.localizedDescription
-        default: nil
-        }
+    /// Il link dell'operatore (POST /api/auth/mobile/request-link), senza captcha: per il modulo di collegamento
+    /// delle impostazioni. Risponde 202 a ogni indirizzo, quindi un esito positivo non dice niente sull'account.
+    func sendOperatorLink(email: String) async throws {
+        let email = Self.normalized(email)
+        try await api.auth.requestLink(email: email)
+        setPendingLink(email)
+        AriaAuthTrace.step("link.sent", "operatore")
     }
 
     /// Iscrizione: il link dell'app all'email scritta qui, dietro il captcha (POST /api/auth/mobile/sign-up-link).
@@ -347,10 +318,9 @@ final class AriaBackend {
     }
     #endif
 
+    /// Prima si dimentica tutto qui (il profilo subito, senza attese), per ultima la chiamata al server: se
+    /// l'app si chiude o la rete non risponde, sul telefono non resta l'accesso di chi è uscito.
     func signOut() async {
-        await api.auth.signOut()
-        await api.context.setCompany(nil)
-        await api.context.setPlant(nil)
         isSignedIn = false
         didBootstrap = false
         setMobileAccount(nil)
@@ -358,7 +328,6 @@ final class AriaBackend {
         membership = nil
         access = nil
         lastMembershipRead = nil
-        await api.context.setAccess(version: nil, followsRole: false)
         companies = []
         plants = []
         activeCompanyId = nil
@@ -367,6 +336,10 @@ final class AriaBackend {
         unavailableFeatures = []
         usage.resetAvailability()
         dictationSupport = nil
+        await api.context.setCompany(nil)
+        await api.context.setPlant(nil)
+        await api.context.setAccess(version: nil, followsRole: false)
+        await api.auth.signOut()
     }
 
     // MARK: Funzioni che il server può non avere ancora
@@ -427,8 +400,8 @@ final class AriaBackend {
             let pick = companies.first { $0.id == activeCompanyId }
                 ?? companies.first { $0.myRole == "owner" }
                 ?? companies.first
-            try await loadPlants(for: pick?.id)
-            await refreshMembership()
+            // Stabilimenti e diritti dell'azienda scelta non dipendono l'uno dall'altro: partono insieme.
+            try await loadCompanyData(for: pick?.id)
             didBootstrap = true
             lastError = nil
             AriaAuthTrace.step("bootstrap.ok", "aziende=\(companies.count) stabilimenti=\(plants.count)")
@@ -476,8 +449,13 @@ final class AriaBackend {
     }
 
     func selectCompany(_ id: String?) async {
-        do { try await loadPlants(for: id) } catch { handle(error) }
-        await refreshMembership()
+        do {
+            try await loadCompanyData(for: id)
+        } catch {
+            handle(error)
+            // Gli stabilimenti non sono arrivati, i diritti dell'azienda nuova servono lo stesso.
+            await refreshMembership()
+        }
     }
 
     /// 403 `session_ended`: un titolare ha chiuso questa sessione per l'azienda attiva (le altre funzionano ancora).
@@ -504,13 +482,31 @@ final class AriaBackend {
     /// l'accesso. Senza rete restano gli ultimi letti; un rifiuto li toglie.
     func refreshMembership() async {
         guard isSignedIn, let companyId = activeCompanyId else {
-            membership = nil
-            access = nil
-            await api.context.setAccess(version: nil, followsRole: false)
+            await clearMembership()
             return
         }
+        await applyMembership(await readMe(), for: companyId)
+    }
+
+    /// GET /v1/me per l'azienda attiva, senza toccare lo stato: l'esito si applica con `applyMembership`.
+    private func readMe() async -> Result<AriaMe, any Error> {
         do {
-            let me: AriaMe = try await api.get("v1/me")
+            return .success(try await api.get("v1/me"))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    private func clearMembership() async {
+        membership = nil
+        access = nil
+        await api.context.setAccess(version: nil, followsRole: false)
+    }
+
+    /// L'esito di una lettura di GET /v1/me fatta per `companyId`: se nel frattempo l'azienda è cambiata non vale.
+    private func applyMembership(_ result: Result<AriaMe, any Error>, for companyId: String) async {
+        switch result {
+        case .success(let me):
             guard companyId == activeCompanyId else { return }
             let followed = rights.followsRole
             // Operatore o no lo dice GET /v1/me, non il link usato: chi entra col link dell'app (un owner, o chi si è
@@ -537,7 +533,7 @@ final class AriaBackend {
                 usage.resetAvailability()
             }
             await api.context.setAccess(version: me.access?.version, followsRole: rights.followsRole)
-        } catch {
+        case .failure(let error):
             guard companyId == activeCompanyId, !(error is CancellationError), !AriaHTTP.isOffline(error) else { return }
             AriaAuthTrace.failure("me.membership.failed", error)
             if membership != nil { membership = nil }
@@ -594,6 +590,32 @@ final class AriaBackend {
     }
 
     private func loadPlants(for companyId: String?) async throws {
+        await prepareCompany(companyId)
+        try await fetchPlants()
+    }
+
+    /// Azienda scelta: stabilimenti (GET /v1/plants) e diritti (GET /v1/me) si leggono insieme, dopo che l'azienda è
+    /// attiva nel contesto. Lo stato finale è quello di prima: gli stabilimenti si applicano per primi e, se la loro
+    /// lettura fallisce, l'errore esce senza toccare i diritti.
+    private func loadCompanyData(for companyId: String?) async throws {
+        await prepareCompany(companyId)
+        guard isSignedIn, let readFor = activeCompanyId else {
+            try await fetchPlants()
+            await refreshMembership()
+            return
+        }
+        async let me = readMe()
+        do {
+            try await fetchPlants()
+        } catch {
+            _ = await me
+            throw error
+        }
+        await applyMembership(await me, for: readFor)
+    }
+
+    /// La parte che va prima di ogni lettura dell'azienda: contesto, diritti e vocabolario dell'altra azienda spariscono.
+    private func prepareCompany(_ companyId: String?) async {
         // Il vocabolario della dettatura è dell'azienda: con un'altra si richiede.
         if companyId != activeCompanyId {
             dictationSupport = nil
@@ -606,7 +628,10 @@ final class AriaBackend {
         activeCompanyId = companyId
         // Un'altra azienda (o il primo avvio dopo l'accesso): i crediti dell'altra non valgono, si rileggono (contratto 3.6).
         if companyChanged || !didBootstrap { usage.companyChanged() }
-        if companyId == nil {
+    }
+
+    private func fetchPlants() async throws {
+        if activeCompanyId == nil {
             plants = []
         } else {
             do {

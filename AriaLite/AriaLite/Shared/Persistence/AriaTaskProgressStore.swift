@@ -70,20 +70,22 @@ final class AriaTaskProgressStore {
 
     static let shared = AriaTaskProgressStore()
 
-    private let container: ModelContainer
+    private let inMemory: Bool
+    /// Il contenitore si apre alla prima lettura o scrittura, non quando nasce lo store: l'app non paga l'apertura
+    /// del file SwiftData finché nessuna conversazione ha spunte o checklist da leggere o salvare.
+    private lazy var container: ModelContainer = {
+        let schema = Schema([AriaTaskProgress.self, AriaSavedTaskList.self])
+        let disk = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
+        if let container = try? ModelContainer(for: schema, configurations: disk) { return container }
+        // Archivio illeggibile: le spunte valgono finché l'app resta aperta, ma l'app non si ferma.
+        let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        return try! ModelContainer(for: schema, configurations: memory)
+    }()
     private var context: ModelContext { container.mainContext }
 
     /// `inMemory`: niente file su disco (test e anteprime).
     init(inMemory: Bool = false) {
-        let schema = Schema([AriaTaskProgress.self, AriaSavedTaskList.self])
-        let disk = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
-        if let container = try? ModelContainer(for: schema, configurations: disk) {
-            self.container = container
-        } else {
-            // Archivio illeggibile: le spunte valgono finché l'app resta aperta, ma l'app non si ferma.
-            let memory = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-            self.container = try! ModelContainer(for: schema, configurations: memory)
-        }
+        self.inMemory = inMemory
     }
 
     /// Lo stato salvato di una conversazione, se ce n'è uno.
