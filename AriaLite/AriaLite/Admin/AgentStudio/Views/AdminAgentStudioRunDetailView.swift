@@ -17,6 +17,7 @@ struct AdminAgentStudioRunDetailView: View {
     @State private var expandedSteps: Set<String> = []
     /// La persona ha toccato lo scorrimento: la cronologia non si porta più da sola al passo in corso.
     @State private var userScrolled = false
+    @Environment(\.scenePhase) private var scenePhase
 
     init(viewModel: AdminAgentStudioRunViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -40,11 +41,11 @@ struct AdminAgentStudioRunDetailView: View {
                         AdminAgentStudioApprovalWaitCard(approval: approval)
                     }
                     if viewModel.showsTimeline { timeline }
-                    if let narrative = viewModel.narrativeText { summary(narrative) }
+                    if viewModel.hasNarrative { AdminAgentStudioRunNarrativeCard(viewModel: viewModel) }
                     if !viewModel.artifacts.isEmpty { artifacts }
                     AdminAgentStudioRunDetailsCard(fields: viewModel.fields, counters: viewModel.counters,
                                                    isActive: viewModel.isActive)
-                    AdminAgentStudioRunLogCard(events: viewModel.logEvents)
+                    AdminAgentStudioRunLogCard(viewModel: viewModel)
                 }
                 .padding(20)
                 .ariaReadableWidth()
@@ -69,6 +70,10 @@ struct AdminAgentStudioRunDetailView: View {
             }
         }
         .task { await viewModel.run() }
+        // In background il record non si rilegge (lo stream e gli eventi seguono il task della schermata).
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            viewModel.isInForeground = phase != .background
+        }
         .alert("Cancel this run?", isPresented: $viewModel.showsCancelConfirmation) {
             Button("Cancel run", role: .destructive) { Task { await viewModel.cancel() } }
             Button("Keep running", role: .cancel) {}
@@ -120,15 +125,6 @@ struct AdminAgentStudioRunDetailView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func summary(_ narrative: String) -> some View {
-        AdminCard(title: "Summary", systemImage: "text.alignleft") {
-            Text(narrative)
-                .font(.subheadline)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
