@@ -17,14 +17,16 @@ nonisolated enum AriaHTTP {
 
     /// Sessione senza cookie: i cookie non si salvano né si mandano mai (solo l'header Authorization).
     /// Niente cache su disco (le risposte sono dati dell'azienda) e redirect filtrati da `AriaRedirectGuard`.
-    static func cookielessSession(_ configuration: URLSessionConfiguration = .ephemeral) -> URLSession {
+    /// `redirects`: `.storage` solo per i caricamenti verso un URL firmato (vedi `AriaRedirectGuard`).
+    static func cookielessSession(_ configuration: URLSessionConfiguration = .ephemeral,
+                                  redirects: AriaRedirectGuard = .shared) -> URLSession {
         configuration.protocolClasses = extraProtocolClasses + (configuration.protocolClasses ?? [])
         configuration.httpShouldSetCookies = false
         configuration.httpCookieAcceptPolicy = .never
         configuration.httpCookieStorage = nil
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration, delegate: AriaRedirectGuard.shared, delegateQueue: nil)
+        return URLSession(configuration: configuration, delegate: redirects, delegateQueue: nil)
     }
 
     /// Una risposta fuori da 2xx diventa l'AriaError del suo codice. L'ordine dei controlli conta: il firewall
@@ -133,27 +135,49 @@ nonisolated enum AriaHTTP {
     }
 }
 
-/// Redirect delle sessioni dell'app: mai verso http, e verso un altro host senza le credenziali
-/// (URLSession copierebbe Authorization, Company-Id e Cookie sulla richiesta nuova).
+/// Redirect delle sessioni dell'app: mai verso http, e verso un altro host (o un'altra porta) senza le
+/// credenziali (URLSession le copierebbe sulla richiesta nuova) e solo per una lettura: un 307/308 rimanderebbe
+/// lì anche il corpo, che può essere il segreto (il token del link di accesso, un file dell'azienda).
 /// Un delegate del singolo task (es. `NoRedirect` di AriaAuth) ha la precedenza.
 nonisolated final class AriaRedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
     static let shared = AriaRedirectGuard()
+    /// Per i caricamenti verso un URL firmato dello storage (S3): l'URL non porta credenziali nostre, e lo
+    /// storage può rimandare il POST all'host della sua regione.
+    static let storage = AriaRedirectGuard(followsUploadsAcrossHosts: true)
 
-    static let credentialHeaders = ["Authorization", "Company-Id", "Cookie"]
+    /// Header che non lasciano mai il nostro host: la sessione, l'azienda, la chiave dell'engine, il captcha.
+    static let credentialHeaders = ["Authorization", "Company-Id", "Cookie", "x-aria-password", "x-captcha-response"]
+
+    private let followsUploadsAcrossHosts: Bool
+
+    init(followsUploadsAcrossHosts: Bool = false) {
+        self.followsUploadsAcrossHosts = followsUploadsAcrossHosts
+    }
 
     func urlSession(_ session: URLSession, task: URLSessionTask,
                     willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest,
                     completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
-        completionHandler(Self.redirect(request, from: task.originalRequest))
+        completionHandler(Self.redirect(request, from: task.originalRequest,
+                                        followsUploadsAcrossHosts: followsUploadsAcrossHosts))
     }
 
     /// La richiesta da seguire, o `nil` per fermarsi sulla risposta 3xx.
-    static func redirect(_ new: URLRequest, from original: URLRequest?) -> URLRequest? {
+    static func redirect(_ new: URLRequest, from original: URLRequest?,
+                         followsUploadsAcrossHosts: Bool = false) -> URLRequest? {
         guard let url = new.url, url.scheme?.lowercased() == "https" else { return nil }
-        if let host = original?.url?.host()?.lowercased(), url.host()?.lowercased() == host { return new }
+        if let from = original?.url, sameOrigin(from, url) { return new }
+        // Conta il metodo, non il corpo: un caricamento lo manda da un file o da uno stream, non in `httpBody`.
+        let isRead = ["GET", "HEAD"].contains((new.httpMethod ?? "GET").uppercased())
+        guard isRead || followsUploadsAcrossHosts else { return nil }
         var stripped = new
         for header in credentialHeaders { stripped.setValue(nil, forHTTPHeaderField: header) }
         return stripped
+    }
+
+    /// Stesso host e stessa porta (lo schema è già https): un'altra porta è un altro servizio.
+    private static func sameOrigin(_ a: URL, _ b: URL) -> Bool {
+        guard let hostA = a.host()?.lowercased(), let hostB = b.host()?.lowercased(), hostA == hostB else { return false }
+        return (a.port ?? 443) == (b.port ?? 443)
     }
 }
