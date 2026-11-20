@@ -53,11 +53,11 @@ extension AriaChatComposerViewModel {
 
     // MARK: - Riga sotto il campo
 
-    /// La riga compare con la tastiera, se c'è qualcosa da mostrare (e la barra non è bloccata da una pausa).
-    /// I connettori ci sono se la shell offre il Marketplace (lo sa la vista, dall'environment).
-    /// Con la riga in vista anche il "+" scende lì, accanto agli altri pulsanti.
-    func showsUsageRow(offersConnectors: Bool) -> Bool {
-        (isInputFocused || showConnectors) && !isLocked && (effortEntry != .hidden || offersConnectors)
+    /// La riga compare con la tastiera, se l'effort c'è (e la barra non è bloccata da una pausa).
+    /// Con la riga in vista anche il "+" scende lì, accanto agli altri pulsanti. Col popover dei connettori aperto
+    /// (si apre dal "+") la riga resta: se il "+" cambiasse posto il popover perderebbe l'ancora.
+    var showsUsageRow: Bool {
+        (isInputFocused || showConnectors) && !isLocked && effortEntry != .hidden
     }
 
     /// Con la tastiera chiusa, sopra il campo: il livello quando non è quello di partenza (costa di più o di meno).

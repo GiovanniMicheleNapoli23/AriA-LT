@@ -5,12 +5,12 @@
 //  Created by Giovanni Michele on 26/09/26.
 //
 //  Dove si scrive ad Aria, in stile ChatGPT: una sola barra con "+" a sinistra (foto,
-//  galleria, file, stile di risposta, ricerca web), il campo al centro, il microfono
+//  galleria, file, connettori, stile di risposta, ricerca web), il campo al centro, il microfono
 //  per dettare (tocco = detta, pressione lunga = lingua e opzioni) e un pulsante tondo
 //  che cambia ruolo (assistente dal vivo → invia → stop). Il contesto aggiunto e gli
 //  strumenti attivi stanno sopra il campo, dentro la barra; con la tastiera aperta, sotto
-//  il campo, i pulsanti scendono in una riga: "+", connettori ed effort, microfono e invio (in
-//  orizzontale resta tutto su una riga, lo spazio è poco).
+//  il campo, i pulsanti scendono in una riga: "+", effort, memoria, microfono e invio
+//  (in orizzontale resta tutto su una riga, lo spazio è poco).
 //  La logica sta in AriaChatComposerViewModel.
 //
 
@@ -90,40 +90,36 @@ struct AriaChatComposer: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .bottom, spacing: 2) {
                     if !isExpanded {
-                        AriaComposerPlusMenu(model: model)
+                        plusMenu
                     }
                     field
                         .padding(.leading, isExpanded ? 8 : 0)
                     if !isExpanded, showsUsageRow {
-                        // In orizzontale con la tastiera restano ~150 pt: niente riga in più, connettori ed effort in linea.
-                        AriaComposerUsageRow(model: model, connectors: chatConnectors, onManageConnectors: dismissKeyboard)
+                        // In orizzontale con la tastiera restano ~150 pt: niente riga in più, l'effort in linea.
+                        AriaComposerUsageRow(model: model)
                             .fixedSize()
                             .frame(minHeight: rowHeight)
                             .transition(.opacity)
                     }
-                    // La memoria resta accanto al campo (col testo molto grande scende anche lei).
-                    if !dynamicTypeSize.isAccessibilitySize {
-                        contextRing
-                    }
                     if !isExpanded {
+                        // Su una sola riga la memoria sta tra il campo e il microfono.
+                        contextRing
                         micAndPrimary
                     }
                 }
                 if isExpanded {
-                    // Con la tastiera aperta i pulsanti scendono sotto il campo, tutti su una riga: "+", connettori
-                    // ed effort a sinistra, microfono e invio a destra.
+                    // Con la tastiera aperta i pulsanti scendono sotto il campo, tutti su una riga: "+" ed effort a
+                    // sinistra, memoria, microfono e invio a destra. Sopra resta solo il testo.
                     HStack(alignment: .center, spacing: 2) {
-                        AriaComposerPlusMenu(model: model)
+                        plusMenu
                         if showsUsageRow {
-                            AriaComposerUsageRow(model: model, connectors: chatConnectors, onManageConnectors: dismissKeyboard)
+                            AriaComposerUsageRow(model: model)
                                 // Se la riga è stretta si accorcia l'etichetta dell'effort, non i cerchi.
                                 .layoutPriority(-1)
                                 .transition(.opacity)
                         }
                         Spacer(minLength: 0)
-                        if dynamicTypeSize.isAccessibilitySize {
-                            contextRing
-                        }
+                        contextRing
                         micAndPrimary
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -140,11 +136,15 @@ struct AriaChatComposer: View {
         .ariaGlass(in: RoundedRectangle(cornerRadius: 26, style: .continuous), interactive: true)
     }
 
-    private var showsUsageRow: Bool {
-        model.showsUsageRow(offersConnectors: chatConnectors != nil)
+    private var showsUsageRow: Bool { model.showsUsageRow }
+
+    /// Il "+" con il popover dei connettori, che si apre dalla sua voce e punta al "+".
+    private var plusMenu: some View {
+        AriaComposerPlusMenu(model: model, offersConnectors: chatConnectors != nil)
+            .ariaConnectorsPopover(model: model, access: chatConnectors, onManage: dismissKeyboard)
     }
 
-    /// Campo sopra e pulsanti sotto: con la riga di connettori ed effort (in verticale) o col testo molto grande.
+    /// Campo sopra e pulsanti sotto: con la riga dell'effort (in verticale) o col testo molto grande.
     private var isExpanded: Bool {
         dynamicTypeSize.isAccessibilitySize || (showsUsageRow && verticalSizeClass != .compact)
     }
@@ -189,9 +189,11 @@ struct AriaChatComposer: View {
     static let maxButtonTypeSize = DynamicTypeSize.accessibility1
 }
 
-/// Il "+": foto, galleria, file, stile di risposta e ricerca web. Effort e connettori hanno i loro pulsanti.
+/// Il "+": foto, galleria, file, connettori, stile di risposta e ricerca web. L'effort ha il suo menu.
 private struct AriaComposerPlusMenu: View {
     @Bindable var model: AriaChatComposerViewModel
+    /// La voce "Connectors" c'è solo se la shell offre il Marketplace.
+    let offersConnectors: Bool
 
     var body: some View {
         Menu {
@@ -200,6 +202,12 @@ private struct AriaComposerPlusMenu: View {
                     .disabled(!model.cameraAvailable)
                 Button("Photos", systemImage: "photo.on.rectangle") { model.showPhotos = true }
                 Button("Files", systemImage: "paperclip") { model.showFiles = true }
+            }
+            if offersConnectors {
+                Section {
+                    Button("Connectors", systemImage: "powerplug") { model.showConnectors = true }
+                        .accessibilityIdentifier("chat.connectors")
+                }
             }
             Section {
                 Picker(selection: $model.style) {

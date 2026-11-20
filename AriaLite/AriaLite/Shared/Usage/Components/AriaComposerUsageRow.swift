@@ -5,28 +5,18 @@
 //  Created by Giovanni Michele on 18/11/26.
 //
 //  Nella riga in basso della barra della chat, quando la tastiera è aperta: il menu dei livelli di effort
-//  ("Effort 1×"; si sceglie senza chiudere la tastiera, in fondo "Effort details" apre il foglio con i costi) e
-//  alla sua destra il pulsante dei connettori (una spina; popover con i collegati e "Manage connectors"). La logica sta in
-//  AriaChatComposerViewModel+Effort e AriaComposerConnectorsViewModel.
+//  ("Effort 1×"; si sceglie senza chiudere la tastiera, in fondo "Effort details" apre il foglio con i costi).
+//  I connettori stanno nel "+". La logica sta in AriaChatComposerViewModel+Effort.
 //
 
 import SwiftUI
 
 struct AriaComposerUsageRow: View {
     @Bindable var model: AriaChatComposerViewModel
-    /// `nil` se la shell non offre il Marketplace: il pulsante dei connettori non c'è.
-    var connectors: AriaChatConnectorsAccess?
-    /// Prima di passare al Marketplace la tastiera si chiude.
-    var onManageConnectors: () -> Void = {}
 
     var body: some View {
-        HStack(spacing: 6) {
-            AriaComposerEffortControl(model: model)
-                .padding(.leading, 4)
-            if let connectors {
-                AriaComposerConnectorsButton(model: model, access: connectors, onManage: onManageConnectors)
-            }
-        }
+        AriaComposerEffortControl(model: model)
+            .padding(.leading, 4)
     }
 }
 
