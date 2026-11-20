@@ -28,17 +28,7 @@ struct AdminUserHeaderSection: View {
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
-                        if let online = viewModel.onlineLine {
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(online.isOnline ? Color.green : Color.secondary.opacity(0.4))
-                                    .frame(width: dot, height: dot)
-                                    .accessibilityHidden(true)
-                                Text(verbatim: online.text)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                        if viewModel.showsOnlineLine { onlineLine }
                         if let workload = viewModel.workloadText {
                             Text(verbatim: workload)
                                 .font(.footnote)
@@ -50,6 +40,23 @@ struct AdminUserHeaderSection: View {
                     }
                 }
                 .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    /// Si riscrive da sola ogni 30 secondi, senza toccare lo stato del view model.
+    private var onlineLine: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            if let online = viewModel.onlineLine(at: context.date) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(online.isOnline ? Color.green : Color.secondary.opacity(0.4))
+                        .frame(width: dot, height: dot)
+                        .accessibilityHidden(true)
+                    Text(verbatim: online.text)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

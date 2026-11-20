@@ -17,15 +17,21 @@ extension AdminUserDetailViewModel {
     // MARK: - Online
 
     /// "Online now · …", "Last seen …" o "Not signed in yet": solo per un titolare (§3.2, regola 4).
-    var onlineLine: (text: String, isOnline: Bool)? {
-        guard viewer.isOwner, let row, !row.isInvitation else { return nil }
-        let line = owner.presence(of: row).line
+    var showsOnlineLine: Bool {
+        guard viewer.isOwner, let row else { return false }
+        return !row.isInvitation
+    }
+
+    /// La riga "online" all'ora `now`: la vista la ridisegna sull'orologio, senza toccare lo stato.
+    func onlineLine(at now: Date) -> (text: String, isOnline: Bool)? {
+        guard showsOnlineLine, let row else { return nil }
+        let line = AdminUserPresence(row.lastSeen, now: now).line
         let text: String
         switch line {
         case .both: text = String(localized: "Online now · web and app")
         case .web: text = String(localized: "Online now · web")
         case .app: text = String(localized: "Online now · app")
-        case .lastSeen(let date): text = String(localized: "Last seen \(Self.when(date, now: owner.now))")
+        case .lastSeen(let date): text = String(localized: "Last seen \(Self.when(date, now: now))")
         case .never: text = String(localized: "Not signed in yet")
         }
         return (text, line.isOnline)
@@ -33,13 +39,19 @@ extension AdminUserDetailViewModel {
 
     /// Un'ora come testo relativo ("2 hours ago", "yesterday"): sta dopo "Last seen", "Signed in", "Used".
     static func when(_ date: Date, now: Date) -> String {
+        // Un orologio del telefono indietro non deve dare "in 5 seconds".
+        relativeFormatter.localizedString(for: min(date, now), relativeTo: now)
+    }
+
+    /// Creato una volta sola; la lingua segue quella del telefono.
+    private static let relativeFormatter: RelativeDateTimeFormatter = {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
         formatter.dateTimeStyle = .named
         formatter.formattingContext = .middleOfSentence
-        // Un orologio del telefono indietro non deve dare "in 5 seconds".
-        return formatter.localizedString(for: min(date, now), relativeTo: now)
-    }
+        formatter.locale = .autoupdatingCurrent
+        return formatter
+    }()
 
     // MARK: - Carico
 

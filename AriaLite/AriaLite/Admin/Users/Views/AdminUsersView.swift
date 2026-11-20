@@ -6,7 +6,8 @@
 //
 //  La sezione Users (§3): il pannello del tetto per i titolari (o la riga dei posti per gli altri), le persone in una
 //  lista raggruppata con ricerca e filtri, e la scheda di una persona a tocco. "Add user" apre il foglio per aggiungere;
-//  "Revoke" sugli inviti per email chiede conferma. Si rilegge ogni 30 secondi solo con l'app in primo piano.
+//  "Revoke" sugli inviti per email chiede conferma. Si rilegge entrando e tornando in primo piano (se i dati sono
+//  vecchi) e tirando per aggiornare; mai a tempo.
 //
 
 import SwiftUI
@@ -43,8 +44,9 @@ struct AdminUsersView: View {
         }
         .adminUsersToast(viewModel)
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
-        .task(id: scenePhase == .active) {
-            if scenePhase == .active { await viewModel.watch() }
+        // Tornando in primo piano si rilegge solo se i dati sono vecchi; mai a tempo.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await viewModel.refreshIfStale() } }
         }
     }
 
