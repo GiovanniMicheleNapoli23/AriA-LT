@@ -21,20 +21,31 @@ nonisolated enum AriaKeychain {
          kSecAttrAccount as String: account]
     }
 
+    /// Com'è finito un salvataggio: chi chiede la protezione deve sapere se c'è davvero.
+    enum Stored: Sendable {
+        /// Per leggerlo serve Face ID (o il codice del telefono).
+        case protected
+        /// Salvato senza Face ID: non era chiesto, o la protezione non si è potuta creare.
+        case unprotected
+        /// Non salvato.
+        case failed
+    }
+
     /// `protected`: per leggerlo serve Face ID (o il codice del telefono). Senza codice impostato
-    /// la protezione non si può creare e il valore si salva come gli altri.
-    static func set(_ value: String, for account: String, protected: Bool = false) {
+    /// la protezione non si può creare e il valore si salva come gli altri: il risultato lo dice.
+    @discardableResult
+    static func set(_ value: String, for account: String, protected: Bool = false) -> Stored {
         SecItemDelete(baseQuery(account) as CFDictionary)
         var item = baseQuery(account)
         item[kSecValueData as String] = Data(value.utf8)
         if protected, let access = SecAccessControlCreateWithFlags(
             nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .userPresence, nil) {
             item[kSecAttrAccessControl as String] = access
-            if SecItemAdd(item as CFDictionary, nil) == errSecSuccess { return }
+            if SecItemAdd(item as CFDictionary, nil) == errSecSuccess { return .protected }
             item[kSecAttrAccessControl as String] = nil
         }
         item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(item as CFDictionary, nil)
+        return SecItemAdd(item as CFDictionary, nil) == errSecSuccess ? .unprotected : .failed
     }
 
     /// Un valore protetto si legge solo con un `context` già autenticato (AriaBiometrics.authenticate),

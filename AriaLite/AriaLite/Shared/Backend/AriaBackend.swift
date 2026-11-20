@@ -318,10 +318,9 @@ final class AriaBackend {
     }
     #endif
 
+    /// Prima si dimentica tutto qui (il profilo subito, senza attese), per ultima la chiamata al server: se
+    /// l'app si chiude o la rete non risponde, sul telefono non resta l'accesso di chi è uscito.
     func signOut() async {
-        await api.auth.signOut()
-        await api.context.setCompany(nil)
-        await api.context.setPlant(nil)
         isSignedIn = false
         didBootstrap = false
         setMobileAccount(nil)
@@ -329,7 +328,6 @@ final class AriaBackend {
         membership = nil
         access = nil
         lastMembershipRead = nil
-        await api.context.setAccess(version: nil, followsRole: false)
         companies = []
         plants = []
         activeCompanyId = nil
@@ -338,6 +336,10 @@ final class AriaBackend {
         unavailableFeatures = []
         usage.resetAvailability()
         dictationSupport = nil
+        await api.context.setCompany(nil)
+        await api.context.setPlant(nil)
+        await api.context.setAccess(version: nil, followsRole: false)
+        await api.auth.signOut()
     }
 
     // MARK: Funzioni che il server può non avere ancora

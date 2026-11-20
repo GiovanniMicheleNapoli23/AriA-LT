@@ -173,6 +173,10 @@ actor AriaAuth {
     private let config: AriaConfig
     private let session: URLSession
     private var credential: Credential?
+    /// La sessione andava protetta da Face ID ma nel Keychain non lo è (vedi `store`).
+    private var storedWithoutProtection = false
+    /// Cresce a ogni `clear`: un rinnovo partito prima non rimette la sessione che nel frattempo è stata chiusa.
+    private var clearCount = 0
     private var accessToken: String?
     private var validUntil = ContinuousClock.now
     private var refreshTask: Task<String, any Error>?
@@ -186,6 +190,10 @@ actor AriaAuth {
             Keys.legacy.forEach(AriaKeychain.delete)
             UserDefaults.standard.set(true, forKey: Self.legacyPurgedKey)
         }
+        #if !DEBUG
+        // Un token di sviluppo lasciato da una build di sviluppo (stesso bundle id) non vale qui.
+        AriaKeychain.delete(Keys.devAccess)
+        #endif
     }
 
     private nonisolated static let legacyPurgedKey = "aria.legacy_keys_purged"
@@ -197,7 +205,12 @@ actor AriaAuth {
 
     /// Come `hasStoredSession` quando `hasStoredLogin` è già stato letto: evita di rileggere il Keychain.
     nonisolated func hasStoredSession(knowingLogin hasLogin: Bool) -> Bool {
-        hasLogin || AriaKeychain.exists(Keys.devAccess)
+        #if DEBUG
+        return hasLogin || AriaKeychain.exists(Keys.devAccess)
+        #else
+        // Il token di sviluppo vale solo nelle build di sviluppo.
+        return hasLogin
+        #endif
     }
 
     /// Una sessione salvata, dell'operatore o della web (non il token di sviluppo): all'avvio va aperta con Face ID.
@@ -227,7 +240,10 @@ actor AriaAuth {
     /// `false`: non c'è più nessuna sessione salvata. Annullare lancia un LAError.
     func unlock(reason: String) async throws -> Bool {
         let context = try await AriaBiometrics.authenticate(reason: reason)
-        if credential != nil {
+        if let credential {
+            // Rimasta senza Face ID (un rinnovo a telefono bloccato, o salvata prima del codice): ora l'app è
+            // in primo piano e il telefono aperto, la protezione si può rimettere.
+            if storedWithoutProtection { store(credential) }
             AriaAuthTrace.step("unlock.ok", "sessione già in memoria")
             return true
         }
@@ -436,8 +452,12 @@ actor AriaAuth {
 
     /// Chiude la sessione di questo dispositivo (gli altri restano collegati).
     /// Con la sessione ancora chiusa da Face ID la si dimentica solo qui: sul server scade da sola.
+    /// Prima si dimentica qui, poi si avvisa il server: un'app chiusa (o senza rete) durante la chiamata
+    /// non lascia la sessione nel Keychain per chi apre l'app dopo.
     func signOut() async {
-        switch loadCredential(context: nil) {
+        let open = loadCredential(context: nil)
+        clear()
+        switch open {
         case .mobile(let token)?:
             let req = request("api/auth/sign-out", method: "POST", bearer: token)
             _ = try? await session.data(for: req)
@@ -449,7 +469,6 @@ actor AriaAuth {
         case nil:
             break
         }
-        clear()
     }
 
     // MARK: Onboarding
@@ -560,6 +579,7 @@ actor AriaAuth {
 
     func validAccessToken() async throws -> String {
         if let token = accessToken, ContinuousClock.now < validUntil { return token }
+        #if DEBUG
         if let dev = AriaKeychain.get(Keys.devAccess) {
             guard let exp = Self.expiry(ofJWT: dev), exp.timeIntervalSinceNow > 0 else {
                 clear()
@@ -568,13 +588,16 @@ actor AriaAuth {
             useAccessToken(dev, validFor: .seconds(exp.timeIntervalSinceNow))
             return dev
         }
+        #endif
         return try await refresh()
     }
 
     /// Chiamato dopo un 401 dell'API: il prossimo validAccessToken() conia un JWT nuovo.
     func invalidate() {
+        #if DEBUG
         // Un token incollato non si può rinnovare: dopo un 401 è finito.
         if AriaKeychain.get(Keys.devAccess) != nil { clear() }
+        #endif
         resetAccessToken()
     }
 
@@ -582,7 +605,8 @@ actor AriaAuth {
         if let running = refreshTask { return try await running.value }
         let task = Task(name: "aria.auth.refresh") { try await self.performRefresh() }
         refreshTask = task
-        defer { refreshTask = nil }
+        // Solo se è ancora il suo: `clear` lo stacca, e un accesso nuovo può averne già avviato un altro.
+        defer { if refreshTask == task { refreshTask = nil } }
         return try await task.value
     }
 
@@ -602,7 +626,14 @@ actor AriaAuth {
         case .webCookie(let cookie): webRequest("api/aria/token", method: "GET", cookie: cookie)
         }
         AriaAuthTrace.step("token.request", "\(req.url?.absoluteString ?? "-") sessione=\(credential.label)")
+        let startedAt = clearCount
         let (data, response) = try await send(req, response: "token.response", network: "token.network")
+        // Sessione chiusa mentre il server rispondeva (uscita): la risposta non rimette niente, né la sessione
+        // prorogata nel Keychain né il JWT in memoria.
+        guard clearCount == startedAt else {
+            AriaAuthTrace.step("token.discarded", "sessione chiusa durante il rinnovo")
+            throw AriaError.signedOut
+        }
         // Host giù: la sessione è ancora buona, non si slogga.
         if let offline = AriaHTTP.hostDownError(response) {
             AriaAuthTrace.step("token.hostOffline", "")
@@ -652,19 +683,30 @@ actor AriaAuth {
         if let credential { return credential }
         credential = AriaKeychain.get(Keys.session, context: context).map(Credential.mobile)
             ?? AriaKeychain.get(Keys.webSession, context: context).map(Credential.webCookie)
+        // Letta senza Face ID su un telefono con il codice: era salvata senza protezione.
+        if credential != nil, context == nil, AriaBiometrics.isAvailable { storedWithoutProtection = true }
         return credential
     }
 
     /// Salva la sessione (protetta da Face ID se il telefono ha un codice) al posto di ogni altra.
+    /// Se la protezione non riesce (o non si salva affatto) la sessione resta in memoria e si riprova
+    /// al prossimo sblocco (`unlock`).
     private func store(_ new: Credential) {
         for key in Keys.sessions + [Keys.devAccess] where key != new.key { AriaKeychain.delete(key) }
-        AriaKeychain.set(new.value, for: new.key, protected: AriaBiometrics.isAvailable)
+        let wantsProtection = AriaBiometrics.isAvailable
+        let stored = AriaKeychain.set(new.value, for: new.key, protected: wantsProtection)
+        storedWithoutProtection = wantsProtection && stored != .protected
+        if storedWithoutProtection { AriaAuthTrace.step("session.unprotected", new.label) }
         credential = new
     }
 
     private func clear() {
         resetAccessToken()
         credential = nil
+        storedWithoutProtection = false
+        clearCount += 1
+        // Un rinnovo in corso è della sessione appena chiusa: chi entra dopo ne avvia uno suo.
+        refreshTask = nil
         for key in Keys.sessions + [Keys.devAccess] { AriaKeychain.delete(key) }
     }
 
