@@ -5,8 +5,9 @@
 //  Created by Giovanni Michele on 22/10/26.
 //
 //  L'intestazione del dettaglio: il titolo; stato (menu con gli stati possibili), priorità e tipo come
-//  pillole della stessa misura; i fatti principali (asset, assegnatario, scadenza, passi) in una griglia
-//  a due colonne, leggibili a colpo d'occhio. L'assistente AI sta nella toolbar.
+//  pillole della stessa misura; i fatti principali (asset, assegnatario, scadenza, passi) leggibili a colpo
+//  d'occhio: in una riga sola se ci stanno (iPad), altrimenti in una griglia che si adatta alla larghezza e al
+//  testo (due colonne su iPhone, una con il testo molto grande). L'assistente AI sta nella toolbar.
 //
 
 import SwiftUI
@@ -21,7 +22,7 @@ struct AdminWorkOrderDetailHeader: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
             pills
-            if !facts.isEmpty { factsGrid }
+            if !viewModel.headerFacts.isEmpty { factsCard }
         }
     }
 
@@ -33,6 +34,11 @@ struct AdminWorkOrderDetailHeader: View {
             VStack(alignment: .leading, spacing: 8) {
                 statusButton
                 HStack(spacing: 8) { otherPills }
+            }
+            // Testo molto grande: una pillola per riga.
+            VStack(alignment: .leading, spacing: 8) {
+                statusButton
+                otherPills
             }
         }
     }
@@ -103,38 +109,20 @@ struct AdminWorkOrderDetailHeader: View {
 
     // MARK: Fatti
 
-    private struct Fact: Identifiable {
-        let id: String
-        let label: String
-        let value: String
-        let icon: String
-        var isAlert = false
-    }
+    /// Larghezza minima di una colonna della griglia: cresce con il testo, così con il testo grande le colonne
+    /// diventano una.
+    @ScaledMetric(relativeTo: .subheadline) private var factMinWidth: CGFloat = 120
 
-    private var facts: [Fact] {
-        var facts: [Fact] = []
-        if !viewModel.place.isEmpty {
-            facts.append(Fact(id: "asset", label: String(localized: "Asset"), value: viewModel.place, icon: "gearshape.2"))
-        }
-        facts.append(Fact(id: "assignee", label: String(localized: "Assignee"),
-                          value: viewModel.assigneeName ?? String(localized: "Unassigned"), icon: "person"))
-        if let due = viewModel.dueLabel {
-            facts.append(Fact(id: "due", label: String(localized: "Due"), value: due,
-                              icon: viewModel.isOverdue ? "exclamationmark.clock.fill" : "clock",
-                              isAlert: viewModel.isOverdue))
-        }
-        if let progress = viewModel.progressShort {
-            facts.append(Fact(id: "steps", label: String(localized: "Steps"), value: progress, icon: "list.bullet"))
-        }
-        return facts
-    }
-
-    private var factsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12, alignment: .topLeading),
-                            GridItem(.flexible(), spacing: 12, alignment: .topLeading)],
-                  alignment: .leading, spacing: 14) {
-            ForEach(facts) { fact in
-                AdminWorkOrderHeaderFact(label: fact.label, value: fact.value, icon: fact.icon, isAlert: fact.isAlert)
+    private var factsCard: some View {
+        let facts = viewModel.headerFacts
+        return ViewThatFits(in: .horizontal) {
+            // iPad o iPhone in orizzontale: tutti i fatti su una riga.
+            HStack(alignment: .top, spacing: 16) {
+                ForEach(facts) { AdminWorkOrderHeaderFactView(fact: $0).frame(maxWidth: .infinity, alignment: .leading) }
+            }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: factMinWidth), spacing: 12, alignment: .topLeading)],
+                      alignment: .leading, spacing: 14) {
+                ForEach(facts) { AdminWorkOrderHeaderFactView(fact: $0) }
             }
         }
         .padding(14)
@@ -163,29 +151,34 @@ private struct AdminWorkOrderHeaderPill: View {
     }
 }
 
-/// Un fatto dell'intestazione: icona in un riquadro, etichetta piccola e valore leggibile.
-private struct AdminWorkOrderHeaderFact: View {
-    let label: String
-    let value: String
-    let icon: String
-    let isAlert: Bool
+/// Un fatto dell'intestazione: icona in un riquadro, etichetta piccola e valore leggibile. Con il testo molto
+/// grande l'icona si toglie e lascia tutta la larghezza al testo.
+private struct AdminWorkOrderHeaderFactView: View {
+    let fact: AdminWorkOrderHeaderFact
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .subheadline) private var iconSide: CGFloat = 32
+
+    private var tint: Color { fact.isAlert ? .red : .liteAccent }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: icon)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isAlert ? Color.red : Color.liteAccent)
-                .frame(width: 32, height: 32)
-                .background((isAlert ? Color.red : Color.liteAccent).opacity(0.1),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(value)
+            if !dynamicTypeSize.isAccessibilitySize {
+                Image(systemName: fact.icon)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(isAlert ? Color.red : Color.primary)
-                    .lineLimit(2)
+                    .foregroundStyle(fact.isPlaceholder ? Color.secondary : tint)
+                    .frame(width: iconSide, height: iconSide)
+                    .background((fact.isPlaceholder ? Color.secondary : tint).opacity(0.1),
+                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(fact.label)
+                    .font(.caption.weight(fact.isAlert ? .semibold : .regular))
+                    .foregroundStyle(fact.isAlert ? Color.red : Color.secondary)
+                Text(fact.value)
+                    .font(.subheadline.weight(fact.isPlaceholder ? .regular : .semibold))
+                    .foregroundStyle(fact.isAlert ? Color.red : fact.isPlaceholder ? Color.secondary : Color.primary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)

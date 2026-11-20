@@ -5,7 +5,8 @@
 //  Created by Giovanni Michele on 26/10/26.
 //
 //  Il profilo nelle impostazioni: chi è entrato e con che ruolo (operatore o admin, lo dice /v1/me),
-//  dove lavora (azienda e impianto), il server Aria e l'uscita. La disponibilità è solo degli operatori:
+//  dove lavora (azienda e impianto), il server Aria, le guide e l'uscita. L'aspetto (AriaAppearance) si
+//  ricorda sul telefono, fuori da qui. La disponibilità è solo degli operatori:
 //  a un admin l'assegnazione automatica non manda lavori.
 //
 
@@ -85,9 +86,10 @@ final class AriaSettingsViewModel {
 
     // MARK: Crediti
 
-    /// Il foglio dei crediti è alto di più della sola lista: il profilo si alza un poco quando la card c'è.
+    /// Quanto parte alto il foglio: profilo compatto, area di lavoro, aspetto e guide; un poco di più con la
+    /// card dei crediti o la disponibilità. Si può sempre allargare.
     var detentFraction: Double {
-        (showsAvailability ? 0.72 : 0.67) + (credits.isVisible ? 0.08 : 0)
+        min(0.95, (showsAvailability ? 0.78 : 0.72) + (credits.isVisible ? 0.08 : 0))
     }
 
     /// Tocco sulla card: i dettagli, o un nuovo tentativo se il saldo non si legge.

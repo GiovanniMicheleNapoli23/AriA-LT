@@ -58,6 +58,7 @@ struct AriaSidebar: View {
             .padding(.horizontal, 12)
         }
         .scrollIndicators(.hidden)
+        .refreshable { await viewModel.refreshSidebar() }
         // Il logo resta sempre in alto: sezioni e conversazioni gli scorrono sotto, sfocate.
         .ariaTopBar {
             HStack(spacing: 8) {
@@ -71,10 +72,10 @@ struct AriaSidebar: View {
             .padding(.bottom, 20)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                // Il colore della sidebar, pieno dietro la scritta e sfumato sotto: le righe non si leggono
-                // attraverso il logo (la sola sfocatura non basta, soprattutto nel tema scuro).
-                LinearGradient(stops: [.init(color: Color.liteSidebar, location: 0),
-                                       .init(color: Color.liteSidebar, location: 0.7),
+                // Un velo leggero del colore della sidebar, sfumato sotto: le righe si intravedono passando sotto
+                // il logo (sfocate dal bordo morbido), senza una fascia piena che lo stacchi dal resto.
+                LinearGradient(stops: [.init(color: Color.liteSidebar.opacity(0.7), location: 0),
+                                       .init(color: Color.liteSidebar.opacity(0.4), location: 0.55),
                                        .init(color: Color.liteSidebar.opacity(0), location: 1)],
                                startPoint: .top, endPoint: .bottom)
                     .ignoresSafeArea(edges: .top)

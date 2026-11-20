@@ -28,15 +28,13 @@ struct AdminAgentStudioConfigurationSection: View {
             }
             .ariaGlass(in: RoundedRectangle(cornerRadius: 16))
         }
+        // Il passo degli agenti indica tutta la configurazione: approvazioni, policy, prompt e accuratezza.
+        .ariaSetupTourAnchor(.agents)
     }
 
-    /// Il giro guidato indica la riga dei prompt degli agenti e quella delle policy (governance).
+    /// Dentro la configurazione, il passo della governance indica solo la riga delle policy.
     private func tourStep(for item: AdminAgentStudioConfigurationItem) -> AriaSetupTourStep? {
-        switch item {
-        case .prompts: return .agents
-        case .policy: return .governance
-        case .approvals, .accuracy: return nil
-        }
+        item == .policy ? .governance : nil
     }
 
     private func row(_ item: AdminAgentStudioConfigurationItem) -> some View {

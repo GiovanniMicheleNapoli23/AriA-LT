@@ -20,6 +20,18 @@ nonisolated struct AdminWorkOrderField: Identifiable, Hashable, Sendable {
     var id: String { label }
 }
 
+/// Un fatto dell'intestazione (asset, assegnatario, scadenza, passi): icona, etichetta e valore.
+nonisolated struct AdminWorkOrderHeaderFact: Identifiable, Hashable, Sendable {
+    let id: String
+    let label: String
+    let value: String
+    let icon: String
+    /// In rosso (scadenza superata).
+    var isAlert = false
+    /// Un valore che manca ("Unassigned"): in grigio, non come un nome.
+    var isPlaceholder = false
+}
+
 /// Una scheda del dettaglio: titolo, icona e i campi che hanno un valore.
 nonisolated struct AdminWorkOrderFieldGroup: Identifiable, Hashable, Sendable {
     let title: String
