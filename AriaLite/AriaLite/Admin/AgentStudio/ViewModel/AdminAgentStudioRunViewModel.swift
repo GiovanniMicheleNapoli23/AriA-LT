@@ -77,10 +77,11 @@ final class AdminAgentStudioRunViewModel {
 
     init(backend: AriaBackend, source: Source, workflowId: String? = nil, workflowName: String? = nil,
          workflowSteps: [AdminAgentStudioWorkflowStep] = [],
-         network: AriaNetworkMonitor = .shared,
+         network: AriaNetworkMonitor? = nil,
          onActivityChanged: @escaping () async -> Void) {
         self.backend = backend
-        self.network = network
+        // `nil` = la rete del telefono: un valore di default si valuta fuori dal MainActor, dove `.shared` non si legge.
+        self.network = network ?? .shared
         self.source = source
         self.onActivityChanged = onActivityChanged
         self.workflowSteps = workflowSteps

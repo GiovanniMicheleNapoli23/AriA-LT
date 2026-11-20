@@ -48,10 +48,11 @@ final class AdminDocumentDetailViewModel {
     private(set) var isOpeningPreview = false
     private(set) var previewError: String?
 
-    init(backend: AriaBackend, document: AdminDocument, network: AriaNetworkMonitor = .shared,
+    init(backend: AriaBackend, document: AdminDocument, network: AriaNetworkMonitor? = nil,
          onChange: @escaping (AdminDocument) -> Void, onDelete: @escaping (String) -> Void) {
         self.backend = backend
-        self.network = network
+        // `nil` = la rete del telefono: un valore di default si valuta fuori dal MainActor, dove `.shared` non si legge.
+        self.network = network ?? .shared
         self.document = document
         self.onChange = onChange
         self.onDelete = onDelete

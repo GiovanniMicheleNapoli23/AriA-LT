@@ -34,7 +34,8 @@ private func answer(_ responseId: String, _ text: String, usage: String? = nil) 
 }
 
 /// La config di un membro: `chat.reply` abilitato (o no), livello di partenza `base`.
-private func effortConfig(default level: String = "base", actions: String = #""chat.reply""#) -> String {
+/// nonisolated (come `session`): fanno da valore di default di un parametro, che si valuta fuori dal MainActor.
+nonisolated private func effortConfig(default level: String = "base", actions: String = #""chat.reply""#) -> String {
     """
     {"effort":{"default_level":"\(level)","enabled_actions":[\(actions)],
       "levels":{"base":{"multiplier":"1.0","available":true},"medium":{"multiplier":"1.7","available":true},
@@ -43,7 +44,7 @@ private func effortConfig(default level: String = "base", actions: String = #""c
     """
 }
 
-private func session(effort: String? = nil, delay: TimeInterval = 0) -> Reply {
+nonisolated private func session(effort: String? = nil, delay: TimeInterval = 0) -> Reply {
     let saved = effort.map { #","effort":"\#($0)""# } ?? ""
     return .json(#"{"session_id":"S1","checklist":{"checks":{}},"active_turn":null\#(saved)}"#, delay: delay)
 }

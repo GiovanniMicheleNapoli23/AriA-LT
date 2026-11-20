@@ -14,7 +14,8 @@ import Foundation
 @MainActor
 final class AriaDebouncer {
     /// L'attesa dopo l'ultimo tasto prima di applicare la ricerca.
-    static let searchDelay: Duration = .milliseconds(220)
+    /// nonisolated: è il valore di default di un parametro, che si valuta fuori dal MainActor.
+    nonisolated static let searchDelay: Duration = .milliseconds(220)
 
     private let delay: Duration
     private var task: Task<Void, Never>?

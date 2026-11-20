@@ -64,9 +64,10 @@ final class AdminDocumentsViewModel {
         case plant(String)
     }
 
-    init(backend: AriaBackend, network: AriaNetworkMonitor = .shared) {
+    init(backend: AriaBackend, network: AriaNetworkMonitor? = nil) {
         self.backend = backend
-        self.network = network
+        // `nil` = la rete del telefono: un valore di default si valuta fuori dal MainActor, dove `.shared` non si legge.
+        self.network = network ?? .shared
         uploads = AdminDocumentUploadCenter(backend: backend)
         uploads.onUploaded = { [weak self] in
             self?.scheduleReload()
