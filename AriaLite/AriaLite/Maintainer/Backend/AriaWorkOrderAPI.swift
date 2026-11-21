@@ -232,7 +232,8 @@ extension AriaAPIClient {
         var req = URLRequest(url: url, timeoutInterval: max(10, seconds))
         req.httpMethod = "POST"
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        let session = AriaHTTP.cookielessSession()
+        // URL firmato dello storage, senza credenziali nostre: può rimandare il POST all'host della sua regione.
+        let session = AriaHTTP.cookielessSession(redirects: .storage)
         defer { session.finishTasksAndInvalidate() }
         let (data, response) = try await session.upload(for: req, from: body)
         guard let http = response as? HTTPURLResponse else { throw AriaError.stream("No HTTP response") }

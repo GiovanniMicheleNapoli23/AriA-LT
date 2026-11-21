@@ -40,11 +40,23 @@ struct AdminWorkOrderRow: View {
         .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
+    /// Quante voci ci sono fra stato, assegnatario e asset.
+    private var detailCount: Int {
+        (item.status == nil ? 0 : 1) + (item.assignee == nil ? 0 : 1) + (item.place.isEmpty ? 0 : 1)
+    }
+
     /// Stato, assegnatario e asset: in riga se ci stanno, altrimenti uno sotto l'altro.
+    /// Con una voce sola i due modi sono uguali: niente misure doppie.
     private var details: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) { detailItems }
-            VStack(alignment: .leading, spacing: 6) { detailItems }
+        Group {
+            if detailCount > 1 {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) { detailItems }
+                    VStack(alignment: .leading, spacing: 6) { detailItems }
+                }
+            } else {
+                HStack(spacing: 12) { detailItems }
+            }
         }
         .font(.subheadline)
         .foregroundStyle(.secondary)

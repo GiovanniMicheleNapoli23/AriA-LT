@@ -25,9 +25,10 @@ nonisolated struct AdminUserListItem: Identifiable, Equatable, Sendable {
 
     let row: AdminUserRow
     let badges: [Badge]
-    /// Solo per i titolari: "Online now · web", "Last seen …", "Not signed in yet".
-    let onlineText: String?
-    let isOnline: Bool
+    /// Le ultime volte che si è visto, già lette: la riga "online" (solo titolari) si calcola da qui, all'ora che serve.
+    let seen: AdminUserLastSeen?
+    /// Solo i titolari vedono la riga "Online now · web", "Last seen …", "Not signed in yet".
+    let showsOnlineLine: Bool
     /// Una persona sospesa è più spenta.
     let isMuted: Bool
     /// L'icona dell'app (non c'è su un invito per email, dove i campi sono solo i valori di partenza).
@@ -40,7 +41,13 @@ nonisolated struct AdminUserListItem: Identifiable, Equatable, Sendable {
     var name: String { row.displayName }
     var email: String? { row.email }
 
-    init(_ row: AdminUserRow, viewer: AdminUsersViewer, now: Date) {
+    /// La riga "online" a quell'ora.
+    struct OnlineLine: Equatable, Sendable {
+        let text: String
+        let isOnline: Bool
+    }
+
+    init(_ row: AdminUserRow, viewer: AdminUsersViewer) {
         self.row = row
         let owner = viewer.isOwner
         var badges = [Badge(text: AdminUsersRules.levelBadge(row, legacy: viewer.legacy),
@@ -50,12 +57,18 @@ nonisolated struct AdminUserListItem: Identifiable, Equatable, Sendable {
             badges.append(Badge(text: availability.listTitle, tone: availability == .available ? .positive : .neutral))
         }
         self.badges = badges
-        let line = owner ? AdminUserPresence(row.lastSeen, now: now).line : nil
-        onlineText = line.map(Self.text(for:))
-        isOnline = line?.isOnline ?? false
+        seen = row.lastSeen
+        showsOnlineLine = owner
         isMuted = row.status == .suspended
         showsAppMark = !row.isInvitation
         canRevoke = owner && row.isInvitation
+    }
+
+    /// "Online now · …", "Last seen …" o "Not signed in yet" all'ora `now`; `nil` per chi non è titolare.
+    func onlineLine(at now: Date) -> OnlineLine? {
+        guard showsOnlineLine else { return nil }
+        let line = AdminUserPresence(seen, now: now).line
+        return OnlineLine(text: Self.text(for: line), isOnline: line.isOnline)
     }
 
     private static func text(for line: AdminUserPresence.Line) -> String {

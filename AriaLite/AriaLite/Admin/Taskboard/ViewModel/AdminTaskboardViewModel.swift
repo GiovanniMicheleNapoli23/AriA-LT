@@ -25,15 +25,33 @@ final class AdminTaskboardViewModel {
     /// Completamento e annullamento di un ordine, con i loro fogli.
     let quickActions: AdminWorkOrderQuickActions
 
-    private(set) var orders: [AdminWorkOrder] = []
-    private(set) var members: [AdminTaskboardMember] = []
+    private(set) var orders: [AdminWorkOrder] = [] {
+        didSet { invalidateBoard() }
+    }
+    private(set) var members: [AdminTaskboardMember] = [] {
+        didSet {
+            memberNames = Dictionary(members.map { ($0.id, $0.displayName) }) { first, _ in first }
+            invalidateBoard()
+        }
+    }
+    /// Nome di ogni membro dal suo id, per non scorrere `members` a ogni card (si rifà quando i membri arrivano).
+    private(set) var memberNames: [String: String] = [:]
     var selectedStatus: AdminWorkOrderStatus = .planned
     /// Kanban o lista: una preferenza del dispositivo, non si azzera all'uscita dall'account.
     var layout = AdminTaskboardViewModel.savedLayout {
         didSet { UserDefaults.standard.set(layout.rawValue, forKey: Self.layoutKey) }
     }
-    var filters = AdminTaskboardFilters()
-    var searchText = ""
+    var filters = AdminTaskboardFilters() {
+        didSet { invalidateBoard() }
+    }
+    /// Il testo del campo di ricerca: la bacheca si rifiltra solo quando `appliedQuery` lo raggiunge.
+    var searchText = "" {
+        didSet { searchTextChanged() }
+    }
+    /// La ricerca applicata (senza spazi ai bordi): segue `searchText` dopo una breve pausa, subito se si svuota.
+    private(set) var appliedQuery = "" {
+        didSet { if appliedQuery != oldValue { invalidateBoard() } }
+    }
     /// Il mese a schermo nel calendario e il giorno di cui si vedono le attività.
     var calendarMonth = AdminTaskboardViewModel.startOfMonth(.now)
     var calendarDay = Calendar.current.startOfDay(for: .now)
@@ -67,6 +85,10 @@ final class AdminTaskboardViewModel {
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var loadedPlantId: String?
     @ObservationIgnored private var membersTask: Task<Void, Never>?
+    @ObservationIgnored private let searchDebouncer = AriaDebouncer()
+    /// Cambia a ogni modifica di ordini, filtri, ricerca o membri: invalida la bacheca in cache.
+    private(set) var boardVersion = 0
+    @ObservationIgnored private var boardCache: Board?
 
     init(backend: AriaBackend) {
         self.backend = backend
@@ -85,11 +107,13 @@ final class AdminTaskboardViewModel {
         membersTask = nil
         workOrders.reset()
         quickActions.reset()
+        searchDebouncer.cancel()
         orders = []
         members = []
         selectedStatus = .planned
         filters = AdminTaskboardFilters()
         searchText = ""
+        appliedQuery = ""
         calendarMonth = Self.startOfMonth(.now)
         calendarDay = Calendar.current.startOfDay(for: .now)
         hasLoaded = false
@@ -185,29 +209,41 @@ final class AdminTaskboardViewModel {
 
     // MARK: Colonne
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var isSearching: Bool { !appliedQuery.isEmpty }
 
     /// Gli ordini che passano filtri e ricerca.
-    var visibleOrders: [AdminWorkOrder] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return orders.filter { order in
-            guard filters.matches(order) else { return false }
-            guard !query.isEmpty else { return true }
-            return [order.title, order.assetTag, order.zone, assigneeName(for: order)]
-                .contains { $0?.localizedStandardContains(query) == true }
-        }
-    }
+    var visibleOrders: [AdminWorkOrder] { board.visible }
 
     func count(in status: AdminWorkOrderStatus) -> Int {
-        visibleOrders.filter { $0.status == status }.count
+        board.byStatus[status]?.count ?? 0
     }
 
     /// Le card di una colonna: prima le più urgenti.
     func cards(in status: AdminWorkOrderStatus) -> [AdminWorkOrderRowItem] {
-        AdminWorkOrderSort.priority.sorted(visibleOrders.filter { $0.status == status }).map(card)
+        let snapshot = board
+        let base: [AdminWorkOrderRowItem]
+        if let cached = snapshot.cards[status] {
+            base = cached
+        } else {
+            base = (snapshot.byStatus[status] ?? []).map { makeCard($0, isBusy: false) }
+            snapshot.cards[status] = base
+        }
+        // Le card in volo si segnano al momento: la cache non le conosce.
+        let busy = quickActions.busyIds.union(movingIds)
+        guard !busy.isEmpty else { return base }
+        return base.map { item in
+            guard busy.contains(item.id) else { return item }
+            var busyItem = item
+            busyItem.isBusy = true
+            return busyItem
+        }
     }
 
     func card(_ order: AdminWorkOrder) -> AdminWorkOrderRowItem {
+        makeCard(order, isBusy: movingIds.contains(order.id) || quickActions.isBusy(order))
+    }
+
+    private func makeCard(_ order: AdminWorkOrder, isBusy: Bool) -> AdminWorkOrderRowItem {
         let steps = order.stepProgress.flatMap { $0.total > 0 ? $0 : nil }
         return AdminWorkOrderRowItem(
             order: order,
@@ -219,12 +255,76 @@ final class AdminTaskboardViewModel {
             isOverdue: order.isOverdue(),
             progress: steps?.fraction,
             progressText: steps.map { "\($0.reported)/\($0.total)" },
-            isBusy: movingIds.contains(order.id) || quickActions.isBusy(order)
+            isBusy: isBusy
         )
     }
 
     func assigneeName(for order: AdminWorkOrder) -> String? {
-        members.first { $0.id == order.assignedToUserId }?.displayName ?? directory.assigneeName(for: order)
+        order.assignedToUserId.flatMap { memberNames[$0] } ?? directory.assigneeName(for: order)
+    }
+
+    // MARK: Bacheca in cache
+
+    private struct BoardKey: Equatable {
+        let version: Int
+        let directory: Int
+    }
+
+    /// Ordini filtrati e già divisi per colonna (per urgenza). Le card si costruiscono alla prima richiesta.
+    private final class Board {
+        let key: BoardKey
+        let visible: [AdminWorkOrder]
+        let byStatus: [AdminWorkOrderStatus: [AdminWorkOrder]]
+        var cards: [AdminWorkOrderStatus: [AdminWorkOrderRowItem]] = [:]
+
+        init(key: BoardKey, visible: [AdminWorkOrder], byStatus: [AdminWorkOrderStatus: [AdminWorkOrder]]) {
+            self.key = key
+            self.visible = visible
+            self.byStatus = byStatus
+        }
+    }
+
+    /// Letta dal body: registra ordini, filtri, ricerca, membri (`boardVersion`) e anagrafica (`revision`).
+    private var board: Board {
+        let key = BoardKey(version: boardVersion, directory: directory.revision)
+        if let boardCache, boardCache.key == key { return boardCache }
+        let built = makeBoard(key)
+        boardCache = built
+        return built
+    }
+
+    private func makeBoard(_ key: BoardKey) -> Board {
+        let query = appliedQuery
+        let visible = orders.filter { order in
+            guard filters.matches(order) else { return false }
+            guard !query.isEmpty else { return true }
+            return [order.title, order.assetTag, order.zone, assigneeName(for: order)]
+                .contains { $0?.localizedStandardContains(query) == true }
+        }
+        var grouped: [AdminWorkOrderStatus: [AdminWorkOrder]] = [:]
+        for order in visible {
+            if let status = order.status { grouped[status, default: []].append(order) }
+        }
+        let sorted = grouped.mapValues { AdminWorkOrderSort.priority.sorted($0) }
+        return Board(key: key, visible: visible, byStatus: sorted)
+    }
+
+    private func invalidateBoard() {
+        boardVersion += 1
+    }
+
+    /// La ricerca si applica dopo una pausa nella digitazione; svuotando il campo, subito.
+    private func searchTextChanged() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query != appliedQuery else {
+            searchDebouncer.cancel()
+            return
+        }
+        if query.isEmpty {
+            searchDebouncer.flush { appliedQuery = "" }
+        } else {
+            searchDebouncer.schedule { [weak self] in self?.appliedQuery = query }
+        }
     }
 
     // MARK: Filtri

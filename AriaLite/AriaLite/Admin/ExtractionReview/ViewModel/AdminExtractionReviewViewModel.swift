@@ -26,6 +26,8 @@ final class AdminExtractionReviewViewModel {
     private(set) var hasLoaded = false
     private(set) var lastUpdated: Date?
     @ObservationIgnored private var loadedKey: String?
+    /// Da quando le liste a schermo sono fresche: rientrando prima la sezione non le richiede.
+    @ObservationIgnored private var freshness = AriaFreshness()
 
     var kind: AdminExtractionKind = .assets {
         didSet { if kind != oldValue { endSelection() } }
@@ -103,10 +105,19 @@ final class AdminExtractionReviewViewModel {
 
     // MARK: Caricamento
 
+    /// All'entrata nella sezione: legge se mai lette, se è cambiato il contesto o se hanno più di 45 s.
+    /// Con le liste già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        guard !hasLoaded || loadedKey != loadKey || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata: tirare per aggiornare, "Riprova".
     func load() async {
         let key = loadKey
         if key != loadedKey {
             // Altra azienda o altro stabilimento: le liste vecchie non valgono.
+            freshness.invalidate()
             items = [:]
             loadErrors = [:]
             hasLoaded = false
@@ -149,6 +160,8 @@ final class AdminExtractionReviewViewModel {
         }
         hasLoaded = true
         lastUpdated = .now
+        // Un tipo fallito: la prossima entrata riprova.
+        if loadErrors.isEmpty { freshness.markLoaded() } else { freshness.invalidate() }
         selection.formIntersection(Set(visibleItems.map(\.id)))
     }
 
@@ -180,6 +193,7 @@ final class AdminExtractionReviewViewModel {
         hasLoaded = false
         lastUpdated = nil
         loadedKey = nil
+        freshness.invalidate()
         kind = .assets
         searchText = ""
         isSelecting = false

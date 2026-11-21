@@ -16,6 +16,7 @@ struct AdminDocumentDetailView: View {
     @State private var viewModel: AdminDocumentDetailViewModel
     @State private var showsChunks = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     init(viewModel: AdminDocumentDetailViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -51,6 +52,8 @@ struct AdminDocumentDetailView: View {
         .refreshable { await viewModel.load() }
         .task { await viewModel.load() }
         .task(id: viewModel.pollKey) { await viewModel.pollWhileWorking() }
+        // App non attiva: il ciclo di aggiornamento sta fermo (e riparte al ritorno).
+        .onChange(of: scenePhase, initial: true) { _, phase in viewModel.isAppActive = phase == .active }
         .onChange(of: viewModel.didDelete) { _, deleted in
             if deleted { dismiss() }
         }

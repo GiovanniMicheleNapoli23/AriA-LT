@@ -68,8 +68,11 @@ extension BackendTests {
             let (id, task) = try firstTask(chat)
             chat.toggleTask(task, in: id)
 
-            let relaunched = AriaAgentChat(backend: AriaBackend(), remembersSession: true, progressStore: progress)
+            let relaunched = AriaAgentChat(backend: chat.backend, remembersSession: true, progressStore: progress)
             #expect(relaunched.sessionId == "S1")
+            // Le spunte si leggono alla prima necessità, non alla nascita della chat: qui il riavvio riapre la conversazione.
+            await relaunched.restoreIfNeeded()
+            #expect(!chat.checkedTasks.isEmpty)
             #expect(relaunched.checkedTasks == chat.checkedTasks)
         }
 
@@ -137,7 +140,9 @@ extension BackendTests {
 
             chat.newConversation()
             #expect(chat.checkedTasks.isEmpty)
-            #expect(AriaAgentChat(backend: AriaBackend(), remembersSession: true, progressStore: progress).checkedTasks.isEmpty)
+            let relaunched = AriaAgentChat(backend: AriaBackend(), remembersSession: true, progressStore: progress)
+            await relaunched.restoreIfNeeded()
+            #expect(relaunched.checkedTasks.isEmpty)
         }
     }
 }

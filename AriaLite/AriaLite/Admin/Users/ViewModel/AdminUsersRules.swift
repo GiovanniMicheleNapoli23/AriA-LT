@@ -29,6 +29,27 @@ nonisolated enum AdminUsersRules {
         return access.model == "rbac" && access.appFollowsRole && members ? .open : .hidden
     }
 
+    // MARK: - Le viste della sezione (Users e Roles)
+
+    /// La vista Users: la regola del §2 (mentre `/v1/me` non ha risposto si apre); nel layout dell'operatore il ruolo
+    /// deve concedere anche Members.
+    static func usersViewOpen(_ rights: AriaRights, operatorLayout: Bool) -> Bool {
+        entry(rights.access) != .hidden && (!operatorLayout || rights.has(.members))
+    }
+
+    /// La vista Roles: chi gestisce i ruoli in un'azienda a ruoli (l'ex sezione Roles & Rights).
+    static func rolesViewOpen(_ rights: AriaRights) -> Bool { rights.canOpenRolesAndRights }
+
+    /// Le viste che si possono aprire, nell'ordine in cui si mostrano.
+    static func tabs(usersOpen: Bool, rolesOpen: Bool) -> [AdminUsersTab] {
+        [usersOpen ? .users : nil, rolesOpen ? .roles : nil].compactMap { $0 }
+    }
+
+    /// La vista mostrata: quella scelta se si può aprire, altrimenti la prima che si può.
+    static func current(selected: AdminUsersTab, in tabs: [AdminUsersTab]) -> AdminUsersTab {
+        tabs.contains(selected) ? selected : tabs.first ?? .users
+    }
+
     // MARK: - Titolari
 
     /// Un titolare non sospeso (anche invitato: la sua membership è attiva).

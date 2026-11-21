@@ -54,17 +54,9 @@ struct AdminAssetsView: View {
             .ariaBottomBar {
                 if viewModel.isSelecting { AdminAssetSelectionBar(viewModel: viewModel) }
             }
-            .alert(viewModel.approveConfirmationTitle, isPresented: $viewModel.showsApproveConfirmation) {
-                Button("Approve") { Task { await viewModel.approveSelected() } }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(verbatim: viewModel.approveConfirmationMessage)
-            }
-            .alert("Couldn't approve the assets", isPresented: $viewModel.isShowingApproveError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(verbatim: viewModel.approveError ?? "")
-            }
+            .onChange(of: viewModel.searchText) { viewModel.searchTextChanged() }
+            // Gli avvisi leggono la selezione: stanno in un modificatore a parte, così scegliere una riga non rifà la lista.
+            .modifier(AdminAssetsApprovalAlerts(viewModel: viewModel))
             .sheet(isPresented: $isCreating) {
                 AdminAssetFormView(viewModel: viewModel.makeFormViewModel()) { created in
                     viewModel.apply(created)
@@ -72,7 +64,7 @@ struct AdminAssetsView: View {
                 }
             }
         }
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     // MARK: Filtri
@@ -158,7 +150,7 @@ struct AdminAssetsView: View {
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: 8) {
             Text(viewModel.subtitle)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -166,7 +158,7 @@ struct AdminAssetsView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
             ForEach(viewModel.visibleAssets) { asset in
-                row(asset)
+                AdminAssetListRow(viewModel: viewModel, asset: asset)
                     .padding(.horizontal, 20)
             }
             if let updated = viewModel.lastUpdated {
@@ -176,21 +168,6 @@ struct AdminAssetsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 12)
             }
-        }
-    }
-
-    @ViewBuilder
-    private func row(_ asset: AdminAsset) -> some View {
-        if viewModel.isSelecting {
-            Button { viewModel.toggle(asset) } label: {
-                AdminAssetRow(asset: asset, isSelected: viewModel.selection.contains(asset.id))
-            }
-            .buttonStyle(.plain)
-        } else {
-            NavigationLink(value: asset) {
-                AdminAssetRow(asset: asset)
-            }
-            .buttonStyle(.plain)
         }
     }
 

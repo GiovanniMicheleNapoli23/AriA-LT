@@ -53,13 +53,18 @@ struct ContentView: View {
             }
             switch phase {
             case .background: viewModel.lockForBackground()
-            // Face ID si può chiedere solo con l'app in primo piano.
-            case .active: Task { await viewModel.unlockAutomatically() }
+            // Face ID si può chiedere solo con l'app in primo piano; con l'app aperta non c'è nulla da chiedere
+            // (Control Center, fogli di sistema e Face ID stesso fanno tornare `.active` più volte).
+            case .active where viewModel.lock != .none:
+                // Una finestra che torna attiva con l'app ancora chiusa è coperta prima di chiedere Face ID.
+                if viewModel.lock == .resume { lockWindow.show(viewModel) }
+                Task { await viewModel.unlockAutomatically() }
             default: break
             }
         }
         // Al ritorno dal background l'app resta sotto com'era, coperta da una finestra.
-        .onChange(of: viewModel.lock) { _, lock in
+        // `initial`: una finestra aperta mentre l'app è chiusa (iPad, più finestre) nasce già coperta.
+        .onChange(of: viewModel.lock, initial: true) { _, lock in
             if lock == .resume { lockWindow.show(viewModel) } else { lockWindow.hide() }
         }
         // Account Aria disattivato o sessione scaduta: si torna al login.

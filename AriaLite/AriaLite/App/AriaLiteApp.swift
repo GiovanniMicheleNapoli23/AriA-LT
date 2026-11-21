@@ -20,6 +20,11 @@ struct WorkOrderApp: App {
                 .toggleStyle(.ariaSwitch)
                 // Chiaro, scuro o come il telefono (dal profilo): su tutte le finestre, anche quelle nuove su iPad.
                 .onChange(of: appearance, initial: true) { _, appearance in appearance.apply() }
+                // Dopo il primo fotogramma: quello che non serve a disegnare la prima schermata parte ora.
+                .task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    viewModel.resumeBackgroundWork()
+                }
                 #if DEBUG
                 .task {
                     await viewModel.signInWithLaunchLink()

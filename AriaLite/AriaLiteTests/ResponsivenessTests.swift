@@ -78,6 +78,9 @@ extension BackendTests {
 
         @Test func aStaleListResponseNeverOverwritesANewerOne() async throws {
             let (_, store) = try await TestEnv.signedInStore()
+            // Qui si prova la guardia sulle risposte superate: i due refresh devono restare indipendenti (di norma
+            // il secondo, arrivato mentre il primo è in corso, lo aspetta).
+            store.refreshCoalescing = .zero
             server.route("GET /v1/me", .json(me()))
             server.route(closedKey, .json("[]"))
             // La prima richiesta della lista è lenta e vecchia; la seconda è veloce e nuova.

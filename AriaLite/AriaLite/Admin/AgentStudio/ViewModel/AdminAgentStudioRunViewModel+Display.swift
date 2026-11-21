@@ -47,10 +47,11 @@ extension AdminAgentStudioRunViewModel {
         return seconds.map { Self.elapsedText($0) }
     }
 
-    /// "1m 5s".
+    private static let narrowElapsedStyle: Duration.UnitsFormatStyle = .units(allowed: [.hours, .minutes, .seconds], width: .narrow)
+
+    /// "1m 5s". Lo stile è uno solo: il cronometro della vista lo chiama ogni secondo.
     static func elapsedText(_ seconds: TimeInterval) -> String {
-        let style: Duration.UnitsFormatStyle = .units(allowed: [.hours, .minutes, .seconds], width: .narrow)
-        let text = Duration.seconds(max(0, seconds.rounded(.down))).formatted(style)
+        let text = Duration.seconds(max(0, seconds.rounded(.down))).formatted(narrowElapsedStyle)
         return text.isEmpty ? "0s" : text
     }
 
@@ -109,9 +110,15 @@ extension AdminAgentStudioRunViewModel {
 
     // MARK: Riassunto e file
 
+    /// C'è un riassunto da mostrare (la scheda compare; il testo lo legge la scheda stessa).
+    var hasNarrative: Bool {
+        hasStreamedNarrative || !(run?.narrative ?? "").isEmpty
+    }
+
     /// Il riassunto che arriva dallo stream, o quello del record.
     var narrativeText: String? {
-        if !live.narrative.isEmpty { return live.narrative }
+        let streamed = streamedNarrative
+        if !streamed.isEmpty { return streamed }
         guard let saved = run?.narrative, !saved.isEmpty else { return nil }
         return saved
     }
@@ -120,5 +127,5 @@ extension AdminAgentStudioRunViewModel {
 
     // MARK: Registro tecnico
 
-    var logEvents: [AdminAgentStudioRunEvent] { live.events }
+    var logEvents: [AdminAgentStudioRunEvent] { streamedEvents }
 }

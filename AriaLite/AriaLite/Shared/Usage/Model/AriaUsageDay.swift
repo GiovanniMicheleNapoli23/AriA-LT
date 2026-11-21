@@ -50,19 +50,34 @@ nonisolated enum AriaUsageDay {
     /// Il giorno della settimana abbreviato ("Wed"), per l'asse del grafico dei 7 giorni.
     static func weekday(_ isoDay: String, locale: Locale = .autoupdatingCurrent) -> String? {
         guard let date = date(isoDay) else { return nil }
-        let formatter = makeFormatter(locale: locale)
-        formatter.setLocalizedDateFormatFromTemplate("EEE")
+        let formatter = formatters.formatter(variant: "EEE", locale: locale) {
+            let formatter = makeFormatter(locale: locale)
+            formatter.setLocalizedDateFormatFromTemplate("EEE")
+            return formatter
+        }
         return formatter.string(from: date)
     }
 
-    private static func format(_ date: Date, template: String, italianFirst: String, locale: Locale) -> String {
-        let formatter = makeFormatter(locale: locale)
+    /// Un formattatore per lingua e formato, creato una volta sola (l'asse e le etichette ne chiedono uno per punto).
+    private static let formatters = AriaLocaleFormatterCache<DateFormatter>()
+    private static let gregorianUTC: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = utc
-        if locale.language.languageCode?.identifier == "it", calendar.component(.day, from: date) == 1 {
-            formatter.dateFormat = italianFirst
-        } else {
-            formatter.setLocalizedDateFormatFromTemplate(template)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }()
+
+    private static func format(_ date: Date, template: String, italianFirst: String, locale: Locale) -> String {
+        let isItalian = locale.language.languageCode?.identifier == "it"
+        // Il primo del mese in italiano ha il suo formato ("1°"): è una variante a parte.
+        let first = isItalian && gregorianUTC.component(.day, from: date) == 1
+        let formatter = formatters.formatter(variant: first ? "first|\(italianFirst)" : "template|\(template)", locale: locale) {
+            let formatter = makeFormatter(locale: locale)
+            if first {
+                formatter.dateFormat = italianFirst
+            } else {
+                formatter.setLocalizedDateFormatFromTemplate(template)
+            }
+            return formatter
         }
         return formatter.string(from: date)
     }

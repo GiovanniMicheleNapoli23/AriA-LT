@@ -33824,6 +33824,16 @@
         }
       }
     },
+    "System matches your device's appearance." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sistema segue l'aspetto del dispositivo."
+          }
+        }
+      }
+    },
     "Systems & data" : {
       "localizations" : {
         "it" : {
@@ -35254,6 +35264,7 @@
       }
     },
     "The security check for web accounts wasn't ready. If no email arrives, send the link again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "it" : {
           "stringUnit" : {

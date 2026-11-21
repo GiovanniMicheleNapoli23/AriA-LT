@@ -44,6 +44,7 @@ extension AdminLearnedKnowledgeViewModel {
                 for (id, text) in result where knownFacts[id]?.content == batch[id] {
                     translations[id] = text
                 }
+                touch()
             } catch {
                 backend.markUnavailable(.factTranslation, ifRefused: error)
             }
@@ -54,6 +55,7 @@ extension AdminLearnedKnowledgeViewModel {
     func refreshTranslation(of fact: AdminMemoryFact, previous: AdminMemoryFact?) {
         guard let previous, previous.content != fact.content else { return }
         translations[fact.id] = nil
+        touch()
         requestedTranslations.remove(fact.id)
         requestTranslations(for: [fact])
     }

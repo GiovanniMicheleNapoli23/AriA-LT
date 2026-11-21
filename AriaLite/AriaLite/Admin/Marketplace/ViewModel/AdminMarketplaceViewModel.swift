@@ -7,7 +7,10 @@
 //  La sezione Marketplace, come la pagina /marketplace della web: il catalogo (7 tipi, in locale) a scaffali
 //  con ricerca e filtri, e i connettori veri dell'azienda (GET /connectors) che ne accendono lo stato.
 //  Solo i connettori sono collegabili; gli acquisti restano su questo telefono (AdminMarketplacePurchases).
-//  Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro.
+//  Vive in AppViewModel: i dati restano fra un cambio di sezione e l'altro. Entrando si rilegge la lista solo se
+//  ha più di 45 secondi (`loadIfNeeded`); tirare, una modifica o un cambio di azienda la rileggono sempre.
+//  Scaffali, conteggi e opzioni dei filtri si calcolano una volta per combinazione di filtri, ricerca (applicata
+//  dopo una breve pausa) e dati: ridisegnare non rifà la scansione del catalogo.
 //
 
 import Foundation
@@ -26,6 +29,11 @@ final class AdminMarketplaceViewModel {
     var catalog: [AdminMarketplaceItem] { index.catalog }
 
     private(set) var connectors: [AdminConnector] = []
+    /// Le righe del server per provider (la prima vince): `connector(for:)` non scorre la lista.
+    private(set) var connectorsByProvider: [String: AdminConnector] = [:]
+    /// Sale a ogni cambio di connettori, acquisti o catalogo: invalida i valori derivati e li fa osservare.
+    private var dataRevision = 0
+    @ObservationIgnored private var freshness = AriaFreshness()
     private(set) var isLoading = false
     /// La lista è arrivata almeno una volta per l'azienda attiva.
     private(set) var hasLoaded = false
@@ -38,7 +46,13 @@ final class AdminMarketplaceViewModel {
     @ObservationIgnored private var purchasesKey: String
     @ObservationIgnored private var itemDetails: [String: AdminMarketplaceItemDetailViewModel] = [:]
 
-    var searchText = ""
+    /// Il testo del campo di ricerca: scaffali e conteggi seguono `appliedQuery`, dopo una breve pausa.
+    var searchText = "" {
+        didSet { searchTextChanged() }
+    }
+    /// La ricerca applicata (senza spazi ai bordi): subito se si svuota, altrimenti dopo la pausa.
+    private(set) var appliedQuery = ""
+    @ObservationIgnored private let searchDebouncer = AriaDebouncer()
     /// nil = tutti i tipi.
     var kind: AdminMarketplaceKind?
     var area: AdminMarketplaceArea?
@@ -126,6 +140,7 @@ final class AdminMarketplaceViewModel {
         syncPurchases()
         guard canBuy(item) else { return }
         purchases.insert(item.id)
+        dataRevision += 1
         AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).save(purchases)
     }
 
@@ -153,6 +168,64 @@ final class AdminMarketplaceViewModel {
         isConnectedConnector(item) || ownership(of: item) == .purchased
     }
 
+    // MARK: Valori derivati (con memoria)
+
+    /// Quel che cambia i risultati: filtri, ricerca applicata e dati (connettori, acquisti, catalogo).
+    private struct CacheKey: Equatable {
+        let kind: AdminMarketplaceKind?
+        let area: AdminMarketplaceArea?
+        let ownership: AdminMarketplaceOwnershipFilter
+        let machineType: String?
+        let manufacturer: String?
+        let industry: String?
+        let query: String
+        let revision: Int
+    }
+
+    /// Gli id che passano la ricerca e quelli posseduti, calcolati una volta: `passes` poi è solo un confronto.
+    private struct Context {
+        /// `nil` senza ricerca: passano tutti.
+        let matching: Set<String>?
+        let owned: Set<String>
+    }
+
+    private struct Cache {
+        var key: CacheKey?
+        var context: Context?
+        var shelves: [AdminMarketplaceShelf]?
+        var kindChips: [AdminMarketplaceKindChip]?
+        var machineTypes: [AdminMarketplaceFacetOption]?
+        var manufacturers: [AdminMarketplaceFacetOption]?
+        var industries: [AdminMarketplaceFacetOption]?
+    }
+
+    @ObservationIgnored private var cache = Cache()
+
+    /// Leggere i filtri e `dataRevision` qui li fa osservare dalle viste che chiedono un valore derivato.
+    private var cacheKey: CacheKey {
+        CacheKey(kind: kind, area: area, ownership: ownershipFilter, machineType: machineType,
+                 manufacturer: manufacturer, industry: industry, query: appliedQuery, revision: dataRevision)
+    }
+
+    private func cached<T>(_ path: WritableKeyPath<Cache, T?>, compute: () -> T) -> T {
+        let key = cacheKey
+        if cache.key != key { cache = Cache(key: key) }
+        if let value = cache[keyPath: path] { return value }
+        let value = compute()
+        cache[keyPath: path] = value
+        return value
+    }
+
+    private var context: Context {
+        cached(\.context) {
+            let query = appliedQuery
+            let matching: Set<String>? = query.isEmpty ? nil : Set(catalog.filter { item in
+                index.searchIndex[item.id]?.contains { $0.localizedStandardContains(query) } ?? false
+            }.map(\.id))
+            return Context(matching: matching, owned: Set(catalog.filter(isOwned).map(\.id)))
+        }
+    }
+
     // MARK: Acquisti
 
     /// Gli acquisti sono per azienda: cambiata quella attiva si rileggono i suoi.
@@ -160,15 +233,16 @@ final class AdminMarketplaceViewModel {
         guard purchasesKey != companyKey else { return }
         purchasesKey = companyKey
         purchases = AdminMarketplacePurchases(companyId: backend.activeCompanyId, defaults: purchaseDefaults).load()
+        dataRevision += 1
     }
 
     // MARK: Filtri
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var isSearching: Bool { !appliedQuery.isEmpty }
 
     /// Le faccette si offrono (e valgono) solo guardando tutto o i full set.
     var showsMachineFacets: Bool {
-        (kind == nil || kind == .fullSet) && catalog.contains { $0.kind == .fullSet }
+        (kind == nil || kind == .fullSet) && index.hasFullSets
     }
 
     private var hasFacetFilter: Bool {
@@ -220,10 +294,17 @@ final class AdminMarketplaceViewModel {
 
     private enum Facet { case machineType, manufacturer, industry }
 
-    private func matchesSearch(_ item: AdminMarketplaceItem) -> Bool {
+    private func searchTextChanged() {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return true }
-        return index.searchIndex[item.id]?.contains { $0.localizedStandardContains(query) } ?? false
+        guard query != appliedQuery else {
+            searchDebouncer.cancel()
+            return
+        }
+        if query.isEmpty {
+            searchDebouncer.flush { appliedQuery = "" }
+        } else {
+            searchDebouncer.schedule { [weak self] in self?.appliedQuery = query }
+        }
     }
 
     /// Le faccette valgono per i full set; uno senza macchina non passa se ce n'è una scelta.
@@ -241,14 +322,15 @@ final class AdminMarketplaceViewModel {
     }
 
     /// `ignoringKind` per i conteggi del selettore; `skipped` per le opzioni di una faccetta (contate sulle altre).
-    private func passes(_ item: AdminMarketplaceItem, ignoringKind: Bool = false, skipping skipped: Facet? = nil) -> Bool {
+    private func passes(_ item: AdminMarketplaceItem, in context: Context, ignoringKind: Bool = false,
+                        skipping skipped: Facet? = nil) -> Bool {
         if !ignoringKind, let kind, item.kind != kind { return false }
         if let area, item.area != area { return false }
-        guard matchesSearch(item) else { return false }
+        if let matching = context.matching, !matching.contains(item.id) { return false }
         switch ownershipFilter {
         case .all: break
-        case .owned: if !isOwned(item) { return false }
-        case .available: if isOwned(item) { return false }
+        case .owned: if !context.owned.contains(item.id) { return false }
+        case .available: if context.owned.contains(item.id) { return false }
         }
         return matchesFacets(item, ignoring: skipped)
     }
@@ -261,7 +343,7 @@ final class AdminMarketplaceViewModel {
 
     private func extras(ignoringKind: Bool) -> [AdminConnector] {
         guard ignoringKind || kind == nil || kind == .connector, area == nil, !hasFacetFilter else { return [] }
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = appliedQuery
         return connectors
             .filter { index.connectorItems[$0.provider] == nil }
             .filter { query.isEmpty || $0.name.localizedStandardContains(query) || $0.provider.localizedStandardContains(query) }
@@ -280,8 +362,11 @@ final class AdminMarketplaceViewModel {
     /// Con "Tutti" uno scaffale per tipo, con un tipo scelto uno per area; i vuoti si saltano. I connettori
     /// "in arrivo" non stanno tra quelli che si possono usare: con "Tutti" chiudono lo scaffale dei connettori,
     /// per area hanno uno scaffale loro, l'ultimo.
-    var shelves: [AdminMarketplaceShelf] {
-        let visible = catalog.filter { passes($0) }
+    var shelves: [AdminMarketplaceShelf] { cached(\.shelves) { makeShelves() } }
+
+    private func makeShelves() -> [AdminMarketplaceShelf] {
+        let context = self.context
+        let visible = catalog.filter { passes($0, in: context) }
         let available = visible.filter { !$0.isPreview }
         let upcoming = Self.sorted(visible.filter(\.isPreview))
         let extra = extras(ignoringKind: false)
@@ -326,9 +411,12 @@ final class AdminMarketplaceViewModel {
     // MARK: Selettore di tipo
 
     /// "Tutti" e un chip per tipo, con quanti elementi ci sono ignorando il tipo scelto.
-    var kindChips: [AdminMarketplaceKindChip] {
+    var kindChips: [AdminMarketplaceKindChip] { cached(\.kindChips) { makeKindChips() } }
+
+    private func makeKindChips() -> [AdminMarketplaceKindChip] {
+        let context = self.context
         var counts: [AdminMarketplaceKind: Int] = [:]
-        for item in catalog where passes(item, ignoringKind: true) { counts[item.kind, default: 0] += 1 }
+        for item in catalog where passes(item, in: context, ignoringKind: true) { counts[item.kind, default: 0] += 1 }
         counts[.connector, default: 0] += extras(ignoringKind: true).count
         let total = counts.values.reduce(0, +)
         let all = AdminMarketplaceKindChip(kind: nil, title: String(localized: "All"), count: total, isSelected: kind == nil)
@@ -340,17 +428,24 @@ final class AdminMarketplaceViewModel {
 
     // MARK: Faccette dei full set
 
-    var machineTypeOptions: [AdminMarketplaceFacetOption] { options(for: .machineType, selected: machineType) { $0.type } }
-    var manufacturerOptions: [AdminMarketplaceFacetOption] { options(for: .manufacturer, selected: manufacturer) { $0.manufacturer } }
-    var industryOptions: [AdminMarketplaceFacetOption] { options(for: .industry, selected: industry) { $0.industry } }
+    var machineTypeOptions: [AdminMarketplaceFacetOption] {
+        cached(\.machineTypes) { options(for: .machineType, selected: machineType) { $0.type } }
+    }
+    var manufacturerOptions: [AdminMarketplaceFacetOption] {
+        cached(\.manufacturers) { options(for: .manufacturer, selected: manufacturer) { $0.manufacturer } }
+    }
+    var industryOptions: [AdminMarketplaceFacetOption] {
+        cached(\.industries) { options(for: .industry, selected: industry) { $0.industry } }
+    }
 
     /// I valori presenti nei full set, contati contro le altre faccette (`facetOptions` della web); il valore
     /// scelto resta in lista anche a zero, per poterlo togliere.
     private func options(for facet: Facet, selected: String?,
                          value: (AdminMarketplaceItem.Machine) -> String) -> [AdminMarketplaceFacetOption] {
+        let context = self.context
         var counts: [String: Int] = [:]
         for item in catalog where item.kind == .fullSet {
-            guard let machine = item.machine, passes(item, ignoringKind: true, skipping: facet) else { continue }
+            guard let machine = item.machine, passes(item, in: context, ignoringKind: true, skipping: facet) else { continue }
             counts[value(machine), default: 0] += 1
         }
         if let selected, counts[selected] == nil { counts[selected] = 0 }
@@ -365,13 +460,18 @@ final class AdminMarketplaceViewModel {
     var attentionCount: Int { connectors.filter { $0.knownStatus == .attention }.count }
     var toolCount: Int { connectors.filter { $0.knownStatus == .connected }.reduce(0) { $0 + $1.toolCount } }
     /// Gli elementi del catalogo che l'azienda possiede: connettori collegati e acquisti.
-    var ownedCount: Int { catalog.filter(isOwned).count }
+    var ownedCount: Int { context.owned.count }
 
     /// MaintainX si collega con una chiave anche quando il server non lo elenca.
     var canAddMaintainX: Bool { canManage && !connectors.contains(where: \.isMaintainX) }
 
-    func connector(for provider: String) -> AdminConnector? {
-        connectors.first { $0.provider == provider }
+    func connector(for provider: String) -> AdminConnector? { connectorsByProvider[provider] }
+
+    /// Ogni cambio della lista passa da qui: tiene allineati la ricerca per provider e i valori derivati.
+    private func setConnectors(_ list: [AdminConnector]) {
+        connectors = list
+        connectorsByProvider = Dictionary(list.map { ($0.provider, $0) }, uniquingKeysWith: { first, _ in first })
+        dataRevision += 1
     }
 
     // MARK: Caricamento
@@ -383,6 +483,17 @@ final class AdminMarketplaceViewModel {
         guard !isCatalogReady else { return }
         index = loaded
         isCatalogReady = true
+        dataRevision += 1
+    }
+
+    /// Entrando nella sezione: rilegge i connettori solo la prima volta, dopo un errore, per un'altra azienda o
+    /// se la lista ha più di 45 secondi. Tirare per aggiornare e le modifiche chiamano `load()`, sempre.
+    func loadIfNeeded() async {
+        if loadKey != loadedKey || !hasLoaded || errorMessage != nil || freshness.isStale() {
+            await load()
+        } else {
+            await ensureCatalog()
+        }
     }
 
     func load() async {
@@ -390,7 +501,7 @@ final class AdminMarketplaceViewModel {
         // Altra azienda: la lista vecchia non vale, non si mostra mentre arriva la nuova.
         let key = loadKey
         if key != loadedKey {
-            connectors = []
+            setConnectors([])
             hasLoaded = false
             errorMessage = nil
             loadedKey = key
@@ -402,9 +513,10 @@ final class AdminMarketplaceViewModel {
         }
         // Solo il catalogo: la lista dei connettori è di owner e admin.
         guard canManage else {
-            connectors = []
+            setConnectors([])
             hasLoaded = true
             errorMessage = nil
+            freshness.markLoaded()
             return
         }
         isLoading = true
@@ -412,10 +524,11 @@ final class AdminMarketplaceViewModel {
         do {
             let response = try await backend.api.call(AdminMarketplaceAPI.connectors(companyId: companyId))
             guard key == loadKey, !Task.isCancelled else { return }
-            connectors = response.connectors
+            setConnectors(response.connectors)
             hasLoaded = true
             errorMessage = nil
             lastUpdated = .now
+            freshness.markLoaded()
         } catch {
             guard key == loadKey, let message = AdminMarketplaceFailure.message(for: error, backend: backend) else { return }
             errorMessage = message
@@ -426,11 +539,13 @@ final class AdminMarketplaceViewModel {
 
     /// Un connettore cambiato nel dettaglio o nel form: si aggiorna la riga senza ricaricare.
     func apply(_ connector: AdminConnector) {
-        if let index = connectors.firstIndex(where: { $0.provider == connector.provider }) {
-            connectors[index] = connector
+        var list = connectors
+        if let index = list.firstIndex(where: { $0.provider == connector.provider }) {
+            list[index] = connector
         } else {
-            connectors.append(connector)
+            list.append(connector)
         }
+        setConnectors(list)
     }
 
     func makeDetailViewModel(for provider: String) -> AdminConnectorDetailViewModel? {
@@ -447,13 +562,16 @@ final class AdminMarketplaceViewModel {
 
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {
-        connectors = []
+        setConnectors([])
+        freshness.invalidate()
+        searchDebouncer.cancel()
         isLoading = false
         hasLoaded = false
         errorMessage = nil
         lastUpdated = nil
         loadedKey = nil
         searchText = ""
+        appliedQuery = ""
         kind = nil
         clearFilters()
         maintainXForm = nil

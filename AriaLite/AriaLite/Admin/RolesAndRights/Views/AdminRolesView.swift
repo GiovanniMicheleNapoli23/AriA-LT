@@ -4,7 +4,7 @@
 //
 //  Created by Giovanni Michele on 12/11/26.
 //
-//  La sezione Roles & Rights: elenco dei ruoli in una lista raggruppata (ruolo predefinito per gli admin, Owner, il tuo, alti, base), e sheet per creare, eliminare e aggiungere persone.
+//  La vista Roles della sezione Users (l'ex sezione Roles & Rights): elenco dei ruoli in una lista raggruppata (ruolo predefinito per gli admin, Owner, il tuo, alti, base), e sheet per creare, eliminare e aggiungere persone.
 //
 
 import SwiftUI
@@ -13,14 +13,19 @@ struct AdminRolesView: View {
     @Bindable var viewModel: AdminRolesViewModel
     /// Per la scheda della persona, che si apre dalla pagina Persone di un ruolo.
     let members: AdminUsersViewModel
+    /// Le viste della sezione (Users e Roles): la scelta in alto, se si aprono entrambe.
+    var tabs: AdminUsersSectionViewModel? = nil
 
     var body: some View {
         NavigationStack(path: $viewModel.path) {
             content
                 .liteBackground()
-                .navigationTitle("Roles & Rights")
+                .navigationTitle("Users")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
+                    if let tabs, tabs.showsTabs {
+                        ToolbarItem(placement: .principal) { AdminUsersTabPicker(section: tabs) }
+                    }
                     if viewModel.placeholder == nil || viewModel.placeholder == .empty {
                         ToolbarItem(placement: .topBarTrailing) { AdminRoleNewButton(viewModel: viewModel) }
                     }
@@ -46,7 +51,7 @@ struct AdminRolesView: View {
             AdminRoleAddPeopleView(viewModel: form)
         }
         .adminRolesToast(viewModel)
-        .task(id: viewModel.loadKey) { await viewModel.load() }
+        .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }
 
     @ViewBuilder

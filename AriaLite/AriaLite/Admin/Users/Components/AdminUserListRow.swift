@@ -28,7 +28,7 @@ struct AdminUserListRow: View {
                         AdminMemberBadge(text: badge.text, tint: tint(badge.tone))
                     }
                 }
-                if let onlineText = item.onlineText { onlineLine(onlineText) }
+                if item.showsOnlineLine { onlineLine }
                 if let email = item.email, email != item.name {
                     Text(verbatim: email)
                         .font(.footnote)
@@ -44,15 +44,20 @@ struct AdminUserListRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func onlineLine(_ text: String) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(item.isOnline ? Color.green : Color.secondary.opacity(0.5))
-                .frame(width: dotSize, height: dotSize)
-                .accessibilityHidden(true)
-            Text(verbatim: text)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+    /// La riga "online" si riscrive da sola ogni 30 secondi: invalida solo questa riga, non l'elenco.
+    private var onlineLine: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            if let line = item.onlineLine(at: context.date) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(line.isOnline ? Color.green : Color.secondary.opacity(0.5))
+                        .frame(width: dotSize, height: dotSize)
+                        .accessibilityHidden(true)
+                    Text(verbatim: line.text)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 

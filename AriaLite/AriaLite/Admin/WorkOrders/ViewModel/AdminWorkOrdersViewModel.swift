@@ -22,11 +22,22 @@ final class AdminWorkOrdersViewModel {
     /// Persone, squadre e asset: nomi per la lista, scelte per il form.
     let directory: AdminWorkOrderDirectory
 
-    private(set) var orders: [AdminWorkOrder] = []
+    private(set) var orders: [AdminWorkOrder] = [] {
+        didSet { invalidateRows() }
+    }
     private(set) var filters = AdminWorkOrderFilters()
     /// Solo sulle pagine scaricate: la rotta non ordina.
-    var sort: AdminWorkOrderSort = .newest
-    var searchText = ""
+    var sort: AdminWorkOrderSort = .newest {
+        didSet { if sort != oldValue { invalidateRows() } }
+    }
+    /// Il testo del campo di ricerca: la lista si rifiltra solo quando `appliedQuery` lo raggiunge.
+    var searchText = "" {
+        didSet { searchTextChanged() }
+    }
+    /// La ricerca applicata (senza spazi ai bordi): segue `searchText` dopo una breve pausa, subito se si svuota.
+    private(set) var appliedQuery = "" {
+        didSet { if appliedQuery != oldValue { invalidateRows() } }
+    }
     /// Cambio di stato, completamento e assegnazione automatica dalle righe.
     let actions: AdminWorkOrderQuickActions
 
@@ -49,6 +60,10 @@ final class AdminWorkOrdersViewModel {
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     /// Lo stabilimento della lista mostrata: se cambia, si ricarica.
     @ObservationIgnored private var loadedPlantId: String?
+    @ObservationIgnored private let searchDebouncer = AriaDebouncer()
+    /// Cambia a ogni modifica di ordini, ordinamento o ricerca: invalida le righe in cache.
+    private(set) var rowsVersion = 0
+    @ObservationIgnored private var rowsCache: RowsCache?
 
     init(backend: AriaBackend) {
         self.backend = backend
@@ -64,10 +79,12 @@ final class AdminWorkOrdersViewModel {
     func reset() {
         loadTask?.cancel()
         generation += 1
+        searchDebouncer.cancel()
         orders = []
         filters = AdminWorkOrderFilters()
         sort = .newest
         searchText = ""
+        appliedQuery = ""
         actions.reset()
         hasLoaded = false
         isLoading = false
@@ -82,11 +99,68 @@ final class AdminWorkOrdersViewModel {
 
     // MARK: Righe
 
-    var rows: [AdminWorkOrderRowItem] { visibleOrders.map(row) }
+    /// Le righe a schermo: filtrate, ordinate e pronte, ricalcolate solo se cambiano dati, ordinamento, ricerca o anagrafica.
+    var rows: [AdminWorkOrderRowItem] {
+        let base = rowsSnapshot.rows
+        // Le righe con un cambio di stato in volo si segnano al momento: la cache non le conosce.
+        let busy = actions.busyIds
+        guard !busy.isEmpty else { return base }
+        return base.map { item in
+            guard busy.contains(item.id) else { return item }
+            var busyItem = item
+            busyItem.isBusy = true
+            return busyItem
+        }
+    }
+
+    private struct RowsKey: Equatable {
+        let version: Int
+        let directory: Int
+    }
+
+    private final class RowsCache {
+        let key: RowsKey
+        let rows: [AdminWorkOrderRowItem]
+        /// L'id dell'ultima riga, per capire quando caricare la pagina dopo.
+        let lastId: String?
+
+        init(key: RowsKey, rows: [AdminWorkOrderRowItem]) {
+            self.key = key
+            self.rows = rows
+            lastId = rows.last?.id
+        }
+    }
+
+    /// Letta dal body: registra ordini, ordinamento, ricerca (`rowsVersion`) e anagrafica (`revision`).
+    private var rowsSnapshot: RowsCache {
+        let key = RowsKey(version: rowsVersion, directory: directory.revision)
+        if let rowsCache, rowsCache.key == key { return rowsCache }
+        let built = RowsCache(key: key, rows: visibleOrders.map(row))
+        rowsCache = built
+        return built
+    }
+
+    private func invalidateRows() {
+        rowsVersion += 1
+    }
+
+    /// La ricerca si applica dopo una pausa nella digitazione; svuotando il campo, subito.
+    private func searchTextChanged() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query != appliedQuery else {
+            searchDebouncer.cancel()
+            return
+        }
+        if query.isEmpty {
+            searchDebouncer.flush { appliedQuery = "" }
+        } else {
+            searchDebouncer.schedule { [weak self] in self?.appliedQuery = query }
+        }
+    }
 
     /// Gli ordini scaricati che corrispondono alla ricerca (titolo, tag dell'asset, zona), nell'ordine scelto.
     private var visibleOrders: [AdminWorkOrder] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = appliedQuery
         let matching = query.isEmpty ? orders
             : orders.filter { [$0.title, $0.assetTag, $0.zone].contains { $0?.localizedStandardContains(query) == true } }
         return sort.sorted(matching)
@@ -104,11 +178,11 @@ final class AdminWorkOrdersViewModel {
             isOverdue: order.isOverdue(),
             progress: steps?.fraction,
             progressText: steps.map { "\($0.reported)/\($0.total)" },
-            isBusy: actions.isBusy(order)
+            isBusy: false
         )
     }
 
-    var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    var isSearching: Bool { !appliedQuery.isEmpty }
 
     /// Senza stabilimento la lista sarebbe di tutta l'azienda, e il form non saprebbe dove creare.
     var plantName: String? { backend.activePlantName }
@@ -218,7 +292,7 @@ final class AdminWorkOrdersViewModel {
 
     /// Scorrendo fino all'ultima riga visibile arriva la pagina dopo.
     func loadMoreIfNeeded(after item: AdminWorkOrderRowItem) {
-        guard item.id == visibleOrders.last?.id else { return }
+        guard item.id == rowsSnapshot.lastId else { return }
         loadMore()
     }
 

@@ -10,13 +10,15 @@
 import SwiftUI
 
 struct AdminAgentStudioRunLogCard: View {
-    let events: [AdminAgentStudioRunEvent]
+    let viewModel: AdminAgentStudioRunViewModel
 
     private static let tailCount = 50
 
     @State private var showsAll = false
 
     var body: some View {
+        // Letto qui: solo la scheda si aggiorna quando il registro cresce, non tutta la schermata.
+        let events = viewModel.logEvents
         AdminAgentStudioDisclosureCard(title: "Technical log", systemImage: "list.bullet.rectangle", startsExpanded: false) {
             VStack(alignment: .leading, spacing: 8) {
                 if events.isEmpty {

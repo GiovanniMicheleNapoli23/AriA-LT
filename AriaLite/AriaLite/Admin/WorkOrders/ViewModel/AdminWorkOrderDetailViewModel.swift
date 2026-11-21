@@ -17,6 +17,8 @@ import Observation
 @Observable
 final class AdminWorkOrderDetailViewModel {
     private let list: AdminWorkOrdersViewModel
+    /// Quando l'ordine è stato letto: tornando sulla schermata da una figlia non si rilegge entro 45 secondi.
+    @ObservationIgnored private var freshness = AriaFreshness()
     private(set) var order: AdminWorkOrder
     private(set) var reports: [AdminWorkOrderStepReport] = []
 
@@ -73,6 +75,12 @@ final class AdminWorkOrderDetailViewModel {
 
     // MARK: Caricamento
 
+    /// All'apparire della schermata: legge la prima volta, poi solo se i dati sono vecchi.
+    func loadIfNeeded() async {
+        guard freshness.isStale() else { return }
+        await load()
+    }
+
     /// Ordine completo e resoconti insieme; i resoconti sono un di più: se mancano resta la procedura.
     func load() async {
         isLoading = true
@@ -84,8 +92,10 @@ final class AdminWorkOrderDetailViewModel {
             let fresh = try await detail
             order = fresh
             errorMessage = nil
+            freshness.markLoaded()
             list.didUpdate(fresh)
         } catch {
+            freshness.invalidate()
             if let message = AdminWorkOrderFailure.message(for: error, backend: backend) { errorMessage = message }
         }
         if let rows = await reports { self.reports = rows }

@@ -39,6 +39,10 @@ final class AriaAgentChatViewModel {
     /// Il pannello mostrato in fondo: segue `wantedPanel` con un'animazione (la decide la vista).
     var panel: AriaChatBottomPanel = .composer
     var scroll = AriaChatScrollFollow()
+    /// Ultimo scorrimento in fondo e quello rimandato: durante lo streaming l'altezza cambia a ogni riga che va a capo.
+    @ObservationIgnored private var lastFollowAt: ContinuousClock.Instant?
+    @ObservationIgnored private var pendingFollow: Task<Void, Never>?
+    @ObservationIgnored private var latestSizes: AriaChatScrollFollow.Sizes?
     var viewportHeight: CGFloat = 700
     /// Altezza degli avvisi sopra il pannello (in orizzontale scorrono in uno spazio limitato).
     var noticesHeight: CGFloat = 0
@@ -84,7 +88,7 @@ final class AriaAgentChatViewModel {
     }
 
     var showsJumpToBottom: Bool {
-        scroll.showsJumpToBottom && !chat.messages.isEmpty
+        scroll.showsJumpToBottom && chat.hasMessages
     }
 
     /// Il Real-time Learning passa davanti: è appena stato annunciato dall'isola e non blocca niente
@@ -179,7 +183,9 @@ final class AriaAgentChatViewModel {
 
     // MARK: - Haptic
 
-    var messageCount: Int { chat.messages.count }
+    /// Valori memorizzati nella chat: cambiano solo quando cambia il numero dei messaggi, non a ogni pezzo in streaming.
+    var messageCount: Int { chat.messageCount }
+    var hasMessages: Bool { chat.hasMessages }
 
     /// Esito dell'ultima pausa decisa (approvazione o LOTO).
     var lastInterruptOutcome: AriaInterruptOutcome? {
@@ -290,6 +296,43 @@ final class AriaAgentChatViewModel {
 
     func jumpToBottom() {
         scroll.followBottom()
+    }
+
+    /// Intervallo minimo tra due scorrimenti in fondo durante lo streaming.
+    private static let followInterval: Duration = .milliseconds(100)
+
+    /// Cambia l'altezza del contenuto o della finestra: se si segue, si torna in fondo, al massimo una volta ogni
+    /// 100 ms. Il primo cambio scorre subito; quelli che arrivano in mezzo ne rimandano uno solo, in coda,
+    /// così a fine testo si resta comunque in fondo.
+    func contentSizesChanged(_ sizes: AriaChatScrollFollow.Sizes, scrollToBottom: @escaping @MainActor () -> Void) {
+        latestSizes = sizes
+        guard scroll.sticksToBottom(sizes) else { return }
+        let now = ContinuousClock.now
+        guard let last = lastFollowAt, now - last < Self.followInterval else {
+            lastFollowAt = now
+            scrollToBottom()
+            return
+        }
+        guard pendingFollow == nil else { return }
+        let wait = Self.followInterval - (now - last)
+        pendingFollow = Task { [weak self] in
+            try? await Task.sleep(for: wait)
+            guard !Task.isCancelled, let self else { return }
+            pendingFollow = nil
+            // Nel frattempo l'operatore può aver ripreso a scorrere: si ricontrolla con le misure più recenti.
+            guard let sizes = latestSizes, scroll.sticksToBottom(sizes) else { return }
+            lastFollowAt = .now
+            scrollToBottom()
+        }
+    }
+
+    /// Un messaggio nuovo (o "torna in fondo"): si segue subito e si annulla lo scorrimento rimandato.
+    func followBottomNow(scrollToBottom: @MainActor () -> Void) {
+        pendingFollow?.cancel()
+        pendingFollow = nil
+        scroll.followBottom()
+        lastFollowAt = .now
+        scrollToBottom()
     }
 
     func dismissNotice() {

@@ -19,6 +19,8 @@ nonisolated struct AdminMarketplaceIndex: Sendable {
     /// Id globale → i pacchetti che lo contengono (plugin, agent pack, full set).
     let bundledIn: [String: [String]]
     let searchIndex: [String: [String]]
+    /// C'è almeno un full set: le faccette di macchina, costruttore e settore hanno senso solo allora.
+    let hasFullSets: Bool
 
     /// Prima del caricamento: niente elementi.
     static let empty = AdminMarketplaceIndex(catalog: [])
@@ -30,6 +32,7 @@ nonisolated struct AdminMarketplaceIndex: Sendable {
         connectorItems = Dictionary(catalog.filter { $0.kind == .connector }.map { ($0.sourceId, $0) },
                                     uniquingKeysWith: { first, _ in first })
         bundledIn = Self.bundles(in: catalog, byID: byID)
+        hasFullSets = catalog.contains { $0.kind == .fullSet }
         searchIndex = Dictionary(catalog.map { ($0.id, $0.searchHaystack) }, uniquingKeysWith: { first, _ in first })
     }
 

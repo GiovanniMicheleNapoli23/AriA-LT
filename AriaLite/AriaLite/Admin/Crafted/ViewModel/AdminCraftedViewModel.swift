@@ -44,6 +44,8 @@ final class AdminCraftedViewModel {
     var lastRemoved: AdminCraftedArtifact?
 
     @ObservationIgnored var loadedKey: String?
+    /// Da quando i rapporti a schermo sono freschi: rientrando prima la sezione non li richiede.
+    @ObservationIgnored private var freshness = AriaFreshness()
     @ObservationIgnored var undoTask: Task<Void, Never>?
     /// I generatori di un'azienda lasciata mentre lavoravano: finiscono nel loro store.
     @ObservationIgnored var retiredGenerators: [AdminCraftedGenerator] = []
@@ -65,17 +67,18 @@ final class AdminCraftedViewModel {
 
     // MARK: Azienda
 
-    /// Gli store sono per azienda: cambiata l'azienda, se ne apre uno nuovo (e quello vecchio lascia finire i suoi turni).
+    /// Gli store sono per azienda e per account: cambiata l'azienda (o chi è entrato), se ne apre uno nuovo
+    /// (e quello vecchio lascia finire i suoi turni).
     func syncCompany() {
-        guard let companyId = backend.activeCompanyId else {
+        guard let companyId = backend.activeCompanyId, let accountId = backend.mobileAccount?.id else {
             dropStores()
             return
         }
-        guard store?.companyId != companyId else { return }
+        guard store?.companyId != companyId || store?.accountId != accountId else { return }
         dropStores()
-        let newStore = AdminCraftedArtifactStore(companyId: companyId)
+        let newStore = AdminCraftedArtifactStore(companyId: companyId, accountId: accountId)
         store = newStore
-        reportVersions = AdminCraftedReportVersionStore(companyId: companyId)
+        reportVersions = AdminCraftedReportVersionStore(companyId: companyId, accountId: accountId)
         generator = AdminCraftedGenerator(backend: backend, store: newStore)
     }
 
@@ -93,6 +96,16 @@ final class AdminCraftedViewModel {
 
     // MARK: Caricamento
 
+    /// All'entrata nella sezione: legge se mai letti, se è cambiato il contesto o se i rapporti hanno più di 45 s.
+    /// Con i rapporti già a schermo l'aggiornamento è silenzioso (`load` non svuota niente).
+    func loadIfNeeded() async {
+        syncCompany()
+        guard showsReviews, backend.activeCompanyId != nil else { return await load() }
+        guard loadedKey != loadKey || !reviewsLoaded || freshness.isStale() else { return }
+        await load()
+    }
+
+    /// Lettura forzata: tirare per aggiornare, "Riprova".
     func load() async {
         syncCompany()
         let key = loadKey
@@ -116,8 +129,10 @@ final class AdminCraftedViewModel {
             reviewsLoaded = true
             reviewsNote = nil
             lastUpdated = .now
+            freshness.markLoaded()
         } catch {
             guard key == loadKey, !Task.isCancelled else { return }
+            freshness.invalidate()
             apply(loadError: error)
         }
     }
@@ -147,6 +162,7 @@ final class AdminCraftedViewModel {
     }
 
     private func clearReviews() {
+        freshness.invalidate()
         reviews = []
         reviewsLoaded = false
         reviewsNote = nil

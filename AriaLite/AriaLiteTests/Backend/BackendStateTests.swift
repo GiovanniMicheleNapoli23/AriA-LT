@@ -57,7 +57,7 @@ extension BackendTests {
             server.route("POST /api/auth/mobile/request-link", .json("{}", status: 202))
             TestEnv.stubSignIn()
             let backend = AriaBackend()
-            try await backend.sendSignInLink(email: "mario@acme.test")
+            try await backend.sendOperatorLink(email: "mario@acme.test")
             #expect(backend.pendingLinkEmail != nil)
             try await backend.completeSignIn(with: AriaSignInLink(token: "t"))
             #expect(backend.pendingLinkEmail == nil)
@@ -182,7 +182,7 @@ extension BackendTests {
         @Test func sendingALinkNormalizesTheEmailAndRemembersIt() async throws {
             server.route("POST /api/auth/mobile/request-link", .json("{}", status: 202))
             let backend = AriaBackend()
-            try await backend.sendSignInLink(email: "  Mario@Acme.TEST \n")
+            try await backend.sendOperatorLink(email: "  Mario@Acme.TEST \n")
             #expect(backend.pendingLinkEmail == "mario@acme.test")
             #expect(server.calls("POST /api/auth/mobile/request-link").first?.json as? [String: String] == ["email": "mario@acme.test"])
             #expect(defaults.object(forKey: "aria.magic_link_sent_at") is Date)
@@ -191,7 +191,28 @@ extension BackendTests {
         @Test func aRejectedRequestLeavesNoPendingLink() async {
             server.route("POST /api/auth/mobile/request-link", .json("{}", status: 429))
             let backend = AriaBackend()
-            await #expect(throws: AriaError.self) { try await backend.sendSignInLink(email: "a@b.c") }
+            await #expect(throws: AriaError.self) { try await backend.sendOperatorLink(email: "a@b.c") }
+            #expect(backend.pendingLinkEmail == nil)
+        }
+
+        /// Dal login parte un solo link, quindi una sola email: il magic link della web, con il captcha.
+        @Test func signInAsksOnlyForTheWebLinkBehindTheCaptcha() async throws {
+            server.route("POST /api/auth/sign-in/magic-link", .json(#"{"status":true}"#))
+            let backend = AriaBackend()
+            try await backend.sendSignInLink(email: " Mario@Acme.TEST ", captcha: "CAPTCHA")
+            #expect(server.calls.count == 1, "nessun'altra richiesta: il link dell'operatore non parte insieme")
+            let call = try #require(server.calls("POST /api/auth/sign-in/magic-link").first)
+            #expect(call.host == backend.authURL.host(), "all'host di accesso, come il form della web")
+            #expect(call.header("x-captcha-response") == "CAPTCHA")
+            #expect(call.json as? [String: String] == ["email": "mario@acme.test", "callbackURL": "/?from=aria-ios"])
+            #expect(server.calls("POST /api/auth/mobile/request-link").isEmpty)
+            #expect(backend.pendingLinkEmail == "mario@acme.test")
+        }
+
+        @Test func aCaptchaTheWebRefusesLeavesNoPendingLink() async {
+            server.route("POST /api/auth/sign-in/magic-link", .json(#"{"code":"VERIFICATION_FAILED"}"#, status: 403))
+            let backend = AriaBackend()
+            await #expect(throws: AriaError.self) { try await backend.sendSignInLink(email: "a@b.c", captcha: "BAD") }
             #expect(backend.pendingLinkEmail == nil)
         }
 
@@ -205,12 +226,15 @@ extension BackendTests {
             defaults.set("mario@acme.test", forKey: "aria.magic_link_email")
             defaults.set(Date.now.addingTimeInterval(-16 * 60), forKey: "aria.magic_link_sent_at")
             #expect(AriaBackend().pendingLinkEmail == nil)
+            // Scaduta, l'email non resta salvata.
+            #expect(defaults.string(forKey: "aria.magic_link_email") == nil)
+            #expect(defaults.object(forKey: "aria.magic_link_sent_at") == nil)
         }
 
         @Test func cancellingThePendingLinkForgetsIt() async throws {
             server.route("POST /api/auth/mobile/request-link", .json("{}", status: 202))
             let backend = AriaBackend()
-            try await backend.sendSignInLink(email: "a@b.c")
+            try await backend.sendOperatorLink(email: "a@b.c")
             backend.cancelPendingLink()
             #expect(backend.pendingLinkEmail == nil)
             #expect(AriaBackend().pendingLinkEmail == nil)

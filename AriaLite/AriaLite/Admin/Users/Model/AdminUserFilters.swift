@@ -31,7 +31,15 @@ nonisolated struct AdminUserFilters: Equatable, Sendable {
 
     /// Il testo è contenuto nel nome o nell'email, senza badare alle maiuscole.
     static func matchesSearch(_ row: AdminUserRow, _ query: String) -> Bool {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        matches(row, needle: needle(for: query))
+    }
+
+    /// Il testo cercato, ripulito una volta sola per tutte le righe.
+    private static func needle(for query: String) -> String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private static func matches(_ row: AdminUserRow, needle: String) -> Bool {
         guard !needle.isEmpty else { return true }
         return row.name.lowercased().contains(needle) || (row.email ?? "").lowercased().contains(needle)
     }
@@ -53,6 +61,7 @@ nonisolated struct AdminUserFilters: Equatable, Sendable {
     }
 
     func apply(to people: [AdminUserRow], query: String, now: Date) -> [AdminUserRow] {
-        people.filter { Self.matchesSearch($0, query) && matches($0, now: now) }
+        let needle = Self.needle(for: query)
+        return people.filter { Self.matches($0, needle: needle) && matches($0, now: now) }
     }
 }

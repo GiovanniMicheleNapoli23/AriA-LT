@@ -25,6 +25,16 @@ extension AdminUsageViewModel {
         await readEverything(epoch: epoch, company: company)
     }
 
+    /// Entrando nella sezione: legge se non c'è niente in mano (prima volta, dopo un errore o una chiusura) o se il
+    /// cruscotto ha più di 45 secondi; altrimenti mostra quello che c'è. Tirare per aggiornare, il primo piano e le
+    /// scritture della fatturazione chiamano `refresh()`, che rilegge sempre.
+    func loadIfNeeded() async {
+        claimCompany()
+        if currentDashboard == nil || sectionClosed || freshness.isStale() {
+            await load()
+        }
+    }
+
     /// Pull to refresh, primo piano e dopo una scrittura: cruscotto, saldo e config (forzata).
     func refresh() async {
         claimCompany()
@@ -79,6 +89,7 @@ extension AdminUsageViewModel {
             guard isCurrent(epoch: epoch, company: company) else { return }
             currentDashboard = fresh
             currentPhase = .loaded
+            freshness.markLoaded()
             cycles = fresh.cycles
             if let start = fresh.period?.start, let end = fresh.period?.end {
                 currentCycle = AriaUsageDashboard.Cycle(start: start, end: end)

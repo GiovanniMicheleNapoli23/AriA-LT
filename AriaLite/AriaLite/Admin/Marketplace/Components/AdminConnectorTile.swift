@@ -18,7 +18,7 @@ struct AdminConnectorTile: View {
             HStack(alignment: .top) {
                 AdminConnectorIcon(provider: connector.provider, name: connector.name)
                 Spacer(minLength: 8)
-                AdminConnectorStatusBadge(status: connector.viewerStatus)
+                AdminConnectorStatusBadge(status: connector.viewerStatus, fitsWidth: true)
             }
             Text(connector.name)
                 .font(.headline)

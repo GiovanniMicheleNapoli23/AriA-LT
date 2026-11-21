@@ -160,11 +160,11 @@ nonisolated enum AdminUsageFormat {
 
     // MARK: Interno
 
-    private static var utcCalendar: Calendar {
+    private static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         return calendar
-    }
+    }()
 
     private static func isItalian(_ locale: Locale) -> Bool {
         locale.language.languageCode?.identifier == "it"
@@ -175,12 +175,17 @@ nonisolated enum AdminUsageFormat {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// Un formattatore per lingua e formato, creato una volta sola (le etichette dei grafici ne chiedono decine).
+    private static let formatters = AriaLocaleFormatterCache<DateFormatter>()
+
     private static func format(_ date: Date, template: String, locale: Locale) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
-        formatter.setLocalizedDateFormatFromTemplate(template)
-        return formatter.string(from: date)
+        formatters.formatter(variant: template, locale: locale) {
+            let formatter = DateFormatter()
+            formatter.locale = locale
+            formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+            formatter.setLocalizedDateFormatFromTemplate(template)
+            return formatter
+        }.string(from: date)
     }
 
     private static func rounded(_ value: Decimal, scale: Int, mode: NSDecimalNumber.RoundingMode = .plain) -> Decimal {

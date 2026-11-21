@@ -37,11 +37,6 @@ nonisolated struct AriaNDJSONSplitter {
         return nil
     }
 
-    /// Un blocco di byte: tutte le righe che si chiudono al suo interno.
-    mutating func consume(_ chunk: some Sequence<UInt8>) -> [AriaJSON] {
-        chunk.compactMap { consume($0) }
-    }
-
     /// Fine del corpo: l'ultima riga senza `\n` vale lo stesso.
     mutating func finish() -> AriaJSON? {
         defer { buffer.removeAll(); discarding = false }

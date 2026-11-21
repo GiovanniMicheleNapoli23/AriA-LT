@@ -8,6 +8,7 @@
 //  trascrive, testo che si aggiunge, "Scarta"), contesto aggiunto dal "+" e contatore della memoria.
 //
 
+import ImageIO
 import Observation
 import PhotosUI
 import SwiftUI
@@ -173,8 +174,10 @@ final class AriaChatComposerViewModel {
     }
 
     /// Quando richiedere il contatore del contesto: cambio di conversazione o turno finito.
+    /// Legge solo `messageCount` (non `messages`): il composer non si ridisegna a ogni pezzo in streaming.
     var contextRefreshKey: ContextRefresh {
-        ContextRefresh(sessionId: chat.sessionId, messages: chat.messages.count, streaming: chat.isStreaming)
+        ContextRefresh(sessionId: chat.sessionId, messages: chat.messageCount, streaming: chat.isStreaming,
+                       loading: chat.isLoadingHistory)
     }
 
     /// L'anello sparisce (contatore non più disponibile, barra bloccata).
@@ -189,6 +192,8 @@ final class AriaChatComposerViewModel {
         let sessionId: String
         let messages: Int
         let streaming: Bool
+        /// Storico in caricamento (ripristino): il contatore si chiede a caricamento finito, non a ogni passo.
+        let loading: Bool
     }
 
     // MARK: - Pulsante principale
@@ -303,7 +308,7 @@ final class AriaChatComposerViewModel {
 
     /// Il contatore del contesto si aggiorna a ogni turno finito e quando si cambia conversazione.
     func refreshContextUsage() async {
-        guard !chat.isStreaming else { return }
+        guard !chat.isStreaming, !chat.isLoadingHistory else { return }
         await chat.loadContextUsage()
     }
 
@@ -330,13 +335,15 @@ final class AriaChatComposerViewModel {
 
     // MARK: - Aggiunta
 
-    func addImage(_ image: UIImage, name: String) {
-        let thumbnail = image.preparingThumbnail(of: CGSize(width: 168, height: 168)) ?? image
-        chat.contextItems.append(AriaContextItem(kind: .image, name: name, thumbnail: thumbnail.jpegData(compressionQuality: 0.8)))
+    /// La miniatura si prepara fuori dal main thread (foto da 12 MP): l'elemento compare a lavoro finito.
+    func addImage(_ image: UIImage, name: String) async {
+        let thumbnail = await AriaImageThumbnail.jpeg(from: image)
+        chat.contextItems.append(AriaContextItem(kind: .image, name: name, thumbnail: thumbnail))
     }
 
     func addCameraPhoto(_ image: UIImage) {
-        addImage(image, name: String(localized: "Photo"))
+        let name = String(localized: "Photo")
+        Task { await addImage(image, name: name) }
     }
 
     /// Le foto scelte dalla galleria: la selezione si svuota subito, così la stessa foto si può riscegliere.
@@ -349,24 +356,67 @@ final class AriaChatComposerViewModel {
     private func loadPhotos(_ items: [PhotosPickerItem]) async {
         for item in items {
             guard let data = try? await item.loadTransferable(type: Data.self),
-                  let image = UIImage(data: data) else { continue }
-            addImage(image, name: String(localized: "Photo"))
+                  let thumbnail = await AriaImageThumbnail.jpeg(from: data) else { continue }
+            chat.contextItems.append(AriaContextItem(kind: .image, name: String(localized: "Photo"), thumbnail: thumbnail))
         }
     }
 
     func filesPicked(_ result: Result<[URL], any Error>) {
         guard case .success(let urls) = result else { return }
+        Task { await loadFiles(urls) }
+    }
+
+    /// Un file alla volta, nell'ordine scelto; lettura e miniatura fuori dal main thread.
+    private func loadFiles(_ urls: [URL]) async {
         for url in urls {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             let isImage = UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
-            if isImage, let data = try? Data(contentsOf: url), let image = UIImage(data: data) {
-                addImage(image, name: url.lastPathComponent)
+            if isImage, let thumbnail = await AriaImageThumbnail.jpeg(from: url) {
+                chat.contextItems.append(AriaContextItem(kind: .image, name: url.lastPathComponent, thumbnail: thumbnail))
             } else {
                 let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
                 chat.contextItems.append(AriaContextItem(kind: .document, name: url.lastPathComponent, size: size))
             }
         }
+    }
+}
+
+/// Le miniature delle immagini aggiunte al contesto, calcolate fuori dal main thread.
+private nonisolated enum AriaImageThumbnail {
+    /// Lato massimo, in pixel, dell'anteprima (come prima: 168 × 168).
+    static let maxPixelSize = 168
+    static let quality: CGFloat = 0.8
+
+    /// Da un'immagine già decodificata (foto della fotocamera).
+    @concurrent
+    static func jpeg(from image: UIImage) async -> Data? {
+        let thumbnail = image.preparingThumbnail(of: CGSize(width: maxPixelSize, height: maxPixelSize)) ?? image
+        return thumbnail.jpegData(compressionQuality: quality)
+    }
+
+    /// Dai byte di una foto della galleria: la miniatura si decodifica direttamente a 168 px, senza l'immagine intera.
+    @concurrent
+    static func jpeg(from data: Data) async -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        return encode(source)
+    }
+
+    /// Da un file: si legge solo quanto serve a decodificare la miniatura.
+    @concurrent
+    static func jpeg(from url: URL) async -> Data? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return encode(source)
+    }
+
+    private static func encode(_ source: CGImageSource) -> Data? {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage).jpegData(compressionQuality: quality)
     }
 }
 

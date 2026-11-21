@@ -56,6 +56,8 @@ final class AdminUsageViewModel {
     var epoch = 0
     /// L'azienda a cui appartiene quello che si tiene: cambiata, si butta tutto (cifre, nomi, ciclo scelto).
     @ObservationIgnored private var heldCompany: String?
+    /// Quando il cruscotto corrente è stato letto: entrando di nuovo nella sezione si rilegge solo se è vecchio.
+    @ObservationIgnored var freshness = AriaFreshness()
 
     init(backend: AriaBackend, locale: Locale = .autoupdatingCurrent) {
         self.backend = backend
@@ -76,6 +78,7 @@ final class AdminUsageViewModel {
         membersPhase = .idle
         sectionClosed = false
         ownerRefused = false
+        freshness.invalidate()
     }
 
     /// Cambia quando va riletto tutto: azienda diversa (per `.task(id:)`).

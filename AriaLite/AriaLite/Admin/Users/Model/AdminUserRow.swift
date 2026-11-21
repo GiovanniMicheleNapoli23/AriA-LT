@@ -39,9 +39,20 @@ nonisolated struct AdminUserRole: Sendable, Hashable {
 }
 
 /// Le ultime volte che si è visto, sul web e nell'app. Arriva solo a un titolare.
+/// Le ore si leggono una volta sola, quando la riga arriva dal server: ridisegnare non rilegge i testi.
 nonisolated struct AdminUserLastSeen: Sendable, Hashable {
-    var web: String?
-    var app: String?
+    let web: String?
+    let app: String?
+    /// `web` e `app` già lette come ore (`nil` se mancano o non sono un'ora).
+    let webDate: Date?
+    let appDate: Date?
+
+    init(web: String? = nil, app: String? = nil) {
+        self.web = web
+        self.app = app
+        webDate = web.flatMap(AdminUserPresence.date(from:))
+        appDate = app.flatMap(AdminUserPresence.date(from:))
+    }
 }
 
 nonisolated struct AdminUserRow: Decodable, Sendable, Identifiable, Hashable {

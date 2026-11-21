@@ -10,15 +10,31 @@
 
 import SwiftUI
 
-struct AriaSidebar: View {
-    let user: User
-    let destination: AriaDestination
+/// Le azioni della sidebar, come `AriaOpenChatSessionAction`: delle closure non si può dire se sono cambiate, e la
+/// shell ne crea di nuove a ogni ridisegno, così la sidebar rifarebbe le sue ~25 righe senza motivo. Fanno sempre
+/// le stesse cose (toccano solo lo stato della shell e i suoi modelli), quindi due istanze valgono come uguali.
+struct AriaSidebarActions: Equatable {
     let select: (AriaDestination) -> Void
     let openSession: (AriaSessionSummary) -> Void
     let searchChats: () -> Void
     let newChat: () -> Void
     let showSettings: () -> Void
     let showConnection: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool { true }
+}
+
+struct AriaSidebar: View {
+    let user: User
+    let destination: AriaDestination
+    let actions: AriaSidebarActions
+
+    private var select: (AriaDestination) -> Void { actions.select }
+    private var openSession: (AriaSessionSummary) -> Void { actions.openSession }
+    private var searchChats: () -> Void { actions.searchChats }
+    private var newChat: () -> Void { actions.newChat }
+    private var showSettings: () -> Void { actions.showSettings }
+    private var showConnection: () -> Void { actions.showConnection }
 
     @Environment(AppViewModel.self) private var viewModel
     @State private var renaming: AriaSessionSummary?

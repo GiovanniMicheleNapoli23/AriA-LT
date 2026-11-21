@@ -25,10 +25,10 @@ final class AdminCraftedReportVersionStore {
     private let fileURL: URL
 
     /// `baseURL` come in AdminCraftedArtifactStore: i test passano una cartella temporanea.
-    init(companyId: String, baseURL: URL? = nil) {
+    init(companyId: String, accountId: String, baseURL: URL? = nil) {
         self.companyId = companyId
         fileURL = AdminCraftedStorage.fileURL(baseURL: baseURL ?? AdminCraftedStorage.defaultBaseURL,
-                                              companyId: companyId, name: "report-versions.json")
+                                              companyId: companyId, accountId: accountId, name: "report-versions.json")
         versionsByKey = Self.load(fileURL)
     }
 

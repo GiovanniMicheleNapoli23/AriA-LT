@@ -16,15 +16,17 @@ struct AriaChatMessagesList: View {
 
     var body: some View {
         ScrollView {
-            // VStack e non LazyVStack: con altezze stimate lo scroll in fondo saltella mentre il testo cresce.
-            VStack(alignment: .leading, spacing: 16) {
+            // LazyVStack: lo storico lungo non si costruisce tutto. Il fondo resta stabile perché la risposta in corso
+            // ha un'altezza minima (replyMinHeight) e lo scorrimento in fondo si rifà (a intervalli) mentre il testo cresce.
+            LazyVStack(alignment: .leading, spacing: 16) {
                 // Una volta per body, non una scansione dei messaggi per riga.
                 let lastID = model.lastMessageID
                 let reply = model.replyMinHeight
                 ForEach(model.messages) { message in
-                    AriaAgentMessageView(message: message, chat: model.chat, webBase: model.webURL,
-                                         isLast: message.id == lastID,
-                                         orbNamespace: orbNamespace)
+                    // Equatable: a ogni pezzo in streaming si ricalcola solo la riga che è cambiata.
+                    AriaChatMessageRow(message: message, chat: model.chat, webBase: model.webURL,
+                                       isLast: message.id == lastID, orbNamespace: orbNamespace)
+                        .equatable()
                         .onGeometryChange(for: CGFloat.self, of: \.size.height) { height in
                             model.messageHeightChanged(message.id, height: height)
                         }
@@ -53,7 +55,8 @@ struct AriaChatMessagesList: View {
         .onScrollGeometryChange(for: AriaChatScrollFollow.Sizes.self) { geometry in
             AriaChatScrollFollow.Sizes(content: geometry.contentSize.height, container: geometry.containerSize.height)
         } action: { _, sizes in
-            if model.scroll.sticksToBottom(sizes) { proxy.scrollTo("bottom", anchor: .bottom) }
+            // A intervalli (100 ms): a ogni riga che va a capo in streaming cambia l'altezza, non serve scorrere ogni volta.
+            model.contentSizesChanged(sizes) { proxy.scrollTo("bottom", anchor: .bottom) }
         }
         .onPreferenceChange(AriaInlineEditorFocusKey.self) { focused in
             Task { @MainActor in model.scroll.isEditingInline = focused }
@@ -63,9 +66,27 @@ struct AriaChatMessagesList: View {
         }
         // Un messaggio nuovo (mandato o ricevuto) riporta sempre in fondo.
         .onChange(of: model.messageCount) {
-            model.scroll.followBottom()
-            proxy.scrollTo("bottom", anchor: .bottom)
+            model.followBottomNow { proxy.scrollTo("bottom", anchor: .bottom) }
         }
+    }
+}
+
+/// Una riga della lista: si ridisegna solo se cambia il messaggio (revisione) o se smette/inizia a essere l'ultimo.
+/// Il resto (voto, pausa, domande, crediti) lo legge la vista del messaggio dalla chat, con la sua osservazione.
+struct AriaChatMessageRow: View, Equatable {
+    let message: AriaAgentMessage
+    let chat: AriaAgentChat
+    let webBase: URL
+    let isLast: Bool
+    let orbNamespace: Namespace.ID?
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.message.id == rhs.message.id && lhs.message.revision == rhs.message.revision && lhs.isLast == rhs.isLast
+            && lhs.webBase == rhs.webBase
+    }
+
+    var body: some View {
+        AriaAgentMessageView(message: message, chat: chat, webBase: webBase, isLast: isLast, orbNamespace: orbNamespace)
     }
 }
 

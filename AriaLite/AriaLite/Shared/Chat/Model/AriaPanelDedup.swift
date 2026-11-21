@@ -89,10 +89,16 @@ nonisolated enum AriaPanelDedup {
         }
     }
 
+    /// Compilate una volta sola: `isHeading` e `tokens` girano per ogni riga e ogni parola di ogni valutazione.
+    private static let boldHeading = try! NSRegularExpression(pattern: #"^(\*\*|__)[^*_]+(\*\*|__):?$"#)
+    private static let markdownLink = try! NSRegularExpression(pattern: #"\[([^\]]*)\]\([^)]*\)"#)
+
     private static func isHeading(_ line: String) -> Bool {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         if trimmed.hasPrefix("#") { return true }
-        return trimmed.range(of: #"^(\*\*|__)[^*_]+(\*\*|__):?$"#, options: .regularExpression) != nil
+        // Un titolo in grassetto comincia per forza con * o _.
+        guard let first = trimmed.utf8.first, first == UInt8(ascii: "*") || first == UInt8(ascii: "_") else { return false }
+        return boldHeading.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil
     }
 
     // MARK: - Elenchi
@@ -135,7 +141,10 @@ nonisolated enum AriaPanelDedup {
     ]
 
     private static func tokens(_ text: String) -> Set<String> {
-        let plain = text.replacingOccurrences(of: #"\[([^\]]*)\]\([^)]*\)"#, with: "$1", options: .regularExpression)
+        // Senza "](" non c'è nessun link da ridurre al suo testo.
+        let plain = text.contains("](")
+            ? markdownLink.stringByReplacingMatches(in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1")
+            : text
         let words = plain.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
         return Set(words.filter { !$0.isEmpty && !stopwords.contains($0) })
     }

@@ -4,42 +4,41 @@
 //
 //  Created by Giovanni Michele on 18/11/26.
 //
-//  Il pulsante dei connettori nella barra della chat e il suo popover, come quello della memoria: i connettori
-//  collegati e "Manage connectors", che porta al Marketplace già filtrato sui connettori.
+//  Il popover dei connettori della barra della chat, aperto dalla voce "Connectors" del "+" e ancorato al "+",
+//  come quello della memoria: i connettori collegati e "Manage connectors", che porta al Marketplace già
+//  filtrato sui connettori.
 //  La logica sta in AriaComposerConnectorsViewModel.
 //
 
 import SwiftUI
 
-struct AriaComposerConnectorsButton: View {
+extension View {
+    /// Il popover dei connettori ancorato a questa vista; senza Marketplace (`access` nil) non c'è.
+    func ariaConnectorsPopover(model: AriaChatComposerViewModel, access: AriaChatConnectorsAccess?,
+                               onManage: @escaping () -> Void) -> some View {
+        modifier(AriaComposerConnectorsAnchor(model: model, access: access, onManage: onManage))
+    }
+}
+
+private struct AriaComposerConnectorsAnchor: ViewModifier {
     @Bindable var model: AriaChatComposerViewModel
-    let access: AriaChatConnectorsAccess
+    let access: AriaChatConnectorsAccess?
     /// Prima di passare al Marketplace (la tastiera si chiude).
-    var onManage: () -> Void
+    let onManage: () -> Void
 
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 38
-
-    var body: some View {
-        Button { model.showConnectors = true } label: {
-            // Come il "+": una spina in un cerchio pieno e tenue di 38, che smette di crescere ad AX1.
-            Image(systemName: "powerplug")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
-                .frame(width: side, height: side)
-                .background(Color.primary.opacity(0.08), in: Circle())
-                .contentShape(Circle())
-                .dynamicTypeSize(...AriaChatComposer.maxButtonTypeSize)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Connectors")
-        .accessibilityIdentifier("chat.connectors")
-        .popover(isPresented: $model.showConnectors, arrowEdge: .bottom) {
-            AriaComposerConnectorsPopover(marketplace: access.marketplace) {
-                model.showConnectors = false
-                onManage()
-                access.open()
-            }
-            .presentationCompactAdaptation(.popover)
+    func body(content: Content) -> some View {
+        if let access {
+            content
+                .popover(isPresented: $model.showConnectors, arrowEdge: .bottom) {
+                    AriaComposerConnectorsPopover(marketplace: access.marketplace) {
+                        model.showConnectors = false
+                        onManage()
+                        access.open()
+                    }
+                    .presentationCompactAdaptation(.popover)
+                }
+        } else {
+            content
         }
     }
 }
@@ -49,7 +48,7 @@ private struct AriaComposerConnectorsPopover: View {
     @State private var model: AriaComposerConnectorsViewModel
     let manage: () -> Void
 
-    @ScaledMetric(relativeTo: .subheadline) private var iconSide: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var iconSide: CGFloat = 28
 
     init(marketplace: AdminMarketplaceViewModel, manage: @escaping () -> Void) {
         _model = State(initialValue: AriaComposerConnectorsViewModel(marketplace: marketplace))
@@ -91,17 +90,19 @@ private struct AriaComposerConnectorsPopover: View {
         case .empty:
             note("No connectors connected yet.")
         case .list(let rows):
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 ForEach(rows) { row in
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         AdminConnectorIcon(provider: row.provider, name: row.name, side: iconSide)
                         Text(verbatim: row.name)
-                            .font(.subheadline)
+                            .font(.body)
                             .lineLimit(1)
                         Spacer(minLength: 8)
+                        // Grande quanto il nome: una spunta da didascalia accanto a un'icona di 28 non si vede.
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundStyle(Color.liteAccent)
+                            .font(.title3)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(Color.liteOnAccent, Color.liteAccent)
                             .accessibilityHidden(true)
                     }
                     .accessibilityElement(children: .combine)

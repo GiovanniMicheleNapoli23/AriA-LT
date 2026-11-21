@@ -50,6 +50,12 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
     private(set) var errorMessage: String?
     private(set) var events: [AdminAgentStudioRunEvent] = []
 
+    /// Contatori che salgono quando cambia una parte dello stato: chi pubblica (il view model) confronta questi
+    /// numeri, invece di copiare registro e testo ogni volta. `display` = tutto tranne testo e registro.
+    private(set) var displayRevision = 0
+    private(set) var narrativeRevision = 0
+    private(set) var eventsRevision = 0
+
     init(runId: String? = nil, mode: AdminAgentStudioRunMode? = nil) {
         self.runId = runId
         self.mode = mode
@@ -76,14 +82,27 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
     /// La richiesta è fallita prima che il run partisse.
     mutating func fail(message: String) {
         guard phase.isActive else { return }
+        displayRevision += 1
         errorMessage = message
         phase = .failed(message: message)
     }
 
     /// Si rilegge tutto dall'inizio (`after=0`): si riparte da zero tenendo solo l'identità del run,
     /// così le righe già viste non si sommano due volte (delta di testo compresi).
+    /// I contatori non tornano indietro: chi ha già pubblicato vede comunque che qualcosa è cambiato.
     mutating func resetForReplay() {
+        let revisions = (displayRevision + 1, narrativeRevision + 1, eventsRevision + 1)
         self = AdminAgentStudioLiveRun(runId: runId, mode: mode)
+        (displayRevision, narrativeRevision, eventsRevision) = revisions
+    }
+
+    /// La copia per la vista: senza registro e testo del riassunto, che si leggono a parte. Così chi continua a
+    /// sommare non condivide quei buffer con la copia pubblicata (niente copia-su-scrittura a ogni pubblicazione).
+    func displaySnapshot() -> AdminAgentStudioLiveRun {
+        var copy = self
+        copy.events = []
+        copy.narrative = ""
+        return copy
     }
 
     // MARK: Somma
@@ -96,6 +115,8 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
         }
         guard let type = fields.string("type") else { return }
         lineCount += 1
+        // Falso per le righe che non cambiano ciò che la vista mostra (testo, tipi ignoti): restano a parte.
+        var touchesDisplay = true
 
         switch type {
         case "run-start":
@@ -126,14 +147,21 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
             progress(fields)
         case "narrative-delta":
             // Un delta vuoto non porta nulla.
-            if case .string(let text)? = fields.value("text"), !text.isEmpty { narrative += text }
+            touchesDisplay = false
+            if case .string(let text)? = fields.value("text"), !text.isEmpty {
+                narrative += text
+                narrativeRevision += 1
+            }
         case "run-summary":
             let body = fields.object("summary")
             guard !body.isEmpty else { break }
             let found = Summary(json: body)
             summary = found
             // La frase intera della sintesi vale più dei delta (e li ripara se ne manca qualcuno).
-            if let text = found.narrative { narrative = text }
+            if let text = found.narrative {
+                narrative = text
+                narrativeRevision += 1
+            }
         case "approval-requested":
             if let approval = PendingApproval(json: line) {
                 pendingApprovals.removeAll { $0.id == approval.id }
@@ -166,11 +194,14 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
             errorMessage = message
             if phase.isActive { phase = .failed(message: message) }
         default:
+            touchesDisplay = false
             break  // branch, loop-pass, budget, orchestrator-plan…: solo nel registro
         }
 
+        if touchesDisplay { displayRevision += 1 }
         if type != "narrative-delta", type != "run-progress", events.count < Self.eventLogLimit {
             events.append(AdminAgentStudioRunEvent(index: lineCount, json: line))
+            eventsRevision += 1
         }
     }
 
@@ -179,6 +210,7 @@ nonisolated struct AdminAgentStudioLiveRun: Sendable {
     /// Chiude il run; non riapre uno già chiuso (un `done` dopo un `error` non lo cambia).
     private mutating func finish(status: String) {
         guard phase.isActive else { return }
+        displayRevision += 1
         phase = .finished(status: status)
         currentNodeId = nil
     }
