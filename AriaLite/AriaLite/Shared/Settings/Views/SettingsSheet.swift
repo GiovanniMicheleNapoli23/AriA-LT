@@ -133,25 +133,33 @@ struct SettingsSheet: View {
     }
 
     /// Un menu con le aziende e la spunta su quella attiva; senza un elenco (in lettura) solo il nome.
+    /// Il nome sta su una riga: se è troppo lungo si tronca.
     @ViewBuilder
     private var companyRow: some View {
         let label = AriaSettingsLabel("Company", systemImage: "building.2")
         if !viewModel.companies.isEmpty {
-            Picker(selection: $viewModel.companySelection) {
-                ForEach(viewModel.companies) { company in
-                    Text(verbatim: company.name).tag(Optional(company.id))
-                }
-            } label: {
+            AriaSettingsMenuRow(value: viewModel.companyName) {
                 label
+            } choices: {
+                Picker(selection: $viewModel.companySelection) {
+                    ForEach(viewModel.companies) { company in
+                        Text(verbatim: company.name).tag(Optional(company.id))
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.menu)
             .sensoryFeedback(.selection, trigger: viewModel.activeCompanyId)
             .accessibilityIdentifier("settings.company")
         } else if let company = viewModel.companyName {
             LabeledContent {
                 Text(verbatim: company)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             } label: {
                 label
+                    .layoutPriority(1)
             }
         }
     }
@@ -161,21 +169,28 @@ struct SettingsSheet: View {
     private var siteRow: some View {
         let label = AriaSettingsLabel("Site", systemImage: "mappin.and.ellipse")
         if !viewModel.plants.isEmpty {
-            Picker(selection: $viewModel.plantSelection) {
-                ForEach(viewModel.plants) { plant in
-                    Text(verbatim: plant.name).tag(Optional(plant.id))
-                }
-            } label: {
+            AriaSettingsMenuRow(value: viewModel.plantName) {
                 label
+            } choices: {
+                Picker(selection: $viewModel.plantSelection) {
+                    ForEach(viewModel.plants) { plant in
+                        Text(verbatim: plant.name).tag(Optional(plant.id))
+                    }
+                } label: {
+                    EmptyView()
+                }
+                .pickerStyle(.inline)
             }
-            .pickerStyle(.menu)
             .sensoryFeedback(.selection, trigger: viewModel.activePlantId)
             .accessibilityIdentifier("settings.site")
         } else if let plant = viewModel.plantName {
             LabeledContent {
                 Text(verbatim: plant)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             } label: {
                 label
+                    .layoutPriority(1)
             }
         }
     }

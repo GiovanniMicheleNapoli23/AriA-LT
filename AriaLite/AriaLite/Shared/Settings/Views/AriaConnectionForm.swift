@@ -82,17 +82,32 @@ struct AriaConnectionForm: View {
             if backend.isLoading && backend.companies.isEmpty {
                 ProgressView()
             } else {
-                Picker("Company", selection: Binding(
-                    get: { backend.activeCompanyId ?? "" },
-                    set: { id in Task { await backend.selectCompany(id) } }
-                )) {
-                    ForEach(backend.companies) { Text($0.name).tag($0.id) }
+                // Menu su una riga: i nomi lunghi si troncano invece di andare a capo.
+                AriaSettingsMenuRow(value: backend.companies.first { $0.id == backend.activeCompanyId }?.name) {
+                    Text("Company")
+                } choices: {
+                    Picker(selection: Binding(
+                        get: { backend.activeCompanyId ?? "" },
+                        set: { id in Task { await backend.selectCompany(id) } }
+                    )) {
+                        ForEach(backend.companies) { Text(verbatim: $0.name).tag($0.id) }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.inline)
                 }
-                Picker("Site", selection: Binding(
-                    get: { backend.activePlantId ?? "" },
-                    set: { id in Task { await backend.selectPlant(id) } }
-                )) {
-                    ForEach(backend.plants) { Text($0.name).tag($0.id) }
+                AriaSettingsMenuRow(value: backend.activePlantName) {
+                    Text("Site")
+                } choices: {
+                    Picker(selection: Binding(
+                        get: { backend.activePlantId ?? "" },
+                        set: { id in Task { await backend.selectPlant(id) } }
+                    )) {
+                        ForEach(backend.plants) { Text(verbatim: $0.name).tag($0.id) }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.inline)
                 }
                 .disabled(backend.plants.isEmpty)
             }
