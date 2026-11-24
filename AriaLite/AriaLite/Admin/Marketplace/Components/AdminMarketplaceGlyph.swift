@@ -38,6 +38,8 @@ struct AdminMarketplaceGlyph: View {
         "BookMarked": "books.vertical", "CupSoda": "cup.and.saucer", "Package": "cube.box",
         "Milk": "waterbottle", "Cog": "gearshape", "Wind": "wind", "Cylinder": "cylinder", "Pill": "pills",
         "BrickWall": "square.grid.3x3.fill",
+        "Palette": "paintpalette", "Video": "video", "Bug": "ladybug", "CreditCard": "creditcard",
+        "FolderGit2": "folder", "Frame": "square.dashed",
     ]
 
     private var systemImage: String {

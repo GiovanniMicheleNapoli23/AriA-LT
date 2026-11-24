@@ -38,11 +38,13 @@ struct AdminConnectorConsentFlow {
 
     let backend: AriaBackend
 
-    /// Le dieci card one-click di Composio (toolkits.py del backend): il loro URL è fisso e il server lo salva
-    /// comunque, ma una riga senza `mcp_url` resta riconoscibile dal provider.
+    /// Le card one-click di Composio (quelle del catalogo con l'endpoint su composio.dev, toolkits.py del backend):
+    /// il loro URL è fisso e il server lo salva comunque, ma una riga senza `mcp_url` resta riconoscibile dal provider.
+    /// Si aggiorna insieme al catalogo (scripts/export-marketplace-catalog.mjs).
     static let composioProviders: Set<String> = [
         "gmail-personal", "calendar-personal", "drive-personal", "teams", "outlook",
         "dynamics-crm", "salesforce-crm", "slack-chat", "asana", "hubspot-crm",
+        "zoom", "whatsapp-business", "canva", "github", "sentry", "stripe", "figma",
     ]
 
     static func isComposio(provider: String, mcpUrl: String?) -> Bool {

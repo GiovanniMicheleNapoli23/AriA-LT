@@ -42,11 +42,20 @@ struct ConnectorConsentTests {
         #expect(!AdminConnectorConsentFlow.isCancellation(error))
     }
 
-    /// Le dieci card one-click di Composio si riconoscono dal provider anche senza `mcp_url`.
+    /// Le card one-click di Composio si riconoscono dal provider anche senza `mcp_url`.
     @Test(arguments: ["gmail-personal", "calendar-personal", "drive-personal", "teams", "outlook",
-                      "dynamics-crm", "salesforce-crm", "slack-chat", "asana", "hubspot-crm"])
+                      "dynamics-crm", "salesforce-crm", "slack-chat", "asana", "hubspot-crm",
+                      "zoom", "whatsapp-business", "canva", "github", "sentry", "stripe", "figma"])
     func composioCardsAreRecognisedByProvider(provider: String) {
         #expect(AdminConnectorConsentFlow.isComposio(provider: provider, mcpUrl: nil))
+    }
+
+    /// Ogni card del catalogo con l'endpoint su Composio è nell'elenco: un connettore nuovo non resta fuori.
+    @Test func everyComposioCardInTheCatalogIsListed() {
+        let catalog = AdminMarketplaceCatalog.load(language: "en")
+        let composio = Set(catalog.compactMap { item in item.connector?.isComposio == true ? item.sourceId : nil })
+        #expect(!composio.isEmpty)
+        #expect(composio.isSubset(of: AdminConnectorConsentFlow.composioProviders))
     }
 
     @Test func otherConnectorsAreNotComposio() {

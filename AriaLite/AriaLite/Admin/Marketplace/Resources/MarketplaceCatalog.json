@@ -1,5 +1,5 @@
 {
-  "source": "aria-web bfbf8bb",
+  "source": "aria-web c0e3638f",
   "items": [
     {
       "id": "skill:shift-handover",
@@ -417,7 +417,7 @@
       "summary": "Read and update your MaintainX CMMS mid-conversation: work orders and requests, assets and locations, parts and meters, PM plans and purchasing.",
       "publisher": "MaintainX CMMS",
       "area": "Maintenance",
-      "descriptor": "MES & ERP",
+      "descriptor": "CMMS",
       "icon": "ClipboardList",
       "adds": [
         "Read work orders, requests and PM plans",
@@ -487,7 +487,7 @@
         "List categories"
       ],
       "connector": {
-        "category": "MES & ERP",
+        "category": "CMMS",
         "vendors": "MaintainX CMMS",
         "preview": false,
         "custom": false,
@@ -1017,6 +1017,243 @@
         "endpoint": "https://backend.composio.dev/aria-toolkit/googlecalendar",
         "brandHex": "#4285F4",
         "brandImage": "ConnectorBrands/calendar-personal"
+      }
+    },
+    {
+      "id": "connector:zoom",
+      "sourceId": "zoom",
+      "kind": "connector",
+      "name": "Zoom",
+      "summary": "Connect your own Zoom so ARIA can read your meetings, who attended and their summaries, and schedule or change a meeting once you approve.",
+      "publisher": "Zoom",
+      "area": "Systems & data",
+      "descriptor": "Messaging & alerts",
+      "icon": "Video",
+      "adds": [
+        "Read your meetings and their details",
+        "Read who attended a meeting",
+        "Read meeting summaries and cloud recordings",
+        "Read webinars and their registrants",
+        "Find a colleague in Zoom",
+        "Schedule or change a meeting (with approval)",
+        "Register someone for a meeting or webinar (with approval)"
+      ],
+      "keywords": [
+        "Zoom"
+      ],
+      "connector": {
+        "category": "Messaging & alerts",
+        "vendors": "Zoom",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/zoom",
+        "brandHex": "#0B5CFF",
+        "brandImage": "ConnectorBrands/zoom"
+      }
+    },
+    {
+      "id": "connector:whatsapp-business",
+      "sourceId": "whatsapp-business",
+      "kind": "connector",
+      "name": "WhatsApp Business",
+      "summary": "Your company's WhatsApp Business number: read its account, templates and delivery status, and send a message, a template, a file, a location or a contact once you approve.",
+      "publisher": "WhatsApp Business Platform",
+      "area": "Systems & data",
+      "descriptor": "Messaging & alerts",
+      "icon": "MessageSquare",
+      "adds": [
+        "Read the business account and its numbers",
+        "Read message templates and their status",
+        "Check whether a sent message was delivered",
+        "Read groups the number is in",
+        "Send a message (with approval)",
+        "Send an approved template (with approval)",
+        "Send a file, a location or a contact (with approval)"
+      ],
+      "keywords": [
+        "WhatsApp Business Platform · Meta"
+      ],
+      "connector": {
+        "category": "Messaging & alerts",
+        "vendors": "WhatsApp Business Platform · Meta",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/whatsapp",
+        "orgFromConsent": true,
+        "brandHex": "#25D366",
+        "brandImage": "ConnectorBrands/whatsapp-business"
+      }
+    },
+    {
+      "id": "connector:canva",
+      "sourceId": "canva",
+      "kind": "connector",
+      "name": "Canva",
+      "summary": "Connect your own Canva so ARIA can find your designs and read their pages and comments, and create, export or comment on a design once you approve.",
+      "publisher": "Canva",
+      "area": "Systems & data",
+      "descriptor": "Knowledge & docs",
+      "icon": "Palette",
+      "adds": [
+        "Find your designs and read their pages",
+        "Read folders and the details of their items",
+        "Read your brand templates",
+        "Read comments and replies on a design",
+        "Create a design (with approval)",
+        "Export a design as a download link (with approval)",
+        "Resize a design or fill a template (with approval)",
+        "Comment or reply on a design (with approval)",
+        "Create a folder or move an item into one (with approval)"
+      ],
+      "keywords": [
+        "Canva"
+      ],
+      "connector": {
+        "category": "Knowledge & docs",
+        "vendors": "Canva",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/canva",
+        "brandHex": "#00C4CC"
+      }
+    },
+    {
+      "id": "connector:github",
+      "sourceId": "github",
+      "kind": "connector",
+      "name": "GitHub",
+      "summary": "Connect your own GitHub so ARIA can read your repositories, issues and pull requests, and open, change or comment on an issue once you approve. It never changes code.",
+      "publisher": "GitHub",
+      "area": "Systems & data",
+      "descriptor": "Knowledge & docs",
+      "icon": "FolderGit2",
+      "adds": [
+        "Find repositories and read their files and README",
+        "Read issues and their comments",
+        "Find and read pull requests",
+        "Read a commit, a release or a workflow run",
+        "Open an issue (with approval)",
+        "Comment on an issue or pull request (with approval)",
+        "Change an issue or pull request's title, text, state or labels (with approval)"
+      ],
+      "keywords": [
+        "GitHub"
+      ],
+      "connector": {
+        "category": "Knowledge & docs",
+        "vendors": "GitHub",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/github",
+        "brandHex": "#181717",
+        "brandImage": "ConnectorBrands/github"
+      }
+    },
+    {
+      "id": "connector:sentry",
+      "sourceId": "sentry",
+      "kind": "connector",
+      "name": "Sentry",
+      "summary": "Connect your own Sentry so ARIA can read your issues and their events, and resolve, assign or start a Seer analysis on an issue once you approve.",
+      "publisher": "Sentry",
+      "area": "Systems & data",
+      "descriptor": "Knowledge & docs",
+      "icon": "Bug",
+      "adds": [
+        "Find issues across an organisation or a project",
+        "Read an issue, its events and tag values",
+        "Read projects, the organisation and its event stats",
+        "Read how far a Seer analysis has got",
+        "Resolve, ignore or assign an issue (with approval)",
+        "Start a Seer analysis, which is paid (with approval)"
+      ],
+      "keywords": [
+        "Sentry"
+      ],
+      "connector": {
+        "category": "Knowledge & docs",
+        "vendors": "Sentry",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/sentry",
+        "brandHex": "#362D59",
+        "brandImage": "ConnectorBrands/sentry"
+      }
+    },
+    {
+      "id": "connector:stripe",
+      "sourceId": "stripe",
+      "kind": "connector",
+      "name": "Stripe",
+      "summary": "Connect your Stripe login so ARIA can read your company's customers, charges, invoices, subscriptions and payouts. Reading only: nothing is charged, refunded or changed.",
+      "publisher": "Stripe",
+      "area": "Systems & data",
+      "descriptor": "CRM & service desk",
+      "icon": "CreditCard",
+      "adds": [
+        "Find and read customers",
+        "Find and read charges and invoices",
+        "Read payment intents and subscriptions",
+        "Read products and prices",
+        "Read refunds, payouts and disputes",
+        "Read balance transactions"
+      ],
+      "keywords": [
+        "Stripe"
+      ],
+      "connector": {
+        "category": "CRM & service desk",
+        "vendors": "Stripe",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/stripe",
+        "brandHex": "#635BFF",
+        "brandImage": "ConnectorBrands/stripe"
+      }
+    },
+    {
+      "id": "connector:figma",
+      "sourceId": "figma",
+      "kind": "connector",
+      "name": "Figma",
+      "summary": "Connect your own Figma so ARIA can read your design files, their components, styles and comments, and post a comment once you approve. It cannot draw or edit designs.",
+      "publisher": "Figma",
+      "area": "Systems & data",
+      "descriptor": "Knowledge & docs",
+      "icon": "Frame",
+      "adds": [
+        "Open a file from its Figma link and read its content",
+        "Render frames as images, as download links",
+        "Read a file's details, components and styles",
+        "Read a file's comments and versions",
+        "List a team's projects and their files",
+        "Comment on a file (with approval)"
+      ],
+      "keywords": [
+        "Figma"
+      ],
+      "connector": {
+        "category": "Knowledge & docs",
+        "vendors": "Figma",
+        "preview": false,
+        "custom": false,
+        "auth": "oauth",
+        "setup": "one-click",
+        "endpoint": "https://backend.composio.dev/aria-toolkit/figma",
+        "brandHex": "#F24E1E",
+        "brandImage": "ConnectorBrands/figma"
       }
     },
     {
