@@ -88,7 +88,7 @@ final class AriaChatComposerViewModel {
     /// Con una pausa aperta il backend non accetta nuovi turni: la barra lascia il posto all'avviso.
     var isLocked: Bool { chat.pendingInterrupt != nil }
     var isLotoPending: Bool { chat.pendingInterrupt?.kind == .loto }
-    var hasTray: Bool { !chat.contextItems.isEmpty || chat.webSearch || chat.style != .auto || effortPillTitle != nil }
+    var hasTray: Bool { !chat.contextItems.isEmpty || chat.webSearch || chat.style != .auto }
     var cameraAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
     var contextItems: [AriaContextItem] { chat.contextItems }
     var contextUsage: AriaContextUsage? { chat.contextUsage }

@@ -60,15 +60,6 @@ extension AriaChatComposerViewModel {
         (isInputFocused || showConnectors) && !isLocked && effortEntry != .hidden
     }
 
-    /// Con la tastiera chiusa, sopra il campo: il livello quando non è quello di partenza (costa di più o di meno).
-    /// Con la tastiera aperta lo dice già il menu sotto il campo.
-    var effortPillTitle: String? {
-        let usage = backend.usage
-        guard !isInputFocused, !showConnectors, !usage.isUnavailable, let config = usage.config, config.chatEffortEnabled,
-              let level = chat.effortLevel, level != config.effort?.defaultLevel else { return nil }
-        return String(localized: "Effort: \(level.title)")
-    }
-
     /// Le righe del menu: gli stessi livelli del foglio, con moltiplicatore, costo e blocco del piano.
     var effortRows: [AriaEffortPickerViewModel.Row] { effortPicker.rows }
 
