@@ -57,16 +57,21 @@ struct SettingsSheet: View {
             accountSection
             workspaceSection
             Section {
-                // Come azienda e sito: un menu sulla riga. La scelta vale subito (AriaLiteApp la applica).
-                Picker(selection: $appearance) {
-                    ForEach(AriaAppearance.allCases) { option in
-                        Label { Text(option.title) } icon: { Image(systemName: option.systemImage) }
-                            .tag(option)
-                    }
-                } label: {
+                // Come azienda e sito: un menu sulla riga, sulla riga solo il nome (le icone stanno nel menu).
+                // La scelta vale subito (AriaLiteApp la applica).
+                AriaSettingsMenuRow(value: String(localized: appearance.title)) {
                     AriaSettingsLabel("Appearance", systemImage: "circle.lefthalf.filled")
+                } choices: {
+                    Picker(selection: $appearance) {
+                        ForEach(AriaAppearance.allCases) { option in
+                            Label { Text(option.title) } icon: { Image(systemName: option.systemImage) }
+                                .tag(option)
+                        }
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.inline)
                 }
-                .pickerStyle(.menu)
                 .sensoryFeedback(.selection, trigger: appearance)
                 .accessibilityIdentifier("settings.appearance")
             } header: {
