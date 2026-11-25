@@ -4689,16 +4689,6 @@
         }
       }
     },
-    "Add connector" : {
-      "localizations" : {
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiungi connettore"
-          }
-        }
-      }
-    },
     "Add line" : {
       "localizations" : {
         "it" : {

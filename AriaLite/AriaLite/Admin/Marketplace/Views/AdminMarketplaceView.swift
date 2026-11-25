@@ -45,20 +45,8 @@ struct AdminMarketplaceView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { AriaSidebarButton() }
                 ToolbarItem(placement: .topBarTrailing) { filterMenu }
-                if viewModel.canAddMaintainX {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu("Add connector", systemImage: "plus") {
-                            Button("MaintainX", systemImage: "wrench.and.screwdriver") { viewModel.openMaintainXForm() }
-                        }
-                    }
-                }
             }
             .searchable(text: $viewModel.searchText, prompt: Text("Search the marketplace"))
-            .sheet(item: $viewModel.maintainXForm) { form in
-                AdminConnectorCredentialsFormView(viewModel: form)
-            }
-            // Il giro guidato si fa da parte mentre il modulo del connettore è aperto.
-            .ariaSetupTourAside(viewModel.maintainXForm != nil, source: "marketplace.connector")
         }
         .task(id: viewModel.loadKey) { await viewModel.loadIfNeeded() }
     }

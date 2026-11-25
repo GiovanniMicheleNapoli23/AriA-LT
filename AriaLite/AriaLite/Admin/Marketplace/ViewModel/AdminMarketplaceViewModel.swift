@@ -61,8 +61,6 @@ final class AdminMarketplaceViewModel {
     var machineType: String?
     var manufacturer: String?
     var industry: String?
-    /// Il form della chiave MaintainX aperto dalla barra (quando MaintainX non è nella lista).
-    var maintainXForm: AdminConnectorCredentialsFormViewModel?
 
     private let purchaseDefaults: UserDefaults
 
@@ -462,9 +460,6 @@ final class AdminMarketplaceViewModel {
     /// Gli elementi del catalogo che l'azienda possiede: connettori collegati e acquisti.
     var ownedCount: Int { context.owned.count }
 
-    /// MaintainX si collega con una chiave anche quando il server non lo elenca.
-    var canAddMaintainX: Bool { canManage && !connectors.contains(where: \.isMaintainX) }
-
     func connector(for provider: String) -> AdminConnector? { connectorsByProvider[provider] }
 
     /// Ogni cambio della lista passa da qui: tiene allineati la ricerca per provider e i valori derivati.
@@ -556,10 +551,6 @@ final class AdminMarketplaceViewModel {
             onRemoved: { [weak self] in Task { await self?.load() } })
     }
 
-    func openMaintainXForm() {
-        maintainXForm = AdminConnectorCredentialsFormViewModel(backend: backend, maintainX: nil) { [weak self] in self?.apply($0) }
-    }
-
     /// All'uscita dall'account: non resta niente dell'azienda precedente.
     func reset() {
         setConnectors([])
@@ -574,7 +565,6 @@ final class AdminMarketplaceViewModel {
         appliedQuery = ""
         kind = nil
         clearFilters()
-        maintainXForm = nil
         itemDetails = [:]
     }
 }
