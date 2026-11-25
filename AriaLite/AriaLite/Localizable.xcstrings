@@ -36462,6 +36462,16 @@
         }
       }
     },
+    "This person already belongs to another company. An email address can belong to one company only." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa persona appartiene già a un'altra azienda. Un indirizzo email può appartenere a una sola azienda."
+          }
+        }
+      }
+    },
     "This person is already in the list." : {
       "localizations" : {
         "it" : {
@@ -43070,6 +43080,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "I tuoi documenti sono al sicuro e la chat continua a funzionare."
+          }
+        }
+      }
+    },
+    "Your email address already belongs to a company, and an address can belong to one company only, so a new company can't be created with it." : {
+      "localizations" : {
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo indirizzo email appartiene già a un'azienda e un indirizzo può appartenere a una sola azienda, quindi non è possibile creare una nuova azienda con questo indirizzo."
           }
         }
       }

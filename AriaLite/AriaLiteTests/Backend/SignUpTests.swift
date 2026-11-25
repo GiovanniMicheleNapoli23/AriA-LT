@@ -537,6 +537,24 @@ extension BackendTests {
             #expect(server.calls("POST /v1/plants").isEmpty)
         }
 
+        /// ARIA-121: l'indirizzo è già attivo in un'altra azienda. Non è "indirizzo preso": si resta ad Azienda col testo
+        /// della web, lo slug non è toccato e non si va avanti.
+        @Test func anEmailAlreadyInAnotherCompanyStaysOnCompany() async throws {
+            let model = try await model()
+            await walkToPlan(model)
+            stubFinalRun()
+            let refusal = #"{"error":{"type":"http_error","message":"This email address already belongs to another company. An address can belong to one company only.","code":409,"request_id":"r1"},"detail":{"code":"already_in_another_company","message":"This email address already belongs to another company. An address can belong to one company only."}}"#
+            server.route("POST /v1/companies", .json(refusal, status: 409))
+            await model.finish()
+            #expect(model.step == .company)
+            #expect(model.errorMessage == String(localized: "Your email address already belongs to a company, and an address can belong to one company only, so a new company can't be created with it."))
+            #expect(model.slugState != .taken)
+            #expect(model.blockingMessage == nil)
+            #expect(server.calls("POST /v1/companies").count == 1, "nessun nuovo tentativo da solo")
+            #expect(server.calls("POST /v1/plants").isEmpty)
+            #expect(server.calls("POST /api/auth/onboarding/finish").isEmpty)
+        }
+
         @Test func finishingWithoutACompanyGoesBackToCompany() async throws {
             let model = try await model()
             await walkToPlan(model)

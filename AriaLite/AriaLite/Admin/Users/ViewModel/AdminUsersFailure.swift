@@ -45,7 +45,8 @@ nonisolated struct AdminUsersFailure: Equatable, Sendable {
             return nil
         case .peopleRefused(let refusal, _):
             switch refusal {
-            case .ownerLimitReached, .ownerProtected, .roleRequired, .alreadyListed, .invalidEmail, .labelNotAllowed:
+            case .ownerLimitReached, .ownerProtected, .roleRequired, .alreadyListed, .invalidEmail, .labelNotAllowed,
+                 .alreadyInAnotherCompany:
                 return Self(message: message(for: refusal))
             case .seatLimitReached:
                 return Self(message: message(for: refusal))
@@ -91,6 +92,9 @@ nonisolated struct AdminUsersFailure: Equatable, Sendable {
         case .invalidEmail: String(localized: "Enter a valid email address.")
         case .labelNotAllowed: String(localized: "Choose technician or manager.")
         case .userLimitReached: String(localized: "You've reached the user limit")
+        // Aggiungi e Riattiva (ARIA-121): un rifiuto normale, il modulo resta com'è per un altro indirizzo.
+        case .alreadyInAnotherCompany:
+            String(localized: "This person already belongs to another company. An email address can belong to one company only.")
         default: generic
         }
     }

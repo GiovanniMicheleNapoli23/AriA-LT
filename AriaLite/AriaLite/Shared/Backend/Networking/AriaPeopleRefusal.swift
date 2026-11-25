@@ -29,6 +29,9 @@ nonisolated enum AriaPeopleRefusal: String, Sendable, CaseIterable {
     case roleRequired = "role_required"
     case ownAppAccess = "own_app_access"
     case userLimitReached = "user_limit_reached"
+    /// 409 (ARIA-121): l'indirizzo ha già un'iscrizione attiva in un'altra azienda. Il server non scrive niente e non
+    /// dice quale azienda; la risposta resta la stessa finché la persona non lascia l'altra.
+    case alreadyInAnotherCompany = "already_in_another_company"
 
     var message: String {
         switch self {
@@ -53,6 +56,8 @@ nonisolated enum AriaPeopleRefusal: String, Sendable, CaseIterable {
         case .roleRequired: String(localized: "Choose a role before removing an owner.")
         case .ownAppAccess: String(localized: "Something went wrong. Try again.")
         case .userLimitReached: String(localized: "You've reached the user limit")
+        case .alreadyInAnotherCompany:
+            String(localized: "This person already belongs to another company. An email address can belong to one company only.")
         }
     }
 }

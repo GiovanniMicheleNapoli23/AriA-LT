@@ -431,6 +431,7 @@ struct UsersSectionPureTests {
             (404, "not_found", "This person is no longer in the workspace."),
             (409, "seat_limit_reached", "All the seats of your plan are in use. Upgrade to a bigger plan to add more people."),
             (409, "already_listed", "This person is already in the workspace."),
+            (409, "already_in_another_company", "This person already belongs to another company. An email address can belong to one company only."),
             (422, "invalid_email", "Enter a valid email address."),
             (422, "label_not_allowed", "Choose technician or manager."),
             (403, "session_ended", "Your session for this workspace was ended. Sign in again."),
@@ -623,6 +624,36 @@ extension BackendTests {
             #expect(!(await form.submit()))
             #expect(form.emailError == String(localized: "Enter a valid email address."))
             #expect(server.calls("POST /v1/users").isEmpty)
+        }
+
+        /// ARIA-121, il corpo esatto del server: `error` con il numero 409 e `detail` col codice.
+        private static let elsewhere = #"{"error":{"type":"http_error","message":"This email address already belongs to another company. An address can belong to one company only.","code":409,"request_id":"r1"},"detail":{"code":"already_in_another_company","message":"This email address already belongs to another company. An address can belong to one company only."}}"#
+
+        @Test func addingSomeoneActiveInAnotherCompanyKeepsTheForm() async throws {
+            let backend = try await connected()
+            let model = await ownerModel(backend, people: Self.page(Self.person("u1", level: "owner")))
+            server.route("POST /v1/users", .json(Self.elsewhere, status: 409))
+            let form = AdminUserAddViewModel(owner: model)
+            form.name = "Marco"
+            form.email = "marco@other.test"
+            #expect(!(await form.submit()))
+            #expect(form.errorMessage == String(localized: "This person already belongs to another company. An email address can belong to one company only."))
+            #expect(form.email == "marco@other.test" && form.name == "Marco", "il modulo resta per un altro indirizzo")
+            #expect(server.calls("POST /v1/users").count == 1, "nessun nuovo tentativo da solo")
+            #expect(server.calls("POST /api/auth/mobile/invite-link").isEmpty, "nessuno è stato aggiunto: niente email")
+        }
+
+        @Test func reactivatingSomeoneActiveInAnotherCompanyIsANormalRefusal() async throws {
+            let backend = try await connected()
+            let model = await ownerModel(backend, people: Self.page(Self.person("u1", level: "owner"), Self.person("u2", status: "suspended")))
+            let detail = AdminUserDetailViewModel(userId: "u2", owner: model)
+            server.route("PATCH /v1/members/u2", .json(Self.elsewhere, status: 409))
+            await detail.sendStatus(suspended: false)
+            let call = try #require(server.calls("PATCH /v1/members/u2").last?.json)
+            #expect(call["status"] as? String == "active")
+            #expect(model.notice?.text == String(localized: "This person already belongs to another company. An email address can belong to one company only."))
+            #expect(model.notice?.isError == true)
+            #expect(!model.isClosed)
         }
 
         @Test func steppingDownRereadsTheViewersRights() async throws {

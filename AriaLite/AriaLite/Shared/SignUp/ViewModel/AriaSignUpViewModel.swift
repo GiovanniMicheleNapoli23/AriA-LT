@@ -575,6 +575,12 @@ final class AriaSignUpViewModel {
             companyOnServer = true
             savedCompany = (trimmedCompanyName, slug)
             return true
+        } catch AriaError.peopleRefused(.alreadyInAnotherCompany, _) {
+            // ARIA-121: l'indirizzo è già attivo in un'altra azienda, non se ne fonda un'altra. Nulla è stato scritto:
+            // si resta al passo Azienda col testo della web (onboarding.setup.alreadyInCompany), niente sull'indirizzo.
+            step = .company
+            errorMessage = String(localized: "Your email address already belongs to a company, and an address can belong to one company only, so a new company can't be created with it.")
+            return false
         } catch AriaError.http(let status, _) where [403, 409, 500].contains(status) {
             return try await recoverRefusedCompany(status: status, slug: slug)
         }
